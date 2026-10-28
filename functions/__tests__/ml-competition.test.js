@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { createMlCompetition, competitionByIsbn, competitionEvents, competitionStatus, montevideoDate } from '../../worker-sync/ml-competition.js';
+import { createMlCompetition, competitionByIsbn, competitionEvents, competitionStatus, competitionCoverage, montevideoDate } from '../../worker-sync/ml-competition.js';
 import { createReposicionFacts } from '../../worker-sync/reposicion-facts.js';
 import { SALES_SCHEMA } from '../../worker-sync/ml-sales.js';
 import { importPurchases } from '../../worker-sync/purchases.js';
@@ -62,7 +62,7 @@ test('foto diaria: competidores, primer lugar perdido, competidor que dejó de o
   assert.equal((await runDay(db, state, DAY1)).state, 'done');
   state.day = 2;
   assert.equal((await runDay(db, state, DAY2)).state, 'done');
-  const f = (await competitionByIsbn(db, [ISBN])).get(ISBN);
+  const f = (await competitionByIsbn(db, [ISBN], DAY2)).get(ISBN);
   assert.equal(f.foto, montevideoDate(DAY2));
   assert.equal(f.competidores, 5);
   assert.equal(f.competidores_comparables, 2, 'usado, del exterior y a pedido quedan afuera');
@@ -74,7 +74,16 @@ test('foto diaria: competidores, primer lugar perdido, competidor que dejó de o
   assert.equal(f.primer_lugar, 'competing');
   const tipos = f.avisos.map(a => a.tipo).sort();
   assert.deepEqual(tipos, ['competidor_nuevo', 'competidor_sin_stock', 'precio_arriba', 'primer_lugar_perdido'].sort());
-  assert.match(f.avisos.find(a => a.tipo === 'competidor_sin_stock').texto, /VENDEDOR22.*probablemente lo vendió/);
+  // La venta nunca se afirma: el contador es de toda la cuenta del vendedor.
+  const sinStock = f.avisos.find(a => a.tipo === 'competidor_sin_stock');
+  assert.equal(sinStock.etiqueta, 'estimado');
+  assert.match(sinStock.texto, /VENDEDOR22 dejó de ofrecer.*estimado: su contador de ventas subió 5; puede ser cualquier otro libro/);
+  assert.doesNotMatch(sinStock.texto, /probablemente lo vendió/);
+  assert.equal(f.foto_completa, true);
+  assert.equal(f.foto_edad_horas, 0);
+  assert.equal(f.captura_posterior, null);
+  assert.deepEqual(f.listado, { total: 6, leidos: 6, sin_detalle: 0 });
+  assert.equal(f.etiquetas.ventas_competidor, 'desconocido');
   assert.match(f.avisos.find(a => a.tipo === 'primer_lugar_perdido').texto, /\$ 880/);
   assert.match(f.avisos.find(a => a.tipo === 'precio_arriba').texto, /33% arriba del más barato con entrega inmediata sin envío gratis/);
   const ev = await competitionEvents(db, { limit: 10 });
@@ -84,6 +93,114 @@ test('foto diaria: competidores, primer lugar perdido, competidor que dejó de o
   await runDay(db, state, DAY2 + 3600000);
   assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM comp_snapshots WHERE snap_date=?').get(montevideoDate(DAY2)).n, 6);
   assert.equal(db.sqlite.prepare("SELECT condition FROM comp_snapshots WHERE item_id='MLUC'").get().condition, 'new', 'condición completada con /items/bulk');
+  // Cada corrida con trabajo queda registrada con cupo usado y resultado por ficha.
+  const runs = db.sqlite.prepare('SELECT * FROM comp_runs ORDER BY id').all();
+  assert.ok(runs.length >= 2);
+  assert.ok(runs.every(r => r.calls_used > 0 && r.products_ok + r.products_partial + r.products_error === r.products));
+  const cov = await competitionCoverage(db, catalog, DAY2 + 3600000);
+  assert.equal(cov.vigilados, 1);
+  assert.equal(cov.segmentos.ventas_propias.hoy_completas, 1);
+  assert.equal(cov.segmentos.ventas_propias.pendientes_hoy, 0);
+  assert.equal(cov.catalogo.con_ficha_vigilados, 1);
+  assert.equal(cov.catalogo.con_ficha_sin_vigilar, 0);
+  assert.ok(cov.corridas_hoy.llamadas > 0);
+});
+
+// Mercado Libre paginado: la ficha dice que hay 3 vendedores y la segunda página
+// falla (o no llega). La foto queda parcial y no reemplaza a la última completa.
+function pagedMl({ total, secondPageFails = false, secondPage = [], sellersDelta = 0, usd = false, bulkFails = false }) {
+  return async url => {
+    const u = new URL(String(url));
+    if (u.pathname === '/products/MLU999/items') {
+      const offset = Number(u.searchParams.get('offset') || 0);
+      if (offset > 0) return secondPageFails ? new Response('boom', { status: 500 }) : Response.json({ paging: { total, offset, limit: 2 }, results: secondPage });
+      return Response.json({ paging: { total, offset: 0, limit: 2 }, results: [{ item_id: 'MLU2', seller_id: Number(OWN), price: 1200, currency_id: 'UYU', condition: 'new' }, { item_id: 'MLUA', seller_id: 11, price: usd ? 20 : 1000, currency_id: usd ? 'USD' : 'UYU', condition: 'new' }] });
+    }
+    if (u.pathname === '/items/bulk') { if (bulkFails) return new Response('boom', { status: 500 }); return Response.json(u.searchParams.get('ids').split(',').map(id => ({ status_code: 200, body: { id, condition: 'new', international_delivery_mode: 'none', sale_terms: [] } }))); }
+    if (u.pathname === '/items/MLU2/price_to_win') return Response.json({ status: 'competing', price_to_win: 990, winner: { item_id: 'MLUA' } });
+    const m = /^\/users\/(\d+)$/.exec(u.pathname);
+    if (m) return Response.json({ id: Number(m[1]), nickname: `VENDEDOR${m[1]}`, seller_reputation: { transactions: { completed: 50 + sellersDelta } } });
+    return new Response('nope', { status: 404 });
+  };
+}
+async function runWith(db, fetcher, nowMs, calls = 50) {
+  const comp = createMlCompetition({ fetcher, tokenProvider: async () => 'tok', now: () => nowMs, loadCatalog: async () => catalog });
+  let r;
+  for (let i = 0; i < 6; i++) { r = await comp.sync({ ORDERS_DB: db }, { calls }); if (['done', 'error', 'products_endpoint_unavailable', 'idle'].includes(r.state)) break; }
+  return r;
+}
+
+test('foto parcial: una página que falta nunca equivale a que un competidor se fue; se conserva la última foto completa y se muestra su edad', async t => {
+  const db = await seed(t);
+  const DAY3 = DAY2 + 86400000;
+  // Día 1 completo con 3 vendedores (dos páginas).
+  assert.equal((await runWith(db, pagedMl({ total: 3, secondPage: [{ item_id: 'MLUB', seller_id: 22, price: 1100, currency_id: 'UYU', condition: 'new' }] }), DAY1)).state, 'done');
+  let f = (await competitionByIsbn(db, [ISBN], DAY1)).get(ISBN);
+  assert.equal(f.competidores, 2);
+  assert.deepEqual(f.listado, { total: 3, leidos: 3, sin_detalle: 0 });
+  // Día 2: la segunda página falla → parcial. No hay aviso de "dejó de ofrecer".
+  assert.equal((await runWith(db, pagedMl({ total: 3, secondPageFails: true }), DAY2)).state, 'done');
+  assert.equal(db.sqlite.prepare('SELECT status,items_total,items_fetched,code FROM comp_product_days WHERE snap_date=?').get(montevideoDate(DAY2)).status, 'partial');
+  f = (await competitionByIsbn(db, [ISBN], DAY2 + 5 * 3600000)).get(ISBN);
+  assert.equal(f.foto, montevideoDate(DAY1), 'sigue valiendo la última foto completa');
+  assert.equal(f.foto_edad_horas, 29);
+  assert.deepEqual(f.captura_posterior, { estado: 'parcial', fecha: montevideoDate(DAY2), leidos: 2, total: 3, codigo: 'ml_http_500' });
+  assert.ok(!f.avisos.some(a => a.tipo === 'competidor_sin_stock'));
+  const cov = await competitionCoverage(db, catalog, DAY2 + 5 * 3600000);
+  assert.equal(cov.segmentos.ventas_propias.hoy_parciales, 1);
+  assert.equal(cov.segmentos.ventas_propias.foto_completa_mas_vieja, montevideoDate(DAY1));
+  assert.equal(cov.corridas_hoy.parciales, 1);
+  // Día 3: completo otra vez y VENDEDOR22 ya no está → ahora sí, contra la foto completa del día 1,
+  // y como "observado" porque su contador no subió.
+  assert.equal((await runWith(db, pagedMl({ total: 3, secondPage: [{ item_id: 'MLUC', seller_id: 33, price: 1050, currency_id: 'UYU', condition: 'new' }] }), DAY3)).state, 'done');
+  f = (await competitionByIsbn(db, [ISBN], DAY3)).get(ISBN);
+  assert.equal(f.foto, montevideoDate(DAY3));
+  assert.equal(f.foto_anterior, montevideoDate(DAY1));
+  const fue = f.avisos.find(a => a.tipo === 'competidor_sin_stock');
+  assert.equal(fue.etiqueta, 'observado');
+  assert.match(fue.texto, /VENDEDOR22 dejó de ofrecer este libro en el catálogo\.$/);
+  assert.ok(f.avisos.some(a => a.tipo === 'competidor_nuevo' && /VENDEDOR33/.test(a.texto)), 'reaparición/alta de un vendedor se ve como nuevo');
+  // Día 4: VENDEDOR22 vuelve → competidor nuevo otra vez, sin inventar ventas en el medio.
+  const DAY4 = DAY3 + 86400000;
+  assert.equal((await runWith(db, pagedMl({ total: 3, secondPage: [{ item_id: 'MLUB', seller_id: 22, price: 1100, currency_id: 'UYU', condition: 'new' }] }), DAY4)).state, 'done');
+  f = (await competitionByIsbn(db, [ISBN], DAY4)).get(ISBN);
+  assert.ok(f.avisos.some(a => a.tipo === 'competidor_nuevo' && /VENDEDOR22/.test(a.texto)));
+});
+
+test('captura en curso: una ficha que todavía no se leyó hoy sigue mostrando su última foto completa', async t => {
+  const db = await seed(t);
+  assert.equal((await runWith(db, pagedMl({ total: 2 }), DAY1)).state, 'done');
+  // Día 2 arranca (rearma objetivos) pero sin cupo para leer la ficha.
+  const comp = createMlCompetition({ fetcher: pagedMl({ total: 2 }), tokenProvider: async () => 'tok', now: () => DAY2, loadCatalog: async () => catalog });
+  const r = await comp.sync({ ORDERS_DB: db }, { calls: 0 });
+  assert.equal(r.targets, 1);
+  const f = (await competitionByIsbn(db, [ISBN], DAY2)).get(ISBN);
+  assert.equal(f.foto, montevideoDate(DAY1));
+  assert.equal(f.captura_posterior, null);
+  const cov = await competitionCoverage(db, catalog, DAY2);
+  assert.equal(cov.segmentos.ventas_propias.pendientes_hoy, 1);
+  assert.equal(cov.fase, 'products');
+});
+
+test('moneda distinta y datos desconocidos no entran en el precio comparable', async t => {
+  const db = await seed(t);
+  assert.equal((await runWith(db, pagedMl({ total: 3, usd: true, secondPage: [{ item_id: 'MLUB', seller_id: 22, price: 1100, currency_id: 'UYU', condition: 'new' }] }), DAY1)).state, 'done');
+  let f = (await competitionByIsbn(db, [ISBN], DAY1)).get(ISBN);
+  assert.equal(f.competidores, 2);
+  assert.equal(f.otra_moneda, 1, 'el de USD 20 no se compara con pesos');
+  assert.equal(f.competidores_comparables, 1);
+  assert.equal(f.precio_minimo, 1100);
+  // Sin /items/bulk no se sabe el plazo de entrega: desconocido, no "inmediato".
+  const db2 = await seed(t);
+  assert.equal((await runWith(db2, pagedMl({ total: 2, bulkFails: true }), DAY1)).state, 'done');
+  f = (await competitionByIsbn(db2, [ISBN], DAY1)).get(ISBN);
+  assert.equal(f.competidores, 1);
+  assert.equal(f.desconocidos, 1);
+  assert.equal(f.competidores_comparables, 0);
+  assert.equal(f.precio_minimo, null);
+  assert.equal(f.etiquetas.precio_minimo, 'desconocido');
+  assert.equal(f.listado.sin_detalle, 1);
+  assert.ok(!f.avisos.some(a => a.tipo === 'solos_en_catalogo'), 'un competidor sin datos no es "estás solo"');
 });
 
 test('si ML cierra el endpoint se detiene, lo registra y Salud lo muestra', async t => {

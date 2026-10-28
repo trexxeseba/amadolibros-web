@@ -30,13 +30,18 @@ ECDSA P-256 con la misma clave), con estos claims:
 | `ventas_titulo` | `{titulo}` | ventas por título (para ventas sin ISBN) |
 | `compras_titulo` | `{titulo}` | compras por título |
 | `revision_identidad` | `{limite: 1..100}` | ventas y compras sin ISBN, ordenadas por unidades, para resolver a mano |
-| `competencia_hoy` | `{limite: 1..100}` | novedades de competencia de la última foto diaria: perdiste/ganaste el 1.º lugar, competidor que dejó de ofrecer el libro (con "probablemente lo vendió" si subió su contador de ventas), competidor nuevo, solo en el catálogo, precio arriba/abajo |
+| `competencia_hoy` | `{limite: 1..100}` | novedades de competencia entre la última foto COMPLETA de cada ficha y la anterior completa: perdiste/ganaste el 1.º lugar, competidor que dejó de ofrecer el libro (etiqueta `estimado` si subió su contador de ventas: es de toda su cuenta, no prueba la venta de este libro), competidor nuevo, sin otra oferta comparable en la ficha, precio arriba/abajo. Cada evento trae `etiqueta` (observado / estimado) y `foto` |
+| `competencia_cobertura` | `{}` | cobertura y frescura de la vigilancia: por segmento (ventas propias / agotados) cuántas fichas tienen foto completa hoy, parciales, errores, pendientes, nunca completas y la foto completa más vieja; brechas del catálogo (títulos con ficha ML sin vigilar, sin ficha ML); corridas del día (llamadas, fichas, parciales) y las últimas 12 corridas |
+| `oportunidades` | `{estado?: pendiente|aprobado|descartado|pedido|recibido|resultado|todas, limite?: 1..200}` | bandeja de decisiones (subir precio, reponer N, tener con entrega inmediata) con acción, impacto por mes sustentado, confianza, cantidad y nivel, evidencia, enlaces, fecha de última observación y estado. Sólo lectura: el estado se cambia en `/panel/oportunidades` |
 
 Cada resultado de `reposicion_hechos` y `candidatos` trae además `avisos` (texto listo para mostrar; el primero suele ser
 "Compraste N hace X días (PROVEEDOR)" si hubo compra en los últimos 60 días) y `competencia` (competidores en el
-catálogo, precio mínimo, tu precio, precio relativo, estado del 1.º lugar y precio para ganar). La competencia sale de
-la API oficial de Mercado Libre: las ventas por libro de los competidores no se conocen; "probablemente lo vendió" es
-una inferencia.
+catálogo, comparables, a pedido, desconocidos, precio mínimo, tu precio, precio relativo, estado del 1.º lugar, precio
+para ganar, `foto`, `foto_edad_horas`, `captura_posterior` si hay una captura más nueva parcial o con error, `listado`
+con total/leídos, y `etiquetas`). La competencia sale de la API oficial de Mercado Libre: las ventas por libro de los
+competidores no se conocen (`etiquetas.ventas_competidor = desconocido`); un vendedor que dejó de ofrecer el libro y
+cuyo contador subió es `estimado`, nunca una venta confirmada. Una foto parcial (página faltante) o con error no
+reemplaza a la última completa y nunca equivale a agotamiento ni venta.
 
 ### Reglas de los datos
 - **Stock propio**: publicaciones propias activas en ML. La propia y la de catálogo comparten ejemplar: se toma el máximo. Las publicaciones `AMADO-AR-` (encargo SBS) no son stock.

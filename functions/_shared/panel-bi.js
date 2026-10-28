@@ -332,7 +332,7 @@ export async function loadSinStockMarket(db, aSinStock, model = null) {
     if (!f) return { estado: 'sin_dato' };
     resumen.vigilados++;
     const nacionales = f.competidores_comparables ?? 0, min = f.precio_minimo;
-    if (!nacionales || min == null) { resumen.solo++; return { estado: 'solo', nacionales: 0, texto: `Nadie más lo tiene con entrega inmediata${f.competidores_a_pedido ? ` (${f.competidores_a_pedido} lo venden a pedido)` : ''}: reponer y quedarte con la venta.` }; }
+    if (!nacionales || min == null) { resumen.solo++; return { estado: 'solo', nacionales: 0, texto: `No detectamos otra oferta comparable con entrega inmediata en la ficha de ML${f.competidores_a_pedido ? ` (${f.competidores_a_pedido} lo venden a pedido)` : ''}${f.desconocidos ? ` (${f.desconocidos} sin datos de entrega)` : ''}: reponer y quedarte con la venta.` }; }
     const c = model?.costs.get(b.isbn), atMin = c ? marginOf(min, c.cost, model.feeRate) : null;
     if (atMin) {
       if (atMin.margin > 0) { resumen.sostenible++; return { estado: 'sostenible', nacionales, min, margenAlMin: atMin.margin, texto: `${nacionales} lo tienen con entrega inmediata; al precio del más barato todavía ganás $ ${atMin.margin.toLocaleString('es-UY')} por libro: conviene reponer.` }; }

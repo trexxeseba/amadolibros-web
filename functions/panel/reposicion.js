@@ -43,7 +43,7 @@ th{font-size:12px;text-transform:uppercase;color:#666;letter-spacing:.02em}td.n,
 ul.r{margin:4px 0 0;padding-left:16px;font-size:12px;color:#555}ul.av{margin:6px 0 0;padding-left:16px;font-size:12px;color:#8a5a00}li.av-compra{color:#9a2b18;font-weight:600}form{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 input[type=text]{font:inherit;padding:8px;min-width:280px;flex:1;border:1px solid #ccc;border-radius:6px}button,.btn{font:inherit;padding:8px 14px;border-radius:6px;border:1px solid #a94e3d;background:#a94e3d;color:#fff;cursor:pointer;text-decoration:none}
 .btn.sec{background:#fff;color:#a94e3d}a{color:#a94e3d}
-</style><main><p><a href="/panel">← Panel</a></p>${body}</main></html>`, {
+</style><main><p><a href="/panel">← Panel</a> · <a href="/panel/oportunidades">Oportunidades</a> · <a href="/panel/inteligencia">Brújula</a></p>${body}</main></html>`, {
     status, headers: { 'Content-Type': 'text/html;charset=UTF-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'same-origin', 'X-Frame-Options': 'DENY',
       'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'" },
   });
@@ -67,13 +67,34 @@ const money = v => v == null ? '—' : `$ ${Math.round(v).toLocaleString('es-UY'
 const FIRST_PLACE = { winning: 'ganás el 1.º lugar', competing: 'compitiendo', sharing_first_place: '1.º lugar compartido', listed: 'sin competir' };
 const EVENT_LABEL = { primer_lugar_perdido: 'Perdiste el 1.º lugar', competidor_sin_stock: 'Competidor dejó de ofrecerlo', solos_en_catalogo: 'Solo en el catálogo', precio_arriba: 'Precio arriba', competidor_nuevo: 'Competidor nuevo', primer_lugar_ganado: 'Ganaste el 1.º lugar', precio_abajo: 'Precio muy abajo' };
 
+const ETIQUETA = { observado: ['bien', 'observado'], estimado: ['aviso', 'estimado'], desconocido: ['grave', 'desconocido'] };
+const etiqueta = k => { const [t, l] = ETIQUETA[k] ?? ETIQUETA.desconocido; return `<span class="p p-${t}">${l}</span>`; };
+
 function competitionBlock(ev) {
-  if (!ev?.foto) return '<div class="card"><p class="muted">La vigilancia de competencia todavía no tiene fotos: la primera se arma en el día, por tandas.</p></div>';
+  if (!ev?.foto) return '<div class="card"><p class="muted">La vigilancia de competencia todavía no tiene fotos completas: la primera se arma en el día, por tandas.</p></div>';
   const counts = Object.entries(ev.por_tipo ?? {}).map(([k, n]) => `<span class="p p-${k === 'primer_lugar_perdido' || k === 'precio_arriba' ? 'grave' : k === 'competidor_sin_stock' || k === 'solos_en_catalogo' ? 'bien' : 'aviso'}">${esc(EVENT_LABEL[k] ?? k)}: ${n}</span>`).join(' ');
-  const rows = ev.eventos.map(e => `<tr><td><a href="/panel/reposicion?q=${esc(e.isbn)}">${esc(e.isbn)}</a></td><td>${esc(EVENT_LABEL[e.tipo] ?? e.tipo)}</td><td>${esc(e.texto)}</td></tr>`).join('');
-  return `<div class="card"><p class="muted">Foto del ${esc(day(ev.foto))} contra la anterior · ${ev.vigilados} productos de catálogo vigilados (los libros que más vendés).</p>
+  const rows = ev.eventos.map(e => `<tr><td><a href="/panel/reposicion?q=${esc(e.isbn)}">${esc(e.isbn)}</a></td><td>${esc(EVENT_LABEL[e.tipo] ?? e.tipo)}</td><td>${esc(e.texto)}</td><td>${etiqueta(e.etiqueta)}</td><td class="n">${esc(day(e.foto))}</td></tr>`).join('');
+  return `<div class="card"><p class="muted">Última foto completa del ${esc(day(ev.foto))} contra la anterior completa de cada ficha · ${ev.con_foto_completa ?? ev.vigilados} de ${ev.vigilados} fichas vigiladas con foto completa.</p>
   ${counts ? `<p>${counts}</p>` : '<p class="muted">Sin novedades respecto de la foto anterior.</p>'}
-  ${rows ? `<div class="scroll"><table><thead><tr><th>ISBN</th><th>Qué pasó</th><th>Detalle</th></tr></thead><tbody>${rows}</tbody></table></div>` : ''}</div>`;
+  ${rows ? `<div class="scroll"><table><thead><tr><th>ISBN</th><th>Qué pasó</th><th>Detalle</th><th>Dato</th><th class="n">Foto</th></tr></thead><tbody>${rows}</tbody></table></div>` : ''}
+  <p class="muted">${etiqueta('observado')} se vio en la ficha · ${etiqueta('estimado')} se infiere (un vendedor que dejó de ofrecerlo y cuyo contador de ventas subió: ese contador es de toda su cuenta, no prueba la venta de este libro) · ${etiqueta('desconocido')} ML no lo informó.</p></div>`;
+}
+
+// Cobertura y frescura de la vigilancia: qué se revisó hoy, qué falta, qué edad
+// tiene la foto más vieja y qué parte del catálogo no se mira.
+function coverageBlock(c) {
+  if (!c) return '';
+  const seg = (nombre, s) => `<tr><td>${nombre}</td><td class="n">${s.total}</td><td class="n">${s.hoy_completas}</td><td class="n">${s.hoy_parciales ? `<span class="p p-aviso">${s.hoy_parciales}</span>` : 0}</td><td class="n">${s.hoy_errores ? `<span class="p p-grave">${s.hoy_errores}</span>` : 0}</td><td class="n">${s.pendientes_hoy}</td><td class="n">${s.sin_foto_completa ? `<span class="p p-grave">${s.sin_foto_completa}</span>` : 0}</td><td class="n">${s.foto_completa_mas_vieja ? `${esc(day(s.foto_completa_mas_vieja))}${s.edad_max_horas != null ? ` (${s.edad_max_horas} h)` : ''}` : '—'}</td></tr>`;
+  const caps = Object.entries(c.capacidades ?? {}).filter(([, v]) => v && v !== 'ok').map(([k, v]) => `${esc(k)}: ${esc(String(v).replace('ml_http_', 'HTTP '))}`);
+  const cat = c.catalogo;
+  const runs = (c.corridas ?? []).slice(0, 6).map(r => `<tr><td>${esc(new Date(r.inicio).toISOString().slice(11, 16))} UTC</td><td>${esc(r.estado)}${r.codigo ? ` <small>(${esc(r.codigo)})</small>` : ''}</td><td class="n">${r.fichas}</td><td class="n">${r.completas}</td><td class="n">${r.parciales}</td><td class="n">${r.errores}</td><td class="n">${r.vendedores}</td><td class="n">${r.llamadas}</td><td class="n">${Math.round(r.duracion_ms / 1000)} s</td></tr>`).join('');
+  return `<div class="card">
+  <p class="muted">Hoy ${esc(day(c.fecha))}: foto del día ${esc(c.foto_del_dia ? day(c.foto_del_dia) : '—')}, fase <b>${esc(c.fase ?? '—')}</b> · ${c.corridas_hoy.cantidad} corridas, ${c.corridas_hoy.llamadas} llamadas a ML, ${c.corridas_hoy.fichas} fichas leídas${c.corridas_hoy.parciales ? `, ${c.corridas_hoy.parciales} parciales` : ''}${c.corridas_hoy.errores ? `, ${c.corridas_hoy.errores} con error` : ''}${caps.length ? ` · sin acceso: ${caps.join(', ')}` : ''}.</p>
+  <div class="scroll"><table><thead><tr><th>Segmento</th><th class="n">Vigiladas</th><th class="n">Hoy completas</th><th class="n">Parciales</th><th class="n">Errores</th><th class="n">Pendientes hoy</th><th class="n">Nunca completa</th><th class="n">Foto completa más vieja</th></tr></thead>
+  <tbody>${seg('Con ventas propias en el año', c.segmentos.ventas_propias)}${seg('Agotados (fuera del catálogo)', c.segmentos.agotados)}</tbody></table></div>
+  ${cat ? `<p class="muted">Brechas del radar: ${cat.con_ficha_vigilados} de ${cat.con_ficha_ml} títulos activos con ficha de catálogo ML están vigilados (tope ${cat.tope_vigilados}, por ventas propias); <b>${cat.con_ficha_sin_vigilar}</b> con ficha quedan sin foto y <b>${cat.sin_ficha_ml}</b> títulos activos no tienen ficha de catálogo (sin ficha no hay listado de vendedores comparable por API). ${cat.publicaciones_sin_isbn} publicaciones activas sin ISBN.</p>` : ''}
+  ${runs ? `<details><summary class="muted">Últimas corridas</summary><div class="scroll"><table><thead><tr><th>Inicio</th><th>Estado</th><th class="n">Fichas</th><th class="n">Completas</th><th class="n">Parciales</th><th class="n">Errores</th><th class="n">Vendedores</th><th class="n">Llamadas</th><th class="n">Duración</th></tr></thead><tbody>${runs}</tbody></table></div></details>` : ''}
+  <p class="muted">Una ficha cuenta como completa sólo si se leyó todo su listado (todas las páginas). Una foto parcial o con error nunca se usa para decir que un competidor se quedó sin stock ni que vendió.</p></div>`;
 }
 
 function factsTable(results) {
@@ -86,7 +107,7 @@ function factsTable(results) {
     const v = r.ventas, c = r.compras;
     const sbs = r.sbs.feed_fecha ? `${esc(r.sbs.disponible === 'no_figura' ? 'no figura' : r.sbs.disponible)}${r.sbs.vigente ? '' : ' <small>(feed viejo)</small>'}` : '<small>sin feed</small>';
     const k = r.competencia;
-    const comp = k ? `${k.competidores}${k.precio_minimo != null ? `<br><small>desde ${esc(money(k.precio_minimo))}</small>` : ''}${k.primer_lugar ? `<br><small>${esc(FIRST_PLACE[k.primer_lugar] ?? k.primer_lugar)}</small>` : ''}` : '<small>—</small>';
+    const comp = k ? `${k.competidores}${k.precio_minimo != null ? `<br><small>desde ${esc(money(k.precio_minimo))} (${k.competidores_comparables} comparables)</small>` : k.competidores ? '<br><small>sin comparable inmediato</small>' : ''}${k.primer_lugar ? `<br><small>${esc(FIRST_PLACE[k.primer_lugar] ?? k.primer_lugar)}</small>` : ''}<br><small>foto ${esc(day(k.foto))}${k.foto_edad_horas != null ? ` (${k.foto_edad_horas} h)` : ''}${k.captura_posterior ? ` · <span class="p p-aviso">captura ${esc(k.captura_posterior.estado)} ${esc(day(k.captura_posterior.fecha))}</span>` : ''}${k.desconocidos ? ` · ${k.desconocidos} sin dato` : ''}</small>` : '<small>—</small>';
     const alerts = (r.avisos ?? []).map(a => `<li class="${a.tipo === 'compra_reciente' ? 'av-compra' : ''}">${esc(a.texto)}</li>`).join('');
     return `<tr>
       <td><div class="tit">${esc(r.titulo ?? '—')}</div><small>${esc(r.isbn)}${pubs ? ` · ${pubs}` : ''}</small>${alerts ? `<ul class="av">${alerts}</ul>` : ''}</td>
@@ -160,7 +181,8 @@ export function createReposicionPanel({ factsFactory = ctx => createReposicionFa
       }
       const queue = await facts.identityQueue(db, 10);
       const ev = q ? null : await facts.events(db, 30).catch(() => null);
-      return page(`<h1>Reposición</h1>${LEGEND}<h2>Estado de los datos</h2>${globalBlock(g)}${q ? '' : `<h2>Competencia hoy</h2>${competitionBlock(ev)}`}${searchForm(q)}<h2>${esc(title)}</h2>${body}${extra}${identityBlock(queue)}`);
+      const cov = q ? null : await facts.coverage(db).catch(() => null);
+      return page(`<h1>Reposición</h1>${LEGEND}<h2>Estado de los datos</h2>${globalBlock(g)}${q ? '' : `<h2>Competencia hoy</h2>${competitionBlock(ev)}<h2>Cobertura de la vigilancia</h2>${coverageBlock(cov)}`}${searchForm(q)}<h2>${esc(title)}</h2>${body}${extra}${identityBlock(queue)}`);
     } catch (error) {
       return page(`<h1>Reposición</h1>${searchForm(q)}<p class="p p-grave">No se pudo armar la vista: ${esc(error?.code || error?.message || 'error')}</p>`, error?.status && error.status < 500 ? error.status : 500);
     }

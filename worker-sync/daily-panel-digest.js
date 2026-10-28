@@ -17,6 +17,8 @@
 import { readSalesHealth, evaluateSalesHealth } from './sales-health.js';
 import { competitionEvents } from './ml-competition.js';
 import { loadBi, brujulaDigest } from '../functions/_shared/panel-bi.js';
+import { createReposicionFacts } from './reposicion-facts.js';
+import { refreshOpportunities, pendingToNotify, markNotified, opportunitySummary, OPPORTUNITY_TYPES } from './oportunidades.js';
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const EMAIL_TIMEOUT_MS = 7000;
@@ -77,8 +79,18 @@ export async function loadDigestData(db, now = new Date(), { catalog = null } = 
   ]);
   // Brújula: qué reponer, a qué subirle el precio, qué se agota y qué se vende
   // a pérdida. Si algo falla, el correo sale igual sin esta parte.
-  let brujula = null;
-  if (catalog) { try { brujula = brujulaDigest(await loadBi(db, catalog, now.getTime())); } catch { brujula = null; } }
+  let brujula = null, bi = null;
+  if (catalog) { try { bi = await loadBi(db, catalog, now.getTime()); brujula = brujulaDigest(bi); } catch { brujula = null; } }
+  // Bandeja: las sugerencias se guardan con estado y sólo se avisan una vez; las
+  // pendientes siguen contando hasta que Seba las resuelva.
+  let bandeja = null;
+  if (bi) {
+    try {
+      const facts = createReposicionFacts({ now: () => now.getTime(), loadCatalog: async () => catalog });
+      await refreshOpportunities(db, { bi, catalog, factsFor: isbns => facts.facts(db, isbns), nowMs: now.getTime() });
+      bandeja = { resumen: await opportunitySummary(db, now.getTime()), nuevas: await pendingToNotify(db, { limit: 8, nowMs: now.getTime() }) };
+    } catch { bandeja = null; }
+  }
   return {
     yesterday,
     toShip,
@@ -92,7 +104,38 @@ export async function loadDigestData(db, now = new Date(), { catalog = null } = 
     // Sólo si hubo novedades de competencia en la última foto.
     competition: competencia?.eventos?.length ? competencia : null,
     brujula,
+    bandeja,
   };
+}
+
+// Recálculo de la bandeja fuera del correo (ruta manual del Worker).
+export async function refreshOpportunitiesFromWorker(env, { now = new Date() } = {}) {
+  const db = env?.ORDERS_DB;
+  if (!db) return { state: 'error', code: 'storage_not_configured' };
+  const catalog = await env.CATALOG_R2?.get('catalog.json').then(obj => (obj ? obj.json() : null)).catch(() => null);
+  if (!catalog) return { state: 'error', code: 'catalog_unavailable' };
+  const bi = await loadBi(db, catalog, now.getTime());
+  const facts = createReposicionFacts({ now: () => now.getTime(), loadCatalog: async () => catalog });
+  const r = await refreshOpportunities(db, { bi, catalog, factsFor: isbns => facts.facts(db, isbns), nowMs: now.getTime() });
+  return { ...r, resumen: await opportunitySummary(db, now.getTime()) };
+}
+
+const BANDEJA_URL = `${PANEL_URL}/oportunidades`;
+const bandejaLine = o => `${o.titulo ?? o.isbn} · ${OPPORTUNITY_TYPES[o.tipo] ?? o.tipo}: ${o.accion ?? ''}${o.impacto_mes ? ` (unos ${money(o.impacto_mes)} más por mes)` : ''} · confianza ${o.confianza ?? '—'}`;
+function bandejaText(b) {
+  if (!b?.resumen) return [];
+  const pend = b.resumen.pendientes_vigentes ?? 0;
+  const out = [`BANDEJA DE OPORTUNIDADES — ${pend} pendiente${pend === 1 ? '' : 's'} de decidir`];
+  if (b.nuevas?.length) out.push('  Nuevas desde el último correo:', ...b.nuevas.map(o => `  - ${bandejaLine(o)}`));
+  out.push(`  Decidir (aprobar, descartar, pedido, recibido) en ${BANDEJA_URL}`, '');
+  return out;
+}
+function bandejaHtml(b) {
+  if (!b?.resumen) return '';
+  const pend = b.resumen.pendientes_vigentes ?? 0;
+  const list = b.nuevas?.length ? `<p style="margin:6px 0 2px;color:#555">Nuevas desde el último correo:</p><ul style="margin:0;padding-left:18px">${b.nuevas.map(o => `<li style="margin:3px 0"><a href="${escapeHtml(bookLink(o.isbn))}" style="color:#a94e3d">${escapeHtml(o.titulo ?? o.isbn)}</a> · ${escapeHtml(OPPORTUNITY_TYPES[o.tipo] ?? o.tipo)}: ${escapeHtml(o.accion ?? '')}${o.impacto_mes ? ` (unos ${escapeHtml(money(o.impacto_mes))} más por mes)` : ''} · confianza ${escapeHtml(o.confianza ?? '—')}</li>`).join('')}</ul>` : '';
+  return `<h2 style="font-size:17px;margin:24px 0 6px">Bandeja de oportunidades <span style="color:#888;font-weight:normal">(${pend} pendiente${pend === 1 ? '' : 's'})</span></h2>${list}
+    <p style="margin:8px 0"><a href="${BANDEJA_URL}" style="color:#a94e3d">Decidir en la bandeja</a></p>`;
 }
 
 const BRUJULA_URL = `${PANEL_URL}/inteligencia`;
@@ -169,6 +212,7 @@ export function buildDigestEmail(data) {
     ] : []),
     ...(data.systemProblems?.length ? ['SISTEMA — revisar', ...data.systemProblems.map(p => `- ${p}`), ''] : []),
     ...brujulaText(data.brujula),
+    ...bandejaText(data.bandeja),
     ...(data.competition ? ['COMPETENCIA EN MERCADO LIBRE', ...data.competition.eventos.map(e => `- ${e.isbn}: ${e.texto}`), `  Todo en ${PANEL_URL}/reposicion`, ''] : []),
     'AYER',
     `- Pedidos nuevos: ${data.createdCount}`,
@@ -199,6 +243,7 @@ export function buildDigestEmail(data) {
     <table style="border-collapse:collapse;width:100%;font-size:14px">${wa.slice(0, MAX_ROWS).map(r => `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee"><a href="https://wa.me/${escapeHtml(r.whatsapp)}" style="color:#a94e3d;font-weight:bold;text-decoration:none">+${escapeHtml(r.whatsapp)}</a></td><td style="padding:6px 8px;border-bottom:1px solid #eee">${escapeHtml(r.product_title)}</td></tr>`).join('')}</table>` : ''}
     ${data.systemProblems?.length ? `<h2 style="font-size:17px;margin:24px 0 6px;color:#9a3412">Sistema: revisar</h2><ul>${data.systemProblems.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>` : ''}
     ${brujulaHtml(data.brujula)}
+    ${bandejaHtml(data.bandeja)}
     ${data.competition ? `<h2 style="font-size:17px;margin:24px 0 6px">Competencia en Mercado Libre</h2><ul>${data.competition.eventos.map(e => `<li><a href="${escapeHtml(`${PANEL_URL}/reposicion?q=${e.isbn}`)}" style="color:#a94e3d">${escapeHtml(e.isbn)}</a>: ${escapeHtml(e.texto)}</li>`).join('')}</ul>` : ''}
     <h2 style="font-size:17px;margin:24px 0 6px">Ayer</h2>
     <p style="margin:4px 0">Pedidos nuevos: <strong>${data.createdCount}</strong><br>
@@ -257,7 +302,11 @@ export async function sendDailyPanelDigest(env, { now = new Date(), fetchFn = gl
     const email = buildDigestEmail(data);
     if (test) email.subject = `[PRUEBA] ${email.subject}`;
     const result = await sendEmail({ apiKey, from, to, email, idempotencyKey: test ? `panel-digest-test/${now.toISOString()}` : `panel-digest/${today}` }, fetchFn);
-    if (result.ok) return { status: 'sent', toShip: data.toShip.length, unpaid: data.unpaid.length };
+    if (result.ok) {
+      // Las oportunidades avisadas no se repiten mañana (una prueba no las marca).
+      if (!test && data.bandeja?.nuevas?.length) await markNotified(env.ORDERS_DB, data.bandeja.nuevas.map(o => o.id), now.getTime()).catch(() => {});
+      return { status: 'sent', toShip: data.toShip.length, unpaid: data.unpaid.length, oportunidades_avisadas: data.bandeja?.nuevas?.length ?? 0 };
+    }
     if (useClaim) await env.AMADO_KV.delete(claimKey);
     console.warn('[panel digest] Resend no lo aceptó', { status: result.status, error: result.error });
     return { status: 'failed' };

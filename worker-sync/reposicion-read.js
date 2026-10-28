@@ -10,12 +10,13 @@ import { OPERATIONS_PUBLIC_KEY, OPERATIONS_ISSUER } from './operations-read.js';
 import { salesByTitle, SALES_SELLER_ID } from './ml-sales.js';
 import { purchasesByTitle } from './purchases.js';
 import { createReposicionFacts, ownStockIndex } from './reposicion-facts.js';
+import { listOpportunities, opportunitySummary, OPPORTUNITY_STATES } from './oportunidades.js';
 
 export { ownStockIndex };
 
 export const REPOSICION_PATH = '/operations/reposicion';
 export const REPOSICION_AUD = 'amado-reposicion-read';
-const ACTIONS = ['estado', 'reposicion_hechos', 'candidatos', 'ventas_titulo', 'compras_titulo', 'revision_identidad', 'competencia_hoy'];
+const ACTIONS = ['estado', 'reposicion_hechos', 'candidatos', 'ventas_titulo', 'compras_titulo', 'revision_identidad', 'competencia_hoy', 'competencia_cobertura', 'oportunidades'];
 
 class RepoError extends Error { constructor(code, status = 400) { super(code); this.code = code; this.status = status; } }
 const reply = (data, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
@@ -69,6 +70,13 @@ export function createReposicionReader({ now = Date.now, publicKey = OPERATIONS_
     if (action === 'compras_titulo') return { resultados: await purchasesByTitle(db, titleArg(args(a, ['titulo']))) };
     if (action === 'revision_identidad') return f.identityQueue(db, limitArg(args(a, ['limite']), 100));
     if (action === 'competencia_hoy') return f.events(db, limitArg(args(a, ['limite']), 100));
+    if (action === 'competencia_cobertura') { args(a, []); return f.coverage(db); }
+    if (action === 'oportunidades') {
+      const o = args(a, ['estado', 'limite']);
+      const estado = o.estado == null ? 'pendiente' : String(o.estado);
+      if (estado !== 'todas' && !OPPORTUNITY_STATES.includes(estado)) throw new RepoError('invalid_args');
+      return { resumen: await opportunitySummary(db, now()), oportunidades: await listOpportunities(db, { estado, limit: limitArg(o, 200), nowMs: now() }) };
+    }
     throw new RepoError('unknown_action');
   }
 

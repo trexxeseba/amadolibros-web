@@ -129,10 +129,10 @@ function competitionBlock(s) {
   const tile = (l, v, extra) => `<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="muted">${extra}</div></div>`;
   return `<div class="grid">
     ${tile('Ganás el 1.º lugar', c.ganandoPct == null ? '—' : `${c.ganandoPct}%`, `${num(c.ganando)} de ${num(c.conEstado)} libros con publicación de catálogo`)}
-    ${tile('Solo en el catálogo', num(c.solos), 'nadie más ofrece el libro: margen para subir precio')}
+    ${tile('Sin oferta comparable', num(c.solos), 'no detectamos otra oferta comparable en la ficha de ML: margen para subir precio')}
     ${tile('Precio vs mercado', c.medianaPrecio == null ? '—' : `${Math.round(c.medianaPrecio * 100)}%`, 'tu precio frente al más barato nuevo (mediana; 100% = igual)')}
     ${tile('Más caros que el mercado', num(c.masCaros), '15% o más arriba del más barato nuevo')}
-  </div><p class="muted">${num(c.vigilados)} productos de catálogo vigilados a diario (los libros que más vendés). Detalle en <a href="/panel/reposicion">Reposición</a>.</p>`;
+  </div><p class="muted">${num(c.vigilados)} productos de catálogo con foto completa (los libros que más vendés; la foto diaria cubre hasta 400 fichas). Cobertura y detalle en <a href="/panel/reposicion">Reposición</a>; decisiones en <a href="/panel/oportunidades">Oportunidades</a>.</p>`;
 }
 
 function marginBlock(s) {
@@ -168,10 +168,10 @@ function raisesBlock(s) {
   return `<div class="grid">
     ${tile('Muy por debajo del mercado', num(v.total), `${Math.round((1 - v.umbral) * 100)}% o más abajo del más barato con entrega inmediata (o de los que lo venden a pedido, si sos el único inmediato) · ${num(v.conStock)} con stock`)}
     ${tile('Plata extra por mes', money(v.ganaMesTotal), 'si les ponés el precio sugerido y siguen vendiendo igual')}
-    ${tile('Solo vos los vendés', num(v.solosTotal), 'nadie más lo tiene con entrega inmediata')}
+    ${tile('Sin otra oferta inmediata', num(v.solosTotal), 'no detectamos otra oferta comparable con entrega inmediata en la ficha de ML')}
   </div>
   ${v.lista.length ? `<div class="card scroll" style="margin-top:12px"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio</th><th class="n">Más barato (vendedores)</th><th class="n">Precio sugerido</th><th class="n">Más por mes</th><th class="n">Te queda por libro</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="card"><p class="muted">Ningún libro está muy por debajo del mercado hoy.</p></div>'}
-  ${v.solos.length ? `<h2>Solo vos lo tenés con entrega inmediata: probá subir 10%</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio</th><th class="n">Probá con</th><th class="n">Más por mes</th></tr></thead><tbody>${solos}</tbody></table></div>` : ''}
+  ${v.solos.length ? `<h2>Sin otra oferta inmediata detectada: probá subir 10%</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio</th><th class="n">Probá con</th><th class="n">Más por mes</th></tr></thead><tbody>${solos}</tbody></table></div>` : ''}
   <p class="muted">Precio sugerido: 2% debajo del competidor más barato con entrega inmediata; si sos el único inmediato, 2% debajo del más barato a pedido (marcado "a pedido"). Redondeado, con la foto diaria de ML. Los agotados usan tu precio promedio de venta: es el precio para cuando lo repongas. "Más por mes" supone que se sigue vendiendo como en los últimos 90 días. El panel sólo sugiere: los precios se cambian en Mercado Libre.</p>`;
 }
 
