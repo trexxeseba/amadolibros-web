@@ -47,6 +47,7 @@ import { IMAGE_SOURCE_POLICY_VERSION } from '../functions/_shared/image-source-p
 import { getAccessToken } from './meli-auth.js';
 import { handleOperationsRead, OPERATIONS_PATH } from './operations-read.js';
 import { handleAttributeAudit } from './attribute-audit-read.js';
+import { handleSellerPromotions } from './seller-promotions.js';
 import { handlePublicationRoute } from './publication-routes.js';
 import { publicationService } from './publication-engine.js';
 import { createPublicationQueueHandler } from './publication-queue.js';
@@ -211,6 +212,8 @@ export default {
     if (request.method === 'POST' && url.pathname === '/competition/sync') return json(await mlCompetition.sync(env, { calls: 120, deadlineMs: 25000 }));
     // Lectura de atributos de libros (solo lectura), detrás de SYNC_SECRET.
     if (url.pathname === '/attribute-audit') return handleAttributeAudit(request, env);
+    // Promociones de Amado Libros por API: lectura y salir de promo / sumar a relámpago (solo con confirm), detrás de SYNC_SECRET.
+    if (url.pathname === '/meli-promos') return handleSellerPromotions(request, env);
 
     if (request.method === 'GET' && url.pathname === '/status') {
       return json(await readStatus(env));
