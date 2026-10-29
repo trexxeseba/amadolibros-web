@@ -127,3 +127,19 @@ test('panel de reposición: exige sesión y muestra candidatos, búsqueda por IS
   assert.match(byTitle.html, /Búsqueda por título/);
   assert.ok(!/<script/i.test(cand.html));
 });
+
+test('acciones nuevas de solo lectura: cobertura de competencia, bandeja y long tail no rompen sin datos de competencia', async t => {
+  const { env, read } = await fixture(t);
+  const cov = await (await read(await signed('competencia_cobertura', {}), env)).json();
+  assert.equal(cov.read_only, true);
+  assert.equal(cov.data, null, 'sin tablas de competencia todavía: sin datos, no error');
+  const op = await (await read(await signed('oportunidades', { estado: 'pendiente', limite: 5 }), env)).json();
+  assert.deepEqual(op.data.oportunidades, []);
+  assert.equal(op.data.resumen.pendientes_vigentes, 0);
+  assert.equal((await read(await signed('oportunidades', { estado: 'otra' }), env)).status, 400);
+  const lt = await (await read(await signed('long_tail', { categoria: 'quiebre', limite: 10 }), env)).json();
+  assert.equal(lt.data.conteo.quiebre, 1, 'ISBN con ventas y sin stock');
+  assert.equal(lt.data.titulos[0].isbn, ISBN);
+  assert.equal(lt.data.titulos[0].visitas, 'desconocidas');
+  assert.equal(lt.data.conteo.oferta_con_ventas, 1);
+});

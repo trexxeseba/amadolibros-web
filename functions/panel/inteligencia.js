@@ -5,6 +5,7 @@
 import { deriveSessionSecret, hasValidSession, resolvePanelConfig } from '../_shared/panel-auth.js';
 import { fetchCatalog } from '../_shared/catalog.js';
 import { loadBi } from '../_shared/panel-bi.js';
+import { CATEGORIAS } from '../../worker-sync/long-tail.js';
 
 const ORIGIN = 'https://www.amadolibros.com';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -51,7 +52,7 @@ function kpiBlock(s) {
 }
 
 const VEREDICTO = { solo: ['t-a', 'Reponer: nadie lo tiene'], sostenible: ['t-a', 'Conviene reponer'], mas_barato: ['t-b', 'Mirar el costo'], no_conviene: ['t-bad', 'No conviene'], sin_dato: ['t-c', 'Por verificar'] };
-function sinStockTable(items) {
+function sinStockTable(items, catalogoActualizado) {
   if (!items?.length) return '';
   const rows = items.map(b => {
     const m = b.mercado ?? { estado: 'sin_dato' }, [cls, label] = VEREDICTO[m.estado] ?? VEREDICTO.sin_dato;
@@ -60,7 +61,10 @@ function sinStockTable(items) {
       <td class="n">${num(b.u90)}</td><td class="n">${b.avgPrice ? money(b.avgPrice) : '—'}</td><td class="n">${m.estado === 'sin_dato' ? '—' : num(m.nacionales)}</td>
       <td class="n">${m.min != null ? money(m.min) : '—'}</td><td class="n">${b.costo ? money(b.costo) : '—'}</td><td class="n">${b.margen ? `<span class="${b.margen.margin < 0 ? 'down' : 'up'}">${money(b.margen.margin)}</span>` : '—'}</td><td>${compra}</td><td><span class="tag ${cls}">${label}</span></td></tr>`;
   }).join('');
-  return `<h2>Libros A sin stock: ¿conviene reponer?</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio prom.</th><th class="n">Con entrega inmediata</th><th class="n">Más barato inmediato</th><th class="n">Costo hoy</th><th class="n">Ganás por libro</th><th>Última compra</th><th>Qué hacer</th></tr></thead><tbody>${rows}</tbody></table>
+  // "Sin stock" es al momento de esta foto del catálogo, no en vivo: una
+  // reposición física después de esa hora todavía no se ve acá.
+  const frescura = catalogoActualizado ? `Stock propio al ${esc(new Date(catalogoActualizado).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }))} (hora Montevideo). Si repusiste después, todavía no se refleja acá.` : 'Sin fecha del catálogo: no se sabe qué tan vieja es esta foto.';
+  return `<h2>Libros A sin stock: ¿conviene reponer?</h2><p class="muted">${frescura}</p><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio prom.</th><th class="n">Con entrega inmediata</th><th class="n">Más barato inmediato</th><th class="n">Costo hoy</th><th class="n">Ganás por libro</th><th>Última compra</th><th>Qué hacer</th></tr></thead><tbody>${rows}</tbody></table>
     <p class="muted">"Con entrega inmediata": vendedores con el libro nuevo, sin envío del exterior y sin días de preparación en la publicación de catálogo de ML (foto diaria). Los que lo venden a pedido no cuentan. Los 15 que más vendían.</p></div>`;
 }
 
@@ -90,7 +94,7 @@ function abcBlock(s) {
     <div class="card"><div class="scroll"><table><thead><tr><th>Top libros A</th><th class="n">Vendidos 365 d</th><th class="n">Facturado</th><th class="n">Stock</th></tr></thead><tbody>${top}</tbody></table></div></div></div>`;
 }
 
-function inventoryBlock(s) {
+function inventoryBlock(s, catalogoActualizado) {
   if (!s.ok) return failed(s);
   const v = s.data;
   const list = (items, cols) => items.length ? `<div class="scroll"><table><tbody>${items.map(cols).join('')}</tbody></table></div>` : '<p class="muted">Ninguno.</p>';
@@ -102,7 +106,7 @@ function inventoryBlock(s) {
       <p class="muted">Stock para menos de ${15 * 2} días al ritmo actual (el proveedor tarda ~15).</p>${list(v.coberturaBaja, b => `<tr><td>${link(b)}</td><td class="n">${b.dias} días</td></tr>`)}</div>
     <div class="card"><div class="kpi"><div class="l">Stock muerto</div><div class="v">${num(v.muertoCount)}</div></div>
       <p class="muted">${num(v.muertoUnidades)} unidades con stock y sin ventas en 6 meses: candidatos a promoción o rebaja.</p>${list(v.muerto, b => `<tr><td>${link(b)}</td><td class="n">${b.stock} u.</td></tr>`)}</div>
-  </div>${sinStockTable(v.aSinStock)}`;
+  </div>${sinStockTable(v.aSinStock, catalogoActualizado)}`;
 }
 
 function purchasesBlock(s) {
@@ -129,10 +133,10 @@ function competitionBlock(s) {
   const tile = (l, v, extra) => `<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="muted">${extra}</div></div>`;
   return `<div class="grid">
     ${tile('Ganás el 1.º lugar', c.ganandoPct == null ? '—' : `${c.ganandoPct}%`, `${num(c.ganando)} de ${num(c.conEstado)} libros con publicación de catálogo`)}
-    ${tile('Solo en el catálogo', num(c.solos), 'nadie más ofrece el libro: margen para subir precio')}
+    ${tile('Sin oferta comparable', num(c.solos), 'no detectamos otra oferta comparable en la ficha de ML: margen para subir precio')}
     ${tile('Precio vs mercado', c.medianaPrecio == null ? '—' : `${Math.round(c.medianaPrecio * 100)}%`, 'tu precio frente al más barato nuevo (mediana; 100% = igual)')}
     ${tile('Más caros que el mercado', num(c.masCaros), '15% o más arriba del más barato nuevo')}
-  </div><p class="muted">${num(c.vigilados)} productos de catálogo vigilados a diario (los libros que más vendés). Detalle en <a href="/panel/reposicion">Reposición</a>.</p>`;
+  </div><p class="muted">${num(c.vigilados)} productos de catálogo con foto completa (los libros que más vendés; la foto diaria cubre hasta 400 fichas). Cobertura y detalle en <a href="/panel/reposicion">Reposición</a>; decisiones en <a href="/panel/oportunidades">Oportunidades</a>.</p>`;
 }
 
 function marginBlock(s) {
@@ -168,23 +172,46 @@ function raisesBlock(s) {
   return `<div class="grid">
     ${tile('Muy por debajo del mercado', num(v.total), `${Math.round((1 - v.umbral) * 100)}% o más abajo del más barato con entrega inmediata (o de los que lo venden a pedido, si sos el único inmediato) · ${num(v.conStock)} con stock`)}
     ${tile('Plata extra por mes', money(v.ganaMesTotal), 'si les ponés el precio sugerido y siguen vendiendo igual')}
-    ${tile('Solo vos los vendés', num(v.solosTotal), 'nadie más lo tiene con entrega inmediata')}
+    ${tile('Sin otra oferta inmediata', num(v.solosTotal), 'no detectamos otra oferta comparable con entrega inmediata en la ficha de ML')}
   </div>
   ${v.lista.length ? `<div class="card scroll" style="margin-top:12px"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio</th><th class="n">Más barato (vendedores)</th><th class="n">Precio sugerido</th><th class="n">Más por mes</th><th class="n">Te queda por libro</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="card"><p class="muted">Ningún libro está muy por debajo del mercado hoy.</p></div>'}
-  ${v.solos.length ? `<h2>Solo vos lo tenés con entrega inmediata: probá subir 10%</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio</th><th class="n">Probá con</th><th class="n">Más por mes</th></tr></thead><tbody>${solos}</tbody></table></div>` : ''}
+  ${v.solos.length ? `<h2>Sin otra oferta inmediata detectada: probá subir 10%</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio</th><th class="n">Probá con</th><th class="n">Más por mes</th></tr></thead><tbody>${solos}</tbody></table></div>` : ''}
   <p class="muted">Precio sugerido: 2% debajo del competidor más barato con entrega inmediata; si sos el único inmediato, 2% debajo del más barato a pedido (marcado "a pedido"). Redondeado, con la foto diaria de ML. Los agotados usan tu precio promedio de venta: es el precio para cuando lo repongas. "Más por mes" supone que se sigue vendiendo como en los últimos 90 días. El panel sólo sugiere: los precios se cambian en Mercado Libre.</p>`;
 }
 
+function longTailBlock(s) {
+  if (!s?.ok) return failed(s);
+  const v = s.data, c = v.conteo;
+  const tile = (k, cls = '') => `<div class="card kpi"><div class="l">${esc(CATEGORIAS[k])}</div><div class="v ${cls}">${num(c[k])}</div></div>`;
+  const link = b => `<a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a>`;
+  const list = (items, cols) => items.length ? `<div class="scroll"><table><tbody>${items.map(cols).join('')}</tbody></table></div>` : '<p class="muted">Ninguno.</p>';
+  const pares = v.pares.filter(p => p.revisar).slice(0, 12);
+  return `<div class="grid">
+    ${tile('quiebre', 'down')}${tile('oferta_con_ventas', 'up')}${tile('ventas_lentas')}${tile('sin_ventas_reciente')}${tile('visitas_sin_conversion')}${tile('poca_exposicion')}${tile('sin_ventas_sin_visitas')}
+  </div>
+  <p class="muted">${num(v.titulos_revisados)} títulos revisados (con ventas en el año o con stock). Visitas observadas por API de ML en ${num(v.visitas_observadas)} títulos; en el resto son <b>desconocidas</b>, no cero: por eso "sin ventas, visitas desconocidas" no se declara muerto ni se rebaja. Capital en ventas lentas: ${num(v.capital.ventas_lentas_unidades)} unidades; en títulos sin ventas en el año con 180+ días publicados: ${num(v.capital.sin_ventas_largo_unidades)} unidades. "Días disponible" sale de la fecha de alta de la publicación: es un techo (no hay historial de stock).</p>
+  <div class="two">
+    <div class="card"><h3>Quiebre: se vende y no hay stock</h3>${list(v.listas.quiebre, b => `<tr><td>${link(b)}</td><td class="n">${num(b.u90)} en 90 d</td><td class="n">${num(b.u365)} en el año</td></tr>`)}</div>
+    <div class="card"><h3>Visitas sin conversión</h3>${list(v.listas.visitas_sin_conversion, b => `<tr><td>${link(b)}</td><td class="n">${num(b.visitas_90d)} visitas</td><td class="n">${b.stock} u.</td></tr>`)}</div>
+    <div class="card"><h3>Poca exposición</h3>${list(v.listas.poca_exposicion, b => `<tr><td>${link(b)}</td><td class="n">${num(b.visitas_90d)} visitas</td><td class="n">${num(b.dias_disponibles_365)} días</td></tr>`)}</div>
+    <div class="card"><h3>Sin ventas, visitas desconocidas (más stock)</h3>${list(v.listas.sin_ventas_sin_visitas, b => `<tr><td>${link(b)}</td><td class="n">${b.stock} u.</td><td class="n">${num(b.dias_disponibles_365)} días</td></tr>`)}</div>
+  </div>
+  ${pares.length ? `<h3>Parejas catálogo / no catálogo para revisar</h3><div class="card scroll"><table><thead><tr><th>Libro</th><th>Ficha de catálogo</th><th>Publicación suelta</th><th>Qué difiere</th></tr></thead><tbody>${pares.map(p => `<tr><td>${esc(p.title ?? p.isbn)}<br><small class="muted">${esc(p.isbn)}</small></td><td>${p.catalogo.map(x => `${esc(x.id)} · ${money(x.precio)} · ${x.cantidad} u.`).join('<br>')}</td><td>${p.sueltas.map(x => `${esc(x.id)} · ${money(x.precio)} · ${x.cantidad} u.`).join('<br>')}</td><td>${esc(p.motivos.join(', '))}</td></tr>`).join('')}</tbody></table>
+  <p class="muted">Mismo ISBN publicado como ficha de catálogo y suelto, con precio o cantidad distintos. No se fusionan ni se suman: sin inventario canónico no se sabe si comparten ejemplar. ${num(v.pares.length)} parejas en total, ${num(v.pares.filter(p => p.revisar).length)} con diferencias.</p></div>` : ''}`;
+}
+
 export function renderBi(bi) {
-  return `<h1>Brújula Amado</h1><p class="muted">Ventas de Mercado Libre y la web, stock del catálogo, compras y competencia · calculado ${esc(bi.generado.slice(0, 16).replace('T', ' '))} UTC</p>
+  const stockDesde = bi.catalogo_actualizado ? new Date(bi.catalogo_actualizado).toLocaleString('es-UY', { timeZone: 'America/Montevideo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : null;
+  return `<h1>Brújula Amado</h1><p class="muted">Ventas de Mercado Libre y la web, stock del catálogo, compras y competencia · calculado ${esc(bi.generado.slice(0, 16).replace('T', ' '))} UTC · stock propio al ${stockDesde ? esc(stockDesde) : '—'} (hora Montevideo)</p>
     <h2>Cómo va el negocio</h2>${kpiBlock(bi.kpis)}
     <h2>Tendencia semanal</h2>${weeklyChart(bi.weekly)}
     <h2>Qué libros hacen la plata</h2>${abcBlock(bi.abc)}
-    <h2>Dónde se pierde plata en el inventario</h2>${inventoryBlock(bi.inventario)}
+    <h2>Dónde se pierde plata en el inventario</h2>${inventoryBlock(bi.inventario, bi.catalogo_actualizado)}
     <h2>Cuánto deja cada libro</h2>${marginBlock(bi.margen)}
     <h2>Cómo rinden las compras</h2>${purchasesBlock(bi.compras)}
     <h2>Editoriales que más facturan</h2>${publishersBlock(bi.editoriales)}
     <h2>Posición frente a la competencia</h2>${competitionBlock(bi.competencia)}
+    <h2>Ventas y long tail: cómo está cada título</h2>${longTailBlock(bi.longTail)}
     <h2>Libros que vendés muy barato: subirles el precio</h2>${raisesBlock(bi.precios)}`;
 }
 

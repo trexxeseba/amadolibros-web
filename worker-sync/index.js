@@ -67,7 +67,9 @@ import { buildCatalogDiff, recordCatalogSyncLog } from './catalog-sync-log.js';
 import { mlSales, handleSalesRoute } from './ml-sales.js';
 import { handlePurchasesRoute } from './purchases.js';
 import { handleReposicionRead, REPOSICION_PATH } from './reposicion-read.js';
-import { mlCompetition, competitionStatus } from './ml-competition.js';
+import { mlCompetition, competitionStatus, competitionCoverage } from './ml-competition.js';
+import { refreshOpportunitiesFromWorker } from './daily-panel-digest.js';
+import { importarExterno, listImports, radarExterno } from './importacion-externa.js';
 import { fxRates } from './fx-rates.js';
 import {
   addCompressedIndexes,
@@ -209,6 +211,25 @@ export default {
     // Competencia: estado (capacidades de la API, avance del día) y corrida manual.
     if (request.method === 'GET' && url.pathname === '/competition/status') return json(await competitionStatus(env.ORDERS_DB) ?? { state: 'sin_datos' });
     if (request.method === 'POST' && url.pathname === '/competition/sync') return json(await mlCompetition.sync(env, { calls: 120, deadlineMs: 25000 }));
+    // Cobertura y frescura de la vigilancia (por segmento, con brechas del catálogo).
+    if (request.method === 'GET' && url.pathname === '/competition/coverage') {
+      const catalog = await env.CATALOG_R2?.get('catalog.json').then(obj => (obj ? obj.json() : null)).catch(() => null);
+      return json(await competitionCoverage(env.ORDERS_DB, catalog) ?? { state: 'sin_datos' });
+    }
+    // Bandeja de oportunidades: recálculo manual (el correo diario también lo hace).
+    if (request.method === 'POST' && url.pathname === '/opportunities/refresh') return json(await refreshOpportunitiesFromWorker(env));
+    // Importación externa auditable (CSV de Nubimetrics / Administrado / otra) y su radar.
+    if (request.method === 'POST' && url.pathname === '/external/import') {
+      let body;
+      try { body = await request.json(); } catch { return json({ error: 'invalid_json' }, 400); }
+      try { return json(await importarExterno(env.ORDERS_DB, body)); }
+      catch (error) { return json({ error: error?.code || 'internal_error', detail: error?.detail ?? null }, error?.status || 500); }
+    }
+    if (request.method === 'GET' && url.pathname === '/external/imports') return json({ imports: await listImports(env.ORDERS_DB, 50) });
+    if (request.method === 'GET' && url.pathname === '/external/radar') {
+      const catalog = await env.CATALOG_R2?.get('catalog.json').then(obj => (obj ? obj.json() : null)).catch(() => null);
+      return json({ radar: await radarExterno(env.ORDERS_DB, catalog, { limit: 100 }) });
+    }
     // Lectura de atributos de libros (solo lectura), detrás de SYNC_SECRET.
     if (url.pathname === '/attribute-audit') return handleAttributeAudit(request, env);
 
