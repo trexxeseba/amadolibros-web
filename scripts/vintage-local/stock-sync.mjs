@@ -19,7 +19,7 @@ import {pathToFileURL} from 'node:url';
 import {SELLER,checkConfiguration,makeBroker,inspectWorkbook} from './engine.mjs';
 import {openDatabase} from './db.mjs';
 import {createPublicationMeli,MercadoLibreError} from '../../worker-sync/publication-meli.js';
-import {hasSupplierStock,stockIsFresh,safeCode,quoteMercadoLibre} from '../../worker-sync/publication-policy.js';
+import {hasSupplierStock,stockIsFresh,safeCode,quoteMercadoLibre,VINTAGE_STOCK_MAX_HOURS} from '../../worker-sync/publication-policy.js';
 import {bulkItemsPath,bulkEntryItem} from '../../worker-sync/meli-bulk.js';
 import {createVintageBulkFetch} from '../../functions/_shared/meli-vintage-bulk.js';
 import {vintageMinimumFor} from '../../worker-sync/vintage-pricing.js';
@@ -38,7 +38,7 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
  if(!MODES.includes(mode))throw new Error('invalid_stock_sync_mode');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c,now());
  const input=await readWorkbook(excel);
- if(!stockIsFresh(input.source_date,now())||input.source_sha256!==c.source_sha256)throw new Error('workbook_does_not_match_current_approved_stock');
+ if(!stockIsFresh(input.source_date,now(),VINTAGE_STOCK_MAX_HOURS)||input.source_sha256!==c.source_sha256)throw new Error('workbook_does_not_match_current_approved_stock');
  const feedTime=Date.parse(input.source_date),graceMs=graceHours*3600000;
  await fs.mkdir(directory,{recursive:true});
  const db=openDatabase(path.join(directory,'publisher.sqlite')),stmt=(sql,...args)=>db.prepare(sql).bind(...args);

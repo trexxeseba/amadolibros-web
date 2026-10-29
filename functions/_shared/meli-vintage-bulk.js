@@ -2,7 +2,7 @@ import {VintageStore} from './meli-vintage-pilot.js';
 import {vintageTokens,VINTAGE_SELLER_ID} from './meli-vintage-token.js';
 import {createPublicationService} from '../../worker-sync/publication-engine.js';
 import {createPublicationMeli,MercadoLibreError} from '../../worker-sync/publication-meli.js';
-import {PublicationError,policyHash,stockIsFresh,canonicalIsbn,normalizedTitle} from '../../worker-sync/publication-policy.js';
+import {PublicationError,policyHash,stockIsFresh,canonicalIsbn,normalizedTitle,VINTAGE_STOCK_MAX_HOURS} from '../../worker-sync/publication-policy.js';
 import {createSbsStock} from '../../worker-sync/sbs-supplier-stock.js';
 import {vintagePolicy,requireVintagePrice,vintageMinimumFor,VINTAGE_MINIMUM_UYU,VINTAGE_COMPETITIVE_MINIMUM_UYU} from '../../worker-sync/vintage-pricing.js';
 import {localExecutorState,stopLocalExecutor} from './vintage-executor-state.js';
@@ -130,8 +130,8 @@ export function createVintageBulk({api:providedApi,now=Date.now,fetcher,sleep,ra
  };
  const store=env=>new VintageBulkStore(env.ORDERS_DB,{sellerId:VINTAGE_SELLER_ID});
  const scoped=env=>({...env,USER_ID:VINTAGE_SELLER_ID,ML_PUBLISH_QUEUE_ENABLED:'false'});
- const service=createPublicationService({sellerId:VINTAGE_SELLER_ID,api:bulkApi,storeFactory:store,now,maxJobsPerTick:1,maxIndexSlicesPerTick:1});
- const supplier=createSbsStock({now});
+ const service=createPublicationService({sellerId:VINTAGE_SELLER_ID,api:bulkApi,storeFactory:store,now,maxJobsPerTick:1,maxIndexSlicesPerTick:1,stockMaxHours:VINTAGE_STOCK_MAX_HOURS});
+ const supplier=createSbsStock({now,maxHours:VINTAGE_STOCK_MAX_HOURS});
  async function repairAvailability(env,s){
   const run=await s.run(BULK_RUN),pilot=await s.run(PILOT_RUN),lock=crypto.randomUUID();
   if(run?.state!=='paused'||pilot?.state!=='complete')fail('pause_before_availability_change');
@@ -208,7 +208,7 @@ export function createVintageBulk({api:providedApi,now=Date.now,fetcher,sleep,ra
   await s.discoverSupplierStock();const summary=await s.summary(run.id),feed=await s.feed(run.feed_id);
   const rate=await env.ORDERS_DB.prepare('SELECT cooldown FROM ml_vintage_bulk_rate WHERE id=1').first();
   const daily=await s.dayCreated(now()),date=new Date(now()-3*3600000).toISOString().slice(0,10),nextDay=Date.parse(date+'T03:00:00Z')+86400000;
-  return {seller_id:VINTAGE_SELLER_ID,minimum_sale_uyu:VINTAGE_MINIMUM_UYU,target_total:10000,pilot_published:5,run:{id:run.id,state:run.state},local_executor,published_total:5+await s.publishedCount(run.id),summary,source_date:feed?.source_date,stock_fresh:stockIsFresh(feed?.source_date,now()),busy:run.lease_until>now(),resume_at:Math.max(run.backoff_until||0,rate?.cooldown||0,daily>=VINTAGE_DAILY_CAP?nextDay:0),daily_created:daily,daily_cap:VINTAGE_DAILY_CAP,issues:(await s.stmt("SELECT isbn,state,error_code FROM ml_pub_jobs WHERE run_id=? AND state IN ('review','uncertain') LIMIT 10",run.id).all()).results,recent:await s.publishedItems(run.id,Math.max(0,(await s.publishedCount(run.id))-10),10)};
+  return {seller_id:VINTAGE_SELLER_ID,minimum_sale_uyu:VINTAGE_MINIMUM_UYU,target_total:10000,pilot_published:5,run:{id:run.id,state:run.state},local_executor,published_total:5+await s.publishedCount(run.id),summary,source_date:feed?.source_date,stock_fresh:stockIsFresh(feed?.source_date,now(),VINTAGE_STOCK_MAX_HOURS),busy:run.lease_until>now(),resume_at:Math.max(run.backoff_until||0,rate?.cooldown||0,daily>=VINTAGE_DAILY_CAP?nextDay:0),daily_created:daily,daily_cap:VINTAGE_DAILY_CAP,issues:(await s.stmt("SELECT isbn,state,error_code FROM ml_pub_jobs WHERE run_id=? AND state IN ('review','uncertain') LIMIT 10",run.id).all()).results,recent:await s.publishedItems(run.id,Math.max(0,(await s.publishedCount(run.id))-10),10)};
  }
  async function command(env,action,args={}){
   activeEnv=env;const s=store(env);
@@ -244,7 +244,7 @@ export function createVintageBulk({api:providedApi,now=Date.now,fetcher,sleep,ra
    if(verified.results.length!==5||verified.results.some(v=>JSON.parse(v.result_json).ok!==true))fail('pilot_not_verified');
    const currentRun=await s.run(BULK_RUN);
    const policy=vintagePolicy(JSON.parse(currentRun?.policy_json??pilot.policy_json)),hash=await policyHash(policy),feed=await s.feed(args.feed_id);
-   if(!feed||feed.state!=='ready'||!stockIsFresh(feed.source_date,now())||feed.expected_rows<10000)fail('bulk_feed_not_ready');
+   if(!feed||feed.state!=='ready'||!stockIsFresh(feed.source_date,now(),VINTAGE_STOCK_MAX_HOURS)||feed.expected_rows<10000)fail('bulk_feed_not_ready');
    if(args.policy_hash!==hash)fail('policy_changed');
    let run=await s.run(BULK_RUN);
    if(!run){try{await s.createRun({id:BULK_RUN,feedId:feed.id,policy,policyHash:hash,now:now()});}catch(e){if(!await s.run(BULK_RUN))throw e;}run=await s.run(BULK_RUN);}

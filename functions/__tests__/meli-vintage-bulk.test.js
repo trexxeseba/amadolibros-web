@@ -74,7 +74,7 @@ test('429 persists a cooldown and an expired workbook stops all new creates',asy
  f.api.prepare=async()=>{throw new MercadoLibreError('ml_http_429',429,180);};
  let state=await f.bulk.command(f.env,'tick',{run_id:BULK_RUN});assert.ok(state.resume_at>=f.clock.value+180000);
  await f.bulk.command(f.env,'tick',{run_id:BULK_RUN});assert.equal(f.calls.create.length,0);
- f.clock.value+=25*3600000;state=await f.bulk.command(f.env,'tick',{run_id:BULK_RUN});assert.equal(state.run.state,'stock_stale');assert.equal(f.calls.create.length,0);
+ f.clock.value+=49*3600000;state=await f.bulk.command(f.env,'tick',{run_id:BULK_RUN});assert.equal(state.run.state,'stock_stale'); // más que el tope de 48 h de Vintageassert.equal(f.calls.create.length,0);
 });
 test('concurrent starts/ticks, pause, changed policy and insufficient stock never create another run',async t=>{
  const f=await fixture(t);
