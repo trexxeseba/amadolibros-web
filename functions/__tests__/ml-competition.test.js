@@ -182,3 +182,32 @@ test('rehacer la foto elimina ofertas retiradas de ese mismo día', async t => {
   await runDay(db, { day: 1 }, DAY1 + 1000);
   assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS n FROM comp_snapshots WHERE item_id='MLURETIRADO'").get().n, 0);
 });
+
+test('404 en los competidores del catálogo = nadie compitiendo hoy: la foto sigue y el libro queda sin competencia', async t => {
+  const db = await seed(t);
+  const state = { day: 1 };
+  const base = fakeMl(state);
+  const comp = createMlCompetition({ fetcher: async url => new URL(String(url)).pathname === '/products/MLU999/items' ? new Response('{"message":"No winners found"}', { status: 404 }) : base(url), tokenProvider: async () => 'tok', now: () => DAY1, loadCatalog: async () => catalog });
+  let r;
+  for (let i = 0; i < 5; i++) { r = await comp.sync({ ORDERS_DB: db }, { calls: 50 }); if (['done', 'error', 'products_endpoint_unavailable'].includes(r.state)) break; }
+  assert.equal(r.state, 'done');
+  const f = (await competitionByIsbn(db, [ISBN])).get(ISBN);
+  assert.equal(f.competidores, 0);
+  assert.equal(f.competidores_comparables, 0);
+});
+
+test('la lista de vendedores viene por páginas: se piden todas y el producto queda completo', async t => {
+  const db = await seed(t);
+  const state = { day: 1 };
+  const base = fakeMl(state);
+  const all = Array.from({ length: 8 }, (_, i) => ({ item_id: `MLUZ${i}`, seller_id: 900 + i, price: 1000 + i, condition: 'new' }));
+  const comp = createMlCompetition({ fetcher: async url => {
+    const u = new URL(String(url));
+    if (u.pathname === '/products/MLU999/items') { const off = Number(u.searchParams.get('offset') || 0); return Response.json({ paging: { total: all.length }, results: all.slice(off, off + 5) }); }
+    return base(url);
+  }, tokenProvider: async () => 'tok', now: () => DAY1, loadCatalog: async () => catalog });
+  for (let i = 0; i < 5; i++) { const r = await comp.sync({ ORDERS_DB: db }, { calls: 80 }); if (r.state === 'done') break; }
+  const f = (await competitionByIsbn(db, [ISBN])).get(ISBN);
+  assert.ok(f, 'el producto quedó completo, no parcial');
+  assert.equal(f.competidores, 8);
+});
