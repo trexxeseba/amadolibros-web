@@ -52,7 +52,7 @@ export function clonePreflightJob(job){
 }
 const runFingerprint=run=>run?JSON.stringify({feed_id:run.feed_id,policy_json:run.policy_json,policy_hash:run.policy_hash,approved_hash:run.approved_hash??null,daily_cap:run.daily_cap,preflight_limit:run.preflight_limit}):null;
 
-export function createPublicationService({sellerId=SELLER_ID,api=createPublicationMeli({sellerId}),storeFactory=env=>new PublicationStore(env.ORDERS_DB,{sellerId}),now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),attachWaitMs=25000,approvedPayloadGuard=null,maxJobsPerTick=10,maxIndexSlicesPerTick=20}={}){
+export function createPublicationService({sellerId=SELLER_ID,api=createPublicationMeli({sellerId}),storeFactory=env=>new PublicationStore(env.ORDERS_DB,{sellerId}),now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),attachWaitMs=25000,approvedPayloadGuard=null,maxJobsPerTick=10,maxIndexSlicesPerTick=20,stockMaxHours=24}={}){
  const initialized=new WeakSet();
  if(!['440298103','2341378249'].includes(sellerId))throw new PublicationError('unsupported_seller',403);
  function store(env){if(String(env.USER_ID)!==sellerId||String(env.APP_ID)!==APP_ID)throw new PublicationError('seller_configuration_mismatch',503);return storeFactory(env);}
@@ -89,7 +89,7 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
    }
    if(run.state==='complete_with_review'){await s.finishReview(run.id,lease,now());return s.summary(run.id);}
    const feed=await s.feed(run.feed_id);
-   if(feed?.state!=='ready'||!stockIsFresh(feed.source_date,now())){await state('stock_stale');return {state:'stock_stale'};}
+   if(feed?.state!=='ready'||!stockIsFresh(feed.source_date,now(),stockMaxHours)){await state('stock_stale');return {state:'stock_stale'};}
    let index=JSON.parse(run.index_json);
    while(!index.done&&now()<deadline&&processed<maxIndexSlicesPerTick){const slice=await api.indexSlice(env,index);index=await s.saveIndex(run.id,slice.index,slice.items,lease,now());processed++;}
    if(!index.done)return s.summary(run.id);
@@ -117,7 +117,7 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
     processed++;
     try{
      const freshRun=await s.run(run.id),freshFeed=await s.feed(freshRun.feed_id);
-     if(freshFeed?.state!=='ready'||!stockIsFresh(freshFeed.source_date,now())){await state('stock_stale');break;}
+     if(freshFeed?.state!=='ready'||!stockIsFresh(freshFeed.source_date,now(),stockMaxHours)){await state('stock_stale');break;}
      const row=await s.stock(freshRun.feed_id,job.isbn);
      if(!row||!hasSupplierStock(row.stock)){await mark(job.isbn,'skipped_stock_uncertain');continue;}
      normalizeSupplierRow(row);
@@ -146,7 +146,7 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
      // Check the source snapshot, run state and lease again after preparation.
      const guardRun=await s.run(run.id),guardRow=await s.stock(guardRun.feed_id,row.isbn),guardFeed=await s.feed(guardRun.feed_id);
      if(guardRun.state!=='publishing'||guardRun.approved_hash!==run.policy_hash||!await s.ownsLease(run.id,lease,now()))break;
-     if(!guardRow||!hasSupplierStock(guardRow.stock)||!stockIsFresh(guardFeed?.source_date,now())){await mark(row.isbn,'skipped_stock_uncertain');continue;}
+     if(!guardRow||!hasSupplierStock(guardRow.stock)||!stockIsFresh(guardFeed?.source_date,now(),stockMaxHours)){await mark(row.isbn,'skipped_stock_uncertain');continue;}
      if(quoteMercadoLibre(guardRow,policy).price!==payload.price){if(approvedPayloadGuard)throw new PublicationError('approved_payload_price_changed',409);await mark(row.isbn,'pending',{payload:null});continue;}
      // A catalog payload is only created under the approved 'required_only' policy.
      const mismatch=payloadPolicyMismatch(payload,policy);if(mismatch){await mark(row.isbn,'review',{errorCode:mismatch});continue;}
@@ -248,7 +248,7 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
    const policy=validPolicy({...JSON.parse(source.policy_json),catalogListing:'required_only',...(availabilityDays!==null?{availabilityDays}:{}),...competitiveOverrides(args)});
    const hash=await policyHash(policy);
    let feed=await s.feed(args.feed_id);
-   if(!feed||!['ready','importing'].includes(feed.state)||!stockIsFresh(feed.source_date,now()))throw new PublicationError('invalid_run_or_stale_feed');
+   if(!feed||!['ready','importing'].includes(feed.state)||!stockIsFresh(feed.source_date,now(),stockMaxHours))throw new PublicationError('invalid_run_or_stale_feed');
    if(feed.state==='importing')feed=await s.commitFeed(feed.id);
    if(targetPublished!==null&&targetPublished>feed.expected_rows)throw new PublicationError('target_exceeds_feed',422);
    const newId=args.new_run_id??await createRunFromSourceId(source.id,hash,feed.id,dailyCap,preflightLimit,targetPublished);
@@ -274,7 +274,7 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
   if(action==='tick'){if(nonce){await initialize(env,s);await s.nonce(nonce.id,nonce.expires,now());}return tick(env,args.run_id);}
   await initialize(env,s);if(nonce)await s.nonce(nonce.id,nonce.expires,now());
   if(action==='begin_feed'){
-   if(!idOk(args.feed_id)||!stockIsFresh(args.source_date,now())||!Number.isInteger(args.expected_rows)||args.expected_rows<1||args.expected_rows>200000)throw new PublicationError('invalid_feed');
+   if(!idOk(args.feed_id)||!stockIsFresh(args.source_date,now(),stockMaxHours)||!Number.isInteger(args.expected_rows)||args.expected_rows<1||args.expected_rows>200000)throw new PublicationError('invalid_feed');
    const existing=await s.feed(args.feed_id);if(existing){if(existing.source_date!==args.source_date||existing.expected_rows!==args.expected_rows)throw new PublicationError('feed_id_conflict',409);return {feed_id:existing.id,state:existing.state};}
    await s.beginFeed(args.feed_id,args.source_date,args.expected_rows,now());return {feed_id:args.feed_id,state:'importing'};
   }
@@ -286,7 +286,7 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
   if(action==='commit_feed'){if(!idOk(args.feed_id))throw new PublicationError('invalid_feed_id');const existing=await s.feed(args.feed_id);if(existing?.state==='ready')return {feed_id:existing.id,state:'ready'};const f=await s.commitFeed(args.feed_id);return {feed_id:f.id,state:f.state};}
   if(action==='create_run'){
    const policy=validPolicy(args.policy),feed=await s.feed(args.feed_id);
-   if(!idOk(args.run_id)||feed?.state!=='ready'||!stockIsFresh(feed.source_date,now()))throw new PublicationError('invalid_run_or_stale_feed');
+   if(!idOk(args.run_id)||feed?.state!=='ready'||!stockIsFresh(feed.source_date,now(),stockMaxHours))throw new PublicationError('invalid_run_or_stale_feed');
    const dailyCap=args.daily_cap??10000,preflightLimit=args.preflight_limit??10,targetPublished=args.target_published??null;
    if(!Number.isInteger(dailyCap)||dailyCap<1||dailyCap>10000||!Number.isInteger(preflightLimit)||preflightLimit<1||preflightLimit>20||(targetPublished!==null&&(!Number.isInteger(targetPublished)||targetPublished<1||targetPublished>10000))||(targetPublished!==null&&targetPublished>feed.expected_rows))throw new PublicationError('invalid_run_limits');
    const hash=await policyHash(policy),existing=await s.run(args.run_id);
@@ -314,7 +314,7 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
    const hash=await policyHash(policy);if(hash===source.policy_hash)throw new PublicationError('source_policy_already_catalog',409);
    const feedId=freshFeedId??source.feed_id;
    let feed=await s.feed(feedId);
-   if(!feed||!['ready','importing'].includes(feed.state)||(feed.state==='importing'&&!freshFeedId)||!stockIsFresh(feed.source_date,now()))throw new PublicationError('invalid_run_or_stale_feed');
+   if(!feed||!['ready','importing'].includes(feed.state)||(feed.state==='importing'&&!freshFeedId)||!stockIsFresh(feed.source_date,now(),stockMaxHours))throw new PublicationError('invalid_run_or_stale_feed');
    // A fresh feed still importing is closed only when every expected row is loaded.
    if(feed.state==='importing')feed=await s.commitFeed(feedId);
    const newId=await clonePreflightRunId(source.id,hash,limit,freshFeedId);
@@ -336,7 +336,7 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
   }
   if(!idOk(args.run_id))throw new PublicationError('invalid_run_id');
   if(action==='attach_feed'){
-   const f=await s.feed(args.feed_id);if(f?.state!=='ready'||!stockIsFresh(f.source_date,now()))throw new PublicationError('invalid_feed');
+   const f=await s.feed(args.feed_id);if(f?.state!=='ready'||!stockIsFresh(f.source_date,now(),stockMaxHours))throw new PublicationError('invalid_feed');
    // The tick holds the lease for a bounded time: wait for it instead of losing the daily snapshot.
    const deadline=now()+attachWaitMs;
    for(;;){try{await s.attachFeed(args.run_id,args.feed_id);break;}catch(error){if(error?.code!=='run_busy'||now()>=deadline)throw error;await sleep(1000);}}
@@ -347,7 +347,7 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
    if(String(env.ML_PUBLISHER_MODE)==='disabled')throw new PublicationError('publishing_disabled',409);
    const run=await s.run(args.run_id),feed=run?await s.feed(run.feed_id):null;
    if(!run||args.policy_hash!==run.policy_hash)throw new PublicationError('policy_hash_mismatch',409);
-   if(!stockIsFresh(feed?.source_date,now()))throw new PublicationError('stale_feed',409);
+   if(!stockIsFresh(feed?.source_date,now(),stockMaxHours))throw new PublicationError('stale_feed',409);
    if(!(await s.counts(run.id)).some(x=>x.state==='validated'&&x.n>0))throw new PublicationError('no_validated_books',409);
    await s.approve(args.run_id,args.policy_hash);await enqueuePublicationWork(env,args.run_id);return s.summary(args.run_id);
   }

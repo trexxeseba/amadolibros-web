@@ -23,7 +23,7 @@ export async function initializeSbsStock(db){
  if(!db)throw new PublicationError('database_not_configured',503);
  await db.batch(SBS_SCHEMA.map(sql=>db.prepare(sql)));
 }
-export function createSbsStock({now=Date.now}={}){
+export function createSbsStock({now=Date.now,maxHours=24}={}){
  return async function command(env,action,args={}){
   const db=env.ORDERS_DB;
   if(!['status','begin','import','commit','record_attempt'].includes(action))throw new PublicationError('invalid_supplier_action');
@@ -35,11 +35,11 @@ export function createSbsStock({now=Date.now}={}){
   if(action==='record_attempt'){await recordSbsAttempt(db,args,now());return {state:'recorded'};}
   if(action==='status'){
    const latest=await stmt("SELECT id,source_date,source_sha256,expected_rows,checked_at FROM sbs_supplier_feeds WHERE state='ready' ORDER BY source_date DESC,created_at DESC LIMIT 1").first();
-   return {state:latest?'ready':'no_stock',fresh:stockIsFresh(latest?.source_date,now()),latest};
+   return {state:latest?'ready':'no_stock',fresh:stockIsFresh(latest?.source_date,now(),maxHours),latest};
   }
   if(typeof args.feed_id!=='string'||!/^[a-f0-9-]{36}$/.test(args.feed_id))throw new PublicationError('invalid_feed_id');
   if(action==='begin'){
-   if(!stockIsFresh(args.source_date,now()))throw new PublicationError('supplier_stock_stale_or_future',409);
+   if(!stockIsFresh(args.source_date,now(),maxHours))throw new PublicationError('supplier_stock_stale_or_future',409);
    if(typeof args.source_sha256!=='string'||!/^[a-f0-9]{64}$/.test(args.source_sha256)||!Number.isInteger(args.expected_rows)||args.expected_rows<1||args.expected_rows>250000)throw new PublicationError('invalid_supplier_manifest');
    const date=new Date(args.source_date).toISOString();
    const latest=await stmt("SELECT source_date FROM sbs_supplier_feeds WHERE state='ready' ORDER BY source_date DESC LIMIT 1").first();
@@ -52,7 +52,7 @@ export function createSbsStock({now=Date.now}={}){
   }
   const feed=await stmt('SELECT * FROM sbs_supplier_feeds WHERE id=?',args.feed_id).first();
   if(!feed)throw new PublicationError('supplier_feed_not_found',404);
-  if(!stockIsFresh(feed.source_date,now()))throw new PublicationError('supplier_stock_stale_or_future',409);
+  if(!stockIsFresh(feed.source_date,now(),maxHours))throw new PublicationError('supplier_stock_stale_or_future',409);
   if(action==='import'){
    if(feed.state!=='importing')throw new PublicationError('supplier_feed_immutable',409);
    if(!Array.isArray(args.rows)||args.rows.length<1||args.rows.length>200)throw new PublicationError('invalid_supplier_batch');

@@ -1,6 +1,6 @@
 import {VintageBulkStore,BULK_RUN,PILOT_RUN,VINTAGE_DAILY_CAP} from './meli-vintage-bulk.js';
 import {vintageTokens,VINTAGE_SELLER_ID} from './meli-vintage-token.js';
-import {PublicationError,canonicalIsbn,sha256,stockIsFresh,policyHash} from '../../worker-sync/publication-policy.js';
+import {PublicationError,canonicalIsbn,sha256,stockIsFresh,policyHash,VINTAGE_STOCK_MAX_HOURS,vintageAccessExpiry} from '../../worker-sync/publication-policy.js';
 import {vintagePolicy} from '../../worker-sync/vintage-pricing.js';
 const fail=(code,status=409)=>{throw new PublicationError(code,status);};
 const SCHEMA="CREATE TABLE IF NOT EXISTS ml_vintage_local_access (id INTEGER PRIMARY KEY CHECK(id=1),key_hash TEXT NOT NULL,expires_at INTEGER NOT NULL,enabled INTEGER NOT NULL,last_at INTEGER NOT NULL DEFAULT 0)";
@@ -13,13 +13,13 @@ export function createLocalAccess({now=Date.now,tokens=vintageTokens}={}){
   const verified=(await s.stmt('SELECT result_json FROM ml_pub_verifications WHERE run_id=?',PILOT_RUN).all()).results;
   if(verified.length!==5||verified.some(v=>JSON.parse(v.result_json).ok!==true))fail('pilot_not_verified');
   const feed=await s.feed(run.feed_id),policy=vintagePolicy(JSON.parse(run.policy_json));
-  if(!stockIsFresh(feed?.source_date,now()))fail('supplier_stock_stale');
+  if(!stockIsFresh(feed?.source_date,now(),VINTAGE_STOCK_MAX_HOURS))fail('supplier_stock_stale');
   if(await policyHash(policy)!==run.policy_hash)fail('apply_minimum_1600_first');
   // Pause first; an existing in-flight lease must finish before local handoff.
   await s.stmt("UPDATE ml_pub_runs SET state='paused',updated_at=? WHERE id=?",now(),BULK_RUN).run();
   if((await s.run(BULK_RUN)).lease_until>now())fail('run_busy');
   const key=[...crypto.getRandomValues(new Uint8Array(32))].map(x=>x.toString(16).padStart(2,'0')).join('');
-  const expires=Date.parse(feed.source_date)+86400000;
+  const expires=vintageAccessExpiry(feed.source_date,now());
   await env.ORDERS_DB.prepare('INSERT INTO ml_vintage_local_access VALUES(1,?,?,1,0) ON CONFLICT(id) DO UPDATE SET key_hash=excluded.key_hash,expires_at=excluded.expires_at,enabled=1,last_at=0').bind(await sha256(key),expires).run();
   const source=await env.ORDERS_DB.prepare('SELECT source_sha256 FROM sbs_supplier_feeds WHERE id=?').bind(feed.id).first();
   const receipts=(await s.stmt('SELECT seller_id,isbn,state,item_id,run_id,created_at,updated_at FROM ml_pub_receipts WHERE seller_id=?',VINTAGE_SELLER_ID).all()).results;
@@ -46,7 +46,7 @@ export function createLocalAccess({now=Date.now,tokens=vintageTokens}={}){
   if(action==='reserve'){
    const isbn=canonicalIsbn(args.isbn),feed=await s.feed(run.feed_id),row=await s.stock(run.feed_id,isbn);
    if(args.policy_hash!==run.policy_hash)fail('policy_changed');
-   if(!stockIsFresh(feed?.source_date,now())||!row||!/^\+?\d+$/.test(String(row.stock))||Number(row.stock)<=0)fail('supplier_stock_stale_or_missing');
+   if(!stockIsFresh(feed?.source_date,now(),VINTAGE_STOCK_MAX_HOURS)||!row||!/^\+?\d+$/.test(String(row.stock))||Number(row.stock)<=0)fail('supplier_stock_stale_or_missing');
    const job=await s.stmt('SELECT state FROM ml_pub_jobs WHERE run_id=? AND isbn=?',BULK_RUN,isbn).first();
    if(!job)fail('isbn_outside_campaign');
    const reserved=await s.reserve(VINTAGE_SELLER_ID,isbn,BULK_RUN,now(),VINTAGE_DAILY_CAP);
