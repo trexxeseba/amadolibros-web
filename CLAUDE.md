@@ -24,6 +24,11 @@
 - Aplicar cambios de precio sobre publicaciones ya activas sigue necesitando que
   Seba vea la lista antes: eso no es mergear código, es tocar plata. Mergear el
   código que los calcula no necesita permiso.
+- La cuenta de Mercado Libre **Amado Libros** (seller 440298103) no se toca ni se
+  ofrece como opción salvo que Seba lo pida expresamente. El hook
+  `.claude/hooks/guard-amado-libros.mjs` pide su aprobación antes de editar el
+  código de esa cuenta, el que comparte con Vintage, o cualquier cosa que nombre
+  el seller.
 
 ## Mercado Libre: en qué cuenta se publica
 

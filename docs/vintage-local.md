@@ -55,7 +55,7 @@ or `user.quota_exceeded`) stops the process with state `stopped_listing_quota` i
 trying every remaining ISBN. The read-back after a create waits up to six 10-second checks while
 Mercado Libre reports the item as `paused` with `picture_download_pending` (it downloads the pictures
 after the create); any other mismatch, or still paused after that wait, stops the process with
-`stopped_item_readback_failed`. Restart with the same directory to preserve progress. A hard
+`stopped_item_readback_failed`. Under the supervisor (`vintage_autorun.py`) neither state writes STOP: the quota waits until the next day and a failed readback retries after 30 minutes. Restart with the same directory to preserve progress. A hard
 process termination can leave a five-minute lease, which is allowed to expire.
 
 The engine scans all listing statuses, canonicalizes ISBNs, checks both SKU query
@@ -86,6 +86,11 @@ por el instalador) y baja "Lista completa de disponibles" (`/Home/AllPriceList`)
 sin ese archivo usa el Excel público, que SBS dejó de actualizar en agosto de 2026.
 Lo lee con el mismo lector que el panel, revoca la conexión anterior, carga el
 stock en D1 y pide una conexión nueva a `POST /operations/vintage-renew`.
+
+Vigencia del stock: Vintage acepta una lista de hasta **48 h** (Amado Libros sigue con
+24 h). Con la lista al día la conexión vence a las 24 h de su fecha, así cada madrugada
+baja la nueva. Si SBS se saltea un día, la conexión con la lista anterior dura 2 h y
+el supervisor vuelve a mirar el portal, hasta que aparezca la nueva o se pasen las 48 h.
 
 Con cada lista fresca, `scripts/vintage-local/stock-sync.mjs` compara las
 publicaciones creadas por la campaña con la lista: lo que ya no viene o no tiene

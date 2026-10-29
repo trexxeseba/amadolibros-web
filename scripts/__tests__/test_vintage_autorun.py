@@ -176,6 +176,71 @@ class UpdateCodeTest(unittest.TestCase):
             self.assertEqual(runner.notices, [])
 
 
+class NotifyUrlTest(unittest.TestCase):
+    OLD = "https://ntfy.sh/viejo-publico"
+    NEW = "https://ntfy.sh/secreto-largo-al-azar"
+
+    def runner(self, directory, notify_url="https://ntfy.sh/viejo-publico"):
+        args = types.SimpleNamespace(directory=directory, excel=None, connection=None, secret_file=None, sbs_file=None, node=None, target=10000, notify_url=notify_url, no_update=False)
+        return vintage_autorun.Runner(args)
+
+    def put(self, runner, content):
+        (runner.private / "notify-url.txt").write_bytes(content if isinstance(content, bytes) else content.encode("utf-8"))
+
+    def send(self, runner, fail=False):
+        sent = []
+
+        def fake(request, timeout=None):
+            sent.append(request.full_url)
+            if fail:
+                raise OSError("fallo contra " + request.full_url)
+            return types.SimpleNamespace(read=lambda: b"")
+        with unittest.mock.patch("urllib.request.urlopen", side_effect=fake):
+            runner.notify("Vintage: prueba", "mensaje", every_s=0)
+        return sent
+
+    def test_the_private_file_wins_over_the_launcher_argument(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory)
+            self.put(runner, self.NEW + chr(10))
+            self.assertEqual(self.send(runner), [self.NEW])
+
+    def test_without_the_file_the_argument_is_still_used(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(self.send(self.runner(directory)), [self.OLD])
+
+    def test_the_file_alone_is_enough_and_tolerates_bom_and_windows_newlines(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory, notify_url=None)
+            self.put(runner, bytes([0xEF, 0xBB, 0xBF]) + self.NEW.encode("utf-8") + bytes([13, 10]))
+            self.assertEqual(self.send(runner), [self.NEW])
+
+    def test_a_file_that_is_not_an_https_url_is_ignored(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory)
+            for content in ("hola", "http://ntfy.sh/inseguro", ""):
+                self.put(runner, content)
+                self.assertEqual(self.send(runner), [self.OLD], content)
+
+    def test_the_file_is_read_on_every_notice_so_it_changes_without_a_restart(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory)
+            self.put(runner, self.NEW)
+            self.assertEqual(self.send(runner), [self.NEW])
+            self.put(runner, "https://ntfy.sh/otro-tema")
+            self.assertEqual(self.send(runner), ["https://ntfy.sh/otro-tema"])
+
+    def test_a_failed_send_never_writes_the_topic_to_the_log(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory)
+            self.put(runner, self.NEW)
+            self.send(runner, fail=True)
+            log = "".join(p.read_text("utf-8") for p in runner.logs.glob("autorun-*.log"))
+            self.assertIn("aviso no enviado", log)
+            self.assertNotIn("secreto-largo-al-azar", log)
+            self.assertNotIn("viejo-publico", log)
+
+
 class TargetRaisedTest(unittest.TestCase):
     def closed_runner(self, directory, status):
         runner = make_runner(directory, [10000])
@@ -252,6 +317,89 @@ class PublishCorrectSplitTest(unittest.TestCase):
             command = seen[0]
             self.assertEqual(command[command.index("--mode") + 1], "correct")
             self.assertEqual(command[command.index("--max-minutes") + 1], "30")
+
+
+class HungEngineTest(unittest.TestCase):
+    """Un motor colgado (red cortada a mitad de un alta) no puede dejar al supervisor esperando para siempre."""
+
+    def hung_process(self):
+        class Hung:
+            terminated = False
+            killed = False
+
+            def wait(self, timeout=None):
+                if self.terminated or self.killed:
+                    return -15
+                raise vintage_autorun.subprocess.TimeoutExpired("node", timeout)
+
+            def terminate(self):
+                self.terminated = True
+
+            def kill(self):
+                self.killed = True
+        return Hung()
+
+    def test_engine_limit_is_the_slice_plus_a_grace_period(self):
+        self.assertGreater(vintage_autorun.ENGINE_HARD_LIMIT_MIN, vintage_autorun.PUBLISH_SLICE_MIN)
+        self.assertLessEqual(vintage_autorun.ENGINE_HARD_LIMIT_MIN, vintage_autorun.PUBLISH_SLICE_MIN + 30)
+
+    def test_a_hung_engine_is_stopped_and_reported_as_a_retryable_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            process = self.hung_process()
+            clock = iter([0, 0, 10, vintage_autorun.ENGINE_HARD_LIMIT_MIN * 60 + 1] + [10 ** 9] * 20)
+            with unittest.mock.patch.object(vintage_autorun.subprocess, "Popen", return_value=process), \
+                    unittest.mock.patch.object(vintage_autorun.time, "monotonic", side_effect=lambda: next(clock)):
+                runner.engine_command = lambda: ["node", "engine.mjs", "--target", "1"]
+                code, error = vintage_autorun.Runner.run_engine(runner)
+            self.assertTrue(process.terminated)
+            self.assertNotEqual(code, 0)
+            self.assertEqual(error, "engine_timeout")
+            self.assertNotIn("engine_timeout", vintage_autorun.FATAL)
+
+    def test_a_hung_engine_makes_the_cycle_wait_and_retry_without_a_stop_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            runner.status = lambda: {}
+            runner.run_engine = lambda: (124, "engine_timeout")
+            self.assertIsNone(runner.cycle())
+            self.assertIn("error del motor", runner.waits)
+            self.assertFalse((Path(directory) / "STOP").exists())
+
+
+class RecoverableStopTest(unittest.TestCase):
+    """Un cupo de ML o un alta sin verificar no necesitan una persona: se espera y se sigue, sin STOP."""
+
+    def test_listing_quota_waits_for_the_next_day_without_a_stop_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            runner.status = lambda: {"state": "stopped_listing_quota", "published_total": 10000}
+            runner.run_engine = lambda: (0, None)
+            runner.seconds_until_next_day = lambda: 4321
+            self.assertIsNone(runner.cycle())
+            self.assertFalse((Path(directory) / "STOP").exists())
+            self.assertEqual(runner.waits, ["cupo de publicaciones"])
+            self.assertEqual(runner.wait_seconds, [4321])
+            self.assertNotIn("stopped_listing_quota", vintage_autorun.FATAL)
+
+    def test_a_failed_readback_retries_after_half_an_hour_without_a_stop_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            runner.status = lambda: {"state": "stopped_item_readback_failed", "published_total": 10000}
+            runner.run_engine = lambda: (0, None)
+            self.assertIsNone(runner.cycle())
+            self.assertFalse((Path(directory) / "STOP").exists())
+            self.assertEqual(runner.waits, ["alta sin verificar"])
+            self.assertEqual(runner.wait_seconds, [30 * 60])
+            self.assertNotIn("stopped_item_readback_failed", vintage_autorun.FATAL)
+
+    def test_a_wrong_account_still_stops_everything(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [10000])
+            runner.status = lambda: {"state": "seller_mismatch", "published_total": 10000}
+            runner.run_engine = lambda: (0, None)
+            self.assertEqual(runner.cycle(), 2)
+            self.assertIn("seller_mismatch", (Path(directory) / "STOP").read_text("utf-8"))
 
 
 if __name__ == "__main__":

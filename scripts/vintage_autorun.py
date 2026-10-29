@@ -38,6 +38,10 @@ RENEW_MARGIN_S = 30 * 60
 # Reparto de cada hora (Seba, 26/10): 50 % subir libros nuevos, 50 % corregir el precio de los ya subidos.
 PUBLISH_SLICE_MIN = 30
 CORRECT_SLICE_MIN = 30
+# Tope duro para el motor: el motor corta solo a los PUBLISH_SLICE_MIN, pero un alta colgada (red cortada,
+# base bloqueada) lo deja esperando para siempre y el supervisor, con el bloqueo tomado, parece vivo.
+# Pasado este tope se lo detiene y se reintenta como cualquier otro error del motor.
+ENGINE_HARD_LIMIT_MIN = PUBLISH_SLICE_MIN + 20
 # Tope que se le pasa al motor (--target). El objetivo real de la campaña vive en la base
 # (ml_vintage_pub_run_targets) y se sube con set-target.mjs; el motor cierra solo al alcanzarlo.
 # Debe coincidir con MAX_TARGET_TOTAL de scripts/vintage-local/engine.mjs (hay un test que lo vigila).
@@ -45,9 +49,14 @@ ENGINE_TARGET_CEILING = 100000
 # Esperas entre renovaciones cuando el motor sigue pidiéndolas sin publicar nada: la última es el
 # tope. Antes eran 120 s y, desde la tercera vuelta, 6 h (que además se re-armaban solas).
 RENEW_RETRY_S = (120, 120, 15 * 60, 30 * 60, 60 * 60)
+# Paradas que se resuelven solas con esperar: no escriben STOP (el 27/10 un STOP de estos dejó la
+# campaña parada un día y medio hasta que alguien lo borró a mano). Espera en segundos o None = mañana.
+RECOVERABLE = {
+    "stopped_listing_quota": ("Mercado Libre rechazó altas por cupo de publicaciones", "cupo de publicaciones", None),
+    "stopped_item_readback_failed": ("Un alta no pasó la verificación posterior", "alta sin verificar", 30 * 60),
+}
+# Necesitan una persona de verdad (cuenta o política equivocada): se escribe STOP.
 FATAL = {
-    "stopped_listing_quota": "Mercado Libre rechazó altas por cupo de publicaciones",
-    "stopped_item_readback_failed": "Un alta no pasó la verificación posterior",
     "seller_mismatch": "La cuenta conectada no es Amado Vintage",
     "inventory_seller_mismatch": "El inventario leído no es de Amado Vintage",
     "foreign_seller_receipt": "La conexión trae recibos de otra cuenta",
@@ -68,6 +77,18 @@ RENEW_NEEDED = {
     "workbook_does_not_match_current_approved_stock", "local_access_expired_or_revoked",
     "local_campaign_not_exclusive", "supplier_stock_stale_or_missing",
 }
+
+
+def read_notify_url(private_dir, fallback=None):
+    """Tópico de ntfy desde private/notify-url.txt (primera línea, https). Es un secreto: quien conoce
+    el nombre puede leer y escribir avisos, así que vive fuera del repo, y se lee en cada aviso para
+    poder cambiarlo sin reiniciar. Sin archivo válido se usa el argumento o VINTAGE_NOTIFY_URL."""
+    try:
+        lines = (Path(private_dir) / "notify-url.txt").read_text("utf-8-sig").strip().splitlines()
+    except OSError:
+        lines = []
+    candidate = lines[0].strip() if lines else ""
+    return candidate if candidate.startswith("https://") else fallback
 
 
 class Runner:
@@ -117,7 +138,7 @@ class Runner:
             return
         self.last_notice[key] = now
         self.log("aviso", title=title, detail=message)
-        url = self.args.notify_url or os.environ.get("VINTAGE_NOTIFY_URL")
+        url = read_notify_url(self.private, self.args.notify_url or os.environ.get("VINTAGE_NOTIFY_URL"))
         if not url:
             return
         try:
@@ -127,7 +148,7 @@ class Runner:
                 request = urllib.request.Request(url, data=json.dumps({"title": title, "message": message}).encode("utf-8"), headers={"Content-Type": "application/json"})
             urllib.request.urlopen(request, timeout=20).read()
         except Exception as error:  # el aviso nunca detiene la campaña
-            self.log("aviso no enviado", error=str(error)[:200])
+            self.log("aviso no enviado", error=str(error).replace(url, "<url>")[:200])
 
     # ── Windows: no suspender mientras corre ─────────────────────────────
     def keep_awake(self, enable):
@@ -259,6 +280,8 @@ class Runner:
         (self.directory / "status.json").unlink(missing_ok=True)  # el estado leído al final es sólo de esta corrida
         log_file = self.logs / f"engine-{dt.datetime.now(MONTEVIDEO).strftime('%Y-%m-%d')}.log"
         start = log_file.stat().st_size if log_file.exists() else 0
+        timed_out = False
+        deadline = time.monotonic() + ENGINE_HARD_LIMIT_MIN * 60
         with log_file.open("a", encoding="utf-8") as output:
             process = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT, text=True)
             while True:
@@ -266,6 +289,16 @@ class Runner:
                     code = process.wait(timeout=30)
                     break
                 except subprocess.TimeoutExpired:
+                    if time.monotonic() > deadline:
+                        self.log("motor colgado: se lo detiene", minutes=ENGINE_HARD_LIMIT_MIN)
+                        timed_out = True
+                        process.terminate()
+                        try:
+                            code = process.wait(timeout=60)
+                        except subprocess.TimeoutExpired:
+                            process.kill()
+                            code = process.wait()
+                        break
                     if self.stop_file.exists():  # STOP frena también al motor, no sólo al supervisor
                         self.log("STOP: deteniendo el motor")
                         process.terminate()
@@ -292,6 +325,8 @@ class Runner:
                 break
             if parsed.get("finished"):
                 break
+        if timed_out:
+            return 124, "engine_timeout"
         return code, error
 
     def wait(self, seconds, reason):
@@ -373,6 +408,13 @@ class Runner:
         self.log("motor terminó", code=code, state=state, published_total=published, error=error)
         self.heartbeat(published, state)
         if self.stop_file.exists():
+            return None
+        recoverable = RECOVERABLE.get(state) or RECOVERABLE.get(error)
+        if recoverable:
+            title, reason, wait_s = recoverable
+            wait_s = self.seconds_until_next_day() if wait_s is None else wait_s
+            self.notify(f"Vintage: {title}", f"Estado: {state}. Publicados: {published}. Sigue solo en {max(1, wait_s // 60)} min.", key=reason, every_s=6 * 3600)
+            self.wait(wait_s, reason)
             return None
         if state in FATAL or (error in FATAL):
             reason = FATAL.get(state) or FATAL.get(error)

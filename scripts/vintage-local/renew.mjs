@@ -12,7 +12,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {inspectWorkbook,checkConfiguration} from './engine.mjs';
-import {stockIsFresh} from '../../worker-sync/publication-policy.js';
+import {stockIsFresh,VINTAGE_STOCK_MAX_HOURS} from '../../worker-sync/publication-policy.js';
 
 export const SBS_SOURCE='https://sbs-distribuidora-lista.s3.sa-east-1.amazonaws.com/Listado+completo+de+libros.xlsx';
 export const SBS_PORTAL='https://ag.sbs.com.ar';
@@ -88,7 +88,7 @@ export async function renewConnection({excel,connection,secret,source,sbs=null,f
  const bytes=await downloadStock(download.source,{fetcher,cookie:download.cookie,origin:download.origin});
  await writeAtomic(excel,bytes);
  const input=await inspect(excel);
- if(!stockIsFresh(input.source_date,now()))throw problem('supplier_stock_stale',{source_date:input.source_date});
+ if(!stockIsFresh(input.source_date,now(),VINTAGE_STOCK_MAX_HOURS))throw problem('supplier_stock_stale',{source_date:input.source_date});
  if(!Array.isArray(input.rows)||input.rows.length<MIN_ROWS)throw problem('supplier_rows_below_minimum',{rows:input.rows?.length??0});
  const feed_id=feedIdFromHash(input.source_sha256),post=makeRenewClient(secret,{fetcher});
  log({step:'revoke'});await post('revoke');

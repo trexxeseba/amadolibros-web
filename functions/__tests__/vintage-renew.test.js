@@ -88,7 +88,7 @@ test('renew refuses a stock snapshot that is too small or stale, without issuing
  const f=await fixture(t),small=await loadStock(f,supplierRows(50));
  await assert.rejects(()=>f.renew.command(f.env,BEARER,'renew',{feed_id:small.feed_id}),/bulk_feed_not_ready/);
  assert.equal((await localExecutorState(f.env,f.clock.value)).active,false);
- const {feed_id}=await loadStock(f,supplierRows(10000));f.clock.value+=25*3600000;
+ const {feed_id}=await loadStock(f,supplierRows(10000));f.clock.value+=49*3600000; // más que el tope de 48 h de Vintage
  await assert.rejects(()=>f.renew.command(f.env,BEARER,'renew',{feed_id}),/bulk_feed_not_ready/);
  assert.equal((await localExecutorState(f.env,f.clock.value)).active,false);
 });
@@ -111,9 +111,9 @@ test('the PC client downloads the supplier stock, loads it through the route and
  const again=await renewConnection({excel,connection,secret:SECRET,fetcher,now:()=>f.clock.value,inspect:async()=>({source_date:new Date(f.clock.value).toISOString(),source_sha256:sha2,rows:next})});
  assert.equal(again.feed_id,feedIdFromHash(sha2));await assert.rejects(()=>f.access.command(f.env,saved.key,'status'),/revoked/);
  const replaced=JSON.parse(await fs.readFile(connection,'utf8'));assert.notEqual(replaced.key,saved.key);await f.access.command(f.env,replaced.key,'status');
- // stale supplier stock is refused locally, before any request to the server
+ // stale supplier stock (more than 48 h, the Vintage window) is refused locally, before any request to the server
  const before=seen.length;
- await assert.rejects(()=>renewConnection({excel,connection,secret:SECRET,fetcher,now:()=>f.clock.value,inspect:async()=>({source_date:new Date(f.clock.value-48*3600000).toISOString(),source_sha256:'c'.repeat(64),rows:next})}),/supplier_stock_stale/);
+ await assert.rejects(()=>renewConnection({excel,connection,secret:SECRET,fetcher,now:()=>f.clock.value,inspect:async()=>({source_date:new Date(f.clock.value-49*3600000).toISOString(),source_sha256:'c'.repeat(64),rows:next})}),/supplier_stock_stale/);
  assert.equal(seen.length,before+1);assert.equal(seen.at(-1),'download');
  await assert.rejects(()=>renewConnection({excel,connection,secret:'short',fetcher,inspect,now:()=>f.clock.value}),/renew_secret_missing/);
  await assert.rejects(()=>downloadStock(SBS_SOURCE,{fetcher:async()=>new Response('',{status:503})}),/supplier_download_failed/);

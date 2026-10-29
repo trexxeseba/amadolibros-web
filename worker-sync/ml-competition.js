@@ -23,9 +23,10 @@ import { bookIsbn } from './isbn.js';
 import { bulkItemsPath, bulkEntryItem } from './meli-bulk.js';
 
 const ML_ORIGIN = 'https://api.mercadolibre.com';
-const DAY_MS = 86400000, HOUR_MS = 3600000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60, SNAPSHOT_VERSION = 5;
+const DAY_MS = 86400000, HOUR_MS = 3600000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60;
+export const SNAPSHOT_VERSION = 6;
 // Páginas del listado de una ficha por foto: más de eso se registra como parcial.
-const MAX_PAGES = 5, RUNS_KEPT = 400;
+const PRODUCT_PAGES = 5, PRODUCT_PAGE_SIZE = 50, RUNS_KEPT = 400;
 // Rotación del resto del catálogo (fichas con catalog_product_id que no entran
 // en el top diario): cada ficha se vuelve a leer cada ROTATION_DAYS; una foto
 // parcial se reintenta al día siguiente y un error con espera creciente
@@ -188,27 +189,36 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     return { used, n };
   }
 
-  // Listado completo de la ficha, página por página. Devuelve también cuántos
-  // dice ML que hay (paging.total) y cuántos se leyeron: si no coinciden, la
-  // foto es parcial y no sirve para inferir ausencias.
+  // Listado completo de la ficha, página por página: se piden todas (hasta
+  // PRODUCT_PAGES) para no descartar el producto como "parcial". Devuelve
+  // también cuántos dice ML que hay (paging.total) y cuántos se leyeron: si
+  // no coinciden, la foto es parcial y no sirve para inferir ausencias.
   async function listProductItems(pid, token) {
-    const items = [], seen = new Set();
-    let offset = 0, pages = 0, total = null, code = null;
-    while (pages < MAX_PAGES) {
+    const seen = new Map();
+    let pages = 0, total = null, code = null;
+    while (pages < PRODUCT_PAGES) {
       let data;
-      try { data = await ml(`/products/${encodeURIComponent(pid)}/items${offset ? `?offset=${offset}` : ''}`, token); }
-      catch (e) { if (e.status === 429 || !pages) throw e; code = e.code; break; }
+      try { data = await ml(`/products/${encodeURIComponent(pid)}/items?limit=${PRODUCT_PAGE_SIZE}&offset=${seen.size}`, token); }
+      catch (e) {
+        // 404 en la primera página = el producto no tiene publicaciones
+        // compitiendo por el catálogo hoy (por ejemplo, todas a pedido o
+        // pausadas): es un dato, no una falla. En páginas siguientes, o con
+        // otro código, se conserva lo ya leído: una página que falta nunca
+        // equivale a que un competidor se fue.
+        if (e.status === 404 && !pages) return { items: [], total: 0, fetched: 0, pages: 0, complete: true, code: null };
+        if (e.status === 429 || !pages) throw e;
+        code = e.code;
+        break;
+      }
       pages++;
-      const page = Array.isArray(data?.results) ? data.results : [];
-      let added = 0;
-      for (const it of page) { const id = typeof it?.item_id === 'string' ? it.item_id : null; if (!id || seen.has(id)) continue; seen.add(id); items.push(it); added++; }
-      const t = Number(data?.paging?.total);
-      total = Number.isFinite(t) && t >= 0 ? t : (total ?? items.length);
-      const limit = Number(data?.paging?.limit) > 0 ? Number(data.paging.limit) : page.length;
-      offset += limit;
-      // Sin avance (ML ignora offset o repite), o ya está todo: se corta.
-      if (!added || items.length >= total) break;
+      const res = Array.isArray(data?.results) ? data.results : null;
+      if (!res) break;
+      total = Number(data?.paging?.total ?? data?.pagination?.total ?? data?.total ?? res.length);
+      const before = seen.size;
+      for (const it of res) if (typeof it?.item_id === 'string' && !seen.has(it.item_id)) seen.set(it.item_id, it);
+      if (!Number.isFinite(total) || seen.size >= total || seen.size === before) break;
     }
+    const items = [...seen.values()];
     if (total == null) total = items.length;
     return { items, total, fetched: items.length, pages, complete: !code && items.length >= total, code };
   }
@@ -219,7 +229,8 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     try {
       listing = await listProductItems(target.catalog_product_id, token);
       calls += listing.pages;
-      caps.products_items = 'ok';
+      if (listing.code) errorCode = listing.code;
+      caps.products_items = listing.code ?? 'ok';
     } catch (e) { caps.products_items = e.code; errorCode = e.code; calls++; if (e.status === 429) throw e; }
     const items = listing?.items ?? null;
     if (target.own_catalog_item_id && caps.price_to_win !== 'ml_http_403' && caps.price_to_win !== 'ml_http_404') {
@@ -232,12 +243,16 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     // siempre de /items/bulk: el listado del catálogo no es evidencia de plazo
     // ni de stock. Si ML no lo manda, queda sin dato (null), nunca como
     // entrega inmediata. Sólo una publicación activa con stock tiene plazo.
-    const competitors = (items ?? []).filter(it => String(it.seller_id ?? '') !== SALES_SELLER_ID).map(it => it.item_id);
+    const competitors = (items ?? []).filter(it => typeof it?.item_id === 'string' && String(it.seller_id ?? '') !== SALES_SELLER_ID);
+    const sinCondicion = [...new Set(competitors.map(it => it.item_id))];
+    // El listado del catálogo no es evidencia de plazo/stock: se descarta
+    // antes del bulk para que un 403 o una respuesta parcial no deje un 0 falso.
+    for (const it of competitors) { it.sale_terms = undefined; it.condition = undefined; it.international_delivery_mode = undefined; }
     const extra = new Map();
-    if (competitors.length && caps.items_bulk !== 'ml_http_403' && caps.items_bulk !== 'ml_http_401') {
-      for (let i = 0; i < competitors.length; i += 20) {
+    if (sinCondicion.length && caps.items_bulk !== 'ml_http_403' && caps.items_bulk !== 'ml_http_401') {
+      for (let i = 0; i < sinCondicion.length; i += 20) {
         try {
-          const raw = await ml(bulkItemsPath(competitors.slice(i, i + 20), 'id,status,available_quantity,currency_id,condition,shipping,international_delivery_mode,sale_terms'), token);
+          const raw = await ml(bulkItemsPath(sinCondicion.slice(i, i + 20), 'id,status,available_quantity,currency_id,condition,shipping,international_delivery_mode,sale_terms'), token);
           calls++; caps.items_bulk = 'ok';
           for (const item of (Array.isArray(raw) ? raw : []).map(bulkEntryItem).filter(Boolean)) extra.set(item.id, item);
         } catch (e) { calls++; caps.items_bulk = e.code; if (e.status === 429) throw e; break; }
