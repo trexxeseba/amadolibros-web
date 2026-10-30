@@ -25,6 +25,13 @@ class DecideTest(unittest.TestCase):
     def test_stop_wins_over_everything(self):
         self.assertEqual(decide(stop=True, running=False)[:2], ("none", "stop"))
 
+    def test_correct_only_mode_never_alerts_for_missing_new_books_but_still_relaunches(self):
+        old = {"last_total": 7500, "changed_at": NOW - 5 * 3600}
+        action, why, _ = decide(mode="correct_only", memory=old)
+        self.assertEqual((action, why), ("none", "correct_only"))
+        self.assertEqual(decide(mode="correct_only", running=False, memory=old)[:2], ("relaunch", "autorun_not_running"))
+        self.assertEqual(decide(mode="correct_only", stop=True, memory=old)[:2], ("none", "stop"))
+
     def test_dead_supervisor_is_relaunched(self):
         self.assertEqual(decide(running=False)[:2], ("relaunch", "autorun_not_running"))
 
@@ -97,6 +104,22 @@ class LockTest(unittest.TestCase):
 
 
 class OnceTest(unittest.TestCase):
+    def setUp(self):
+        # Aislado del campaign.json real del repo: estas pruebas son del modo normal.
+        patcher = unittest.mock.patch.object(watchdog, "CAMPAIGN_FILE", Path(tempfile.gettempdir()) / "no-existe-campaign.json")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_the_mode_is_read_from_the_campaign_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            campaign = Path(directory, "campaign.json")
+            with unittest.mock.patch.object(watchdog, "CAMPAIGN_FILE", campaign):
+                self.assertEqual(watchdog.repo_mode(), "publish_and_correct")
+                campaign.write_text('{"target_total": 80000, "mode": "correct_only"}', "utf-8")
+                self.assertEqual(watchdog.repo_mode(), "correct_only")
+                campaign.write_text('{"mode": "otra cosa"}', "utf-8")
+                self.assertEqual(watchdog.repo_mode(), "publish_and_correct")
+
     def test_dry_run_relaunch_is_remembered_and_not_repeated(self):
         with tempfile.TemporaryDirectory() as directory:
             Path(directory, "status.json").write_text(json.dumps({"at": "2027-01-15T12:00:00.000Z", "published_total": 7500, "state": "publishing", "run": {"index": {"done": True}}}), "utf-8")
