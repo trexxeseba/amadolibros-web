@@ -1,3 +1,4 @@
 {
-  "target_total": 80000
+  "target_total": 80000,
+  "mode": "correct_only"
 }

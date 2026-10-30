@@ -19,6 +19,7 @@ def make_runner(directory, published_by_run):
     totals = iter(published_by_run)
     current = {"published_total": published_by_run[0]}
     runner.update_code = lambda: False
+    runner.repo_mode = lambda: "publish_and_correct"  # aislado del campaign.json real del repo
     runner.apply_repo_target = lambda: None
     runner.connection_expires_at = lambda: time.time() + 86400
     runner.renew = lambda: (0, {"state": "renewed"})
@@ -400,6 +401,89 @@ class RecoverableStopTest(unittest.TestCase):
             runner.run_engine = lambda: (0, None)
             self.assertEqual(runner.cycle(), 2)
             self.assertIn("seller_mismatch", (Path(directory) / "STOP").read_text("utf-8"))
+
+
+class CorrectOnlyModeTest(unittest.TestCase):
+    """Seba (29/10): dejar de subir libros nuevos y dedicar la hora entera a corregir precios."""
+
+    def runner(self, directory, mode):
+        campaign = Path(directory) / "campaign.json"
+        campaign.write_text('{"target_total": 80000%s}' % ('' if mode is None else ', "mode": "%s"' % mode), "utf-8")
+        patcher = unittest.mock.patch.object(vintage_autorun, "CAMPAIGN_FILE", campaign)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        runner = make_runner(directory, [10000])
+        runner.repo_mode = types.MethodType(vintage_autorun.Runner.repo_mode, runner)  # la lectura real, sobre el archivo de prueba
+        runner.engine_calls = []
+        runner.run_engine = lambda: runner.engine_calls.append(True) or (0, None)
+        runner.corrected_for = []
+        runner.next_result = {"state": "corrected", "remaining": 40}
+        runner.correct_prices = lambda minutes=vintage_autorun.CORRECT_SLICE_MIN: runner.corrected_for.append(minutes) or runner.next_result
+        return runner
+
+    def test_the_mode_defaults_to_publishing_and_reads_correct_only_from_the_repo_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(self.runner(directory, None).repo_mode(), "publish_and_correct")
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(self.runner(directory, "correct_only").repo_mode(), "correct_only")
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(self.runner(directory, "cualquier cosa").repo_mode(), "publish_and_correct")
+
+    def test_correct_only_never_starts_the_engine_and_corrects_for_most_of_the_hour(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory, "correct_only")
+            self.assertIsNone(runner.cycle())
+            self.assertEqual(runner.engine_calls, [])
+            self.assertEqual(runner.corrected_for, [vintage_autorun.CORRECT_ONLY_SLICE_MIN])
+            self.assertGreaterEqual(vintage_autorun.CORRECT_ONLY_SLICE_MIN, 45)
+            self.assertLess(vintage_autorun.CORRECT_ONLY_SLICE_MIN, 60)
+            self.assertEqual(runner.waits, [])  # con libros por revisar sigue enseguida
+
+    def test_correct_only_waits_when_every_book_is_already_checked(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory, "correct_only")
+            runner.next_result = {"state": "corrected", "remaining": 0}
+            self.assertIsNone(runner.cycle())
+            self.assertEqual(runner.waits, ["correcciones al día"])
+            self.assertEqual(runner.wait_seconds, [3 * 3600])
+
+    def test_correct_only_backs_off_when_mercado_libre_limits_the_requests(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory, "correct_only")
+            runner.next_result = {"state": "backoff", "remaining": 900}
+            self.assertIsNone(runner.cycle())
+            self.assertEqual(runner.waits, ["límite de Mercado Libre"])
+            self.assertEqual(runner.wait_seconds, [15 * 60])
+
+    def test_correct_only_does_not_spin_when_the_correction_gives_no_result(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory, "correct_only")
+            runner.next_result = None
+            self.assertIsNone(runner.cycle())
+            self.assertEqual(runner.waits, ["corrección sin resultado"])
+            self.assertEqual(runner.wait_seconds, [10 * 60])
+
+    def test_default_mode_still_publishes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = self.runner(directory, None)
+            runner.cycle()
+            self.assertEqual(runner.engine_calls, [True])
+
+    def test_the_correction_takes_its_minutes_and_returns_the_result(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = types.SimpleNamespace(directory=directory, excel=None, connection=None, secret_file=None, sbs_file=None, node="node", target=10000, notify_url=None, stock_sync="pause_and_reactivate")
+            runner = vintage_autorun.Runner(args)
+            runner.node = "node"
+            seen = []
+            def run(command, **kwargs):
+                seen.append((command, kwargs))
+                return types.SimpleNamespace(returncode=0, stdout='{"state":"corrected","remaining":0}', stderr="")
+            with unittest.mock.patch.object(vintage_autorun.subprocess, "run", side_effect=run):
+                result = runner.correct_prices(minutes=55)
+            command, kwargs = seen[0]
+            self.assertEqual(command[command.index("--max-minutes") + 1], "55")
+            self.assertEqual(kwargs["timeout"], 65 * 60)
+            self.assertEqual(result, {"state": "corrected", "remaining": 0})
 
 
 if __name__ == "__main__":

@@ -131,3 +131,15 @@ desactiva la suspensión con corriente, registra la tarea programada
 `stop.cmd` y `start.cmd` en la carpeta de estado. Los avisos van a `-NotifyUrl`
 (un tema de ntfy en el celular o cualquier webhook JSON). Registros diarios en
 `logs/`, con 14 días de retención; `status.json` tiene el estado actual.
+
+## Modo de la campaña: publicar y corregir, o solo corregir
+
+`scripts/vintage-local/campaign.json` llega a la PC con el `git pull` del supervisor y manda el modo:
+
+| `mode` | Qué hace cada hora |
+| --- | --- |
+| ausente o `publish_and_correct` | 30 minutos subiendo libros nuevos y 30 corrigiendo el precio de los ya publicados. |
+| `correct_only` | No sube libros nuevos. Dedica casi toda la hora (55 minutos) a corregir precios competitivos de los ya publicados, el que se miró hace más tiempo primero. Sigue renovando la conexión y sincronizando el stock. |
+
+En `correct_only`, cuando ya se revisaron todos los libros espera 3 horas antes de la próxima pasada; si Mercado Libre limita los pedidos, espera 15 minutos. El vigía local no avisa por "sin altas nuevas" en este modo (sigue relanzando el supervisor si se cae y respeta STOP).
+Para volver a subir libros nuevos alcanza con sacar la línea `mode` (o poner `publish_and_correct`) y mergear: la PC lo toma sola.
