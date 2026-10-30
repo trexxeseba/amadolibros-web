@@ -16,8 +16,8 @@ const book={listArs:80000,weightKg:.5};
 const full=quoteMercadoLibre(book,base).price;
 function isbn13(n){const stem='978'+String(n).padStart(9,'0');const sum=[...stem].reduce((t,c,i)=>t+Number(c)*(i%2?3:1),0);return stem+((10-sum%10)%10);}
 
-test('Vintage competitive policy: 18 % floor, never below UYU 1.500, ganador -1 %, and below the floor the book keeps its full price',()=>{
- assert.equal(policy.competitive,true);assert.equal(policy.competitiveFloorMargin,.18);assert.equal(policy.competitiveMinimumSaleUyu,1500);assert.equal(policy.competitiveBelowFloor,'full');assert.equal(policy.minimumSaleUyu,1600);
+test('Vintage competitive policy: 18 % floor, never below UYU 1.200, ganador -1 %, and below the floor the book keeps its full price',()=>{
+ assert.equal(policy.competitive,true);assert.equal(policy.competitiveFloorMargin,.18);assert.equal(policy.competitiveMinimumSaleUyu,1200);assert.equal(policy.competitiveBelowFloor,'full');assert.equal(policy.minimumSaleUyu,1600);
  const q=rival=>quoteMercadoLibre({...book,competitor:{price:rival,at:1,days:20}},policy);
  // un rival un poco más barato: se iguala a -1 %
  const matched=q(full-100);assert.equal(matched.competitive.mode,'matched');assert.equal(matched.price,Math.floor((full-100)*.99/10)*10);
@@ -28,10 +28,20 @@ test('Vintage competitive policy: 18 % floor, never below UYU 1.500, ganador -1 
  const flex=quoteMercadoLibre({...book,competitor:{price:full-300,at:1,days:0}},policy);assert.equal(flex.competitive.mode,'rival_faster_delivery');assert.equal(flex.price,full);
  // nadie más lo vende: precio completo
  assert.equal(quoteMercadoLibre({...book,competitor:{price:null,at:1,days:null}},policy).price,full);
- // un libro barato puede igualarse hasta 1.500, nunca menos
+ // un libro barato puede igualarse hasta 1.200, nunca menos
  const small={listArs:20000,weightKg:.3},smallFull=quoteMercadoLibre(small,base).price;
  assert.equal(smallFull,1600);
- const s=quoteMercadoLibre({...small,competitor:{price:1400,at:1,days:30}},policy);assert.ok(s.price>=1500);
+ const s=quoteMercadoLibre({...small,competitor:{price:1400,at:1,days:30}},policy);assert.ok(s.price>=1200);
+ // un libro de costo bajo (el 18 % de margen no lo frena): el mínimo de 1.200 es lo que manda
+ const cheapBook={listArs:8000,weightKg:.3};
+ // con 1.200 de piso ya se puede igualar a un rival de 1.250 (con 1.500 quedaba afuera)
+ const cheapMatched=quoteMercadoLibre({...cheapBook,competitor:{price:1250,at:1,days:30}},policy);
+ assert.equal(cheapMatched.competitive.mode,'matched');assert.equal(cheapMatched.price,1230);assert.ok(cheapMatched.price>=1200);
+ // un rival por debajo de 1.200 no arrastra el precio: el libro se queda a precio completo
+ const cheapBelow=quoteMercadoLibre({...cheapBook,competitor:{price:1150,at:1,days:30}},policy);
+ assert.equal(cheapBelow.competitive.mode,'below_floor_full_price');assert.equal(cheapBelow.price,1600);
+ // y el libro más caro conserva su piso del 18 % aunque el mínimo bajó
+ assert.equal(quoteMercadoLibre({...small,competitor:{price:1250,at:1,days:30}},policy).competitive.mode,'below_floor_full_price');
  assert.equal(quoteMercadoLibre({...small,competitor:{price:1530,at:1,days:30}},policy).price,1510);
 });
 test('the optional competitive fields only enter the hash when set, so earlier approved policies keep their hash',async()=>{
@@ -41,16 +51,16 @@ test('the optional competitive fields only enter the hash when set, so earlier a
  assert.notEqual(await policyHash(old),await policyHash(policy));
  assert.throws(()=>validPolicy({...old,competitiveMinimumSaleUyu:1700}),/invalid_policy/);
  assert.throws(()=>validPolicy({...old,competitiveBelowFloor:'maybe'}),/invalid_policy/);
- // la política de Vintage no deja bajar el mínimo competitivo de 1.500
- assert.equal(vintagePolicy({...base,...old,competitiveMinimumSaleUyu:900}).competitiveMinimumSaleUyu,1500);
+ // la política de Vintage no deja bajar el mínimo competitivo de 1.200
+ assert.equal(vintagePolicy({...base,...old,competitiveMinimumSaleUyu:900}).competitiveMinimumSaleUyu,1200);
 });
-test('the minimum for a new listing is 1.600 at full price and 1.500 with the competitive policy',()=>{
- assert.equal(vintageMinimumFor(base),1600);assert.equal(vintageMinimumFor(policy),1500);
+test('the minimum for a new listing is 1.600 at full price and 1.200 with the competitive policy',()=>{
+ assert.equal(vintageMinimumFor(base),1600);assert.equal(vintageMinimumFor(policy),1200);
  assert.throws(()=>requireVintagePrice({currency_id:'UYU',price:1599}),/vintage_price_below_1600/);
- assert.doesNotThrow(()=>requireVintagePrice({currency_id:'UYU',price:1500},vintageMinimumFor(policy)));
- assert.throws(()=>requireVintagePrice({currency_id:'UYU',price:1499},vintageMinimumFor(policy)),/vintage_price_below_1500/);
- // aunque alguien pida menos, el piso absoluto es 1.500
- assert.throws(()=>requireVintagePrice({currency_id:'UYU',price:1200},100),/vintage_price_below_1500/);
+ assert.doesNotThrow(()=>requireVintagePrice({currency_id:'UYU',price:1200},vintageMinimumFor(policy)));
+ assert.throws(()=>requireVintagePrice({currency_id:'UYU',price:1199},vintageMinimumFor(policy)),/vintage_price_below_1200/);
+ // aunque alguien pida menos, el piso absoluto es 1.200
+ assert.throws(()=>requireVintagePrice({currency_id:'UYU',price:1100},100),/vintage_price_below_1200/);
 });
 test('a local run accepts a new policy only through the recorded amendment chain',()=>{
  const h=c=>c.repeat(64),chain=[{old_hash:h('a'),new_hash:h('b')},{old_hash:h('b'),new_hash:h('c')}];
