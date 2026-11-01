@@ -1,0 +1,72 @@
+name: Purge page cache (promo web)
+
+# La zona de Cloudflare guarda el HTML de fichas y listados hasta 4 h sin
+# importar el Cache-Control del origen. Cuando cambia el precio (inicio o fin de
+# la promo web) hay que vaciar esas copias para que el cliente vea el mismo
+# precio que cobra el servidor.
+#
+# - Manual: Actions > Purge page cache (promo web) > Run workflow.
+# - Automático: poco después del fin de la promo (2/11/2026 23:59:59 hora de
+#   Montevideo = 3/11 02:59:59 UTC). GitHub puede demorar los cron; hay dos
+#   corridas por si la primera se retrasa.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '5 3 3 11 *'
+    - cron: '40 3 3 11 *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: purge-page-cache
+  cancel-in-progress: false
+
+jobs:
+  purge:
+    name: Purge HTML cache
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      ZONE_NAME: amadolibros.com
+      HOST: www.amadolibros.com
+    steps:
+      - name: Find the zone
+        id: zone
+        run: |
+          set -euo pipefail
+          resp=$(curl -sS "https://api.cloudflare.com/client/v4/zones?name=${ZONE_NAME}" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}")
+          echo "$resp" | jq -c '{success, errors}'
+          id=$(echo "$resp" | jq -r '.result[0].id // empty')
+          if [ -z "$id" ]; then
+            echo "::error::El token no puede leer la zona ${ZONE_NAME} (necesita Zone Read)."
+            exit 1
+          fi
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
+      - name: Purge pages with prices (by prefix)
+        id: prefix
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          body=$(jq -n --arg h "$HOST" '{prefixes: [
+            ($h + "/libro/"), ($h + "/catalogo"), ($h + "/libros/"),
+            ($h + "/especialidades/"), ($h + "/autores/"), ($h + "/temas")
+          ]}')
+          resp=$(curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${{ steps.zone.outputs.id }}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json" --data "$body")
+          echo "$resp" | jq -c '{success, errors}'
+          echo "$resp" | jq -e '.success == true' >/dev/null
+
+      - name: Fallback - purge everything
+        if: steps.prefix.outcome == 'failure'
+        run: |
+          set -euo pipefail
+          resp=$(curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${{ steps.zone.outputs.id }}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}')
+          echo "$resp" | jq -c '{success, errors}'
+          echo "$resp" | jq -e '.success == true' >/dev/null
