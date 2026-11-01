@@ -2770,6 +2770,17 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       unitEl.textContent = fmt.format(item.price) + ' c/u';
       art.appendChild(unitEl);
 
+      if (item.original_price && item.original_price > item.price) {
+        var promoEl = document.createElement('p');
+        promoEl.className = 'cart-item-promo-was';
+        promoEl.style.cssText = 'margin:0;font-size:.82rem;font-weight:700;color:#9a3412';
+        promoEl.appendChild(document.createTextNode('Precio promocional. Precio habitual: '));
+        var wasEl = document.createElement('s');
+        wasEl.textContent = fmt.format(item.original_price);
+        promoEl.appendChild(wasEl);
+        art.appendChild(promoEl);
+      }
+
       if (validation && validation.status === 'precio_cambiado') {
         var priceUpdate = document.createElement('span');
         priceUpdate.className = 'cart-item-update-msg';

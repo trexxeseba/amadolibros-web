@@ -21,6 +21,7 @@ import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_FONTS_HEAD } from '../_shared/
 // FICHAS-QUALITY-GUARD-1: fuente única sobre autoría genérica/ausente.
 import { isGenericAuthor, realAuthor, stripGenericAuthorMention } from '../_shared/generic-author.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
+import { promoAwareCacheControl, promoWasHtml } from '../_shared/web-promo.js';
 // QW3A: misma validación de ISBN→GTIN que ya usa el feed de Merchant — nunca
 // inventa ni corrige dígitos, sólo evita publicar un ISBN mal formado.
 import { isBookProduct, normalizeIsbnToGtin } from '../feed.xml.js';
@@ -679,10 +680,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         schemaProduct.offers.itemCondition = 'https://schema.org/UsedCondition';
     }
 
-    const originalPrice = Number(item.original_price) || 0;
-    const promoNoteHtml = sellableInCheckout && originalPrice > price
-        ? `<span class="price-promo">Precio promocional por tiempo limitado. Precio habitual: <s>$${originalPrice.toLocaleString('es-UY')} UYU</s></span>`
-        : '';
+    const promoNoteHtml = sellableInCheckout ? promoWasHtml(item) : '';
 
     const priceHtml = sellableInCheckout
         ? `<div class="price-box">
@@ -885,7 +883,6 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .price-main{display:flex;flex-direction:column;align-items:flex-start;gap:.12rem}
     .price-main-label{font-size:.82rem;font-weight:700;color:#334155}
     .price-main strong{font-size:1.55rem;font-weight:850;color:#18120e;line-height:1.25}
-    .price-promo{font-size:.85rem;font-weight:700;color:#9a3412;margin-top:.1rem}
     .price-installment{font-size:.88rem;font-weight:600;color:#475569;margin-top:.15rem}
     .price-transfer{display:flex;flex-direction:column;align-items:flex-start;gap:.12rem;
                     margin-top:.75rem;padding-top:.7rem;border-top:1px solid #e2e8f0}
@@ -1296,7 +1293,7 @@ export async function onRequest(context) {
     return new Response(html, {
         headers: {
             'content-type':  'text/html;charset=UTF-8',
-            'cache-control': 'public, max-age=3600',
+            'cache-control': promoAwareCacheControl(3600, new Date(), context.env),
             'server-timing': serverTiming,
             'x-cache-status': cacheStatus,
             'x-perf-cache-hits': String(context.data.perf.cache.hit),

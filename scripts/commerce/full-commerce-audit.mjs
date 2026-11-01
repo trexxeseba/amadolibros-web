@@ -3,6 +3,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { inspectCoverBytes } from '../../worker-sync/cover-mirror.js';
 import { isBookProduct } from '../../functions/feed.xml.js';
+import { applyPromoToPrice, webPromoActive } from '../../functions/_shared/web-promo.js';
 import { inspectProductImages } from '../../shared/product-image-audit.js';
 
 const DEFAULT_BASE_URL = 'https://www.amadolibros.com';
@@ -47,7 +48,15 @@ function issue(severity, code, message, details = {}) {
   return { severity, code, message, ...details };
 }
 
-export function auditFeed(catalog, feedItems, { canonicalHost = 'www.amadolibros.com' } = {}) {
+// Precio que el feed debe publicar ahora: el del catálogo crudo, rebajado con la
+// promo web solo mientras su ventana está vigente. Fuera de ventana el feed debe
+// volver al precio habitual (si no, el control sigue fallando, como corresponde).
+export function expectedFeedPrice(catalogPrice, { now = new Date(), env = {} } = {}) {
+  const price = Number(catalogPrice);
+  return webPromoActive(now, env) ? applyPromoToPrice(price) : price;
+}
+
+export function auditFeed(catalog, feedItems, { canonicalHost = 'www.amadolibros.com', now = new Date(), env = {} } = {}) {
   const catalogItems = Array.isArray(catalog?.items) ? catalog.items : [];
   const byId = new Map(catalogItems.map(item => [String(item.id), item]));
   const issues = [];
@@ -72,9 +81,13 @@ export function auditFeed(catalog, feedItems, { canonicalHost = 'www.amadolibros
     const price = parsePrice(row.price);
     if (!price || price.currency !== 'UYU') {
       issues.push(issue('critical', 'FEED_PRICE_INVALID', 'Precio o moneda inválidos.', { id: row.id, price: row.price }));
-    } else if (price.amount !== Number(source.price)) {
-      issues.push(issue('critical', 'FEED_PRICE_MISMATCH', 'Precio del feed distinto al catálogo.', {
-        id: row.id, feed_price: price.amount, catalog_price: Number(source.price),
+    } else if (price.amount !== expectedFeedPrice(source.price, { now, env })) {
+      issues.push(issue('critical', 'FEED_PRICE_MISMATCH', 'Precio del feed distinto al esperado según el catálogo y la promo vigente.', {
+        id: row.id,
+        feed_price: price.amount,
+        catalog_price: Number(source.price),
+        expected_price: expectedFeedPrice(source.price, { now, env }),
+        promo_active: webPromoActive(now, env),
       }));
     }
     const explicitCurrency = text(source.currency || source.currency_id).toUpperCase();
@@ -329,7 +342,7 @@ export async function runFullCommerceAudit({
     schema_version: 1,
     started_at: startedAt,
     finished_at: new Date().toISOString(),
-    scope: { base_url: baseUrl, catalog_url: catalogUrl, image_limit: imageLimit, page_limit: pageLimit, expect_indexable: expectIndexable },
+    scope: { base_url: baseUrl, catalog_url: catalogUrl, image_limit: imageLimit, page_limit: pageLimit, expect_indexable: expectIndexable, web_promo_active: webPromoActive(new Date()) },
     live_status_only: true,
     note: 'Los estados históricos de GSC no se clasifican como fallas vivas.',
     result: critical === 0 ? 'pass' : 'fail',

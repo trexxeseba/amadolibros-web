@@ -27,10 +27,13 @@
     if (!isFinite(qty) || qty < 1) return null;
     var maxQty = Math.floor(Number(it.max_qty));
     if (!isFinite(maxQty) || maxQty < 0) maxQty = 0;
+    var originalPrice = Math.round(Number(it.original_price));
+    if (!isFinite(originalPrice) || originalPrice <= price) originalPrice = 0;
     return {
       id: id,
       title: String(it.title || '').slice(0, 200),
       price: price,
+      original_price: originalPrice,
       quantity: qty,
       thumbnail: String(it.thumbnail || '').slice(0, 500),
       max_qty: maxQty,
@@ -272,6 +275,13 @@
         var available = Math.floor(Number(current.available_quantity));
         if (isFinite(price) && price > 0 && item.price !== price) {
           item.price = price;
+          changed = true;
+        }
+        // Precio habitual informativo (promo web); 0 cuando no hay promo.
+        var original = Math.round(Number(current.original_price_uyu));
+        if (!isFinite(original) || original <= (isFinite(price) ? price : 0)) original = 0;
+        if ((item.original_price || 0) !== original) {
+          item.original_price = original;
           changed = true;
         }
         if (isFinite(available) && available > 0 && item.max_qty !== available) {

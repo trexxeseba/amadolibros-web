@@ -87,7 +87,7 @@ const shelfBooks = books.map(book => ({
             <div>
               <h3><a href={book.href}>{book.title}</a></h3>
               {book.author && <p>{book.author}</p>}
-              {Number(book.price || 0) > 0 && <strong>{price.format(Number(book.price))}</strong>}
+              {Number(book.price || 0) > 0 && <strong data-habitual-price={Number(book.price)}>{price.format(Number(book.price))}</strong>}
             </div>
           </div>
         </article>
@@ -97,6 +97,43 @@ const shelfBooks = books.map(book => ({
     <p class="v2-shelf-empty">La selección se completa al construir el catálogo.</p>
   )}
 </section>
+
+<script is:inline>
+  // La home se arma en el build con el precio habitual. Si hay una promo web
+  // vigente, se muestra el mismo precio que cobra el servidor (habitual,
+  // promocional y transferencia). Sin red o sin promo queda el precio habitual.
+  (function () {
+    var nodes = document.querySelectorAll('[data-habitual-price]');
+    if (!nodes.length || !window.fetch) return;
+    fetch('/api/web-promo', { credentials: 'omit' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (promo) {
+        if (!promo || promo.active !== true) return;
+        var pct = Number(promo.percent);
+        if (!isFinite(pct) || pct <= 0 || pct >= 100) return;
+        var fmt = new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'UYU', maximumFractionDigits: 0 });
+        Array.prototype.forEach.call(nodes, function (node) {
+          var habitual = Number(node.getAttribute('data-habitual-price'));
+          if (!isFinite(habitual) || habitual <= 0) return;
+          var promoPrice = Math.max(1, Math.round(habitual * (1 - pct / 100)));
+          var transfer = Math.round(promoPrice * 0.88);
+          node.textContent = fmt.format(promoPrice);
+          var was = document.createElement('small');
+          was.style.cssText = 'display:block;font-weight:600;opacity:.85';
+          was.appendChild(document.createTextNode(pct + '% menos. Precio habitual: '));
+          var s = document.createElement('s');
+          s.textContent = fmt.format(habitual);
+          was.appendChild(s);
+          var tr = document.createElement('small');
+          tr.style.cssText = 'display:block;font-weight:600;opacity:.85';
+          tr.textContent = 'Transferencia: ' + fmt.format(transfer);
+          node.parentNode.insertBefore(was, node.nextSibling);
+          node.parentNode.insertBefore(tr, was.nextSibling);
+        });
+      })
+      .catch(function () {});
+  })();
+</script>
 
 <style>
   .v2-shelf {
