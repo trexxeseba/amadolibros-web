@@ -120,7 +120,7 @@ const shelfBooks = books.map(book => ({
           node.textContent = fmt.format(promoPrice);
           var was = document.createElement('small');
           was.style.cssText = 'display:block;font-weight:600;opacity:.85';
-          was.appendChild(document.createTextNode(pct + '% menos. Precio habitual: '));
+          was.appendChild(document.createTextNode((promo.name ? promo.name + ': ' : '') + pct + '% menos' + (promo.end_label ? ' hasta el ' + promo.end_label : '') + '. Precio habitual: '));
           var s = document.createElement('s');
           s.textContent = fmt.format(habitual);
           was.appendChild(s);

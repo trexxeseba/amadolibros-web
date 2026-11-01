@@ -11,7 +11,7 @@ import { validateCartAgainstCatalog } from '../api/_orders_logic.js';
 
 const DENTRO = new Date('2026-11-02T12:00:00-03:00');
 const ANTES = new Date('2026-10-31T23:59:59-03:00');
-const DESPUES = new Date('2026-11-03T00:00:00-03:00');
+const DESPUES = new Date('2026-11-10T00:00:00-03:00');
 
 const items = () => [
   { id: 'MLU1', title: 'Uno', price: 1234, status: 'active', available_quantity: 3 },
@@ -112,22 +112,22 @@ test('inicio y fin exactos en hora de Montevideo, expresados en UTC', () => {
   // 00:00 del 1/11 en Montevideo = 03:00 UTC
   assert.equal(webPromoActive(new Date('2026-11-01T02:59:59Z')), false);
   assert.equal(webPromoActive(new Date('2026-11-01T03:00:00Z')), true);
-  // 23:59:59 del 2/11 en Montevideo = 02:59:59 UTC del 3/11
-  assert.equal(webPromoActive(new Date('2026-11-03T02:59:59Z')), true);
-  assert.equal(webPromoActive(new Date('2026-11-03T03:00:00Z')), false);
+  // 23:59:59 del 9/11 en Montevideo = 02:59:59 UTC del 10/11
+  assert.equal(webPromoActive(new Date('2026-11-10T02:59:59Z')), true);
+  assert.equal(webPromoActive(new Date('2026-11-10T03:00:00Z')), false);
 });
 
 test('el servidor del usuario en otra zona horaria no cambia la ventana', () => {
-  // 2/11 23:59:59 en Montevideo (UTC-3) es la misma instantánea que 3/11 02:59:59 UTC
-  // y que 2/11 20:59:59 en Ciudad de México (UTC-6).
-  assert.equal(webPromoActive(new Date('2026-11-02T20:59:59-06:00')), true);
-  assert.equal(webPromoActive(new Date('2026-11-02T21:00:00-06:00')), false);
+  // 9/11 23:59:59 en Montevideo (UTC-3) es la misma instantánea que 10/11 02:59:59 UTC
+  // y que 9/11 20:59:59 en Ciudad de México (UTC-6).
+  assert.equal(webPromoActive(new Date('2026-11-09T20:59:59-06:00')), true);
+  assert.equal(webPromoActive(new Date('2026-11-09T21:00:00-06:00')), false);
 });
 
 test('al terminar la ventana el precio vuelve exactamente al habitual', () => {
   const catalogo = [{ id: 'MLU1', price: 2450, status: 'active', available_quantity: 1 }];
-  const dentro = applyWebPromoToItems(catalogo, { now: new Date('2026-11-03T02:59:59Z') });
-  const fuera = applyWebPromoToItems(catalogo, { now: new Date('2026-11-03T03:00:00Z') });
+  const dentro = applyWebPromoToItems(catalogo, { now: new Date('2026-11-10T02:59:59Z') });
+  const fuera = applyWebPromoToItems(catalogo, { now: new Date('2026-11-10T03:00:00Z') });
   assert.equal(dentro[0].price, 2083);
   assert.equal(fuera[0].price, 2450);
   assert.equal(fuera[0].original_price, undefined);
@@ -136,11 +136,13 @@ test('al terminar la ventana el precio vuelve exactamente al habitual', () => {
 test('estado público de la promo para la home estática', () => {
   assert.deepEqual(webPromoState(new Date('2026-11-02T12:00:00-03:00')), {
     active: true,
+    name: 'Amado Week',
     percent: 15,
     starts_at: WEB_PROMO.startsAt,
     ends_at: WEB_PROMO.endsAt,
+    end_label: '9/11',
   });
-  assert.equal(webPromoState(new Date('2026-11-03T03:00:00Z')).active, false);
+  assert.equal(webPromoState(new Date('2026-11-10T03:00:00Z')).active, false);
   assert.equal(webPromoState(new Date('2026-11-02T12:00:00-03:00'), { WEB_PROMO_OFF: '1' }).active, false);
 });
 
@@ -179,7 +181,7 @@ test('caso Aulagnier MLU1525417286: habitual 2.450, promo 2.083, transferencia 1
   assert.equal(item.price, 2083);
   assert.equal(Math.round(item.price * 0.88), 1833);
   assert.match(promoWasHtml(item), /Precio habitual: <s>\$2\.450 UYU<\/s>/);
-  assert.match(promoWasHtml(item), /15% menos/);
+  assert.match(promoWasHtml(item), /Amado Week: 15% menos hasta el 9\/11/);
 });
 
 test('promoWasHtml queda vacío sin promo, en pausadas y sin precio habitual', () => {
@@ -241,7 +243,7 @@ test('el mismo catálogo cacheado cambia de precio al cruzar el fin de la ventan
   globalThis.fetch = async () => { descargas++; return Response.json(crudo); };
   const pending = [];
   const ctx = { env: { APP_ENV: 'production' }, waitUntil(p) { pending.push(p); } };
-  t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-03T02:59:59Z').getTime() });
+  t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-10T02:59:59Z').getTime() });
   try {
     const dentro = await fetchCatalog(ctx);
     await Promise.all(pending);
@@ -249,7 +251,7 @@ test('el mismo catálogo cacheado cambia de precio al cruzar el fin de la ventan
     assert.ok(cache.has(CATALOG_URL));
     assert.equal((await cache.get(CATALOG_URL).clone().json()).items[0].price, 2450, 'la caché guarda el precio crudo');
 
-    t.mock.timers.setTime(new Date('2026-11-03T03:00:00Z').getTime());
+    t.mock.timers.setTime(new Date('2026-11-10T03:00:00Z').getTime());
     const fuera = await fetchCatalog(ctx);
     assert.equal(fuera.items[0].price, 2450);
     assert.equal(fuera.items[0].original_price, undefined);
@@ -262,14 +264,14 @@ test('el mismo catálogo cacheado cambia de precio al cruzar el fin de la ventan
 });
 
 test('el TTL de las páginas con precio se recorta para vencer cuando cambia el precio', () => {
-  assert.equal(secondsToNextPromoBoundary(new Date('2026-11-02T23:59:00-03:00')), 60);
-  assert.equal(promoAwareCacheControl(3600, new Date('2026-11-02T23:59:00-03:00')), 'public, max-age=60');
+  assert.equal(secondsToNextPromoBoundary(new Date('2026-11-09T23:59:00-03:00')), 60);
+  assert.equal(promoAwareCacheControl(3600, new Date('2026-11-09T23:59:00-03:00')), 'public, max-age=60');
   assert.equal(promoAwareCacheControl(300, new Date('2026-11-02T12:00:00-03:00')), 'public, max-age=300');
   assert.equal(promoAwareCacheControl(3600, new Date('2026-10-31T23:30:00-03:00')), 'public, max-age=1800');
-  assert.equal(promoAwareCacheControl(3600, new Date('2026-11-04T12:00:00-03:00')), 'public, max-age=3600');
-  assert.equal(secondsToNextPromoBoundary(new Date('2026-11-04T12:00:00-03:00')), null);
+  assert.equal(promoAwareCacheControl(3600, new Date('2026-11-11T12:00:00-03:00')), 'public, max-age=3600');
+  assert.equal(secondsToNextPromoBoundary(new Date('2026-11-11T12:00:00-03:00')), null);
   assert.equal(
-    promoAwareCacheControl(3600, new Date('2026-11-02T23:59:00-03:00'), { WEB_PROMO_OFF: '1' }),
+    promoAwareCacheControl(3600, new Date('2026-11-09T23:59:00-03:00'), { WEB_PROMO_OFF: '1' }),
     'public, max-age=3600',
   );
 });

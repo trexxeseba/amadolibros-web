@@ -10,10 +10,12 @@
 // variable WEB_PROMO_OFF=1 en el entorno de Cloudflare Pages.
 
 export const WEB_PROMO = Object.freeze({
+    name: 'Amado Week',
     percent: 15,
-    // Domingo 1/11/2026 00:00 a lunes 2/11/2026 23:59:59, hora de Montevideo.
+    // Domingo 1/11/2026 00:00 a lunes 9/11/2026 23:59:59, hora de Montevideo.
     startsAt: '2026-11-01T00:00:00-03:00',
-    endsAt: '2026-11-02T23:59:59-03:00',
+    endsAt: '2026-11-09T23:59:59-03:00',
+    endLabel: '9/11',
 });
 
 export function webPromoActive(now = new Date(), env = {}, promo = WEB_PROMO) {
@@ -60,9 +62,11 @@ export function applyWebPromoToCatalog(catalog, options = {}) {
 export function webPromoState(now = new Date(), env = {}, promo = WEB_PROMO) {
     return {
         active: webPromoActive(now, env, promo),
+        name: promo.name,
         percent: promo.percent,
         starts_at: promo.startsAt,
         ends_at: promo.endsAt,
+        end_label: promo.endLabel,
     };
 }
 
@@ -73,7 +77,7 @@ export function promoWasHtml(item, promo = WEB_PROMO) {
     const price = Number(item?.price);
     if (!(original > 0) || !(price > 0) || original <= price) return '';
     const habitual = original.toLocaleString('es-UY');
-    return `<span class="promo-was" style="display:block;font-size:.82rem;font-weight:700;color:#9a3412;margin-top:.1rem">${promo.percent}% menos por tiempo limitado. Precio habitual: <s>$${habitual} UYU</s></span>`;
+    return `<span class="promo-was" style="display:block;font-size:.82rem;font-weight:700;color:#9a3412;margin-top:.1rem">${promo.name}: ${promo.percent}% menos hasta el ${promo.endLabel}. Precio habitual: <s>$${habitual} UYU</s></span>`;
 }
 
 // Segundos hasta el próximo cambio de precio (inicio de la promo o instante
