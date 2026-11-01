@@ -110,3 +110,12 @@ export function promoEndGuardScript(promo = WEB_PROMO) {
     const end = Date.parse(promo.endsAt);
     return `<script>(function(){try{if(!document.querySelector('.promo-was'))return;if(Date.now()<=${end})return;var k='amado-promo-end';if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');var u=new URL(location.href);u.searchParams.set('_p','${end}');location.replace(u.toString());}catch(e){}})();</script>`;
 }
+
+// Banner de campaña: reutiliza la barra superior (`.announcement-bar`) si existe
+// y la crea en las páginas que no la tienen. Se inyecta solo en HTML generado
+// durante la promo y se apaga solo al llegar el fin (comparación en el cliente).
+export function promoBannerScript(promo = WEB_PROMO) {
+    const end = Date.parse(promo.endsAt);
+    const text = `${String(promo.name).toUpperCase()} · ${promo.percent}% menos hasta el ${promo.endLabel} · 12% adicional pagando por transferencia`;
+    return `<script>(function(){try{if(Date.now()>${end})return;var t=${JSON.stringify(text)};var bar=document.querySelector('.announcement-bar');var span=bar&&bar.querySelector('span');if(span){span.textContent=t;}else{bar=document.createElement('aside');bar.className='announcement-bar';bar.setAttribute('aria-label','Promoción');bar.textContent=t;document.body.insertBefore(bar,document.body.firstChild);}var st=bar.style;st.width='100%';st.background='#1F1B18';st.color='#FAF6EF';st.fontSize='.75rem';st.fontWeight='700';st.lineHeight='1.25';st.textAlign='center';st.padding='.45rem 1rem';st.boxSizing='border-box';st.height='auto';st.minHeight='32px';st.whiteSpace='normal';st.display='flex';st.alignItems='center';st.justifyContent='center';}catch(e){}})();</script>`;
+}
