@@ -4,7 +4,7 @@
 // con sesión del panel y en producción. HTML sin JavaScript.
 // No decide cuánto comprar: muestra los datos para decidir.
 import { deriveSessionSecret, hasValidSession, resolvePanelConfig } from '../_shared/panel-auth.js';
-import { fetchCatalog } from '../_shared/catalog.js';
+import { fetchCatalogRaw as fetchCatalog } from '../_shared/catalog.js';
 import { createReposicionFacts } from '../../worker-sync/reposicion-facts.js';
 import { salesByTitle } from '../../worker-sync/ml-sales.js';
 import { bookIsbn } from '../../worker-sync/isbn.js';

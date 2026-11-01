@@ -1,4 +1,5 @@
 import { perfNow, recordPerf } from './perf.js';
+import { applyWebPromoToCatalog, applyWebPromoToItems } from './web-promo.js';
 
 export const R2_BASE = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev';
 export const CATALOG_URL = `${R2_BASE}/catalog.json`;
@@ -108,10 +109,18 @@ async function fetchGzipJsonCached(ctx, url, maxAge, timingName) {
     }
 }
 
-export async function fetchCatalog(ctx) {
+// Catálogo tal como lo publica Mercado Libre, sin promo web. Para el panel y
+// los análisis internos de margen: ahí el precio tiene que ser el real.
+export async function fetchCatalogRaw(ctx) {
     // Price/stock updates must reach the feed and product pages promptly.
     // Existing one-hour entries are retired by fetchJsonCached above.
     return fetchJsonCached(ctx, CATALOG_URL, 60, 'catalog');
+}
+
+// Catálogo de cara al cliente: aplica la promo web vigente (si hay una).
+export async function fetchCatalog(ctx) {
+    const catalog = await fetchCatalogRaw(ctx);
+    return applyWebPromoToCatalog(catalog, { env: ctx?.env });
 }
 
 // CF-R2-2-BRIDGE: única fuente de verdad de "qué manifest le corresponde a
@@ -285,12 +294,22 @@ export async function fetchActiveIndex(ctx) {
                 'active_index_gzip',
             );
             const gzipItems = expandActiveIndex(gzipIndex);
-            if (gzipItems) return { version: descriptor.version, items: gzipItems };
+            if (gzipItems) {
+                return {
+                    version: descriptor.version,
+                    items: applyWebPromoToItems(gzipItems, { env: ctx?.env }),
+                };
+            }
         }
         const url = `${R2_BASE}/${descriptor.active_index_key}`;
         const index = await fetchJsonCached(ctx, url, 31536000, 'active_index');
         const items = expandActiveIndex(index);
-        if (items) return { version: descriptor.version, items };
+        if (items) {
+            return {
+                version: descriptor.version,
+                items: applyWebPromoToItems(items, { env: ctx?.env }),
+            };
+        }
     }
     return null;
 }

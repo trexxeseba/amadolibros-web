@@ -33,7 +33,7 @@ test.beforeEach(() => {
 });
 
 async function render(search = '', path = 'esoterismo-tarot', appEnv = 'production') {
-  const response = await onRequest({ request: new Request(`https://preview.example/libros/${path}${search}`), params: { path: path.split('/') }, env: { APP_ENV: appEnv }, data: {}, waitUntil() {} });
+  const response = await onRequest({ request: new Request(`https://preview.example/libros/${path}${search}`), params: { path: path.split('/') }, env: { APP_ENV: appEnv, WEB_PROMO_OFF: '1' }, data: {}, waitUntil() {} });
   return { response, html: await response.text() };
 }
 const ids = html => [...html.matchAll(/class="book-image" href="[^\"]*\/libro\/(MLU\d+)\//g)].map(m => m[1]);

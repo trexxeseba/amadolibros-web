@@ -30,7 +30,7 @@ const PREVIOUS = {
 };
 
 function context(appEnv = 'preview') {
-  return { env: { APP_ENV: appEnv }, waitUntil() {} };
+  return { env: { APP_ENV: appEnv, WEB_PROMO_OFF: '1' }, waitUntil() {} };
 }
 
 function installNetwork(objects, cacheMiss = true) {
