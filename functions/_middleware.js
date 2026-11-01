@@ -20,7 +20,7 @@
 
 import { perfNow } from './_shared/perf.js';
 import { BASE, fetchCatalog, fetchPausedItem } from './_shared/catalog.js';
-import { promoEndGuardScript, webPromoActive } from './_shared/web-promo.js';
+import { promoBannerScript, promoEndGuardScript, webPromoActive } from './_shared/web-promo.js';
 import { slugify } from './_shared/slug.js';
 import { goneResponse } from './_shared/gone.js';
 import { scheduleCrawlAnalytics } from './_shared/crawl-analytics.js';
@@ -345,6 +345,6 @@ function withPromoEndGuard(response, env) {
     if (response.status !== 200 || !type.includes('text/html')) return response;
     if (typeof HTMLRewriter !== 'function' || !webPromoActive(new Date(), env)) return response;
     return new HTMLRewriter()
-        .on('body', { element(el) { el.append(promoEndGuardScript(), { html: true }); } })
+        .on('body', { element(el) { el.append(promoBannerScript() + promoEndGuardScript(), { html: true }); } })
         .transform(response);
 }

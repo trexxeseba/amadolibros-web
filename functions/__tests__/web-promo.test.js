@@ -95,6 +95,7 @@ test('el carrito valida contra el precio rebajado y avisa del cambio al cliente 
 // ─── Límites de ventana y zona horaria (Uruguay, UTC-3 fijo, sin horario de verano) ───
 
 import {
+  promoBannerScript,
   promoAwareCacheControl,
   promoEndGuardScript,
   promoWasHtml,
@@ -281,4 +282,11 @@ test('el guard de fin de promo solo recarga páginas con precio promocional y un
   assert.match(script, /promo-was/);
   assert.match(script, /sessionStorage/);
   assert.ok(script.includes(String(Date.parse(WEB_PROMO.endsAt))));
+});
+
+test('el banner de campaña dice Amado Week, el 9/11 y la transferencia, y se apaga al fin', () => {
+  const script = promoBannerScript();
+  assert.match(script, /AMADO WEEK · 15% menos hasta el 9\/11 · 12% adicional pagando por transferencia/);
+  assert.ok(script.includes(`Date.now()>${Date.parse(WEB_PROMO.endsAt)}`));
+  assert.match(script, /announcement-bar/);
 });
