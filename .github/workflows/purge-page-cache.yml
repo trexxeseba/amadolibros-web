@@ -6,15 +6,15 @@ name: Purge page cache (promo web)
 # precio que cobra el servidor.
 #
 # - Manual: Actions > Purge page cache (promo web) > Run workflow.
-# - Automático: poco después del fin de la promo (2/11/2026 23:59:59 hora de
-#   Montevideo = 3/11 02:59:59 UTC). GitHub puede demorar los cron; hay dos
-#   corridas por si la primera se retrasa.
+# - Automático: poco después del fin de la promo Amado Week (9/11/2026 23:59:59
+#   hora de Montevideo = 10/11 02:59:59 UTC). GitHub puede demorar los cron; hay
+#   dos corridas por si la primera se retrasa.
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '5 3 3 11 *'
-    - cron: '40 3 3 11 *'
+    - cron: '5 3 10 11 *'
+    - cron: '40 3 10 11 *'
 
 permissions:
   contents: read

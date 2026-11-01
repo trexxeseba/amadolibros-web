@@ -112,6 +112,6 @@ test('con la promo vigente un precio cualquiera distinto del esperado falla', ()
 
 test('terminada la promo, un feed que conserva el precio promocional falla', () => {
   const rows = parseMerchantFeed(feedXml({ price: '842 UYU' }));
-  const result = auditFeed({ items: [catalogItem()] }, rows, { now: new Date('2026-11-03T00:00:00-03:00') });
+  const result = auditFeed({ items: [catalogItem()] }, rows, { now: new Date('2026-11-10T00:00:00-03:00') });
   assert.ok(result.issues.some(row => row.code === 'FEED_PRICE_MISMATCH' && row.promo_active === false));
 });
