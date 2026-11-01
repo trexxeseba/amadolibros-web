@@ -17,7 +17,7 @@ test('abandona la copia horaria previa, conserva la fuente y limita la nueva cop
   globalThis.fetch = async url => { requests.push(url); return Response.json(fresh); };
   try {
     const pending = [];
-    const ctx = { env: { APP_ENV: 'production' }, waitUntil(p) { pending.push(p); } };
+    const ctx = { env: { APP_ENV: 'production', WEB_PROMO_OFF: '1' }, waitUntil(p) { pending.push(p); } };
     assert.deepEqual(await fetchCatalog(ctx), fresh);
     await Promise.all(pending);
     assert.deepEqual(requests, [CATALOG_URL]);

@@ -16,7 +16,7 @@
  *   stock_waitlist.internal_notification_status  pending | sent | failed | skipped
  */
 
-import { fetchCatalog } from './catalog.js';
+import { fetchCatalogRaw as fetchCatalog } from './catalog.js';
 import { loadHealth } from './panel-health.js';
 import {
   loadCatalogChanges,

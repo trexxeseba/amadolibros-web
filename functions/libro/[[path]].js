@@ -679,11 +679,17 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         schemaProduct.offers.itemCondition = 'https://schema.org/UsedCondition';
     }
 
+    const originalPrice = Number(item.original_price) || 0;
+    const promoNoteHtml = sellableInCheckout && originalPrice > price
+        ? `<span class="price-promo">Precio promocional por tiempo limitado. Precio habitual: <s>$${originalPrice.toLocaleString('es-UY')} UYU</s></span>`
+        : '';
+
     const priceHtml = sellableInCheckout
         ? `<div class="price-box">
       <div class="price-main">
         <span class="price-main-label">Precio web/tarjeta:</span>
         <strong>$${priceUY} UYU</strong>
+        ${promoNoteHtml}
       </div>
       <div class="price-installment">Hasta 12 cuotas de aprox. $${installment} UYU</div>
       <div class="price-transfer">
@@ -879,6 +885,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .price-main{display:flex;flex-direction:column;align-items:flex-start;gap:.12rem}
     .price-main-label{font-size:.82rem;font-weight:700;color:#334155}
     .price-main strong{font-size:1.55rem;font-weight:850;color:#18120e;line-height:1.25}
+    .price-promo{font-size:.85rem;font-weight:700;color:#9a3412;margin-top:.1rem}
     .price-installment{font-size:.88rem;font-weight:600;color:#475569;margin-top:.15rem}
     .price-transfer{display:flex;flex-direction:column;align-items:flex-start;gap:.12rem;
                     margin-top:.75rem;padding-top:.7rem;border-top:1px solid #e2e8f0}
