@@ -38,6 +38,7 @@
 
 import { isLikelyBot, recordSearchMiss } from './_shared/search-misses.js';
 import { slugify } from './_shared/slug.js';
+import { promoAwareCacheControl, promoWasHtml } from './_shared/web-promo.js';
 // GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
 import { faviconHeadHtml } from './_shared/brand.js';
 import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_HEADER_SCRIPT, SITE_FONTS_HEAD } from './_shared/site-header.js';
@@ -1000,6 +1001,7 @@ export async function onRequest(ctx) {
         const bodyCta = available
             ? `<div class="rc-prices">
       <span class="rc-base"><span class="rc-lbl">Precio web/tarjeta:</span> $${escapeHtml(priceStr)} UYU</span>
+      ${promoWasHtml(b)}
       <span class="rc-installment">Hasta 12 cuotas de aprox. $${escapeHtml(installment)} UYU</span>
       <span class="rc-transfer"><span aria-hidden="true">🏷️</span> 12% menos por transferencia: $${escapeHtml(transfer)} UYU</span>
       ${hasFreeShipping ? '<span class="rc-free-shipping"><span aria-hidden="true">🚚</span> Envío gratis</span>' : ''}
@@ -1290,7 +1292,7 @@ ${SITE_HEADER_SCRIPT}
     return new Response(html, {
         headers: {
             'content-type':  'text/html;charset=UTF-8',
-            'cache-control': cardCanaryRequest(ctx) ? 'no-store' : isIndex ? 'public, max-age=3600' : 'public, max-age=300',
+            'cache-control': cardCanaryRequest(ctx) ? 'no-store' : promoAwareCacheControl(isIndex ? 3600 : 300, new Date(), ctx.env),
             'x-card-variants-ready': String(readyCards.filter(Boolean).length),
             'x-card-variants-mode': cardCanaryRequest(ctx) ? 'explicit-canary' : 'legacy',
             'server-timing': serverTiming,

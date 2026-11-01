@@ -340,6 +340,11 @@ export function validateCartAgainstCatalog(requestItems, catalogItems) {
     if (!Number.isFinite(price) || price <= 0) {
       return { product_id: productId, status: 'no_existe', available_quantity: 0 };
     }
+    // Precio habitual solo informativo (promo web). El cobro usa siempre `price`.
+    const originalPrice = Math.round(Number(catalogItem.original_price));
+    const originalPart = Number.isFinite(originalPrice) && originalPrice > price
+      ? { original_price_uyu: originalPrice }
+      : {};
 
     if (requestItem.quantity > available) {
       return {
@@ -348,6 +353,7 @@ export function validateCartAgainstCatalog(requestItems, catalogItems) {
         title,
         author,
         price_uyu: price,
+        ...originalPart,
         available_quantity: available,
         suggested_quantity: available,
       };
@@ -362,6 +368,7 @@ export function validateCartAgainstCatalog(requestItems, catalogItems) {
       title,
       author,
       price_uyu: price,
+      ...originalPart,
       available_quantity: available,
     };
   });

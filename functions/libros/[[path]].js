@@ -5,6 +5,7 @@
  * _shared/seo-categories.js; cualquier otra ruta responde 404 real.
  */
 import { slugify } from '../_shared/slug.js';
+import { promoAwareCacheControl, promoWasHtml } from '../_shared/web-promo.js';
 import { BASE, fetchActiveIndex, fetchPausedIndex, fetchCatalog } from '../_shared/catalog.js';
 import {
     BRAND,
@@ -327,6 +328,7 @@ function cardHtml(item, index, navigationBase) {
     ${author}
     ${price > 0 ? `<div class="book-prices">
       <strong>$${escapeHtml(priceText)} UYU</strong>
+      ${promoWasHtml(item)}
       <span>Hasta 12 cuotas de aprox. $${escapeHtml(installmentText)}</span>
       <span class="transfer">Transferencia: $${escapeHtml(transferText)}</span>
     </div>` : ''}
@@ -645,7 +647,7 @@ export async function onRequest(ctx) {
     return new Response(html, {
         headers: {
             'content-type': 'text/html;charset=UTF-8',
-            'cache-control': 'public, max-age=3600',
+            'cache-control': promoAwareCacheControl(3600, new Date(), ctx.env),
         },
     });
 }
