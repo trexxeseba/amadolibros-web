@@ -1,0 +1,98 @@
+{
+  "cuenta": "libros",
+  "seller_id": "440298103",
+  "publicaciones": {
+    "MLU629952461": {
+      "titulo": "Enemigo Intimo - Gabriela Arias Uriburu - Libro Kier",
+      "precio_original": 912,
+      "precio_aplicado": 829,
+      "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
+      "fecha": "2026-11-04T18:12:08.928Z"
+    },
+    "MLU663199900": {
+      "titulo": "Libro La Última Encrucijada - Jorge Liotti - Planeta",
+      "precio_original": 1106,
+      "precio_aplicado": 1082,
+      "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
+      "fecha": "2026-11-04T18:12:08.928Z"
+    },
+    "MLU637065821": {
+      "titulo": "The adidas Archive. The Footwear Collection, De Christian Habermeier. Editorial ",
+      "precio_original": 1944,
+      "precio_aplicado": 1904,
+      "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
+      "fecha": "2026-11-04T18:12:08.928Z"
+    },
+    "MLU691609938": {
+      "titulo": "La Nobleza Negra Génesis Del Imperio Veneciano De Jorge Guerra Editorial Indepen",
+      "precio_original": 1271,
+      "precio_aplicado": 1244,
+      "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
+      "fecha": "2026-11-04T18:12:08.928Z"
+    },
+    "MLU692647026": {
+      "titulo": "Libro Mi Viaje Sin Ti - Alejandro Sequera",
+      "precio_original": 764,
+      "precio_aplicado": 646,
+      "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
+      "fecha": "2026-11-04T18:12:08.928Z"
+    },
+    "MLU757785172": {
+      "titulo": "Instrumentación Quirúrgica Principios Y Práctica De Joanna Kotcher Fuller Vol 1 ",
+      "precio_original": 6775,
+      "precio_aplicado": 6640,
+      "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
+      "fecha": "2026-11-04T18:12:08.928Z"
+    },
+    "MLU862968034": {
+      "titulo": "Granja, La Libro De Juegos Y Puzzle, De Anónimo. Editorial El Gato De Hojalata, ",
+      "precio_original": 415,
+      "precio_aplicado": 405,
+      "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
+      "fecha": "2026-11-04T18:12:08.928Z"
+    },
+    "MLU889968514": {
+      "titulo": "Actitud Mental Positiva - Napoleon Hill Y W. Clement Stone",
+      "precio_original": 910,
+      "precio_aplicado": 838,
+      "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
+      "fecha": "2026-11-04T18:12:08.928Z"
+    },
+    "MLU888292642": {
+      "titulo": "Netter Flashcards De Histología",
+      "precio_original": 2694,
+      "precio_aplicado": 2393,
+      "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
+      "fecha": "2026-11-04T18:12:08.928Z"
+    },
+    "MLU1240815646": {
+      "titulo": "El Pequeño Gran Libro Del Crochet, De Marie Noelle Bayard. Editorial Hoaki, Tapa",
+      "precio_original": 1250,
+      "precio_aplicado": 1173,
+      "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
+      "fecha": "2026-11-04T18:12:08.928Z"
+    },
+    "MLU1248458670": {
+      "titulo": "Libro La Montaña Eres Tú [ Brianna Wiest ] Original, De Brianna Wiest. Editorial",
+      "precio_original": 725,
+      "precio_aplicado": 704,
+      "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
+      "fecha": "2026-11-04T18:12:08.928Z"
+    },
+    "MLU1444239492": {
+      "titulo": "Está Entre Nosotros: ¿de Dónde Sale Y Hasta Dónde Puede Llegar La Extrema Derech",
+      "precio_original": 805,
+      "precio_aplicado": 754,
+      "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
+      "fecha": "2026-11-04T18:12:08.928Z"
+    },
+    "MLU695916883": {
+      "titulo": "Gestión Del Talento Humano",
+      "precio_original": 3554,
+      "precio_aplicado": 3482,
+      "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
+      "fecha": "2026-11-04T18:12:08.928Z"
+    }
+  },
+  "actualizado": "2026-11-04T18:12:18.281Z"
+}
