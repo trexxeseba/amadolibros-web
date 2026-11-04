@@ -20,7 +20,7 @@
 
 import { perfNow } from './_shared/perf.js';
 import { BASE, fetchCatalog, fetchPausedItem } from './_shared/catalog.js';
-import { promoBannerScript, promoEndGuardScript, webPromoActive } from './_shared/web-promo.js';
+import { promoBannerScript, promoEndGuardScript, promoUiAllowed, webPromoActive } from './_shared/web-promo.js';
 import { slugify } from './_shared/slug.js';
 import { goneResponse } from './_shared/gone.js';
 import { scheduleCrawlAnalytics } from './_shared/crawl-analytics.js';
@@ -335,14 +335,15 @@ export async function onRequest(context) {
         statusText: response.statusText,
         headers: newHeaders,
     });
-    return finish(withPromoEndGuard(finalResponse, context.env));
+    return finish(withPromoEndGuard(finalResponse, context.env, url.pathname));
 }
 
 // Páginas HTML generadas mientras la promo web está vigente reciben un guard que
 // las recarga una vez cuando la ventana termina (ver promoEndGuardScript).
-function withPromoEndGuard(response, env) {
+export function withPromoEndGuard(response, env, pathname = '/') {
     const type = response.headers.get('content-type') || '';
     if (response.status !== 200 || !type.includes('text/html')) return response;
+    if (!promoUiAllowed(pathname)) return response;
     if (typeof HTMLRewriter !== 'function' || !webPromoActive(new Date(), env)) return response;
     return new HTMLRewriter()
         .on('body', { element(el) { el.append(promoBannerScript() + promoEndGuardScript(), { html: true }); } })
