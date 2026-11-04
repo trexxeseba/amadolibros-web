@@ -38,14 +38,17 @@ async function main() {
   const pisos = await leerJson(new URL(`../pisos/${cuenta.clave}.json`, import.meta.url), {});
 
   const ml = crearCliente(fuenteTokenD1(cuenta));
+  console.log('Fase: identidad');
   // Identidad: el token tiene que ser de la cuenta pedida. Si no, se corta.
   const yo = await ml.get('/users/me');
   if (String(yo?.id) !== cuenta.sellerId) throw Object.assign(new Error('token_de_otra_cuenta'), { fatal: true });
 
+  console.log('Fase: listado');
   const ids = await idsActivos(ml, cuenta.sellerId, { limite });
   // Las que el sistema bajó antes van primero y siempre se revisan.
   const enEstado = Object.keys(estado.publicaciones);
   const orden = [...new Set([...enEstado, ...ids])];
+  console.log(`Fase: detalle de ${orden.length}`);
   const items = await detalle(ml, orden);
   console.log(`${cuenta.nombre}: ${ids.length} activas, ${enEstado.length} en estado`);
 
@@ -138,4 +141,5 @@ async function main() {
 
 const num = v => (v === null || v === undefined || !Number.isFinite(Number(v))) ? null : Number(v);
 
-main().catch(e => { console.error('Corrida fallida:', e?.code ?? e?.message ?? 'error'); process.exit(1); });
+// El path y el mensaje de ML no traen datos sensibles (sin token): sirven para diagnosticar.
+main().catch(e => { console.error('Corrida fallida:', e?.code ?? e?.message ?? 'error', e?.path ? `en ${String(e.path).split('?')[0]}` : '', e?.detalle ? JSON.stringify(e.detalle) : ''); process.exit(1); });
