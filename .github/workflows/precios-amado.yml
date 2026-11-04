@@ -15,9 +15,6 @@ on:
     - cron: '40 11 * * *'
     - cron: '10 16 * * *'
     - cron: '40 21 * * *'
-  # TEMPORAL: prueba desde la rama antes del merge (se saca antes de mergear).
-  push:
-    branches: [agent/precios-amado]
   workflow_dispatch:
     inputs:
       limit:
