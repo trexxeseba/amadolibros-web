@@ -1,4 +1,6 @@
-// Publicaciones activas de la cuenta: scan completo + /items en lotes de 20.
+// Publicaciones activas de la cuenta: scan completo + /items/bulk en lotes de 20
+// (/items?ids= quedó dado de baja: responde 403 ResourceDeprecated).
+import { bulkItemsPath, bulkEntryItem } from '../../worker-sync/meli-bulk.js';
 const ATRIBUTOS = 'id,title,price,currency_id,catalog_listing,catalog_product_id,available_quantity,sale_terms,variations,status,original_price,deal_ids,permalink';
 
 export async function idsActivos(ml, sellerId, { limite = Infinity } = {}) {
@@ -18,8 +20,8 @@ export async function detalle(ml, ids) {
   const out = new Map();
   const lotes = []; for (let i = 0; i < ids.length; i += 20) lotes.push(ids.slice(i, i + 20));
   await Promise.all(lotes.map(async lote => {
-    const d = await ml.get(`/items?ids=${lote.join(',')}&attributes=${ATRIBUTOS}`);
-    for (const e of Array.isArray(d) ? d : []) if (e?.code === 200 && e.body?.id) out.set(e.body.id, normalizar(e.body));
+    const d = await ml.get(bulkItemsPath(lote, ATRIBUTOS));
+    for (const e of Array.isArray(d) ? d : []) { const b = bulkEntryItem(e); if (b?.id) out.set(b.id, normalizar(b)); }
   }));
   return out;
 }
