@@ -5,7 +5,7 @@
 //
 // DRY_RUN es el modo por defecto: para cambiar precios hace falta --real.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { writeFileSync, mkdirSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import { CUENTAS, MAX_CAMBIOS_POR_CORRIDA, STOCK_DEMANDA_DEFAULT, UMBRAL_UYU, fechaMontevideo } from './config.mjs';
 import { fuenteTokenD1 } from './token.mjs';
@@ -21,6 +21,7 @@ const flag = n => args.includes('--' + n);
 
 const cuenta = CUENTAS[opt('cuenta')];
 if (!cuenta) { console.error('Cuenta desconocida. Usar --cuenta libros|vintage'); process.exit(2); }
+if (!cuenta.habilitada) { console.error(`${cuenta.nombre} está deshabilitada en precio-ganador/src/config.mjs`); process.exit(2); }
 const real = flag('real') && !flag('dry-run');
 const maxMarcadas = Number(opt('max-marcadas', Infinity));
 const limite = Number(opt('limite', Infinity));
@@ -77,7 +78,15 @@ async function main() {
   if (real && cambios.length > MAX_CAMBIOS_POR_CORRIDA) throw Object.assign(new Error(`freno: ${cambios.length} cambios planeados (máximo ${MAX_CAMBIOS_POR_CORRIDA})`), { fatal: true });
 
   // Aplicar (sólo en modo real). Una que falla no frena a las demás.
+  // El estado se graba en disco después de CADA cambio: si la corrida se corta a
+  // mitad de camino, lo ya bajado queda registrado y la reversión lo encuentra.
   const ahora = new Date().toISOString();
+  const guardarEstado = () => {
+    mkdirSync(dirEstado, { recursive: true });
+    estado.actualizado = new Date().toISOString();
+    writeFileSync(archivoEstado + '.tmp', JSON.stringify(estado, null, 2) + '\n');
+    renameSync(archivoEstado + '.tmp', archivoEstado);
+  };
   for (const f of cambios) {
     f.aplicado = false;
     if (!real) continue;
@@ -97,6 +106,7 @@ async function main() {
         ...(previo?.stock_original !== undefined ? { stock_original: previo.stock_original } : Number.isFinite(f.d.stock) ? { stock_original: f.item.available_quantity } : {}),
         ...(f.item.demanda ? { dias_demanda: f.item.dias_demanda } : {}),
       };
+      guardarEstado();
     } catch (e) {
       f.d = { ...f.d, accion: 'error_aplicar', motivo: e?.code ?? 'error', detalle: e?.detalle ?? null };
     }
@@ -110,9 +120,7 @@ async function main() {
   await writeFile(join(dirSalida, `${cuenta.clave}-detalle.md`), tablaMarkdown(filas, { cuenta, real, resumen }));
   await writeFile(join(dirSalida, `${cuenta.clave}-muestras-api.json`), JSON.stringify(MUESTRAS, null, 2));
   if (real) {
-    await mkdir(dirEstado, { recursive: true });
-    estado.actualizado = ahora;
-    await writeFile(archivoEstado, JSON.stringify(estado, null, 2) + '\n');
+    guardarEstado();
     // Acumulado del día para el mail de las 21:00.
     const dia = join(dirEstado, 'diario', `${cuenta.clave}-${fechaMontevideo(inicio)}.json`);
     const acum = await leerJson(dia, { corridas: [] });

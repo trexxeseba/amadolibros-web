@@ -19,7 +19,12 @@ export const CUENTAS = {
     token: { tabla: 'ml_oauth', appId: '4741021817925208' },
     // Libros: el stock no se toca nunca (tiene libros de estantería mezclados).
     tocarStockDemanda: false,
+    habilitada: true,
   },
+  // Vintage NO corre con este sistema (Seba, 04/11/2026): su precio competitivo lo
+  // maneja el motor de la PC (scripts/vintage-local/stock-sync.mjs, modo correct),
+  // que conoce el costo y nunca baja del 18 % de margen. Correr los dos los haría
+  // pisarse. Queda configurada para no perder el dato, pero deshabilitada.
   vintage: {
     clave: 'vintage',
     nombre: 'Amado Vintage',
@@ -27,6 +32,7 @@ export const CUENTAS = {
     // Fila de ml_oauth_sellers que renueva el panel (meli-vintage-token.js).
     token: { tabla: 'ml_oauth_sellers', appId: '4741021817925208' },
     tocarStockDemanda: true,
+    habilitada: false,
   },
 };
 
