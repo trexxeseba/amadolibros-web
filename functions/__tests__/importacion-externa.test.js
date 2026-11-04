@@ -5,6 +5,7 @@ import { parseCsv, validarMapeo, importarExterno, listImports, externalSignals, 
 import { opportunitiesFromRadar, cantidadSugerida } from '../../worker-sync/oportunidades.js';
 import { createImportarExternoPanel } from '../panel/importar-externo.js';
 import { createSessionToken, deriveSessionSecret, sessionCookieHeader } from '../_shared/panel-auth.js';
+import { buildXlsx } from './support/xlsx-fixture.js';
 
 function database(t) {
   const sqlite = new DatabaseSync(':memory:'); t.after(() => sqlite.close());
@@ -120,6 +121,41 @@ test('panel de importación: exige sesión, carga un CSV y muestra el error de c
   assert.equal((await post({ fuente: 'otra', tipo: 'otro', completitud: 'desconocida', mapeo: '{no json', csv: 'a\n1' })).status, 400);
   const foreign = await handler({ request: new Request('https://www.amadolibros.com/panel/importar-externo', { method: 'POST', headers: { cookie, origin: 'https://otro.example' }, body: new URLSearchParams({ csv: 'a' }) }), env });
   assert.equal(foreign.status, 403);
+});
+
+test('panel de importación: un .xlsx adjunto se convierte a CSV solo, y un .xlsx roto no rompe el panel', async t => {
+  const db = database(t);
+  const env = { APP_ENV: 'production', PANEL_PASSWORD: 'una-clave-larga', ORDERS_DB: db };
+  const handler = createImportarExternoPanel({ now: () => NOW });
+  const cookie = sessionCookieHeader(await createSessionToken(await deriveSessionSecret(env.PANEL_PASSWORD))).split(';')[0];
+  const postForm = fields => {
+    const fd = new FormData();
+    for (const [k, v] of Object.entries(fields)) fd.append(k, v);
+    return handler({ request: new Request('https://www.amadolibros.com/panel/importar-externo', { method: 'POST', headers: { cookie, origin: 'https://www.amadolibros.com' }, body: fd }), env });
+  };
+  const xlsxBytes = buildXlsx([
+    [{ s: 'SKU' }, { s: 'Publicación' }, { s: 'Número' }, { s: 'FULL' }, { s: 'Depósito' }, { s: 'Ventas por día' }, { s: 'Días de stock' }, { s: 'Pedir (u.) · 30 días + 15 de demora' }],
+    [{ s: C }, { s: 'Un libro de reposición' }, { s: 'MLU123' }, { n: 0 }, { n: 2 }, { n: 0.1 }, { s: '20' }, { n: 0 }],
+  ]);
+  const archivo = new File([xlsxBytes], 'pedido-reposicion.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const ok = await postForm({ plantilla: 'administrado_pedido_reposicion', fuente: 'administrado', tipo: 'stock_propio', completitud: 'completa', extraccion: '2026-10-27', archivo });
+  assert.equal(ok.status, 200);
+  const html = await ok.text();
+  assert.match(html, /1 filas válidas, 0 inválidas, 0 duplicadas/);
+  assert.match(html, /pedido-reposicion\.xlsx/, 'el nombre del archivo subido queda, sin que se tipee a mano');
+  const row = db.sqlite.prepare('SELECT isbn,titulo,full_stock,deposito_stock FROM ext_rows WHERE fila=2').get();
+  assert.deepEqual({ ...row }, { isbn: C, titulo: 'Un libro de reposición', full_stock: 0, deposito_stock: 2 });
+  // Un .csv subido como archivo (no pegado) sigue el mismo camino sin pasar por el lector de xlsx.
+  const csvFile = new File([CSV_ADM], 'ventas.csv', { type: 'text/csv' });
+  const okCsv = await postForm({ plantilla: 'administrado_competidores_ventas', fuente: 'administrado', tipo: 'competidores_ventas', completitud: 'parcial', extraccion: '2026-10-27', archivo: csvFile });
+  assert.equal(okCsv.status, 200);
+  assert.match(await okCsv.text(), /3 filas válidas, 0 inválidas, 1 duplicadas/);
+  // Un .xlsx corrupto da un error claro y la página sigue en pie (nunca basura cargada).
+  const rotoFile = new File([Buffer.from('esto no es un zip')], 'roto.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const roto = await postForm({ plantilla: 'administrado_pedido_reposicion', archivo: rotoFile });
+  assert.equal(roto.status, 400);
+  assert.match(await roto.text(), /No se pudo leer el \.xlsx/);
+  assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM ext_imports').get().n, 2, 'el intento roto no cargó una tercera fila');
 });
 
 test('cruce con proveedores: compra previa y stock de SBS convierten el hallazgo externo en "sabemos dónde conseguirlo"', async t => {

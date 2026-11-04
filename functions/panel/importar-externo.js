@@ -1,12 +1,17 @@
-// /panel/importar-externo — cargar un CSV de Nubimetrics, Administrado u otra
-// fuente con su contrato auditable (original, hash, fuente, mercado, vendedor,
-// extracción, período, completitud, mapeo y trazabilidad por fila). Sólo
+// /panel/importar-externo — cargar un CSV o XLSX de Nubimetrics, Administrado
+// u otra fuente con su contrato auditable (original, hash, fuente, mercado,
+// vendedor, extracción, período, completitud, mapeo y trazabilidad por fila).
+// Un .xlsx se convierte a CSV en el servidor (worker-sync/xlsx-reader.js) y
+// sigue el mismo camino que un CSV pegado a mano: no hay dos contratos. Sólo
 // guarda en D1; no crea datos ficticios ni toca precios. Sesión + producción.
 import { deriveSessionSecret, hasValidSession, resolvePanelConfig } from '../_shared/panel-auth.js';
 import { importarExterno, listImports, PLANTILLAS, FUENTES, TIPOS, COMPLETITUD } from '../../worker-sync/importacion-externa.js';
+import { xlsxToCsv, XlsxError } from '../../worker-sync/xlsx-reader.js';
 
 const ORIGIN = 'https://www.amadolibros.com';
-const MAX_BYTES = 950 * 1024;
+// Un .xlsx con estilos y varias hojas pesa más que el CSV equivalente; el
+// archivo de "Pedido de reposición" real visto hasta ahora no llega a 200 KB.
+const MAX_BYTES = 4 * 1024 * 1024;
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const day = ms => ms ? new Date(Number(ms)).toISOString().slice(0, 10).split('-').reverse().join('/') : '—';
 
@@ -28,7 +33,7 @@ const opt = (list, sel, label = v => v) => list.map(v => `<option value="${esc(v
 
 function form(v = {}) {
   const plantillas = ['', ...Object.keys(PLANTILLAS)];
-  return `<div class="card"><form method="post" action="/panel/importar-externo">
+  return `<div class="card"><form method="post" action="/panel/importar-externo" enctype="multipart/form-data">
   <div class="row">
     <div><label>Plantilla (mapeo de columnas)</label><select name="plantilla">${opt(plantillas, v.plantilla ?? '', p => p ? `${p}${PLANTILLAS[p].verificado ? '' : ' (no verificada)'}` : 'Sin plantilla: mapeo manual')}</select></div>
     <div><label>Fuente</label><select name="fuente">${opt(FUENTES, v.fuente ?? 'administrado')}</select></div>
@@ -42,10 +47,11 @@ function form(v = {}) {
     <div><label>Ventana en días de "vendidas" (si no la trae la plantilla)</label><input type="text" name="ventana_dias" value="${esc(v.ventana_dias ?? '')}" maxlength="4"></div>
   </div>
   <label>Mapeo manual (JSON, sólo sin plantilla): <code>{"columnas":{"isbn":"GTIN","titulo":"Título","vendedor":"Competidor","precio":"Precio","vendidas":"Vendidas 7d"}}</code></label><input type="text" name="mapeo" value="${esc(v.mapeo ?? '')}" maxlength="2000">
-  <label>CSV (pegá el contenido; XLSX: guardalo como CSV primero)</label><textarea name="csv" required spellcheck="false">${esc(v.csv ?? '')}</textarea>
+  <label>Archivo (.xlsx o .csv)</label><input type="file" name="archivo" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+  <label>o pegá el CSV directamente</label><textarea name="csv" spellcheck="false">${esc(v.csv ?? '')}</textarea>
   <label>Nota</label><input type="text" name="nota" value="${esc(v.nota ?? '')}" maxlength="300">
   <button type="submit">Importar</button></form>
-  <p class="muted">Se guarda el original con su hash: el mismo archivo dos veces no se carga dos veces. Cada fila queda con su número y su línea cruda. Las cifras externas se etiquetan "estimado" salvo que la fuente diga lo contrario, y nunca se suman entre fuentes ni entre ventanas.</p></div>`;
+  <p class="muted">Se guarda el original con su hash: el mismo archivo dos veces no se carga dos veces (un .xlsx se convierte a CSV antes de hashear, así que es el contenido de la hoja lo que no se duplica, no los bytes del .xlsx). Cada fila queda con su número y su línea cruda. Las cifras externas se etiquetan "estimado" salvo que la fuente diga lo contrario, y nunca se suman entre fuentes ni entre ventanas. El .xlsx se lee por la primera hoja únicamente.</p></div>`;
 }
 
 function importsTable(list) {
@@ -69,11 +75,28 @@ export function createImportarExternoPanel({ importer = importarExterno, now = D
     if (request.method === 'GET') return page(`<h1>Importar fuente externa</h1>${form()}<h2>Cargas anteriores</h2>${await recent()}`);
     if (request.method !== 'POST') return page('<p>Método no permitido.</p>', 405);
     if (request.headers.get('origin') !== ORIGIN) return page('<p class="err">Origen no válido.</p>', 403);
-    if (Number(request.headers.get('content-length')) > MAX_BYTES) return page('<p class="err">El CSV supera 900 KB. Partilo en lotes.</p>', 413);
+    if (Number(request.headers.get('content-length')) > MAX_BYTES) return page(`<p class="err">El archivo supera ${Math.round(MAX_BYTES / 1024 / 1024)} MB. Partilo en lotes.</p>`, 413);
     const f = await request.formData();
     const v = Object.fromEntries(['plantilla', 'fuente', 'tipo', 'completitud', 'vendedor', 'extraccion', 'periodo_desde', 'periodo_hasta', 'nombre_archivo', 'ventana_dias', 'mapeo', 'csv', 'nota'].map(k => [k, String(f.get(k) ?? '').trim()]));
     let mapeo = null;
     if (v.mapeo) { try { mapeo = JSON.parse(v.mapeo); } catch { return page(`<h1>Importar fuente externa</h1><p class="err">El mapeo no es JSON válido.</p>${form(v)}`, 400); } }
+    // Archivo adjunto: .xlsx se convierte a CSV acá mismo; cualquier otra cosa
+    // (.csv, texto plano) se lee tal cual. Sin archivo, queda lo pegado a mano.
+    const archivo = f.get('archivo');
+    if (archivo instanceof File && archivo.size > 0) {
+      const bytes = new Uint8Array(await archivo.arrayBuffer());
+      const esXlsx = /\.xlsx$/i.test(archivo.name) || (bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04);
+      if (esXlsx) {
+        try { v.csv = await xlsxToCsv(bytes); }
+        catch (error) {
+          const code = error instanceof XlsxError ? error.code : 'xlsx_no_leido';
+          return page(`<h1>Importar fuente externa</h1><p class="err">No se pudo leer el .xlsx: <code>${esc(code)}</code>. Probá exportarlo como CSV y pegalo directamente.</p>${form(v)}`, 400);
+        }
+      } else {
+        v.csv = new TextDecoder('utf-8').decode(bytes);
+      }
+      if (!v.nombre_archivo && archivo.name) v.nombre_archivo = archivo.name;
+    }
     const input = { plantilla: v.plantilla || undefined, fuente: v.fuente, tipo: v.tipo, completitud: v.completitud, vendedor: v.vendedor || null, extraccion: v.extraccion || null, periodo_desde: v.periodo_desde || null, periodo_hasta: v.periodo_hasta || null,
       nombre_archivo: v.nombre_archivo || null, ventana_dias: v.ventana_dias ? Number(v.ventana_dias) : undefined, mapeo: mapeo ?? undefined, csv: v.csv, nota: v.nota || null };
     try {
