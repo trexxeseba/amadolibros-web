@@ -1,0 +1,41 @@
+// Configuración de Precio Ganador. Un solo código para las dos cuentas.
+// Nada de credenciales acá: el token de Mercado Libre se lee de D1 (lo mantiene
+// el Worker o el panel) por la API de Cloudflare, con secretos de Actions.
+
+export const ML_ORIGIN = 'https://api.mercadolibre.com';
+export const TIMEZONE = 'America/Montevideo';
+
+// Regla de negocio (cerrada por Seba el 04/11/2026).
+export const UMBRAL_UYU = 360;          // diferencia máxima que se acepta bajar
+export const STOCK_DEMANDA_DEFAULT = 5; // stock fijo en las a demanda al bajarles el precio
+export const MAX_CAMBIOS_POR_CORRIDA = 400; // freno de seguridad: más que esto, se corta
+
+export const CUENTAS = {
+  libros: {
+    clave: 'libros',
+    nombre: 'Amado Libros',
+    sellerId: '440298103',
+    // Fila de ml_oauth que renueva el Worker de sync (cron cada 5 min).
+    token: { tabla: 'ml_oauth', appId: '4741021817925208' },
+    // Libros: el stock no se toca nunca (tiene libros de estantería mezclados).
+    tocarStockDemanda: false,
+  },
+  vintage: {
+    clave: 'vintage',
+    nombre: 'Amado Vintage',
+    sellerId: '2341378249',
+    // Fila de ml_oauth_sellers que renueva el panel (meli-vintage-token.js).
+    token: { tabla: 'ml_oauth_sellers', appId: '4741021817925208' },
+    tocarStockDemanda: true,
+  },
+};
+
+// D1 amadolibros-orders-production (worker-sync/wrangler.toml).
+export const D1_DATABASE_ID = '6dc8dc3a-2d4f-4045-b428-14323c7b0bcd';
+
+export function fechaMontevideo(d = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
+export function horaMontevideo(d = new Date()) {
+  return Number(new Intl.DateTimeFormat('en-GB', { timeZone: TIMEZONE, hour: '2-digit', hour12: false }).format(d));
+}

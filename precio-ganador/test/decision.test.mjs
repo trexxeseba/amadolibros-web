@@ -1,0 +1,65 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { decidir } from '../src/decision.mjs';
+
+const item = (o = {}) => ({ id: 'MLU1', price: 1000, currency_id: 'UYU', variaciones: false, demanda: false, available_quantity: 1, ...o });
+const marcada = ganador => ({ marcada: true, ganador, estado: 'competing' });
+
+test('baja al ganador si la diferencia es menor a 360', () => {
+  assert.deepEqual(decidir({ item: item(), comp: marcada(700) }).accion, 'bajar');
+  assert.equal(decidir({ item: item(), comp: marcada(700) }).precio, 700);
+});
+test('no toca con diferencia de 360 o más', () => {
+  assert.equal(decidir({ item: item(), comp: marcada(640) }).accion, 'sin_tocar_umbral');
+  assert.equal(decidir({ item: item(), comp: marcada(641) }).accion, 'bajar');
+});
+test('no toca las que ganan o comparten', () => {
+  assert.equal(decidir({ item: item(), comp: { marcada: false, estado: 'winning' } }).accion, 'sin_marcar');
+});
+test('saltea promoción activa o desconocida', () => {
+  assert.equal(decidir({ item: item(), comp: marcada(900), promo: true }).accion, 'saltear_promo');
+  assert.equal(decidir({ item: item(), comp: marcada(900), promo: null }).accion, 'saltear_promo_desconocida');
+});
+test('respeta el piso', () => {
+  assert.equal(decidir({ item: item(), comp: marcada(900), piso: 950 }).accion, 'saltear_piso');
+});
+test('redondea hacia abajo un ganador con decimales', () => {
+  assert.equal(decidir({ item: item(), comp: marcada(899.5) }).precio, 899);
+});
+test('saltea otra moneda y variaciones', () => {
+  assert.equal(decidir({ item: item({ currency_id: 'USD' }), comp: marcada(900) }).accion, 'saltear_moneda');
+  assert.equal(decidir({ item: item({ variaciones: true }), comp: marcada(900) }).accion, 'saltear_variaciones');
+});
+test('stock fijo en a demanda sólo si la cuenta lo permite', () => {
+  const d = decidir({ item: item({ demanda: true, available_quantity: 50 }), comp: marcada(900), tocarStock: true });
+  assert.equal(d.stock, 5);
+  assert.equal(decidir({ item: item({ demanda: true, available_quantity: 50 }), comp: marcada(900), tocarStock: false }).stock, undefined);
+  assert.equal(decidir({ item: item({ demanda: false, available_quantity: 1 }), comp: marcada(900), tocarStock: true }).stock, undefined);
+});
+
+const previo = { precio_original: 1000, precio_aplicado: 800, stock_original: 50 };
+test('reversión: sigue al ganador hacia arriba sin pasar el original', () => {
+  assert.deepEqual([decidir({ item: item({ price: 800 }), comp: marcada(900), previo }).accion, decidir({ item: item({ price: 800 }), comp: marcada(900), previo }).precio], ['ajustar', 900]);
+  assert.equal(decidir({ item: item({ price: 800 }), comp: marcada(800), previo }).accion, 'mantener');
+});
+test('reversión: el ganador bajó más de 360 desde el original, se mantiene', () => {
+  assert.equal(decidir({ item: item({ price: 800 }), comp: marcada(600), previo }).accion, 'mantener_umbral');
+});
+test('reversión: ya no marcada, sube hasta un peso abajo del competidor', () => {
+  const d = decidir({ item: item({ price: 800 }), comp: { marcada: false, techo: 949 }, previo });
+  assert.deepEqual([d.accion, d.precio], ['subir', 949]);
+});
+test('reversión: sin competidor vuelve al original y restaura stock', () => {
+  const d = decidir({ item: item({ price: 800, demanda: true, available_quantity: 5 }), comp: { marcada: false, techo: null }, previo, tocarStock: true });
+  assert.deepEqual([d.accion, d.precio, d.stock], ['restaurar', 1000, 50]);
+});
+test('reversión: nunca pasa el original', () => {
+  const d = decidir({ item: item({ price: 800 }), comp: { marcada: false, techo: 5000 }, previo });
+  assert.equal(d.precio, 1000);
+});
+test('editada a mano: se libera sin tocar', () => {
+  assert.equal(decidir({ item: item({ price: 1200 }), comp: marcada(900), previo }).accion, 'liberar_editada');
+});
+test('error de consulta no cambia nada', () => {
+  assert.equal(decidir({ item: item(), comp: { error: 'http_500' } }).accion, 'error_consulta');
+});
