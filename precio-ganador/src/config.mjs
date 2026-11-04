@@ -7,6 +7,8 @@ export const TIMEZONE = 'America/Montevideo';
 
 // Regla de negocio (cerrada por Seba el 04/11/2026).
 export const UMBRAL_UYU = 360;          // diferencia máxima que se acepta bajar
+// Tope de porcentaje (Seba, 04/11/2026): nunca bajar más del 30 % del precio original.
+export const TOPE_PCT = 0.30;
 export const STOCK_DEMANDA_DEFAULT = 5; // stock fijo en las a demanda al bajarles el precio
 export const MAX_CAMBIOS_POR_CORRIDA = 400; // freno de seguridad: más que esto, se corta
 

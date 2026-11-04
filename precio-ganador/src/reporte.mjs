@@ -14,6 +14,9 @@ export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
     subidas: aplicada('subir'),
     restauradas: aplicada('restaurar'),
     sin_tocar_umbral: c('sin_tocar_umbral'),
+    sin_tocar_pct: c('sin_tocar_pct'),
+    verificadas: filas.filter(f => f.verificado === true).length,
+    no_verificadas: filas.filter(f => f.verificado === false).length,
     promo: c('saltear_promo') + c('saltear_promo_desconocida'),
     otras_salteadas: filas.filter(f => /^saltear_(moneda|variaciones|piso|sin_precio)$/.test(f.d.accion)).length,
     editadas_a_mano: c('liberar_editada'),
@@ -27,7 +30,7 @@ export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
 
 const ACCION = {
   bajar: 'Bajar al ganador', ajustar: 'Ajustar al ganador', subir: 'Subir (sigue ganando)', restaurar: 'Volver al original',
-  sin_tocar_umbral: 'No tocar: diferencia de 360 o más', saltear_promo: 'Saltear: promoción activa',
+  sin_tocar_umbral: 'No tocar: diferencia de 360 o más', sin_tocar_pct: 'No tocar: bajaría más del 30 %', saltear_promo: 'Saltear: promoción activa',
   saltear_promo_desconocida: 'Saltear: no se pudo confirmar promoción', saltear_piso: 'Saltear: queda bajo el piso',
   saltear_variaciones: 'Saltear: tiene variaciones', saltear_moneda: 'Saltear: no está en pesos', saltear_sin_precio: 'Saltear: sin precio ganador',
   mantener: 'Mantener', mantener_umbral: 'Mantener: el ganador bajó más de 360 desde el original', mantener_piso: 'Mantener: piso',
@@ -42,7 +45,7 @@ export function tablaMarkdown(filas, { cuenta, real, resumen }) {
     const g = f.comp?.ganador, p = f.item.price;
     const dif = Number.isFinite(g) && Number.isFinite(p) ? Math.round((p - g) * 100) / 100 : '';
     const stock = Number.isFinite(f.d.stock) ? `${f.item.available_quantity} → ${f.d.stock}` : (f.item.demanda ? `a demanda (${f.item.dias_demanda} d)` : '');
-    const accion = (ACCION[f.d.accion] ?? f.d.accion) + (CAMBIA.has(f.d.accion) ? ` → ${f.d.precio}` : '');
+    const accion = (ACCION[f.d.accion] ?? f.d.accion) + (CAMBIA.has(f.d.accion) ? ` → ${f.d.precio}` : '') + (f.verificado === true ? ' (aplicado y verificado)' : f.verificado === false ? ` (NO verificado: ML muestra ${f.precio_leido})` : '');
     l.push(`| [${f.item.id}](${f.item.permalink ?? `https://articulo.mercadolibre.com.uy/${String(f.item.id).replace('MLU', 'MLU-')}`}) ${esc(f.item.title?.slice(0, 50) ?? '')} | ${f.comp?.tipo ?? ''} ${f.comp?.estado ?? ''} | ${p ?? ''} | ${g ?? ''} | ${dif} | ${accion} | ${stock} |`);
   }
   if (Object.keys(resumen.errores).length) l.push('', '## Errores', '', ...Object.entries(resumen.errores).map(([k, v]) => `- ${k}: ${v}`));
@@ -61,7 +64,7 @@ export async function enviarResumen({ cuenta, acum, resumen, fetcher = (...a) =>
     ['Corridas del día', acum.corridas.length], ['Marcadas (última corrida)', ult.marcadas ?? 0],
     ['Bajadas al ganador', suma('bajadas')], ['Ajustadas al ganador', suma('ajustadas')],
     ['Subidas o vueltas al original', suma('subidas') + suma('restauradas')],
-    ['Sin tocar por diferencia de 360 o más (última)', ult.sin_tocar_umbral ?? 0],
+    ['Sin tocar por diferencia de 360 o más (última)', ult.sin_tocar_umbral ?? 0], ['Sin tocar por bajar más del 30 % (última)', ult.sin_tocar_pct ?? 0],
     ['Salteadas por promoción (última)', ult.promo ?? 0], ['Errores', suma('errores')], ['Cambios de stock', suma('cambios_stock')],
   ];
   const texto = filas.map(([k, v]) => `${k}: ${v}`).join('\n');

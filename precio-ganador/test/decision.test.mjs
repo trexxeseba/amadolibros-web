@@ -10,8 +10,8 @@ test('baja al ganador si la diferencia es menor a 360', () => {
   assert.equal(decidir({ item: item(), comp: marcada(700) }).precio, 700);
 });
 test('no toca con diferencia de 360 o más', () => {
-  assert.equal(decidir({ item: item(), comp: marcada(640) }).accion, 'sin_tocar_umbral');
-  assert.equal(decidir({ item: item(), comp: marcada(641) }).accion, 'bajar');
+  assert.equal(decidir({ item: item({ price: 2000 }), comp: marcada(1640) }).accion, 'sin_tocar_umbral');
+  assert.equal(decidir({ item: item({ price: 2000 }), comp: marcada(1641) }).accion, 'bajar');
 });
 test('no toca las que ganan o comparten', () => {
   assert.equal(decidir({ item: item(), comp: { marcada: false, estado: 'winning' } }).accion, 'sin_marcar');
@@ -62,4 +62,16 @@ test('editada a mano: se libera sin tocar', () => {
 });
 test('error de consulta no cambia nada', () => {
   assert.equal(decidir({ item: item(), comp: { error: 'http_500' } }).accion, 'error_consulta');
+});
+
+test('tope del 30 %: no baja más que eso aunque la diferencia sea menor a 360', () => {
+  assert.equal(decidir({ item: item({ price: 702 }), comp: marcada(391) }).accion, 'sin_tocar_pct');
+  assert.equal(decidir({ item: item({ price: 1000 }), comp: marcada(700) }).accion, 'bajar');
+  assert.equal(decidir({ item: item({ price: 1000 }), comp: marcada(699) }).accion, 'sin_tocar_pct');
+});
+test('tope del 30 % también en la reversión, contra el original', () => {
+  assert.equal(decidir({ item: item({ price: 800 }), comp: marcada(690), previo: { precio_original: 1000, precio_aplicado: 800 } }).accion, 'mantener_umbral');
+});
+test('ganador nulo no se toma como cero', () => {
+  assert.equal(decidir({ item: item(), comp: { marcada: true, ganador: null } }).accion, 'saltear_sin_precio');
 });

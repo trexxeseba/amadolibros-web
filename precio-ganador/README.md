@@ -15,14 +15,15 @@ su precio lo maneja el motor de la PC (`scripts/vintage-local/stock-sync.mjs`).
    - **Sin catálogo**: `GET /suggestions/items/{id}/details`. Está marcada
      ("Precio alto") si el estado contiene `high` y el precio sugerido es menor.
 3. Qué hace con cada marcada:
-   - si la diferencia es menor a 360, baja al precio ganador, redondeado hacia abajo al peso;
-   - si es de 360 o más, no la toca;
+   - si la diferencia es menor a 360 y la baja no pasa el 30 %, baja al precio
+     ganador, redondeado hacia abajo al peso;
+   - si la diferencia es de 360 o más, o la baja pasa el 30 %, no la toca;
    - si tiene una promoción activa (`/seller-promotions/items/{id}`), la saltea;
    - si no puede confirmar si tiene promoción, también la saltea;
    - si tiene variaciones o el precio no está en pesos, la saltea.
 4. Qué hace con las que el sistema bajó antes:
    - si siguen marcadas, sigue al ganador, sin pasar nunca el precio original;
-   - si el ganador bajó 360 o más desde el original, la deja donde está;
+   - si el ganador quedó 360 o más (o más del 30 %) por debajo del original, la deja donde está;
    - si dejaron de estar marcadas, las sube hasta un peso por debajo del competidor
      más barato, o hasta el original si no hay competidor más barato;
    - si alguien les cambió el precio a mano, las saca del sistema y no las vuelve a tocar.
@@ -45,7 +46,13 @@ Está en la rama `estado/precio-ganador`, no en `main`, para no disparar el depl
   aplicado y las fechas. Se graba después de cada cambio.
 - `state/diario/`: los contadores de cada corrida del día.
 - `ultima/`: el detalle de la última corrida.
-- `pruebas/`: las corridas de prueba.
+- `pruebas/`: las corridas de prueba (DRY_RUN previo a la activación).
+
+## Lo que no cubre
+
+"Precio alto" (publicaciones sin catálogo): el endpoint de precios de referencia
+(`/suggestions/items/{id}/details`) responde 404 para toda la cuenta en Mercado Libre Uruguay.
+Hoy el sistema actúa sólo sobre las de catálogo ("Precio para ganar").
 
 ## Secretos que usa (solo nombres)
 
@@ -59,8 +66,8 @@ espera 8 minutos y después falla.
 
 ## Cómo pausarlo
 
-- Variable del repo `PRECIO_GANADOR_DRY_RUN`: con `false` cambia precios; con
-  cualquier otro valor, o sin la variable, solo informa (DRY_RUN).
+- `precio-ganador/modo.json`: `"real"` cambia precios; cualquier otro valor solo informa.
+- Variable del repo `PRECIO_GANADOR_DRY_RUN` = `true`: pausa sin tocar código (solo informa).
 - También se puede desactivar el workflow **Precio Ganador** en Actions.
 
 ## Cómo volver todo al precio original
@@ -75,6 +82,8 @@ Desde una PC: `node precio-ganador/src/restaurar.mjs --cuenta libros --estado <c
 agregando `--real` para que aplique los cambios.
 
 ## Frenos
+
+- Después de cada cambio vuelve a leer la publicación y verifica el precio.
 
 - Más de 400 cambios en una corrida: no aplica nada y falla.
 - El token tiene que ser de la cuenta 440298103.

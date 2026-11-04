@@ -114,6 +114,17 @@ async function main() {
       f.d = { ...f.d, accion: 'error_aplicar', motivo: e?.code ?? 'error', detalle: e?.detalle ?? null };
     }
   }
+  // Verificación: se vuelve a leer cada publicación cambiada y se compara el precio.
+  const aplicadas = cambios.filter(f => f.aplicado);
+  if (aplicadas.length) {
+    await new Promise(r => setTimeout(r, 5000));
+    const leidas = await detalle(ml, aplicadas.map(f => f.item.id)).catch(() => new Map());
+    for (const f of aplicadas) {
+      const it = leidas.get(f.item.id);
+      f.verificado = Boolean(it) && it.price === f.d.precio && (!Number.isFinite(f.d.stock) || it.available_quantity === f.d.stock);
+      f.precio_leido = it?.price ?? null;
+    }
+  }
   // Editadas a mano: salen del estado sin tocarlas.
   if (real) for (const f of filas) if (f.d.accion === 'liberar_editada') delete estado.publicaciones[f.item.id];
 

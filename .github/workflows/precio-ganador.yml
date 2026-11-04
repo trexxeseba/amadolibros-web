@@ -4,8 +4,9 @@ name: Precio Ganador
 # Amado Vintage no corre acá: su precio lo maneja el motor de la PC.
 #
 # 09:00, 15:00 y 21:00 de Montevideo (UTC-3). El mail diario sale con la de las 21:00.
-# Modo real SÓLO si la variable del repo PRECIO_GANADOR_DRY_RUN vale "false".
-# Cualquier otro valor (o sin variable) = DRY_RUN: consulta y reporta, no cambia nada.
+# Modo real si precio-ganador/modo.json dice "real" para la cuenta. Para pausar sin
+# tocar código: variable del repo PRECIO_GANADOR_DRY_RUN = true (consulta y reporta,
+# no cambia nada), o desactivar el workflow.
 #
 # Estado (precio original de cada publicación bajada) y reportes en la rama
 # estado/precio-ganador, no en main: así no dispara el deploy del sitio.
@@ -28,9 +29,6 @@ on:
         description: 'Mandar el mail de resumen'
         type: boolean
         default: false
-  push:
-    branches: [claude/audit-precio-ganador-jrf5or]
-    paths: ['precio-ganador/**', '.github/workflows/precio-ganador.yml']
 
 concurrency:
   group: precio-ganador
@@ -91,7 +89,8 @@ jobs:
         run: |
           ARGS=(--cuenta "$CUENTA" --estado estado/state)
           REAL=no
-          if [ "$DRY_VAR" = "false" ] && [ "$EVENTO" != "push" ]; then REAL=si; ARGS+=(--real); fi
+          MODO=$(node -e "console.log(require('./precio-ganador/modo.json')[process.argv[1]] ?? 'dry_run')" "$CUENTA")
+          if [ "$MODO" = "real" ] && [ "$DRY_VAR" != "true" ] && [ "$EVENTO" != "push" ]; then REAL=si; ARGS+=(--real); fi
           echo "real=$REAL" >> "$GITHUB_OUTPUT"
           echo "Modo: $([ $REAL = si ] && echo REAL || echo DRY_RUN)"
           if [ "$IN_ACCION" = "restaurar" ]; then
