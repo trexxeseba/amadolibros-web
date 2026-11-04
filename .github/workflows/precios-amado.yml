@@ -53,14 +53,29 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Tests
+        run: node --test precios-amado/test/*.test.mjs
+
+      # Las pruebas desde la rama usan otro prefijo: nunca tocan el estado real.
+      - name: Elegir prefijo de R2
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then echo "PREFIX=precios-amado-pruebas" >> "$GITHUB_ENV"; else echo "PREFIX=precios-amado" >> "$GITHUB_ENV"; fi
+
+      # Distinguir "no hay estado" (primera corrida) de "no se pudo leer": en el
+      # segundo caso se corta acá, antes de pisar el estado con uno vacío.
       - name: Traer el estado anterior (R2 privado)
+        id: restore
         shell: bash
         run: |
           mkdir -p "$PRECIOS_AMADO_HOME"
-          if $WRANGLER r2 object get "$BUCKET/precios-amado/state.tgz" --file state.tgz --remote >/dev/null 2>&1; then
+          if out=$($WRANGLER r2 object get "$BUCKET/$PREFIX/state.tgz" --file state.tgz --remote 2>&1); then
             tar -xzf state.tgz -C "$PRECIOS_AMADO_HOME" && echo "Estado anterior restaurado"
-          else
+          elif echo "$out" | grep -qiE 'does not exist|not found|NoSuchKey|10007'; then
             echo "Sin estado anterior: primera corrida"
+          else
+            echo "No se pudo leer el estado anterior de R2; se corta para no perderlo."
+            exit 1
           fi
           # Configuración comercial opcional (techos): se guarda en R2, no en el repo.
           $WRANGLER r2 object get "$BUCKET/precios-amado/config.json" --file "$PRECIOS_AMADO_HOME/config.json" --remote >/dev/null 2>&1 || rm -f "$PRECIOS_AMADO_HOME/config.json"
@@ -70,27 +85,25 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           REPORT_EMAIL_FROM: Amado Libros <web@notificaciones.amadolibros.com>
           PRECIOS_EMAIL_TO: sebastian@amadolibros.com
+          IN_LIMIT: ${{ inputs.limit }}
+          IN_SIN_CORREO: ${{ inputs.sin_correo }}
         shell: bash
         run: |
           ARGS=()
-          if [ -n "${{ inputs.limit }}" ]; then ARGS+=(--limit "${{ inputs.limit }}"); fi
-          if [ "${{ inputs.sin_correo }}" = "true" ] || [ "${{ github.event_name }}" = "push" ]; then ARGS+=(--sin-correo); fi
+          if [[ "$IN_LIMIT" =~ ^[0-9]+$ ]]; then ARGS+=(--limit "$IN_LIMIT"); fi
+          if [ "$IN_SIN_CORREO" = "true" ] || [ "$GITHUB_EVENT_NAME" = "push" ]; then ARGS+=(--sin-correo); fi
           node precios-amado/src/run.mjs "${ARGS[@]}"
 
       - name: Guardar estado y reporte (R2 privado)
-        if: always()
+        if: always() && steps.restore.outcome == 'success'
         shell: bash
         run: |
           [ -d "$PRECIOS_AMADO_HOME/state" ] || exit 0
           rm -f "$PRECIOS_AMADO_HOME/state/lock"
           tar -czf state.tgz -C "$PRECIOS_AMADO_HOME" state
-          $WRANGLER r2 object put "$BUCKET/precios-amado/state.tgz" --file state.tgz --remote >/dev/null
+          $WRANGLER r2 object put "$BUCKET/$PREFIX/state.tgz" --file state.tgz --remote >/dev/null
           if [ -f "$PRECIOS_AMADO_HOME/reportes/ultimo.html" ]; then
-            $WRANGLER r2 object put "$BUCKET/precios-amado/ultimo.html" --file "$PRECIOS_AMADO_HOME/reportes/ultimo.html" --content-type 'text/html; charset=utf-8' --remote >/dev/null
-            $WRANGLER r2 object put "$BUCKET/precios-amado/reportes/$(date -u +%Y-%m-%dT%H%M)-${GITHUB_RUN_ID}.html" --file "$PRECIOS_AMADO_HOME/reportes/ultimo.html" --content-type 'text/html; charset=utf-8' --remote >/dev/null
+            $WRANGLER r2 object put "$BUCKET/$PREFIX/ultimo.html" --file "$PRECIOS_AMADO_HOME/reportes/ultimo.html" --content-type 'text/html; charset=utf-8' --remote >/dev/null
+            $WRANGLER r2 object put "$BUCKET/$PREFIX/reportes/$(date -u +%Y-%m-%dT%H%M)-${GITHUB_RUN_ID}.html" --file "$PRECIOS_AMADO_HOME/reportes/ultimo.html" --content-type 'text/html; charset=utf-8' --remote >/dev/null
           fi
-          echo "Estado y reporte guardados en R2 ($(du -sh state.tgz | cut -f1) de estado)"
-
-      - name: Tests
-        if: always()
-        run: node --test precios-amado/test/*.test.mjs
+          echo "Estado y reporte guardados en R2 ($PREFIX, $(du -sh state.tgz | cut -f1) de estado)"

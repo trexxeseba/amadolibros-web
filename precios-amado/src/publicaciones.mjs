@@ -70,11 +70,13 @@ export async function fetchItems(ml, ids) {
     let rows;
     try { rows = await ml.get(`/items/bulk?ids=${chunk.join(',')}&attributes=${attrs}`); }
     catch (e) { fallidos.push(...chunk.map(id => ({ id, motivo: e.code }))); return; }
+    // Lo que no vuelve como 200 con body (o directamente no vuelve) es fallido, con su id.
+    const recibidos = new Set();
     for (const row of Array.isArray(rows) ? rows : []) {
       const code = row?.status_code ?? row?.code;
-      if (code === 200 && row.body?.id) items.push(normalizeItem(row.body));
-      else fallidos.push({ id: row?.body?.id ?? '?', motivo: `bulk_${code}` });
+      if (code === 200 && row.body?.id) { items.push(normalizeItem(row.body)); recibidos.add(row.body.id); }
     }
+    for (const id of chunk) if (!recibidos.has(id)) fallidos.push({ id, motivo: 'no_leida' });
   }));
   items.sort((a, b) => a.id.localeCompare(b.id));
   return { items, fallidos };

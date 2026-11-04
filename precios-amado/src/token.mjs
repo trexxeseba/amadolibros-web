@@ -4,20 +4,19 @@
 //     (tabla ml_oauth, app 4741021817925208). Se LEE por la API de Cloudflare y
 //     nunca se renueva desde acá: la renovación es del Worker (refresh token
 //     rotativo de un solo uso, con lock en D1). Si está por vencer, se espera a
-//     que el Worker lo renueve. Es el único que lee /items/bulk de terceros, que
-//     es donde está el plazo de preparación de los competidores.
+//     que el Worker lo renueve.
 //  2. "app" — client_credentials de la app de mlu-monitor (sin refresh token,
-//     no interfiere con nadie). Lee nuestras publicaciones, las fichas y
-//     price_to_win, pero /items/bulk de terceros responde 403: sin plazos.
+//     no interfiere con nadie).
 import { loadCredentials, ML_ORIGIN } from './config.mjs';
 
 export const WORKER_APP_ID = '4741021817925208';
 const D1_DATABASE_ID = '6dc8dc3a-2d4f-4045-b428-14323c7b0bcd'; // amadolibros-orders-production (worker-sync/wrangler.toml)
 const MARGIN_MS = 5 * 60 * 1000;
+const tokenError = code => Object.assign(new Error(code), { code, fatal: true });
 
-export function workerTokenSource({ accountId = process.env.CLOUDFLARE_ACCOUNT_ID, apiTokens = [process.env.CLOUDFLARE_D1_API_TOKEN, process.env.CLOUDFLARE_ADMIN_API_TOKEN, process.env.CLOUDFLARE_API_TOKEN].filter(Boolean), fetcher = (...a) => globalThis.fetch(...a), sleep = ms => new Promise(r => setTimeout(r, ms)), maxWaitMs = 7 * 60 * 1000 } = {}) {
+export function workerTokenSource({ accountId = process.env.CLOUDFLARE_ACCOUNT_ID, apiTokens = [process.env.CLOUDFLARE_D1_API_TOKEN, process.env.CLOUDFLARE_ADMIN_API_TOKEN, process.env.CLOUDFLARE_API_TOKEN].filter(Boolean), fetcher = (...a) => globalThis.fetch(...a), sleep = ms => new Promise(r => setTimeout(r, ms)), maxWaitMs = 7 * 60 * 1000, pollMs = 30_000 } = {}) {
   if (!accountId || !apiTokens.length) return null;
-  let cached = null;
+  let cached = null, rejected = null, fatal = null, pending = null;
   async function readRow() {
     let last = 'sin_token_cloudflare';
     for (const apiToken of apiTokens) {
@@ -35,38 +34,51 @@ export function workerTokenSource({ accountId = process.env.CLOUDFLARE_ACCOUNT_I
     }
     return { error: last };
   }
-  async function getToken({ force = false } = {}) {
-    if (!force && cached && cached.expiresAt - Date.now() > MARGIN_MS) return cached.token;
+  // Una sola lectura/espera compartida entre todas las llamadas en paralelo.
+  async function load() {
     const deadline = Date.now() + maxWaitMs;
     for (;;) {
       const row = await readRow();
-      if (row.error) throw Object.assign(new Error(row.error), { code: row.error });
-      if (row.token && row.expiresAt - Date.now() > MARGIN_MS && row.token !== (force ? cached?.token : null)) { cached = row; return row.token; }
-      // Vencido o por vencer: lo renueva el Worker (cron cada 5 minutos). Esperar, no refrescar.
-      if (Date.now() > deadline) throw Object.assign(new Error('token_worker_vencido'), { code: 'token_worker_vencido' });
-      await sleep(30_000);
+      if (row.error) throw tokenError(row.error);
+      const vigente = row.token && row.expiresAt - Date.now() > MARGIN_MS;
+      if (vigente && row.token !== rejected) { cached = row; return row.token; }
+      // Vencido, por vencer o ya rechazado por ML: lo renueva el Worker (cron cada 5 min). Esperar, no refrescar.
+      if (Date.now() >= deadline) throw tokenError(row.token === rejected ? 'token_worker_rechazado' : 'token_worker_vencido');
+      await sleep(pollMs);
     }
   }
-  return { name: 'worker', getToken, invalidate: () => { cached = null; }, terceros: true };
+  async function getToken() {
+    if (fatal) throw fatal;
+    if (cached && cached.expiresAt - Date.now() > MARGIN_MS) return cached.token;
+    pending ??= load().catch(e => { fatal = e; throw e; }).finally(() => { pending = null; });
+    return pending;
+  }
+  // Un 401 con este token: marcarlo rechazado para no volver a usarlo.
+  function invalidate() { if (cached) rejected = cached.token; cached = null; }
+  return { name: 'worker', getToken, invalidate };
 }
 
 export function appTokenSource({ fetcher = (...a) => globalThis.fetch(...a) } = {}) {
   let creds;
   try { creds = loadCredentials(); } catch { return null; }
-  let token = null, exp = 0;
-  async function getToken({ force = false } = {}) {
-    if (!force && token && exp - Date.now() > 60_000) return token;
+  let token = null, exp = 0, pending = null;
+  async function load() {
     const res = await fetcher(ML_ORIGIN + '/oauth/token', {
       method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
       body: new URLSearchParams({ grant_type: 'client_credentials', client_id: creds.app_id, client_secret: creds.client_secret }),
       signal: AbortSignal.timeout(20000),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.access_token) throw Object.assign(new Error('auth_failed'), { code: 'auth_failed' });
+    if (!res.ok || !data.access_token) throw tokenError('auth_failed');
     token = data.access_token; exp = Date.now() + (Number(data.expires_in) || 3600) * 1000;
     return token;
   }
-  return { name: 'app', getToken, invalidate: () => { token = null; }, terceros: false, origen: creds.origen };
+  async function getToken() {
+    if (token && exp - Date.now() > 60_000) return token;
+    pending ??= load().finally(() => { pending = null; });
+    return pending;
+  }
+  return { name: 'app', getToken, invalidate: () => { token = null; }, origen: creds.origen };
 }
 
 export function pickTokenSource(pref = process.env.PRECIOS_TOKEN_SOURCE || 'auto') {
