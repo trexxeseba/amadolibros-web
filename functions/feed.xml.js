@@ -57,6 +57,7 @@ import { streamCoverManifest } from './_shared/cover-manifest-stream.js';
 
 import { slugify } from './_shared/slug.js';
 import { fetchCatalog } from './_shared/catalog.js';
+import { liquidationIds, LIQUIDACION } from './_shared/liquidacion.js';
 import { normalizeCategoryPaths } from './_shared/category-paths.js';
 // FICHAS-QUALITY-GUARD-1: misma definición de autoría genérica que la ficha.
 import { realAuthor } from './_shared/generic-author.js';
@@ -131,9 +132,14 @@ export async function onRequest(context) {
             a.id < b.id ? -1 : a.id > b.id ? 1 : 0
         );
 
+        // Promo Liquidación Amado: etiqueta para la campaña de Shopping que
+        // muestra solo esos libros. Si falla, el feed sale igual sin etiqueta.
+        let liquidation = new Set();
+        try { liquidation = await liquidationIds(context, sortedItems); } catch { /* sin etiqueta */ }
+
         let feedItems = '';
         for (const item of sortedItems) {
-            feedItems += renderFeedItem(item, coverManifest, categoryData, requireImageQuality);
+            feedItems += renderFeedItem(item, coverManifest, categoryData, requireImageQuality, liquidation);
         }
 
         const feed = `<?xml version="1.0" encoding="UTF-8"?>
@@ -151,6 +157,7 @@ export async function onRequest(context) {
                 "cache-control": 'public, max-age=60',
                 ...(catalog?.updated_at ? { 'x-amado-catalog-updated-at': String(catalog.updated_at) } : {}),
                 "x-amado-feed-cover-pending": String(pendingCovers),
+                "x-amado-feed-liquidacion": String(liquidation.size),
             },
         });
 
@@ -535,7 +542,7 @@ async function readMerchantCoverManifest(context, productIds) {
 // Render de un <item>
 // ---------------------------------------------------------------------------
 
-export function renderFeedItem(item, coverManifest = null, categoryData = null, requireImageQuality = false) {
+export function renderFeedItem(item, coverManifest = null, categoryData = null, requireImageQuality = false, liquidation = null) {
     item = applyBookEnrichment(item);
     const stock = Number(item.available_quantity) || 0;
     const currency = String(item.currency || item.currency_id || '').trim().toUpperCase();
@@ -566,6 +573,9 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
     const productTypeTags = merchantProductTypes(item.id, categoryData)
         .map(productType => `\n        <g:product_type>${escapeXml(productType)}</g:product_type>`)
         .join('');
+    const customLabelTag = liquidation instanceof Set && liquidation.has(String(item.id))
+        ? `\n        <g:custom_label_0>${LIQUIDACION.feedLabel}</g:custom_label_0>`
+        : '';
 
     return `
     <item>
@@ -577,7 +587,7 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
         <g:availability>${availability}</g:availability>
         <g:price>${escapeXml(price)}</g:price>
         <g:condition>${escapeXml(cond)}</g:condition>
-        <g:google_product_category>${GOOGLE_PRODUCT_CATEGORY_BOOKS}</g:google_product_category>${gtinTag}${identifierExistsTag}${productTypeTags}
+        <g:google_product_category>${GOOGLE_PRODUCT_CATEGORY_BOOKS}</g:google_product_category>${gtinTag}${identifierExistsTag}${productTypeTags}${customLabelTag}
     </item>`;
 }
 
