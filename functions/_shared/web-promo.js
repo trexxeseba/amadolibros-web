@@ -111,6 +111,14 @@ export function promoEndGuardScript(promo = WEB_PROMO) {
     return `<script>(function(){try{if(!document.querySelector('.promo-was'))return;if(Date.now()<=${end})return;var k='amado-promo-end';if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');var u=new URL(location.href);u.searchParams.set('_p','${end}');location.replace(u.toString());}catch(e){}})();</script>`;
 }
 
+// El banner y el guard son solo de la tienda. En el panel y en las demás áreas privadas
+// (operaciones, API, exportaciones, callbacks de Mercado Libre) no se inyecta nada: el panel
+// arma su propia grilla y una barra extra como primer hijo del <body> la desarma (4/11/2026).
+const PRIVATE_AREAS = /^\/(?:panel|operations|api|export)(?:\/|$)|^\/meli-/;
+export function promoUiAllowed(pathname) {
+    return !PRIVATE_AREAS.test(String(pathname ?? ''));
+}
+
 // Banner de campaña: reutiliza la barra superior (`.announcement-bar`) si existe
 // y la crea en las páginas que no la tienen. Se inyecta solo en HTML generado
 // durante la promo y se apaga solo al llegar el fin (comparación en el cliente).

@@ -6,7 +6,9 @@ import {
   applyWebPromoToCatalog,
   applyWebPromoToItems,
   webPromoActive,
+  promoUiAllowed,
 } from '../_shared/web-promo.js';
+import { withPromoEndGuard } from '../_middleware.js';
 import { validateCartAgainstCatalog } from '../api/_orders_logic.js';
 
 const DENTRO = new Date('2026-11-02T12:00:00-03:00');
@@ -289,4 +291,48 @@ test('el banner de campaña dice Amado Week, el 9/11 y la transferencia, y se ap
   assert.match(script, /AMADO WEEK · 15% menos hasta el 9\/11 · 12% adicional pagando por transferencia/);
   assert.ok(script.includes(`Date.now()>${Date.parse(WEB_PROMO.endsAt)}`));
   assert.match(script, /announcement-bar/);
+});
+
+test('el banner y el guard de la promo solo van en la tienda: nunca en el panel ni en las áreas privadas', () => {
+  for (const path of ['/', '/catalogo', '/libro/MLU1/algo', '/liquidacion', '/libros-psicologia', '/checkout']) {
+    assert.equal(promoUiAllowed(path), true, path);
+  }
+  for (const path of ['/panel', '/panel/', '/panel/pedidos', '/panel/reposicion', '/operations/reposicion', '/operations/vintage-local', '/api/orders', '/export/catalog', '/meli-vintage-callback', '/meli-callback']) {
+    assert.equal(promoUiAllowed(path), false, path);
+  }
+  // un nombre que solo empieza parecido no queda excluido por error
+  assert.equal(promoUiAllowed('/panelista-de-libros'), true);
+  assert.equal(promoUiAllowed('/apiario'), true);
+});
+
+test('el hook de la promo no inyecta nada en las páginas del panel y sí en las de la tienda', () => {
+  const rewriters = [];
+  const original = globalThis.HTMLRewriter;
+  globalThis.HTMLRewriter = class {
+    constructor() { rewriters.push(this); this.selectors = []; }
+    on(selector) { this.selectors.push(selector); return this; }
+    transform(response) { this.transformed = true; return response; }
+  };
+  try {
+    const html = () => new Response('<html><body></body></html>', { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
+    const env = {};
+    // la promo está vigente solo si la fecha cae dentro de la ventana: se simula con la fecha del sistema
+    const realDate = Date;
+    globalThis.Date = class extends realDate {
+      constructor(...args) { super(...(args.length ? args : ['2026-11-04T09:00:00-03:00'])); }
+      static now() { return new realDate('2026-11-04T09:00:00-03:00').getTime(); }
+    };
+    try {
+      withPromoEndGuard(html(), env, '/panel/pedidos');
+      withPromoEndGuard(html(), env, '/operations/reposicion');
+      assert.equal(rewriters.length, 0, 'en el panel no se crea ni el rewriter');
+      withPromoEndGuard(html(), env, '/catalogo');
+      assert.equal(rewriters.length, 1);
+      assert.equal(rewriters[0].transformed, true);
+    } finally {
+      globalThis.Date = realDate;
+    }
+  } finally {
+    globalThis.HTMLRewriter = original;
+  }
 });
