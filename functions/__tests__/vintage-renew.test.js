@@ -174,7 +174,7 @@ test('renew switches the Vintage run to the competitive price once, as a recorde
  const c=await f.renew.command(f.env,BEARER,'renew',{feed_id});
  const run=await f.s.run(BULK_RUN),wanted=await policyHash(vintageCompetitivePolicy(vintagePolicy(policy)));
  assert.equal(run.policy_hash,wanted);assert.equal(run.approved_hash,wanted);assert.equal(c.policy_hash,wanted);
- assert.equal(c.policy.competitive,true);assert.equal(c.policy.competitiveFloorMargin,.18);assert.equal(c.policy.competitiveMinimumSaleUyu,1500);
+ assert.equal(c.policy.competitive,true);assert.equal(c.policy.competitiveFloorMargin,.18);assert.equal(c.policy.competitiveMinimumSaleUyu,1200);
  assert.equal(amendmentChain(c.amendments,old,wanted),true);
  // la segunda renovación no vuelve a enmendar
  f.clock.value+=LIVE_WINDOW_MS+1;

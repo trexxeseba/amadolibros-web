@@ -3,7 +3,7 @@
 // cómo rinden las compras por proveedor, editoriales y posición competitiva.
 // Sólo lectura, con sesión del panel y en producción. HTML + SVG, sin JavaScript.
 import { deriveSessionSecret, hasValidSession, resolvePanelConfig } from '../_shared/panel-auth.js';
-import { fetchCatalog } from '../_shared/catalog.js';
+import { fetchCatalogRaw as fetchCatalog } from '../_shared/catalog.js';
 import { loadBi } from '../_shared/panel-bi.js';
 import { CATEGORIAS } from '../../worker-sync/long-tail.js';
 

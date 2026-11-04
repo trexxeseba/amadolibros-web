@@ -2770,6 +2770,17 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       unitEl.textContent = fmt.format(item.price) + ' c/u';
       art.appendChild(unitEl);
 
+      if (item.original_price && item.original_price > item.price) {
+        var promoEl = document.createElement('p');
+        promoEl.className = 'cart-item-promo-was';
+        promoEl.style.cssText = 'margin:0;font-size:.82rem;font-weight:700;color:#9a3412';
+        promoEl.appendChild(document.createTextNode('Precio promocional. Precio habitual: '));
+        var wasEl = document.createElement('s');
+        wasEl.textContent = fmt.format(item.original_price);
+        promoEl.appendChild(wasEl);
+        art.appendChild(promoEl);
+      }
+
       if (validation && validation.status === 'precio_cambiado') {
         var priceUpdate = document.createElement('span');
         priceUpdate.className = 'cart-item-update-msg';
@@ -2905,6 +2916,16 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
         meta.className = 'cart-item-compact-meta';
         meta.textContent = 'Cant. ' + item.quantity + ' · ' + fmt.format(item.price * item.quantity);
         info.appendChild(meta);
+        if (item.original_price && item.original_price > item.price) {
+          var promoMeta = document.createElement('p');
+          promoMeta.className = 'cart-item-compact-meta';
+          promoMeta.style.cssText = 'color:#9a3412;font-weight:700';
+          promoMeta.appendChild(document.createTextNode('Precio promocional. Precio habitual: '));
+          var habitual = document.createElement('s');
+          habitual.textContent = fmt.format(item.original_price) + ' c/u';
+          promoMeta.appendChild(habitual);
+          info.appendChild(promoMeta);
+        }
       }
 
       row.appendChild(info);

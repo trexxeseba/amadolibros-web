@@ -7,6 +7,7 @@ import {
   WA_FLOAT_STYLES,
 } from './brand.js';
 import { slugify } from './slug.js';
+import { promoAwareCacheControl, promoWasHtml } from './web-promo.js';
 import { authorPageById, matchesAuthor } from './seo-authors.js';
 import {
   bookCoverUrl,
@@ -131,7 +132,7 @@ export function renderAuthorPage(author, items, useCloudflareImages = true) {
       <div class="book-info">
         <h2><a href="${escapeHtml(href)}">${escapeHtml(item.title)}</a></h2>
         <p class="book-author">${escapeHtml(item.author)}</p>
-        ${price > 0 ? `<p class="book-price">$${escapeHtml(price.toLocaleString('es-UY'))} UYU</p>` : ''}
+        ${price > 0 ? `<p class="book-price">$${escapeHtml(price.toLocaleString('es-UY'))} UYU</p>${promoWasHtml(item)}` : ''}
         <a class="book-cta" href="${escapeHtml(href)}">Ver ficha</a>
       </div>
     </article>`;
@@ -191,7 +192,7 @@ export async function renderAuthorRoute(ctx, authorId) {
   return new Response(renderAuthorPage(author, items, ctx.env?.APP_ENV === 'production'), {
     headers: {
       'content-type': 'text/html;charset=UTF-8',
-      'cache-control': 'public, max-age=3600',
+      'cache-control': promoAwareCacheControl(3600, new Date(), ctx.env),
     },
   });
 }

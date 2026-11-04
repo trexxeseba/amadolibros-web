@@ -21,6 +21,7 @@ import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_FONTS_HEAD } from '../_shared/
 // FICHAS-QUALITY-GUARD-1: fuente única sobre autoría genérica/ausente.
 import { isGenericAuthor, realAuthor, stripGenericAuthorMention } from '../_shared/generic-author.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
+import { promoAwareCacheControl, promoWasHtml } from '../_shared/web-promo.js';
 // QW3A: misma validación de ISBN→GTIN que ya usa el feed de Merchant — nunca
 // inventa ni corrige dígitos, sólo evita publicar un ISBN mal formado.
 import { isBookProduct, normalizeIsbnToGtin } from '../feed.xml.js';
@@ -679,11 +680,14 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         schemaProduct.offers.itemCondition = 'https://schema.org/UsedCondition';
     }
 
+    const promoNoteHtml = sellableInCheckout ? promoWasHtml(item) : '';
+
     const priceHtml = sellableInCheckout
         ? `<div class="price-box">
       <div class="price-main">
         <span class="price-main-label">Precio web/tarjeta:</span>
         <strong>$${priceUY} UYU</strong>
+        ${promoNoteHtml}
       </div>
       <div class="price-installment">Hasta 12 cuotas de aprox. $${installment} UYU</div>
       <div class="price-transfer">
@@ -1289,7 +1293,7 @@ export async function onRequest(context) {
     return new Response(html, {
         headers: {
             'content-type':  'text/html;charset=UTF-8',
-            'cache-control': 'public, max-age=3600',
+            'cache-control': promoAwareCacheControl(3600, new Date(), context.env),
             'server-timing': serverTiming,
             'x-cache-status': cacheStatus,
             'x-perf-cache-hits': String(context.data.perf.cache.hit),

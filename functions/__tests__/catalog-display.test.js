@@ -41,6 +41,7 @@ function context(url, params = {}, appEnv = 'preview', envOverrides = {}) {
     params,
     env: {
       APP_ENV: appEnv,
+      WEB_PROMO_OFF: '1',
       STOCK_WAITLIST_TURNSTILE_SITE_KEY: '0xpreview-test-sitekey',
       ...envOverrides,
     },

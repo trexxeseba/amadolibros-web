@@ -11,6 +11,17 @@
             "statusMessage": "Revisando si toca Amado Libros"
           }
         ]
+      },
+      {
+        "matcher": "Read|Grep|Glob|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-secretos.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Revisando si toca credenciales"
+          }
+        ]
       }
     ]
   }

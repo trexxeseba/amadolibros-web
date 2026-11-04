@@ -3,10 +3,15 @@ import assert from 'node:assert/strict';
 import {
   auditCatalogSafety,
   auditFeed,
+  expectedFeedPrice,
   inspectProductHtml,
   parseMerchantFeed,
   stableSample,
 } from '../../scripts/commerce/full-commerce-audit.mjs';
+
+// Fuera de la ventana de la promo web: el feed debe publicar el precio habitual.
+const FUERA_DE_PROMO = { now: new Date('2026-10-01T12:00:00-03:00') };
+const EN_PROMO = { now: new Date('2026-11-02T12:00:00-03:00') };
 
 function catalogItem(patch = {}) {
   return {
@@ -37,7 +42,7 @@ test('parsea el feed y valida una oferta coherente bajo dominio propio', () => {
   const rows = parseMerchantFeed(feedXml());
   assert.equal(rows.length, 1);
   assert.equal(rows[0].id, 'MLU123456');
-  const result = auditFeed({ items: [catalogItem()] }, rows);
+  const result = auditFeed({ items: [catalogItem()] }, rows, FUERA_DE_PROMO);
   assert.equal(result.critical, 0);
 });
 
@@ -48,7 +53,7 @@ test('detecta precio cruzado, imagen externa y producto no-libro', () => {
   }));
   const result = auditFeed({ items: [catalogItem({
     domain_id: 'MLU-COMPUTER_COMPONENTS', isbn: null, author: null, pages: null,
-  })] }, rows);
+  })] }, rows, FUERA_DE_PROMO);
   const codes = result.issues.map(row => row.code);
   assert.ok(codes.includes('FEED_NON_BOOK'));
   assert.ok(codes.includes('FEED_PRICE_MISMATCH'));
@@ -81,4 +86,32 @@ test('distingue una ficha indexable de un Preview protegido', () => {
   assert.deepEqual(inspectProductHtml(page('noindex, follow'), url, { expectIndexable: false }).issues, []);
   assert.ok(inspectProductHtml(page('index, follow'), url, { expectIndexable: false }).issues.includes('PREVIEW_INDEXABLE'));
   assert.equal(inspectProductHtml(page('index, follow').replace('"@type":"Product"', '"@type":["Product","Book"]'), url).product_schema, true);
+});
+
+test('con la promo vigente el feed debe publicar el precio habitual por 0,85 redondeado', () => {
+  const rows = parseMerchantFeed(feedXml({ price: '842 UYU' })); // 990 * 0,85 = 841,5
+  const result = auditFeed({ items: [catalogItem()] }, rows, EN_PROMO);
+  assert.equal(result.critical, 0);
+  assert.equal(expectedFeedPrice(990, EN_PROMO), 842);
+});
+
+test('con la promo vigente un feed al precio habitual sigue fallando', () => {
+  const rows = parseMerchantFeed(feedXml({ price: '990 UYU' }));
+  const result = auditFeed({ items: [catalogItem()] }, rows, EN_PROMO);
+  const mismatch = result.issues.find(row => row.code === 'FEED_PRICE_MISMATCH');
+  assert.ok(mismatch);
+  assert.equal(mismatch.expected_price, 842);
+  assert.equal(mismatch.promo_active, true);
+});
+
+test('con la promo vigente un precio cualquiera distinto del esperado falla', () => {
+  const rows = parseMerchantFeed(feedXml({ price: '800 UYU' }));
+  const result = auditFeed({ items: [catalogItem()] }, rows, EN_PROMO);
+  assert.ok(result.issues.some(row => row.code === 'FEED_PRICE_MISMATCH'));
+});
+
+test('terminada la promo, un feed que conserva el precio promocional falla', () => {
+  const rows = parseMerchantFeed(feedXml({ price: '842 UYU' }));
+  const result = auditFeed({ items: [catalogItem()] }, rows, { now: new Date('2026-11-10T00:00:00-03:00') });
+  assert.ok(result.issues.some(row => row.code === 'FEED_PRICE_MISMATCH' && row.promo_active === false));
 });

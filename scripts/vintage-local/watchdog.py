@@ -94,6 +94,15 @@ def last_autorun_line(logs):
         return None
 
 
+CAMPAIGN_FILE = Path(__file__).resolve().parent / "campaign.json"
+
+
+def repo_mode():
+    """'correct_only' si campaign.json lo pide; cualquier otra cosa es publicar y corregir."""
+    data = read_json(CAMPAIGN_FILE)
+    return "correct_only" if isinstance(data, dict) and data.get("mode") == "correct_only" else "publish_and_correct"
+
+
 def snapshot(directory):
     """Lo que el vigía mira, reunido en un dict para poder decidir sin tocar disco en los tests."""
     status = read_json(directory / "status.json") or {}
@@ -106,6 +115,7 @@ def snapshot(directory):
         "state": status.get("state"),
         "index_done": (run.get("index") or {}).get("done", True),
         "autorun": last_autorun_line(directory / "logs"),
+        "mode": repo_mode(),
     }
 
 
@@ -120,6 +130,9 @@ def decide(snap, memory, now, stall_minutes=STALL_MINUTES):
         return "none", "stop", memory
     if not snap.get("running"):
         return "relaunch", "autorun_not_running", memory
+    # En "solo corregir" no se suben libros a propósito: sin altas nuevas no es una falla.
+    if snap.get("mode") == "correct_only":
+        return "none", "correct_only", memory
     autorun = snap.get("autorun") or {}
     reason = autorun.get("reason") if autorun.get("msg") == "esperando" else None
     if reason in NORMAL_WAITS:

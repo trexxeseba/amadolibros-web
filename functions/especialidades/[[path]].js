@@ -1,5 +1,6 @@
 import { BASE, fetchCatalog } from '../_shared/catalog.js';
 import { slugify } from '../_shared/slug.js';
+import { promoWasHtml } from '../_shared/web-promo.js';
 import {
   BRAND,
   faviconHeadHtml,
@@ -70,7 +71,7 @@ function bookCard(item, useCloudflareImages) {
       : '<span aria-hidden="true">Libro sin imagen</span>'}</a>
     <div class="book-info"><p class="stock">Disponible</p><h3><a href="${href}">${escapeHtml(item.title)}</a></h3>
     ${item.author ? `<p class="author">${escapeHtml(item.author)}</p>` : ''}
-    ${formattedPrice ? `<p class="price">$${formattedPrice} UYU</p>` : ''}
+    ${formattedPrice ? `<p class="price">$${formattedPrice} UYU</p>${promoWasHtml(item)}` : ''}
     <a class="book-link" href="${href}">Ver libro</a></div>
   </article>`;
 }

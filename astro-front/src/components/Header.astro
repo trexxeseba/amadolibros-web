@@ -4,7 +4,7 @@ import AnnouncementBar from './AnnouncementBar.astro';
 
 interface Props {
   showSearch?: boolean;
-  current?: 'libros' | 'temas' | 'pedir' | 'nosotros' | '';
+  current?: 'libros' | 'temas' | 'liquidacion' | 'pedir' | 'nosotros' | '';
 }
 
 const {
@@ -19,6 +19,7 @@ const {
 const nav = [
   { id: 'libros', label: 'Libros', href: '/catalogo' },
   { id: 'temas', label: 'Temas', href: '/temas' },
+  { id: 'liquidacion', label: 'Liquidación', href: '/liquidacion', highlight: true },
   { id: 'pedir', label: 'Pedir un libro', href: '/pedir-libro/?tipo=exacto', highlight: true },
   { id: 'nosotros', label: 'Nosotros', href: '/quienes-somos/' },
 ];

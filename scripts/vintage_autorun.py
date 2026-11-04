@@ -38,6 +38,9 @@ RENEW_MARGIN_S = 30 * 60
 # Reparto de cada hora (Seba, 26/10): 50 % subir libros nuevos, 50 % corregir el precio de los ya subidos.
 PUBLISH_SLICE_MIN = 30
 CORRECT_SLICE_MIN = 30
+# Modo "solo corregir" (campaign.json "mode": "correct_only"): no se suben libros nuevos y casi toda la
+# hora va a corregir precios; los minutos que sobran dejan volver a mirar la renovación y el stock.
+CORRECT_ONLY_SLICE_MIN = 55
 # Tope duro para el motor: el motor corta solo a los PUBLISH_SLICE_MIN, pero un alta colgada (red cortada,
 # base bloqueada) lo deja esperando para siempre y el supervisor, con el bloqueo tomado, parece vivo.
 # Pasado este tope se lo detiene y se reintenta como cualquier otro error del motor.
@@ -249,16 +252,16 @@ class Runner:
         elif last.get("paused") or last.get("activated") or last.get("repriced"):
             self.notify("Vintage: stock sincronizado", f"Pausados: {last.get('paused')}. Reactivados: {last.get('activated')}. Precios ajustados: {last.get('repriced', 0)}. Faltantes en lista: {last.get('missing')} de {last.get('published')}.", every_s=0)
 
-    def correct_prices(self):
-        """El 30 % de la hora: precio competitivo para los libros ya publicados (stock-sync --mode correct)."""
+    def correct_prices(self, minutes=CORRECT_SLICE_MIN):
+        """Precio competitivo para los libros ya publicados (stock-sync --mode correct). Devuelve el último resultado o None."""
         if self.args.stock_sync == "off":
-            return
-        command = [self.node, "--experimental-sqlite", str(STOCK_SYNC), "--connection", str(self.connection), "--excel", str(self.excel), "--directory", str(self.directory), "--mode", "correct", "--max-minutes", str(CORRECT_SLICE_MIN)]
+            return None
+        command = [self.node, "--experimental-sqlite", str(STOCK_SYNC), "--connection", str(self.connection), "--excel", str(self.excel), "--directory", str(self.directory), "--mode", "correct", "--max-minutes", str(minutes)]
         try:
-            result = subprocess.run(command, capture_output=True, text=True, timeout=(CORRECT_SLICE_MIN + 10) * 60)
+            result = subprocess.run(command, capture_output=True, text=True, timeout=(minutes + 10) * 60)
         except subprocess.TimeoutExpired:
             self.log("corrección de precios", error="timeout")
-            return
+            return None
         last = {}
         for line in (result.stdout or "").splitlines():
             try:
@@ -267,7 +270,9 @@ class Runner:
                 continue
         self.log("corrección de precios", code=result.returncode, result=last, stderr=(result.stderr or "")[-300:])
         if result.returncode not in (0, 3):
-            self.notify("Vintage: la corrección de precios falló", f"Resultado: {last.get('error') or last.get('state')}. Sigue publicando; reintenta en la próxima vuelta.", key="correct-failed", every_s=6 * 3600)
+            self.notify("Vintage: la corrección de precios falló", f"Resultado: {last.get('error') or last.get('state')}. Reintenta en la próxima vuelta.", key="correct-failed", every_s=6 * 3600)
+            return None
+        return last or None
 
     def engine_command(self):
         # --target del autorun (run.cmd lo fija en 10000) ya no limita al motor: sólo manda el tope máximo.
@@ -349,6 +354,25 @@ class Runner:
             return None
         return value if isinstance(value, int) and 5 < value <= ENGINE_TARGET_CEILING else None
 
+    def repo_mode(self):
+        """'correct_only' si campaign.json lo pide (llega con el git pull); cualquier otra cosa es el reparto de siempre."""
+        try:
+            value = json.loads(CAMPAIGN_FILE.read_text("utf-8")).get("mode")
+        except (OSError, ValueError, AttributeError):
+            return "publish_and_correct"
+        return "correct_only" if value == "correct_only" else "publish_and_correct"
+
+    def correct_only_turn(self):
+        """Una vuelta sin motor: corregir precios casi toda la hora y decidir cuánto esperar según cómo terminó."""
+        last = self.correct_prices(minutes=CORRECT_ONLY_SLICE_MIN)
+        if not isinstance(last, dict):
+            self.wait(10 * 60, "corrección sin resultado")
+        elif last.get("state") == "backoff":
+            self.wait(15 * 60, "límite de Mercado Libre")
+        elif last.get("remaining") == 0:
+            self.wait(3 * 3600, "correcciones al día")
+        return None
+
     def apply_repo_target(self):
         """Sube el objetivo al de campaign.json una vez por valor; si ya es igual o mayor, no hace nada."""
         target = self.repo_target()
@@ -400,6 +424,8 @@ class Runner:
             self.force_renew = False
             self.failures = 0
             self.sync_stock()
+        if self.repo_mode() == "correct_only":
+            return self.correct_only_turn()
         before = self.status().get("published_total")
         code, error = self.run_engine()
         status = self.status()
