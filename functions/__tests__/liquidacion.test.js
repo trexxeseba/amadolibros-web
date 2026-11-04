@@ -113,6 +113,8 @@ test('la liquidación está en el menú (SSR y Astro) y en el sitemap', () => {
     assert.ok(SITE_HEADER_NAV.some(i => i.href === '/liquidacion' && i.label === 'Liquidación'));
     const astroHeader = readFileSync('astro-front/src/components/Header.astro', 'utf8');
     assert.match(astroHeader, /href: '\/liquidacion'/);
+    const homeHeader = readFileSync('astro-front/src/components/HomeV2Header.astro', 'utf8');
+    assert.equal((homeHeader.match(/href="\/liquidacion"/g) || []).length, 2);
     assert.ok(STATIC_SITEMAP_PAGES.includes('https://www.amadolibros.com/liquidacion'));
 });
 
