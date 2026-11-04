@@ -1,0 +1,28 @@
+{
+  "cuenta": "libros",
+  "umbral": 360,
+  "duracion_s": 214,
+  "contadores": {
+    "fecha": "2026-11-04T17:37:13.742Z",
+    "modo": "dry_run",
+    "activas": 6891,
+    "revisadas": 6891,
+    "marcadas": 39,
+    "bajadas": 13,
+    "ajustadas": 0,
+    "subidas": 0,
+    "restauradas": 0,
+    "sin_tocar_umbral": 25,
+    "promo": 1,
+    "otras_salteadas": 0,
+    "editadas_a_mano": 0,
+    "errores": 0,
+    "cambios_stock": 0
+  },
+  "errores": {},
+  "llamadas": 7321,
+  "por_status": {
+    "200": 3502,
+    "404": 3819
+  }
+}
