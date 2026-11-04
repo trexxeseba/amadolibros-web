@@ -1,0 +1,129 @@
+name: Precio Ganador
+
+# Precio ganador automático en Mercado Libre para Amado Libros (440298103).
+# Amado Vintage no corre acá: su precio lo maneja el motor de la PC.
+#
+# 09:00, 15:00 y 21:00 de Montevideo (UTC-3). El mail diario sale con la de las 21:00.
+# Modo real si precio-ganador/modo.json dice "real" para la cuenta. Para pausar sin
+# tocar código: variable del repo PRECIO_GANADOR_DRY_RUN = true (consulta y reporta,
+# no cambia nada), o desactivar el workflow.
+#
+# Estado (precio original de cada publicación bajada) y reportes en la rama
+# estado/precio-ganador, no en main: así no dispara el deploy del sitio.
+on:
+  schedule:
+    - cron: '0 12 * * *'
+    - cron: '0 18 * * *'
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: 'correr = corrida normal · restaurar = volver todo al precio original'
+        type: choice
+        options: [correr, restaurar]
+        default: correr
+      max_marcadas:
+        description: 'Cortar al encontrar N marcadas (vacío = todas)'
+        required: false
+      correo:
+        description: 'Mandar el mail de resumen'
+        type: boolean
+        default: false
+
+concurrency:
+  group: precio-ganador
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        cuenta: [libros]
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
+      ESTADO_RAMA: estado/precio-ganador
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Tests
+        run: node --test precio-ganador/test/*.test.mjs
+
+      - name: Traer el estado
+        shell: bash
+        run: |
+          git config user.name "precio-ganador[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch --depth=1 origin "$ESTADO_RAMA" 2>/dev/null; then
+            git worktree add estado "origin/$ESTADO_RAMA" -B "$ESTADO_RAMA"
+          else
+            git worktree add --orphan -b "$ESTADO_RAMA" estado
+            echo "Rama de estado nueva"
+          fi
+          mkdir -p estado/state
+
+      - name: Correr
+        id: correr
+        shell: bash
+        env:
+          DRY_VAR: ${{ vars.PRECIO_GANADOR_DRY_RUN }}
+          EVENTO: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          IN_ACCION: ${{ inputs.accion }}
+          IN_MAX: ${{ inputs.max_marcadas }}
+          IN_CORREO: ${{ inputs.correo }}
+          CUENTA: ${{ matrix.cuenta }}
+        run: |
+          ARGS=(--cuenta "$CUENTA" --estado estado/state)
+          REAL=no
+          MODO=$(node -e "console.log(require('./precio-ganador/modo.json')[process.argv[1]] ?? 'dry_run')" "$CUENTA")
+          if [ "$MODO" = "real" ] && [ "$DRY_VAR" != "true" ] && [ "$EVENTO" != "push" ]; then REAL=si; ARGS+=(--real); fi
+          echo "real=$REAL" >> "$GITHUB_OUTPUT"
+          echo "Modo: $([ $REAL = si ] && echo REAL || echo DRY_RUN)"
+          if [ "$IN_ACCION" = "restaurar" ]; then
+            node precio-ganador/src/restaurar.mjs "${ARGS[@]}"
+            exit $?
+          fi
+          if [ "$EVENTO" = "push" ]; then SALIDA="estado/pruebas/$GITHUB_RUN_ID"; ARGS+=(--max-marcadas 100); else SALIDA="estado/ultima"; fi
+          if [[ "$IN_MAX" =~ ^[0-9]+$ ]]; then ARGS+=(--max-marcadas "$IN_MAX"); fi
+          if [ "$SCHEDULE" = "0 0 * * *" ] || [ "$IN_CORREO" = "true" ]; then ARGS+=(--correo-diario); fi
+          node precio-ganador/src/run.mjs "${ARGS[@]}" --salida "$SALIDA"
+
+      # Siempre, aunque la corrida haya fallado a mitad: lo que se alcanzó a bajar
+      # ya está en state/ y tiene que quedar guardado para poder revertirlo.
+      - name: Guardar estado (rama estado/precio-ganador)
+        if: always()
+        shell: bash
+        run: |
+          cd estado
+          git add -A
+          if git diff --cached --quiet; then echo "Sin cambios de estado"; exit 0; fi
+          git commit -q -m "Precio Ganador ${{ matrix.cuenta }}: corrida $GITHUB_RUN_ID [skip ci]"
+          for i in 1 2 3 4 5; do
+            if git push -q origin "HEAD:$ESTADO_RAMA"; then echo "Estado guardado"; exit 0; fi
+            sleep $((i * 5)); git pull -q --rebase origin "$ESTADO_RAMA" || true
+          done
+          echo "No se pudo subir el estado"; exit 1
+
+      # Respaldo del estado por si el push falló.
+      - name: Respaldo del estado
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: estado-${{ matrix.cuenta }}-${{ github.run_id }}
+          path: estado/state/
+          retention-days: 30
+          if-no-files-found: ignore
