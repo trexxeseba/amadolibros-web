@@ -12,6 +12,7 @@ export const STATIC_SITEMAP_PAGES = Object.freeze([
   `${BASE}/como-identificar-edicion-correcta-isbn/`,
   `${BASE}/libros-agotados-importados-uruguay`,
   `${BASE}/libros-por-encargo`,
+  `${BASE}/liquidacion`,
   ...SEO_AUTHORS.map(author => `${BASE}${author.path}`),
   `${BASE}/politicas/`,
   `${BASE}/envios/`,
@@ -29,6 +30,7 @@ const SIGNIFICANT_PAGE_UPDATES = Object.freeze({
   [`${BASE}/como-identificar-edicion-correcta-isbn/`]: '2026-08-12',
   [`${BASE}/libros-agotados-importados-uruguay`]: '2026-08-12',
   [`${BASE}/libros-por-encargo`]: '2026-08-17',
+  [`${BASE}/liquidacion`]: '2026-11-04',
   [`${BASE}/quienes-somos/`]: '2026-08-12',
   ...Object.fromEntries(SEO_AUTHORS.map(author => [`${BASE}${author.path}`, '2026-08-14'])),
 });
