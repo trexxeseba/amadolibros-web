@@ -40,46 +40,59 @@ async function ofertasDeFicha(ml, pid) {
   return { ofertas, consulta };
 }
 
-// Plazo verificado en /items/bulk para los competidores que importan (ganador y
-// los que la ficha trajo sin sale_terms). Sin dato no se asume nada.
-// Devuelve la capacidad observada: 'ok', 'denegado' (403 a terceros: token de
-// aplicación) o 'error'. Si las primeras tandas vienen todas denegadas, no se
-// sigue gastando cupo.
-async function verificarPlazos(ml, ofertas) {
-  const ids = [...new Set(ofertas.filter(o => o.plazo_fuente == null && /^MLU\d+$/.test(o.item_id)).map(o => o.item_id))];
-  const porId = new Map();
-  const cap = { pedidas: ids.length, leidas: 0, denegadas: 0, tandas: 0, estado: ids.length ? 'error' : 'ok' };
-  const chunks = []; for (let i = 0; i < ids.length; i += 20) chunks.push(ids.slice(i, i + 20));
-  let idx = 0;
-  const worker = async () => {
-    while (idx < chunks.length) {
-      const chunk = chunks[idx++];
-      if (cap.tandas >= 3 && cap.leidas === 0 && cap.denegadas > 0) return; // cerrado para este token
-      cap.tandas++;
-      try {
-        const rows = await ml.get(`/items/bulk?ids=${chunk.join(',')}&attributes=status_code,body.id,body.sale_terms,body.status,body.available_quantity`);
-        for (const r of Array.isArray(rows) ? rows : []) {
-          const code = r.status_code ?? r.code;
-          if (code === 200 && r.body?.id) { porId.set(r.body.id, r.body); cap.leidas++; }
-          else if (code === 403 || code === 401) cap.denegadas++;
-        }
-      } catch { /* queda sin verificar */ }
-    }
+// Plazo de cada oferta por /items/{id}/shipping_options?city_to=<destino>.
+// /items/bulk de terceros responde 403 con los dos tokens disponibles
+// (verificado el 03/11/2026), así que el plazo sale de las opciones de envío:
+//   estimated_delivery_time.schedule — horas de preparación (venta a pedido)
+//   estimated_delivery_time.date     — llegada estimada a ESE destino
+// La llegada depende del destino: se informa siempre con el destino usado.
+export const DESTINO = { city_id: "TUxVQ0NPUjZmZjNm", nombre: "Cordón, Montevideo" };
+
+export function leerEnvio(data) {
+  const opts = Array.isArray(data?.options) ? data.options : null;
+  if (!opts) return null;
+  if (!opts.length) return { plazo_dias: null, llegada: null, sin_envio: true };
+  const edts = opts.map(o => o?.estimated_delivery_time).filter(Boolean);
+  if (!edts.length) return null;
+  const horas = Math.min(...edts.map(e => Number(e.schedule ?? 0)).filter(Number.isFinite));
+  const llegada = edts.map(e => e.date).filter(Boolean).sort()[0] ?? null;
+  return { plazo_dias: Number.isFinite(horas) ? Math.ceil(horas / 24) : null, llegada, sin_envio: false };
+}
+
+// Por ficha, de la oferta más barata a la más cara: alcanza con encontrar una
+// sin preparación para saber que hay competencia inmediata. Las ofertas en
+// "siempre" (ganadores de la ficha) se consultan igual.
+async function verificarPlazos(ml, fichas, siempre = new Set()) {
+  const cap = { consultadas: 0, leidas: 0, fallidas: 0, ahorradas: 0, estado: "ok", destino: DESTINO.nombre };
+  const una = async o => {
+    cap.consultadas++;
+    try {
+      const env = leerEnvio(await ml.get(`/items/${o.item_id}/shipping_options?city_to=${DESTINO.city_id}`));
+      if (!env) { cap.fallidas++; return; }
+      cap.leidas++;
+      o.plazo_dias = env.plazo_dias; o.llegada = env.llegada; o.sin_envio = env.sin_envio;
+      o.plazo_fuente = "shipping_options"; o.destino = DESTINO.nombre;
+    } catch { cap.fallidas++; }
   };
-  await Promise.all([worker(), worker(), worker(), worker()]);
-  cap.estado = cap.leidas ? 'ok' : cap.denegadas ? 'denegado' : ids.length ? 'error' : 'ok';
-  for (const o of ofertas) {
-    const b = porId.get(o.item_id);
-    if (b) {
-      o.plazo_dias = manufacturingDays(b); o.plazo_fuente = 'items/bulk'; o.estado = b.status; o.disponible = Number(b.available_quantity ?? NaN);
+  await Promise.all(fichas.map(async ofertas => {
+    const orden = [...ofertas].filter(o => /^MLU\d+$/.test(o.item_id)).sort((x, y) => x.precio - y.precio);
+    let inmediata = false;
+    for (const o of orden) {
+      if (o.plazo_fuente === "products/items" && !siempre.has(o.item_id)) continue;
+      if (inmediata && !siempre.has(o.item_id)) { cap.ahorradas++; continue; }
+      await una(o);
+      if (o.plazo_dias === 0 && !o.sin_envio) inmediata = true;
     }
-  }
+  }));
+  if (cap.consultadas && !cap.leidas) cap.estado = "error";
   return cap;
 }
 
 export function clasificar(ofertas, propio) {
   // Una oferta verificada como pausada o sin stock no compite hoy.
   const ajenas = ofertas.filter(o => o.vendedor !== SELLER_ID && !(o.plazo_fuente === 'items/bulk' && (o.estado !== 'active' || o.disponible === 0)));
+  // Sin envío a ningún destino (shipping_options vacío) no se cuenta como inmediata ni a pedido: queda sin verificar.
+  for (const o of ajenas) if (o.sin_envio) o.plazo_dias = null;
   // Mismo libro (ficha de catálogo) y misma condición que la nuestra; usados no compiten con nuevos.
   const comparables = ajenas.filter(o => (propio?.condicion ? o.condicion === propio.condicion : true) && o.internacional !== true && (o.moneda == null || o.moneda === 'UYU'));
   const excluidas = ajenas.length - comparables.length;
@@ -145,9 +158,9 @@ export async function analizarCompetencia(ml, items, { onProgress = () => {} } =
   }));
 
   // 4. Verificar plazo (y que siga activa con stock) de toda oferta ajena.
-  const aVerificar = [];
-  for (const r of porProducto.values()) for (const o of r.ofertas) if (o.vendedor !== SELLER_ID) aVerificar.push(o);
-  const capacidadPlazos = await verificarPlazos(ml, aVerificar);
+  const ganadores = new Set([...ptw.values()].map(p => p.data?.winner?.item_id).filter(Boolean));
+  const fichas = [...porProducto.values()].map(r => r.ofertas.filter(o => o.vendedor !== SELLER_ID));
+  const capacidadPlazos = await verificarPlazos(ml, fichas, ganadores);
   resultados.capacidadPlazos = capacidadPlazos;
 
   // 5. Resultado por publicación propia.

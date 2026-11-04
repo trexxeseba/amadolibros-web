@@ -1,5 +1,5 @@
 // Reporte HTML en lenguaje comercial: casos con enlaces y una explicación corta.
-import { money, recomendacionCatalogo } from './analisis.mjs';
+import { money, recomendacionCatalogo, plazoTexto } from './analisis.mjs';
 import { montevideoNow } from './config.mjs';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -19,7 +19,7 @@ function casoPierde(c) {
       <tr><th>Mi precio</th><td>${money(c.mi_precio)} (entrega inmediata, ${it.disponible} en stock)</td></tr>
       <tr><th>Oferta destacada</th><td>${link(c.ganador.enlace, c.ganador.item_id)} · ${esc(vendedor(c.ganador))} · ${money(c.ganador.precio)}</td></tr>
       <tr><th>Diferencia</th><td>${money(Math.abs(c.diferencia))} ${c.diferencia < 0 ? 'más barato que nosotros' : 'más caro que nosotros'}</td></tr>
-      <tr><th>Plazo del competidor</th><td>${esc(c.plazo_texto)} <small>(fuente: ${esc(c.plazo_fuente)}; es plazo de preparación declarado por el vendedor, no fecha de entrega)</small></td></tr>
+      <tr><th>Plazo del competidor</th><td>${esc(c.plazo_texto)} <small>(fuente: ${esc(c.plazo_fuente)}. La preparación es del vendedor; la llegada es una estimación de ML para ese destino y cambia según dónde esté el comprador)</small></td></tr>
       <tr><th>Estado en ML</th><td>${esc(c.estado_ml)}${c.motivos_ml.length ? ` · motivos: ${esc(c.motivos_ml.join(', '))}` : ''}${c.precio_para_ganar != null ? ` · precio para ganar: ${money(c.precio_para_ganar)}` : ''}</td></tr>
       <tr><th>Observado</th><td>${esc(fecha(c.fecha))}</td></tr>
     </table>
@@ -30,12 +30,13 @@ function casoPierde(c) {
 
 function casoOportunidad(o) {
   const it = o.item;
-  const comps = o.competidores.length ? `<ul>${o.competidores.map(c => `<li>${link(c.enlace, vendedor(c))}: ${money(c.precio)} · ${c.plazo_dias == null ? 'plazo no leído' : c.plazo_dias === 0 ? 'sin plazo declarado' : `${c.plazo_dias} días declarados`}</li>`).join('')}</ul>` : '<p>Sin competidores en la ficha.</p>';
+  const comps = o.competidores.length ? `<ul>${o.competidores.map(c => `<li>${link(c.enlace, vendedor(c))}: ${money(c.precio)} · ${esc(plazoTexto(c))}</li>`).join('')}</ul>` : '<p>Sin competidores en la ficha.</p>';
   return `<article class="caso ${o.revisar ? 'revisar' : 'oportunidad'}">
     <h3>${link(it.enlace, it.titulo)}</h3>
     <table class="kv">
       <tr><th>Precio actual</th><td>${money(o.precio_actual)}</td></tr>
       <tr><th>Competidores</th><td>${comps}</td></tr>
+      <tr><th>Referencia observada</th><td>${o.referencia ? `${money(o.referencia.precio)} (competidor a pedido más barato; ${o.referencia.vendedores} vendedor${o.referencia.vendedores > 1 ? 'es' : ''} a pedido)` : 'sin referencia de mercado'}</td></tr>
       <tr><th>Techo comercial</th><td>${o.techo != null ? money(o.techo) : 'no definido (se carga en config.json → techos)'}</td></tr>
       <tr><th>Máximo observado</th><td>${o.maximo_observado ? `${money(o.maximo_observado.precio)} el ${esc(o.maximo_observado.fecha)} <small>(dato histórico desde ${esc(o.maximo_observado.desde)}; no es un techo ni un precio recomendado)</small>` : 'seguimiento recién iniciado'}</td></tr>
       <tr><th>Precio sugerido</th><td>${o.sugerido != null ? `<strong>${money(o.sugerido)}</strong>` : '<strong>Oportunidad para revisar</strong> (sin referencia suficiente para un importe)'}</td></tr>
@@ -47,7 +48,7 @@ function casoOportunidad(o) {
 const filaSimple = (c, extra = '') => `<li>${link(c.item.enlace, c.item.titulo)} — ${esc(c.texto ?? extra)}</li>`;
 
 export function renderReporte({ resumen, pierde, oportunidades, errores, decidir, incompletas, metricas, novedades = [], capPlazos = { estado: 'ok' } }) {
-  const avisoPlazos = capPlazos.estado === 'ok' ? '' : `<p class="caso revisar"><strong>Plazos de los competidores sin verificar.</strong> ${capPlazos.estado === 'denegado' ? 'El token usado en esta corrida no puede leer publicaciones de otros vendedores, así que no se sabe quién vende a pedido.' : 'La consulta de plazos falló.'} Los casos con competidores quedan como "información insuficiente": no se cuentan como inmediatos ni como a pedido.</p>`;
+  const avisoPlazos = capPlazos.estado === 'ok' ? '' : `<p class="caso revisar"><strong>Plazos de los competidores sin verificar.</strong> La consulta de opciones de envío falló (${capPlazos.fallidas ?? 0} de ${capPlazos.consultadas ?? 0}). Los casos con competidores quedan como "información insuficiente": no se cuentan como inmediatos ni como a pedido.</p>`;
   const nov = new Set(novedades.map(n => n.item.id + '|' + n.tipo));
   const marca = c => nov.has(c.item.id + '|' + c.tipo) ? '<span class="nuevo">nuevo</span> ' : '';
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Precios Amado</title>

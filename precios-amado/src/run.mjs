@@ -13,7 +13,7 @@ import { createMlClient } from './ml-client.mjs';
 import { pickTokenSource } from './token.mjs';
 import { listActiveIds, fetchItems, configIssues } from './publicaciones.mjs';
 import { analizarCompetencia } from './competencia.mjs';
-import { alertasCatalogo, oportunidades } from './analisis.mjs';
+import { alertasCatalogo, oportunidades, agruparPorFicha } from './analisis.mjs';
 import { renderReporte } from './reporte.mjs';
 import { enviarCorreo } from './correo.mjs';
 import * as store from './store.mjs';
@@ -55,15 +55,15 @@ async function main() {
     for (const r of resultados.values()) porEstado[r.estado] = (porEstado[r.estado] ?? 0) + 1;
     log('Competencia por estado:', JSON.stringify(porEstado));
     const capPlazos = resultados.capacidadPlazos ?? { estado: 'ok' };
-    log('Plazos de terceros (/items/bulk):', JSON.stringify(capPlazos));
+    log('Plazos de terceros (shipping_options):', JSON.stringify(capPlazos));
     metricas.plazos_terceros = capPlazos; metricas.por_estado = porEstado;
 
     // 4–6. Alertas, decisiones, oportunidades
     const historial = store.updateHistorial(items, hoy);
     const { pierde, decidir } = alertasCatalogo(resultados);
     const config = loadConfig();
-    const ops = oportunidades(resultados, { techos: config.techos, historial });
-    const incompletas = [...resultados.values()].filter(r => r.estado === 'insuficiente' || r.estado === 'plazo_no_verificado').map(r => ({ item: r.item, motivo: r.estado === 'plazo_no_verificado' ? `hay ${r.comparables.length} competidor(es) en la ficha, pero su plazo de preparación no se pudo verificar${capPlazos.estado === 'denegado' ? ' (este token no lee publicaciones de terceros)' : ''}` : r.consulta?.error ? `error ${r.consulta.error} en ${r.consulta.fuente}` : !r.item.isbn && !r.pid ? 'sin ISBN ni ficha de catálogo: no hay forma permitida de buscar competencia' : !r.pid ? 'no se encontró una ficha de catálogo con ese ISBN (la búsqueda general de ML está cerrada para la cuenta)' : r.consulta?.completa === false ? 'consulta incompleta' : 'plazo de los competidores no legible' }));
+    const ops = agruparPorFicha(oportunidades(resultados, { techos: config.techos, historial }), resultados);
+    const incompletas = [...resultados.values()].filter(r => r.estado === 'insuficiente' || r.estado === 'plazo_no_verificado').map(r => ({ item: r.item, motivo: r.estado === 'plazo_no_verificado' ? `hay ${r.comparables.length} competidor(es) en la ficha, pero su plazo de preparación no se pudo verificar` : r.consulta?.error ? `error ${r.consulta.error} en ${r.consulta.fuente}` : !r.item.isbn && !r.pid ? 'sin ISBN ni ficha de catálogo: no hay forma permitida de buscar competencia' : !r.pid ? 'no se encontró una ficha de catálogo con ese ISBN (la búsqueda general de ML está cerrada para la cuenta)' : r.consulta?.completa === false ? 'consulta incompleta' : 'plazo de los competidores no legible' }));
     for (const f of fallidos) incompletas.push({ item: { id: f.id, titulo: f.id, enlace: `https://articulo.mercadolibre.com.uy/${String(f.id).replace(/^MLU/, 'MLU-')}` }, motivo: `no se pudo leer la publicación (${f.motivo})` });
     log(`Pierden en catálogo con plazo: ${pierde.length}; oportunidades: ${ops.length} (${ops.filter(o => o.sugerido != null).length} con importe); para decidir: ${decidir.length}; incompletas: ${incompletas.length}`);
 

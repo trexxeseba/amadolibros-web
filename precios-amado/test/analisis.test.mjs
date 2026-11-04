@@ -23,7 +23,7 @@ test('ganador más barato sin plazo declarado no es la alerta principal: va a de
   const r = resultado({ ofertas: [o], comparables: [o], estado: 'con_sin_plazo_declarado', ptw: { ok: true, data: { status: 'losing', winner: { item_id: 'MLU9', price: 800 }, reason: [] } } });
   const { pierde, decidir } = alertasCatalogo(new Map([['MLU1', r]]));
   assert.equal(pierde.length, 0); assert.equal(decidir.length, 1);
-  assert.match(decidir[0].texto, /no está comprobado que entregue de inmediato/);
+  assert.match(decidir[0].texto, /no tiene plazo de preparación/);
 });
 
 test('error al leer price_to_win no produce alerta ni oportunidad', () => {
@@ -37,7 +37,19 @@ test('consulta fallida queda insuficiente: nunca "sin competidores"', () => {
   assert.equal(oportunidades(new Map([['MLU1', r]])).length, 0);
 });
 
-test('oportunidad con importe sólo cuando el competidor a pedido más barato está por encima', () => {
+test('oportunidad con importe: referencia respaldada y no lejana', () => {
+  const uno = oferta({ precio: 1300 });
+  const [solo] = oportunidades(new Map([['MLU1', resultado({ ofertas: [uno], comparables: [uno], estado: 'solo_con_plazo' })]]));
+  assert.equal(solo.sugerido, null); assert.match(solo.motivo, /un solo vendedor/);
+  const a = oferta({ precio: 1300, vendedor: '1' }), b = oferta({ item_id: 'MLU8', precio: 1400, vendedor: '2' });
+  const [dos] = oportunidades(new Map([['MLU1', resultado({ ofertas: [a, b], comparables: [a, b], estado: 'solo_con_plazo' })]]));
+  assert.equal(dos.sugerido, 1300); assert.equal(dos.referencia.vendedores, 2);
+  const x = oferta({ precio: 9000, vendedor: '1' }), y = oferta({ item_id: 'MLU8', precio: 9500, vendedor: '2' });
+  const [lejos] = oportunidades(new Map([['MLU1', resultado({ ofertas: [x, y], comparables: [x, y], estado: 'solo_con_plazo' })]]));
+  assert.equal(lejos.sugerido, null); assert.match(lejos.motivo, /más del doble/);
+});
+
+test('oportunidad con techo: el techo acota el importe', () => {
   const caro = oferta({ precio: 1300 }), barato = oferta({ item_id: 'MLU8', precio: 900 });
   const r1 = resultado({ ofertas: [caro], comparables: [caro], estado: 'solo_con_plazo', ptw: { ok: true, data: { status: 'winning', winner: { item_id: 'MLU1' } } } });
   const [op] = oportunidades(new Map([['MLU1', r1]]), { techos: { MLU1: 1200 } });
@@ -84,4 +96,29 @@ test('plazo de preparación: unidades y ausencias', () => {
 test('errores de configuración propios', () => {
   const tipos = configIssues([propio({ plazo_dias: 10, disponible: 0, isbn: null })]).map(e => e.tipo);
   assert.deepEqual(tipos.sort(), ['plazo_configurado', 'sin_isbn', 'sin_stock']);
+});
+
+test('catálogo y tradicional gemela: una oportunidad por ficha, ninguna si perdemos la destacada', async () => {
+  const { agruparPorFicha } = await import('../src/analisis.mjs');
+  const cat = resultado({ item: propio({ id: 'MLUC', catalogo: true }), ptw: { ok: true, data: { status: 'winning', winner: { item_id: 'MLUC' } } } });
+  const trad = resultado({ item: propio({ id: 'MLUT', catalogo: false }) });
+  const res = new Map([['MLUC', cat], ['MLUT', trad]]);
+  const ops = agruparPorFicha(oportunidades(res), res);
+  assert.equal(ops.length, 1); assert.equal(ops[0].item.id, 'MLUC'); assert.deepEqual(ops[0].gemelas, ['MLUT']);
+  const perdiendo = resultado({ item: propio({ id: 'MLUC', catalogo: true }), ptw: { ok: true, data: { status: 'losing', winner: { item_id: 'MLU9', price: 500 } } } });
+  const res2 = new Map([['MLUC', perdiendo], ['MLUT', trad]]);
+  assert.equal(agruparPorFicha(oportunidades(res2), res2).length, 0);
+});
+
+test('opciones de envío: preparación y llegada por separado; sin opciones no es inmediata', async () => {
+  const { leerEnvio } = await import('../src/competencia.mjs');
+  const { plazoTexto } = await import('../src/analisis.mjs');
+  const env = leerEnvio({ options: [{ estimated_delivery_time: { schedule: 552, date: '2026-11-30T00:00:00-03:00', handling: 0, shipping: 72 } }, { estimated_delivery_time: { schedule: 552, date: '2026-12-01T00:00:00-03:00' } }] });
+  assert.deepEqual(env, { plazo_dias: 23, llegada: '2026-11-30T00:00:00-03:00', sin_envio: false });
+  assert.equal(leerEnvio({ options: [{ estimated_delivery_time: { schedule: null, date: '2026-11-04T00:00:00-03:00', handling: 0 } }] }).plazo_dias, 0);
+  assert.equal(leerEnvio({ options: [] }).sin_envio, true);
+  assert.equal(leerEnvio({}), null);
+  assert.equal(plazoTexto({ plazo_dias: 23, llegada: '2026-11-30T00:00:00-03:00', destino: 'Cordón, Montevideo' }), '23 días de preparación; llegada estimada 30/11 a Cordón, Montevideo');
+  const c = clasificar([oferta({ plazo_dias: 0, sin_envio: true, plazo_fuente: 'shipping_options' })], propio());
+  assert.equal(c.estado, 'plazo_no_verificado');
 });
