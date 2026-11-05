@@ -13,7 +13,7 @@ import { crearCliente } from './ml.mjs';
 import { idsActivos, detalle } from './publicaciones.mjs';
 import { competencia, promocionActiva, MUESTRAS } from './competencia.mjs';
 import { decidir, CAMBIA } from './decision.mjs';
-import { resumir, tablaMarkdown, enviarResumen } from './reporte.mjs';
+import { resumir, tablaMarkdown, enviarResumen, informeRegla } from './reporte.mjs';
 import { cargarPisosVintage } from './costos-vintage.mjs';
 
 const args = process.argv.slice(2);
@@ -90,7 +90,8 @@ async function main() {
     const candidatos = [num(pisos[id]), num(cuenta.minimo), pisoCosto ? (pisoCosto(items.get(id)) ?? SIN_COSTO) : null].filter(v => v !== null);
     return candidatos.length ? Math.max(...candidatos) : null;
   };
-  const reglas = { umbral: cuenta.umbral ?? UMBRAL_UYU, topePct: cuenta.topePct === undefined ? undefined : cuenta.topePct };
+  const reglas = { umbral: cuenta.umbral ?? UMBRAL_UYU, topePct: cuenta.topePct === undefined ? undefined : cuenta.topePct, umbralInclusivo: cuenta.umbralInclusivo === true, descuento: cuenta.descuento ?? 0, pasoMinimoSubida: cuenta.pasoMinimoSubida ?? 1 };
+  const cacheEntrega = new Map();
   const filas = []; let marcadas = 0;
   const lote = 40;
   for (let i = 0; i < orden.length; i += lote) {
@@ -98,7 +99,7 @@ async function main() {
     const res = await Promise.all(parte.map(async id => {
       const item = items.get(id), previo = estado.publicaciones[id];
       try {
-        const comp = await competencia(ml, item, { necesitaTecho: Boolean(previo), sellerId: cuenta.sellerId });
+        const comp = await competencia(ml, item, { necesitaTecho: Boolean(previo), sellerId: cuenta.sellerId, soloContraDemanda: cuenta.soloContraDemanda === true, descuento: cuenta.descuento ?? 0, cache: cacheEntrega });
         let d = decidir({ item, comp, promo: false, previo, piso: pisoDe(id), tocarStock: cuenta.tocarStockDemanda, stockDemanda, ...reglas });
         let promo;
         if (CAMBIA.has(d.accion)) {
@@ -111,7 +112,7 @@ async function main() {
         return { item, comp: null, d: { accion: 'error_consulta', motivo: e?.code ?? 'error' }, previo };
       }
     }));
-    for (const r of res) { filas.push(r); if (r.comp?.marcada && !r.previo) marcadas++; }
+    for (const r of res) { r.piso = pisoDe(r.item.id); filas.push(r); if (r.comp?.marcada && !r.previo) marcadas++; }
     if (marcadas >= maxMarcadas && i + lote >= enEstado.length) break;
   }
   // Publicaciones del estado que ya no están activas: se conservan, no se tocan.
@@ -202,13 +203,15 @@ async function main() {
   await writeFile(join(dirSalida, `${cuenta.clave}-resumen.json`), JSON.stringify(resumen, null, 2));
   await writeFile(join(dirSalida, `${cuenta.clave}-detalle.md`), tablaMarkdown(filas, { cuenta, real, resumen }));
   if (!real) await writeFile(join(dirSalida, `${cuenta.clave}-muestras-api.json`), JSON.stringify(MUESTRAS, null, 2));
+  if (!real) await writeFile(join(dirSalida, `${cuenta.clave}-informe-regla.md`), informeRegla(filas, { cuenta, maxCambios: cuenta.maxCambios ?? MAX_CAMBIOS_POR_CORRIDA, reglas }));
   // En prueba, la foto completa de la cuenta para diagnosticar (una línea por publicación).
   if (!real) await writeFile(join(dirSalida, `${cuenta.clave}-todas.tsv`), ['id\ttitulo\tprecio\tcatalogo\testado\tmotivo\tdias_demanda\taccion']
     .concat(filas.map(f => [f.item.id, String(f.item.title ?? '').replace(/\t/g, ' ').slice(0, 90), f.item.price, f.item.catalog_listing ? 'si' : 'no', f.comp?.estado ?? '', (f.comp?.motivos ?? []).join(','), f.item.dias_demanda ?? '', f.d.accion].join('\t'))).join('\n') + '\n');
   // Filas de las marcadas y de las del estado, para la auditoría independiente.
-  await writeFile(join(dirSalida, `${cuenta.clave}-filas.json`), JSON.stringify(filas.filter(f => f.comp?.marcada || f.previo).map(f => ({
-    id: f.item.id, precio: f.item.price, moneda: f.item.currency_id, variaciones: f.item.variaciones, marcada: Boolean(f.comp?.marcada),
-    ganador: f.comp?.ganador ?? null, en_estado_antes: Boolean(f.previo), promo: f.promo ?? null, accion: f.d.accion, precio_nuevo: f.d.precio ?? null, aplicado: f.aplicado ?? null,
+  await writeFile(join(dirSalida, `${cuenta.clave}-filas.json`), JSON.stringify(filas.filter(f => f.comp?.marcada || f.comp?.compite || f.previo).map(f => ({
+    id: f.item.id, titulo: String(f.item.title ?? '').slice(0, 60), precio: f.item.price, moneda: f.item.currency_id, variaciones: f.item.variaciones, marcada: Boolean(f.comp?.marcada), compite: Boolean(f.comp?.compite),
+    ganador: f.comp?.ganador ?? null, bloqueo: f.comp?.bloqueo ?? null, entrega_ganador: f.comp?.entrega_ganador ?? null, techo: f.comp?.techo ?? null, techo_de: f.comp?.techo_de ?? null, piso: f.piso ?? null,
+    en_estado_antes: Boolean(f.previo), precio_original: f.previo?.precio_original ?? null, promo: f.promo ?? null, accion: f.d.accion, motivo: f.d.motivo ?? null, precio_nuevo: f.d.precio ?? null, stock_nuevo: f.d.stock ?? null, aplicado: f.aplicado ?? null,
   })), null, 2));
   if (real) {
     guardarEstado();

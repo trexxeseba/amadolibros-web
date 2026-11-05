@@ -8,7 +8,10 @@ export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
   const contadores = {
     fecha: new Date().toISOString(), modo: real ? 'real' : 'dry_run',
     activas: ids, revisadas: filas.length,
+    compiten: filas.filter(f => f.comp?.compite).length,
     marcadas: filas.filter(f => f.comp?.marcada).length,
+    ganador_inmediato: c('saltear_ganador_inmediato'),
+    ganador_sin_dato: c('saltear_ganador_sin_dato'),
     bajadas: aplicada('bajar'),
     ajustadas: aplicada('ajustar'),
     subidas: aplicada('subir'),
@@ -44,12 +47,13 @@ const ACCION = {
   sin_tocar_umbral: 'No tocar: diferencia por encima del tope', sin_tocar_pct: 'No tocar: bajaría más del 30 %', saltear_promo: 'Saltear: promoción activa',
   saltear_promo_desconocida: 'Saltear: no se pudo confirmar promoción', saltear_piso: 'Saltear: queda bajo el piso',
   saltear_variaciones: 'Saltear: tiene variaciones', saltear_moneda: 'Saltear: no está en pesos', saltear_sin_precio: 'Saltear: sin precio ganador',
+  saltear_ganador_inmediato: 'No tocar: el ganador entrega de inmediato', saltear_ganador_sin_dato: 'No tocar: sin dato del plazo del ganador',
   mantener: 'Mantener', mantener_promo: 'Mantener: promoción en curso', saltear_cambio_reciente: 'Saltear: el precio cambió durante la corrida', mantener_umbral: 'Mantener: el ganador bajó más de 360 desde el original', mantener_piso: 'Mantener: piso',
   liberar_editada: 'Liberar: editada a mano', error_consulta: 'Error de consulta', error_aplicar: 'Error al aplicar', inactiva: 'Inactiva',
 };
 
 export function tablaMarkdown(filas, { cuenta, real, resumen }) {
-  const relevantes = filas.filter(f => f.comp?.marcada || f.comp?.estado === 'competing' || f.previo || /^error/.test(f.d.accion));
+  const relevantes = filas.filter(f => f.comp?.marcada || f.comp?.compite || f.previo || /^error/.test(f.d.accion));
   const l = [`# Precio Ganador · ${cuenta.nombre} · ${real ? 'modo real' : 'DRY_RUN (no se cambió nada)'}`, '', '```json', JSON.stringify(resumen.contadores, null, 2), '```', '',
     '| Publicación | Tipo | Mi precio | Precio ganador | Diferencia | Qué haría | Stock | Motivo ML |', '|---|---|---:|---:|---:|---|---|---|'];
   for (const f of relevantes) {
@@ -90,4 +94,31 @@ export async function enviarResumen({ cuenta, acum, resumen, fetcher = (...a) =>
     });
     return res.ok ? { status: 'enviado' } : { status: 'error', http: res.status };
   } catch { return { status: 'error_transporte' }; }
+}
+
+// Informe de la regla (sólo en prueba): qué haría la corrida, con rangos y ejemplos.
+export function informeRegla(filas, { cuenta, maxCambios, reglas }) {
+  const por = a => filas.filter(f => f.d.accion === a);
+  const ej = (lista, extra = f => '') => lista.slice(0, 5).map(f => `- ${f.item.id} ${String(f.item.title ?? '').slice(0, 45).replace(/\|/g, '/')}: ${f.item.price}${f.comp?.ganador != null ? ` · ganador ${f.comp.ganador}` : ''}${f.d.precio != null ? ` · nuevo ${f.d.precio}` : ''}${extra(f)}`).join('\n') || '- ninguna';
+  const rango = p => p < 1200 ? 'menos de 1.200' : p < 1500 ? '1.200 a 1.499' : p <= 1600 ? '1.500 a 1.600' : 'más de 1.600';
+  const bajar = por('bajar'), ajustar = por('ajustar'), subir = por('subir'), restaurar = por('restaurar');
+  const piso = por('saltear_piso'), inmediato = por('saltear_ganador_inmediato'), sinDato = por('saltear_ganador_sin_dato'), umbral = por('sin_tocar_umbral'), promo = filas.filter(f => /^saltear_promo/.test(f.d.accion));
+  const cambios = bajar.length + ajustar.length + subir.length + restaurar.length;
+  const rangos = {};
+  for (const f of piso) rangos[rango(f.item.price)] = (rangos[rango(f.item.price)] ?? 0) + 1;
+  const bajo1200 = filas.filter(f => f.comp?.compite && f.item.price < 1200);
+  const enEstado = filas.filter(f => f.previo);
+  const porEntrega = {};
+  for (const f of enEstado) { const k = f.comp?.entrega_ganador ?? (f.comp?.compite ? 'sin consultar' : 'no compite'); porEntrega[k] = (porEntrega[k] ?? 0) + 1; }
+  const l = [`# Informe de la regla · ${cuenta.nombre}`, '', `Regla: diferencia ${reglas.umbralInclusivo ? '<=' : '<'} ${reglas.umbral}, nuevo precio = ${Math.round((1 - (reglas.descuento || 0)) * 100)} % del ganador, piso ${cuenta.minimo ?? 'sin piso'}, ${cuenta.soloContraDemanda ? 'sólo contra ganadores a demanda' : 'contra cualquier ganador'}.`, '',
+    '## Qué haría', '', '| Acción | Publicaciones |', '|---|---:|',
+    `| Compiten sin ganar | ${filas.filter(f => f.comp?.compite).length} |`, `| Bajar | ${bajar.length} |`, `| Ajustar (ya bajadas, sigue al ganador) | ${ajustar.length} |`, `| Subir (ya bajadas, sigue ganando) | ${subir.length} |`, `| Volver al original | ${restaurar.length} |`,
+    `| No tocar: diferencia por encima de ${reglas.umbral} | ${umbral.length} |`, `| No tocar: queda bajo el piso | ${piso.length} |`, `| No tocar: el ganador entrega de inmediato | ${inmediato.length} |`, `| No tocar: sin dato del plazo del ganador | ${sinDato.length} |`, `| Saltear: promoción | ${promo.length} |`,
+    '', `**Cambios totales: ${cambios}** (freno: ${maxCambios}${cambios > maxCambios ? `; superado, propuesta maxCambios = ${Math.ceil(cambios * 1.2)}` : ''}).`, '',
+    '## Bajo el piso, por precio actual', '', '| Precio actual | Publicaciones |', '|---|---:|', ...['menos de 1.200', '1.200 a 1.499', '1.500 a 1.600', 'más de 1.600'].map(k => `| ${k} | ${rangos[k] ?? 0} |`), '',
+    `## Ya cuestan menos de 1.200 y compiten sin ganar: ${bajo1200.length} (no se tocan; Seba decide)`, '', ej(bajo1200), '',
+    '## Ejemplos', '', '### Bajar', ej(bajar), '', '### Bajo el piso', ej(piso, f => ` · piso ${f.piso ?? ''}`), '', '### Ganador de entrega inmediata', ej(inmediato), '', '### Sin dato del plazo', ej(sinDato), '', '### Subir', ej(subir, f => ` · competidor a demanda en ${f.comp?.techo_de ?? '?'}`), '', '### Volver al original', ej(restaurar), '', '### Ajustar', ej(ajustar), '',
+    `## Ya bajadas por el sistema (${enEstado.length}), según el ganador de hoy`, '', '| Ganador | Publicaciones |', '|---|---:|', ...Object.entries(porEntrega).map(([k, v]) => `| ${k} | ${v} |`), '',
+    `De ellas, contra ganador de entrega inmediata: ${enEstado.filter(f => f.comp?.entrega_ganador === 'inmediato').length}; volverían al original ${enEstado.filter(f => f.comp?.entrega_ganador === 'inmediato' && f.d.accion === 'restaurar').length} y subirían ${enEstado.filter(f => f.comp?.entrega_ganador === 'inmediato' && f.d.accion === 'subir').length}.`];
+  return l.join('\n') + '\n';
 }

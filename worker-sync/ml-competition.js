@@ -13,11 +13,37 @@
 import { getAccessToken } from './meli-auth.js';
 import { topOwnSalesIsbns, SALES_SELLER_ID } from './ml-sales.js';
 import { bookIsbn } from './isbn.js';
-import { bulkItemsPath, bulkEntryItem } from './meli-bulk.js';
 
 const ML_ORIGIN = 'https://api.mercadolibre.com';
 const PRODUCT_PAGES = 5, PRODUCT_PAGE_SIZE = 50;
-const DAY_MS = 86400000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60, SNAPSHOT_VERSION = 6;
+const DAY_MS = 86400000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60, SNAPSHOT_VERSION = 7;
+
+// Plazo de preparación por /items/{id}/shipping_options (destino: Cordón,
+// Montevideo). Calibrado el 03/11/2026 con 60 publicaciones propias
+// inmediatas: schedule null y handling 0 o 24 h. Un vendedor a pedido trae en
+// schedule las horas de preparación (p. ej. 552 h). Regla:
+//   schedule con número             → preparación = schedule
+//   schedule null y handling ≤ 24 h → sin preparación
+//   cualquier otra cosa             → null (sin dato), nunca "inmediata"
+export const SHIPPING_CITY = 'TUxVQ0NPUjZmZjNm';
+const HANDLING_IMMEDIATE_MAX_H = 24, MAX_SHIPPING_CHECKS = 12;
+const toNum = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+const toHours = (v, unit) => v == null ? null : String(unit ?? 'hour').toLowerCase().startsWith('day') ? v * 24 : v;
+export function readShipping(data) {
+  const opts = Array.isArray(data?.options) ? data.options : null;
+  if (!opts) return null;
+  if (!opts.length) return { plazo_dias: null, sin_envio: true };
+  const recommended = opts.filter(o => o?.display === 'recommended');
+  const times = (recommended.length ? recommended : opts).map(o => o?.estimated_delivery_time).filter(Boolean);
+  if (!times.length) return null;
+  const hours = times.map(e => {
+    const sched = toHours(toNum(e.schedule), e.unit), handling = toHours(toNum(e.handling), e.unit);
+    if (sched != null) return sched;
+    if (handling != null && handling <= HANDLING_IMMEDIATE_MAX_H) return 0;
+    return null;
+  }).filter(h => h != null);
+  return { plazo_dias: hours.length ? Math.ceil(Math.min(...hours) / 24) : null, sin_envio: false };
+}
 
 // Días de preparación de una publicación (venta a pedido). 0 = entrega
 // sin preparación informada; null = no se pudo verificar el plazo.
@@ -142,31 +168,25 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     }
     winner = ptw?.winner?.item_id ?? null;
     let extraCalls = Math.max(0, pageCalls - 1);
-    // Condición y días de preparación de cada competidor salen siempre de
-    // /items/bulk: el listado del catálogo no trae el plazo de preparación
-    // completo. Si ML no lo manda, queda sin dato (null), nunca como inmediato.
-    const competitors = (items ?? []).filter(it => typeof it?.item_id === 'string' && String(it.seller_id ?? '') !== SALES_SELLER_ID);
-    const sinCondicion = [...new Set(competitors.map(it => it.item_id))];
-    // El listado del catálogo no es evidencia de plazo/stock. Se descarta
-    // antes del bulk para que un 403 o una respuesta parcial no deje un 0 falso.
-    for (const it of competitors) { it.sale_terms = undefined; it.condition = undefined; it.international_delivery_mode = undefined; }
-    if (sinCondicion.length && caps.items_bulk !== 'ml_http_403' && caps.items_bulk !== 'ml_http_401') {
-      const extra = new Map();
-      for (let i = 0; i < sinCondicion.length; i += 20) {
-        try {
-          const raw = await ml(bulkItemsPath(sinCondicion.slice(i, i + 20), 'id,status,available_quantity,currency_id,condition,shipping,international_delivery_mode,sale_terms'), token);
-          extraCalls++; caps.items_bulk = 'ok';
-          for (const item of (Array.isArray(raw) ? raw : []).map(bulkEntryItem).filter(Boolean)) extra.set(item.id, item);
-        } catch (e) { caps.items_bulk = e.code; if (e.status === 429) throw e; break; }
-      }
+    // Plazo de cada competidor por /items/{id}/shipping_options: /items/bulk de
+    // terceros responde 403 y el listado del catálogo no trae el plazo. Del más
+    // barato al más caro, hasta encontrar uno nuevo y nacional sin preparación:
+    // los más caros que ése no cambian la comparación. Sin dato = null, nunca
+    // "inmediato".
+    const competitors = (items ?? []).filter(it => typeof it?.item_id === 'string' && /^MLU[A-Z0-9]+$/i.test(it.item_id) && String(it.seller_id ?? '') !== SALES_SELLER_ID)
+      .sort((a, b) => (Number(a.price) || Infinity) - (Number(b.price) || Infinity));
+    if (caps.shipping_options !== 'ml_http_403' && caps.shipping_options !== 'ml_http_401') {
+      let inmediata = false, consultas = 0;
       for (const it of competitors) {
-        const x = extra.get(it.item_id);
-        if (!x) continue;
-        it.condition = x.condition;
-        it.currency_id = x.currency_id;
-        it.international_delivery_mode = x.international_delivery_mode;
-        it.shipping = x.shipping;
-        it.sale_terms = x.status === 'active' && Number(x.available_quantity) > 0 && Array.isArray(x.sale_terms) ? x.sale_terms : undefined;
+        if (inmediata || consultas >= MAX_SHIPPING_CHECKS) break;
+        try {
+          const env = readShipping(await ml(`/items/${encodeURIComponent(it.item_id)}/shipping_options?city_to=${SHIPPING_CITY}`, token));
+          consultas++; extraCalls++;
+          caps.shipping_options = 'ok';
+          if (!env || env.sin_envio) continue;
+          it._prep = env.plazo_dias;
+          if (env.plazo_dias === 0 && it.condition === 'new' && (it.international_delivery_mode == null || it.international_delivery_mode === 'none') && (it.currency_id ?? 'UYU') === 'UYU') inmediata = true;
+        } catch (e) { consultas++; extraCalls++; caps.shipping_options = e.code; if (e.status === 429) throw e; if (e.status === 401 || e.status === 403) break; }
       }
     }
     const stmts = [];
@@ -178,7 +198,7 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
         ON CONFLICT(snap_date,catalog_product_id,item_id) DO UPDATE SET price=excluded.price,free_shipping=excluded.free_shipping,logistic_type=excluded.logistic_type,is_winner=excluded.is_winner,fetched_at=excluded.fetched_at,condition=excluded.condition,international=excluded.international,manufacturing_days=excluded.manufacturing_days`)
         .bind(date, target.catalog_product_id, it.item_id, String(it.seller_id ?? ''), Number.isFinite(Number(it.price)) ? Number(it.price) : null, it.currency_id ?? null,
           it.shipping?.free_shipping ? 1 : 0, it.shipping?.logistic_type ?? null, winner && winner === it.item_id ? 1 : 0, t,
-          typeof it.condition === 'string' ? it.condition : null, intl, manufacturingDays(it)));
+          typeof it.condition === 'string' ? it.condition : null, intl, it._prep ?? null));
     }
     stmts.push(db.prepare(`INSERT INTO comp_product_days(snap_date,catalog_product_id,status,winner_item_id,own_status,price_to_win,fetched_at,snapshot_version) VALUES(?,?,?,?,?,?,?,?)
       ON CONFLICT(snap_date,catalog_product_id) DO UPDATE SET status=excluded.status,winner_item_id=excluded.winner_item_id,own_status=excluded.own_status,price_to_win=excluded.price_to_win,fetched_at=excluded.fetched_at,snapshot_version=excluded.snapshot_version`)
@@ -304,15 +324,19 @@ export async function competitionByIsbn(db, isbns) {
     const ownToday = rows.some(r => r.snap_date === today && r.seller_id === SALES_SELLER_ID);
     const hoy = others(today), ayer = prevOk ? others(prev) : [];
     // Una oferta sin evidencia no prueba inmediatez ni ausencia de competencia.
-    // Todos los consumidores reciben "sin dato" hasta completar la verificación.
-    if (hoy.some(r => r.manufacturing_days == null || r.international == null || r.condition == null || r.currency_id !== 'UYU')) continue;
+    // El plazo se verifica del más barato al más caro hasta el primer inmediato:
+    // si queda alguna oferta nueva y nacional sin plazo (o sin condición) más
+    // barata que ese inmediato, el libro queda "sin dato" para todos.
+    const candidata = r => r.price > 0 && r.condition === 'new' && r.international !== 1 && (r.currency_id ?? 'UYU') === 'UYU';
+    const minInmediato = hoy.filter(r => candidata(r) && r.manufacturing_days === 0).reduce((m, r) => (m == null || r.price < m) ? r.price : m, null);
+    if (hoy.some(r => (r.condition == null || (candidata(r) && r.manufacturing_days == null)) && (minInmediato == null || r.price < minInmediato))) continue;
     const sellersHoy = new Set(hoy.map(r => r.seller_id)), sellersAyer = new Set(ayer.map(r => r.seller_id));
     // Precio justo: sólo competidores nuevos (no usados), nacionales, con
     // entrega inmediata (sin días de preparación) y con el mismo tipo de envío
     // que nuestra publicación. Los que venden a pedido tardan semanas: no le
     // compiten a un libro en stock. Si algo no se pudo saber, no se compara.
     const ownRow = rows.find(r => r.snap_date === today && r.seller_id === SALES_SELLER_ID) ?? null;
-    const nuevosNacionales = hoy.filter(r => r.currency_id === 'UYU' && r.price > 0 && r.condition === 'new' && r.international === 0);
+    const nuevosNacionales = hoy.filter(candidata);
     const aPedido = nuevosNacionales.filter(r => Number(r.manufacturing_days) > 0);
     const inmediatos = nuevosNacionales.filter(r => r.manufacturing_days === 0);
     const comparables = inmediatos.filter(r =>

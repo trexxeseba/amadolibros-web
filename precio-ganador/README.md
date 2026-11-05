@@ -5,10 +5,20 @@ como perdedoras y las vuelve a subir cuando dejan de estar marcadas.
 
 | | Amado Libros (440298103) | Amado Vintage (2341378249) |
 |---|---|---|
-| Baja si la diferencia es menor a | 360 | 400 |
+| Baja si la diferencia con el precio para ganar es | menor a 360 | menor o igual a 400 |
+| Precio nuevo | el precio para ganar | el 99 % del precio para ganar, hacia abajo al peso |
+| Contra qué ganadores | cualquiera | sólo a demanda: si el ganador entrega de inmediato, o no se pudo leer su plazo, no se toca |
 | Tope de porcentaje | 30 % | sin tope |
-| Piso | el de `pisos/libros.json`, si existe | nunca menos de UYU 1.500 |
+| Piso | el de `pisos/libros.json`, si existe | nunca menos de UYU 1.200 |
 | Stock | no se toca | a demanda: stock 5 al bajar, se restaura al revertir |
+| Freno de cambios por corrida | 400 | 5.000 |
+
+El plazo del ganador se lee por `/items/{id}/shipping_options` (destino Cordón), con
+la misma lectura que el panel de competencia (`worker-sync/ml-competition.js`).
+Una publicación que el sistema bajó sigue al ganador a demanda al 99 %; si el
+ganador de hoy entrega de inmediato, vuelve hacia su precio original. Las subidas
+se limitan al 99 % del competidor a demanda más barato y sólo se hacen si el salto
+es de 10 pesos o más.
 
 Vintage corre acá desde el 05/11/2026 porque el motor de la PC no está andando.
 Si el motor se vuelve a prender hay que apagar uno de los dos: se pisarían.

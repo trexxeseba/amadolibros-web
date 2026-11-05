@@ -38,16 +38,23 @@ export const CUENTAS = {
     // publicación a demanda, stock 5, conservando sus días de disponibilidad. Al volver
     // al precio original se restaura el stock que tenía.
     tocarStockDemanda: true,
-    // Regla simple de Vintage (Seba, 05/11/2026): si pierde y la diferencia con el
-    // precio para ganar es menor a 400, bajar a ese precio. Sin tope de porcentaje
-    // ni piso por costo. Único piso: nunca menos de UYU 1.500.
+    // Regla de Vintage (decisión de Seba, 05/11/2026): en todas las publicaciones
+    // que pierden contra un competidor A DEMANDA (no de entrega inmediata), quedar
+    // más baratos. Si el ganador está por debajo y la diferencia es menor o igual a
+    // 400, bajar al 99 % del precio del ganador (redondeado hacia abajo). Si el
+    // ganador tiene entrega inmediata, o no se pudo leer su plazo, no tocar.
+    // Piso UYU 1.200 (antes 1.500). Sin tope de porcentaje ni piso por costo.
     umbral: 400,
+    umbralInclusivo: true,
+    descuento: 0.01,
+    soloContraDemanda: true,
     topePct: null,
-    // Vintage tiene 15.000 publicaciones y la primera corrida aprobada por Seba
-    // baja unas 1.500: el freno general de 400 no le sirve.
-    maxCambios: 2500,
-    minimo: 1500,
+    minimo: 1200,
     pisoPorCosto: false,
+    // Freno: la regla nueva puede tocar unas 4.000 en la primera corrida.
+    maxCambios: 5000,
+    // Subir sólo si el salto es de 10 pesos o más: no mover precios por 1 peso.
+    pasoMinimoSubida: 10,
     habilitada: true,
   },
 };

@@ -20,10 +20,13 @@ on:
       accion:
         description: 'correr = corrida normal (con auditoría) · auditar = sólo la auditoría, no cambia nada · restaurar = volver todo al precio original'
         type: choice
-        options: [correr, auditar, restaurar]
+        options: [correr, auditar, restaurar, diagnosticar]
         default: correr
       max_marcadas:
         description: 'Cortar al encontrar N marcadas (vacío = todas)'
+        required: false
+      ids:
+        description: 'Sólo para diagnosticar: IDs separados por coma (sólo lee)'
         required: false
       cuenta:
         description: 'Cuenta (a mano corre una sola; las programadas corren las dos)'
@@ -129,6 +132,7 @@ jobs:
           IN_MAX: ${{ inputs.max_marcadas }}
           IN_CORREO: ${{ inputs.correo }}
           IN_PRUEBA: ${{ inputs.prueba }}
+          IN_IDS: ${{ inputs.ids }}
           CUENTA: ${{ matrix.cuenta }}
         run: |
           ARGS=(--cuenta "$CUENTA" --estado estado/state)
@@ -144,6 +148,7 @@ jobs:
           if [ "$EVENTO" = "push" ] || [ "$REAL" = "no" ]; then SALIDA="estado/pruebas/$GITHUB_RUN_ID"; else SALIDA="estado/ultima"; fi
           echo "salida=$SALIDA" >> "$GITHUB_OUTPUT"
           if [ "$IN_ACCION" = "auditar" ]; then echo "Sólo auditoría"; exit 0; fi
+          if [ "$IN_ACCION" = "diagnosticar" ]; then node precio-ganador/src/diagnostico.mjs --cuenta "$CUENTA" --ids "$IN_IDS" --salida "estado/pruebas/$GITHUB_RUN_ID"; exit $?; fi
           if [[ "$IN_MAX" =~ ^[0-9]+$ ]]; then ARGS+=(--max-marcadas "$IN_MAX"); fi
           if [ "$SCHEDULE" = "0 0 * * *" ] || [ "$IN_CORREO" = "true" ]; then ARGS+=(--correo-diario); fi
           node precio-ganador/src/run.mjs "${ARGS[@]}" --salida "$SALIDA"
@@ -152,7 +157,7 @@ jobs:
       # todas las que el sistema bajó y la regla recalculada sobre las marcadas.
       # Si encuentra una discrepancia, el workflow falla y GitHub manda el mail.
       - name: Auditoría
-        if: success() && inputs.accion != 'restaurar'
+        if: success() && inputs.accion != 'restaurar' && inputs.accion != 'diagnosticar'
         shell: bash
         env:
           CUENTA: ${{ matrix.cuenta }}

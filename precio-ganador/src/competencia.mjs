@@ -11,36 +11,72 @@
 // volver a perder (un peso abajo del competidor más barato). null = sin
 // competencia a la vista, se puede volver al original.
 import { MlError } from './ml.mjs';
+import { readShipping, SHIPPING_CITY } from '../../worker-sync/ml-competition.js';
+
+// Plazo de entrega de una publicación ajena por /items/{id}/shipping_options
+// (misma lectura que worker-sync/ml-competition.js, PR #547):
+//   'inmediato' = sin preparación (schedule null y despacho de 24 h o menos)
+//   'demanda'   = horas de preparación declaradas
+//   'sin_dato'  = no se pudo leer (403, sin opciones, plazo ilegible)
+export async function entregaDe(ml, itemId, cache) {
+  if (!itemId) return 'sin_dato';
+  if (cache?.has(itemId)) return cache.get(itemId);
+  let r = 'sin_dato';
+  try {
+    const env = readShipping(await ml.get(`/items/${itemId}/shipping_options?city_to=${SHIPPING_CITY}`));
+    if (env && !env.sin_envio && env.plazo_dias !== null) r = env.plazo_dias > 0 ? 'demanda' : 'inmediato';
+  } catch (e) { if (e?.status === 429) throw e; }
+  cache?.set(itemId, r);
+  return r;
+}
+const entero = n => Math.floor(Number(n) + 1e-9);
 
 export const MUESTRAS = { price_to_win: [], suggestions: [], products_items: [], seller_promotions: [], sale_price: [] };
 const muestra = (k, v) => { if (MUESTRAS[k].length < 3) MUESTRAS[k].push(v); };
 
-export async function competencia(ml, item, { necesitaTecho = false, sellerId }) {
-  if (item.catalog_listing) return catalogo(ml, item, { necesitaTecho, sellerId });
+export async function competencia(ml, item, opciones) {
+  const { necesitaTecho = false, sellerId } = opciones;
+  if (item.catalog_listing) return catalogo(ml, item, opciones);
   // Publicaciones tradicionales que también compiten por ser la destacada de un
   // producto (el panel las cuenta en "Para ganar la competencia"): price_to_win
   // responde para ellas igual que para las de catálogo. Si no compiten, 404.
-  const c = await catalogo(ml, item, { necesitaTecho, sellerId });
+  const c = await catalogo(ml, item, opciones);
   if (!c.error) return { ...c, tipo: 'tradicional' };
   if (c.error !== 'http_404' && c.error !== 'http_400') return c;
   return referencia(ml, item);
 }
 
-async function catalogo(ml, item, { necesitaTecho, sellerId }) {
+async function catalogo(ml, item, { necesitaTecho, sellerId, soloContraDemanda = false, descuento = 0, cache }) {
   let p;
   try { p = await ml.get(`/items/${item.id}/price_to_win?version=v2`); }
   catch (e) { return { tipo: 'catalogo', error: codigo(e) }; }
   muestra('price_to_win', p);
   const estado = String(p?.status ?? '');
   const ganador = num(p?.price_to_win);
-  const marcada = estado === 'competing' && ganador !== null && ganador < Number(item.price);
-  const r = { tipo: 'catalogo', estado, ganador, marcada, ganadorItem: p?.winner?.item_id ?? null, motivos: Array.isArray(p?.reason) ? p.reason : [],
+  const compite = estado === 'competing' && ganador !== null && ganador < Number(item.price);
+  const r = { tipo: 'catalogo', estado, ganador, compite, marcada: compite, ganadorItem: p?.winner?.item_id ?? null, motivos: Array.isArray(p?.reason) ? p.reason : [],
     oportunidades: (Array.isArray(p?.boosts) ? p.boosts : []).filter(b => b?.status === 'opportunity').map(b => String(b.id)) };
-  if (!marcada && necesitaTecho && item.catalog_product_id) {
+  // Sólo contra ganadores a demanda: si el que gana entrega de inmediato, bajar el
+  // precio no sirve (ML lo prefiere igual) y se regalaría margen. Sin dato, no se toca.
+  if (soloContraDemanda && compite) {
+    const entrega = await entregaDe(ml, r.ganadorItem, cache);
+    r.entrega_ganador = entrega;
+    if (entrega === 'inmediato') { r.bloqueo = 'ganador_inmediato'; r.marcada = false; r.motivo_bloqueo = 'el ganador entrega de inmediato'; }
+    else if (entrega === 'sin_dato') { r.bloqueo = 'ganador_sin_dato'; r.marcada = false; r.motivo_bloqueo = 'sin dato del plazo del ganador'; }
+  }
+  // Techo para subir una publicación que el sistema bajó: un peso abajo del
+  // competidor más barato (Libros) o el 99 % del competidor a demanda más barato
+  // (Vintage), ignorando a los de entrega inmediata.
+  if (!r.marcada && necesitaTecho && item.catalog_product_id) {
     try {
-      const otros = await ofertasCatalogo(ml, item.catalog_product_id);
-      const precios = otros.filter(o => String(o.seller_id) !== String(sellerId) && o.item_id !== item.id).map(o => num(o.price)).filter(v => v !== null);
-      r.techo = precios.length ? Math.min(...precios) - 1 : null;
+      const otros = (await ofertasCatalogo(ml, item.catalog_product_id))
+        .filter(o => String(o.seller_id) !== String(sellerId) && o.item_id !== item.id && num(o.price) !== null)
+        .map(o => ({ item_id: o.item_id, price: Number(o.price) })).sort((a, b) => a.price - b.price);
+      let base = null;
+      if (!soloContraDemanda) base = otros[0]?.price ?? null;
+      else for (const o of otros.slice(0, 8)) { if ((await entregaDe(ml, o.item_id, cache)) === 'inmediato') continue; base = o.price; break; }
+      r.techo_de = base;
+      r.techo = base === null ? null : (descuento ? entero(base * (1 - descuento)) : base - 1);
     } catch (e) { return { ...r, error: 'techo_' + codigo(e) }; }
   }
   return r;
