@@ -26,7 +26,7 @@ export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
   // Cómo está la cuenta en la competencia de catálogo, para contrastar con los
   // contadores del panel de ML (que suman sugerencias, no sólo las que pierden).
   const estados = {}, sugerencias = {};
-  for (const f of filas) if (f.comp?.tipo === 'catalogo' && !f.comp.error) {
+  for (const f of filas) if ((f.comp?.tipo === 'catalogo' || f.comp?.tipo === 'tradicional') && !f.comp.error) {
     estados[f.comp.estado || 'sin_estado'] = (estados[f.comp.estado || 'sin_estado'] ?? 0) + 1;
     for (const o of f.comp.oportunidades ?? []) sugerencias[o] = (sugerencias[o] ?? 0) + 1;
   }

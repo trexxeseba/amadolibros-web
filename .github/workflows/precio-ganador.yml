@@ -25,6 +25,10 @@ on:
       max_marcadas:
         description: 'Cortar al encontrar N marcadas (vacío = todas)'
         required: false
+      prueba:
+        description: 'Prueba: consulta y reporta, no cambia ningún precio'
+        type: boolean
+        default: false
       correo:
         description: 'Mandar el mail de resumen'
         type: boolean
@@ -94,19 +98,20 @@ jobs:
           IN_ACCION: ${{ inputs.accion }}
           IN_MAX: ${{ inputs.max_marcadas }}
           IN_CORREO: ${{ inputs.correo }}
+          IN_PRUEBA: ${{ inputs.prueba }}
           CUENTA: ${{ matrix.cuenta }}
         run: |
           ARGS=(--cuenta "$CUENTA" --estado estado/state)
           REAL=no
           MODO=$(node -e "console.log(require('./precio-ganador/modo.json')[process.argv[1]] ?? 'dry_run')" "$CUENTA")
-          if [ "$MODO" = "real" ] && [ "$DRY_VAR" != "true" ] && [ "$EVENTO" != "push" ]; then REAL=si; ARGS+=(--real); fi
+          if [ "$MODO" = "real" ] && [ "$DRY_VAR" != "true" ] && [ "$EVENTO" != "push" ] && [ "$IN_PRUEBA" != "true" ]; then REAL=si; ARGS+=(--real); fi
           echo "real=$REAL" >> "$GITHUB_OUTPUT"
           echo "Modo: $([ $REAL = si ] && echo REAL || echo DRY_RUN)"
           if [ "$IN_ACCION" = "restaurar" ]; then
             node precio-ganador/src/restaurar.mjs "${ARGS[@]}"
             exit $?
           fi
-          if [ "$EVENTO" = "push" ]; then SALIDA="estado/pruebas/$GITHUB_RUN_ID"; ARGS+=(--max-marcadas 100); else SALIDA="estado/ultima"; fi
+          if [ "$EVENTO" = "push" ] || [ "$REAL" = "no" ]; then SALIDA="estado/pruebas/$GITHUB_RUN_ID"; else SALIDA="estado/ultima"; fi
           echo "salida=$SALIDA" >> "$GITHUB_OUTPUT"
           if [ "$IN_ACCION" = "auditar" ]; then echo "Sólo auditoría"; exit 0; fi
           if [[ "$IN_MAX" =~ ^[0-9]+$ ]]; then ARGS+=(--max-marcadas "$IN_MAX"); fi
