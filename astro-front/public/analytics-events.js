@@ -36,10 +36,13 @@
     var selector = 'script[src*="googletagmanager.com/gtag/js?id=' + MEASUREMENT_ID + '"]';
     if (document.querySelector(selector)) return;
 
+    var config = { page_location: measuredPageLocation() };
+    if (/^\/libros-agotados-importados-uruguay\/?$/.test(window.location.pathname) && document.referrer) {
+      // El catálogo puede enlazar a la landing desde una búsqueda por título.
+      config.page_referrer = new URL(document.referrer).origin + '/';
+    }
     window.gtag('js', new Date());
-    window.gtag('config', MEASUREMENT_ID, {
-      page_location: measuredPageLocation(),
-    });
+    window.gtag('config', MEASUREMENT_ID, config);
 
     var tag = document.createElement('script');
     tag.async = true;
