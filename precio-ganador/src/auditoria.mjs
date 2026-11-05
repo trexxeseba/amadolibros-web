@@ -26,11 +26,23 @@ const opt = (n, d = null) => { const i = args.indexOf('--' + n); return i >= 0 ?
 const cuenta = CUENTAS[opt('cuenta')];
 if (!cuenta) { console.error('Usar --cuenta libros|vintage'); process.exit(2); }
 const UMBRAL = cuenta.umbral ?? 360, TOPE = cuenta.topePct ?? null, MINIMO = cuenta.minimo ?? null;
+const INCLUSIVO = cuenta.umbralInclusivo === true, DESCUENTO = cuenta.descuento ?? 0;
+const objetivoDe = (g, d = DESCUENTO) => Math.floor(g * (1 - (d || 0)) + 1e-9);
 const dirEstado = opt('estado', 'state'), dirSalida = opt('salida', 'salida'), N = Number(opt('muestra', 10));
 const leer = (f, d) => { try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return d; } };
 const estado = leer(join(dirEstado, `${cuenta.clave}.json`), { publicaciones: {} }).publicaciones;
 const ultima = leer(join(dirSalida, `${cuenta.clave}-filas.json`), []);
 
+export function reglaEsperada(f, { umbral = UMBRAL, inclusivo = INCLUSIVO, descuento = DESCUENTO, tope = TOPE, minimo = MINIMO } = {}) {
+  const g = Math.floor(f.ganador + 1e-9), dif = f.precio - g, objetivo = Math.floor(g * (1 - (descuento || 0)) + 1e-9);
+  const piso = Number.isFinite(Number(f.piso)) ? Number(f.piso) : minimo;
+  if (f.bloqueo) return { esperado: 'saltear', objetivo };
+  if (f.moneda !== 'UYU' || f.variaciones) return { esperado: 'saltear', objetivo };
+  if ((inclusivo ? dif > umbral : dif >= umbral) || (tope !== null && dif / f.precio > tope)) return { esperado: 'no_tocar', objetivo };
+  if (piso !== null && objetivo < piso) return { esperado: 'saltear', objetivo };
+  if (f.promo === true || f.promo === null) return { esperado: 'saltear', objetivo };
+  return { esperado: 'bajar', objetivo };
+}
 export function motivosDeFalla({ porTipo, muestraN, erroresAplicar, intentos }) {
   const m = [];
   if (porTipo.muestra > 2) m.push(`${porTipo.muestra} de ${muestraN} de la muestra no coinciden con ML`);
@@ -85,7 +97,9 @@ async function main() {
     const problemas = [];
     if (real !== apl) problemas.push(`precio en ML ${real}, registrado ${apl}`);
     if (apl > orig) problemas.push('aplicado mayor al original');
-    if (orig - apl >= UMBRAL) problemas.push(`bajó ${orig - apl} (360 o más)`);
+    // La baja máxima permitida contra el original: el umbral sobre el ganador y, encima, el descuento.
+    const minimoPermitido = objetivoDe(orig - UMBRAL);
+    if (INCLUSIVO ? apl < minimoPermitido : apl <= minimoPermitido) problemas.push(`bajó ${orig - apl} (más de lo que permite el umbral ${UMBRAL})`);
     if (TOPE !== null && (orig - apl) / orig > TOPE + 1e-9) problemas.push(`bajó ${Math.round((orig - apl) / orig * 100)} % (más de ${TOPE * 100})`);
     if (MINIMO !== null && apl < MINIMO) problemas.push(`aplicado ${apl} por debajo del mínimo ${MINIMO}`);
     controlEstado.push({ id, titulo: e.titulo, original: orig, aplicado: apl, en_ml: real, ok: !problemas.length, problemas });
@@ -93,17 +107,12 @@ async function main() {
   }
 
   // 3. La regla recalculada desde cero para cada marcada nueva de la última corrida.
-  for (const f of ultima.filter(f => f.marcada && !f.en_estado_antes)) {
+  for (const f of ultima.filter(f => (f.marcada || f.compite) && !f.en_estado_antes)) {
     const g = Math.floor(f.ganador + 1e-9), dif = f.precio - g;
-    let esperado;
-    if (f.moneda !== 'UYU' || f.variaciones) esperado = 'saltear';
-    else if (dif >= UMBRAL || (TOPE !== null && dif / f.precio > TOPE)) esperado = 'no_tocar';
-    else if (MINIMO !== null && g < MINIMO) esperado = 'saltear';
-    else if (f.promo === true || f.promo === null) esperado = 'saltear';
-    else esperado = 'bajar';
-    const hecho = f.accion === 'bajar' ? 'bajar' : /^sin_tocar/.test(f.accion) ? 'no_tocar' : /^saltear/.test(f.accion) ? 'saltear' : f.accion;
-    const ok = esperado === hecho && (hecho !== 'bajar' || f.precio_nuevo === g);
-    controlRegla.push({ id: f.id, precio: f.precio, ganador: f.ganador, diferencia: dif, esperado, hecho: f.accion, precio_nuevo: f.precio_nuevo ?? null, ok });
+    const { esperado, objetivo } = reglaEsperada(f);
+    const hecho = f.accion === 'bajar' ? 'bajar' : /^sin_tocar/.test(f.accion) ? 'no_tocar' : /^saltear/.test(f.accion) ? 'saltear' : f.accion === 'sin_marcar' ? 'no_tocar' : f.accion;
+    const ok = esperado === hecho && (hecho !== 'bajar' || f.precio_nuevo === objetivo);
+    controlRegla.push({ id: f.id, precio: f.precio, ganador: f.ganador, diferencia: dif, objetivo, esperado, hecho: f.accion, precio_nuevo: f.precio_nuevo ?? null, ok });
     if (!ok) discrepancias.push({ tipo: 'regla', id: f.id, detalle: `esperado ${esperado}, el motor hizo ${f.accion}` });
   }
 
