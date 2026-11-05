@@ -159,7 +159,11 @@ jobs:
       # Cualquier paso que falle (corrida, auditoría, guardado): alarma inmediata por mail.
       - name: Alarma
         if: failure()
-        run: node precio-ganador/src/alarma.mjs "falló la corrida (${{ matrix.cuenta }})" "Falló un paso de Precio Ganador. Detalle: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          DETALLE: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CUENTA: ${{ matrix.cuenta }}
+        run: |
+          node precio-ganador/src/alarma.mjs "falló la corrida ($CUENTA)" "Falló un paso de Precio Ganador. Detalle en $DETALLE"
 
       # Respaldo del estado por si el push falló.
       - name: Respaldo del estado
