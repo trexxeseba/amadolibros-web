@@ -165,10 +165,10 @@ export default {
       ]));
       return;
     }
-    // Precio Ganador: a las 09:00, 15:00 y 21:00 de Montevideo le pide a GitHub
+    // Precio Ganador: a las 09:00, 15:00 y 21:00 de Montevideo le pide a GitHub (Vintage a las 09:00 y 21:00)
     // que corra el workflow (el cron de GitHub se atrasa horas; queda de respaldo).
     if (CRONS_PRECIO_GANADOR.includes(event?.cron)) {
-      ctx.waitUntil(dispararPrecioGanador(env).then(result => {
+      ctx.waitUntil(dispararPrecioGanador(env, { cron: event.cron }).then(result => {
         console.log('[precio ganador]', JSON.stringify(result));
       }));
       return;

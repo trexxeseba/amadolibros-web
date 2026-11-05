@@ -52,7 +52,7 @@ Piso opcional por publicación: `pisos/libros.json`, con el formato `{ "MLU123":
 
 ## Horarios
 
-09:00, 15:00 y 21:00 de Montevideo. El mail de resumen del día sale a
+Libros: 09:00, 15:00 y 21:00 de Montevideo. Vintage: dos veces por día, a las 09:00 y a las 21:00 (Seba, 05/11/2026: con tres corridas iba y venía, una bajaba unas 1.500 y la siguiente las volvía a subir). El mail de resumen del día sale a
 undiaes@gmail.com con la corrida de las 21:00. Si un día no llega, algo se rompió.
 Si una corrida falla entera, GitHub manda su mail de falla.
 
