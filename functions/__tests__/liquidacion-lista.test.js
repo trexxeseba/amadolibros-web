@@ -36,16 +36,17 @@ test('candidatos: activos, con stock y precio, publicados hace 730 días o más'
 
 test('vendidoEn: venta dentro de 730 días cuenta; fuera o sin venta, no', () => {
     assert.equal(vendidoEn({ ultima_venta: iso(10) }, NOW), true);
-    assert.equal(vendidoEn({ ultima_venta: iso(730) }, NOW), true);
-    assert.equal(vendidoEn({ ultima_venta: iso(731) }, NOW), false);
+    assert.equal(vendidoEn({ ultima_venta: iso(365) }, NOW), true);
+    assert.equal(vendidoEn({ ultima_venta: iso(366) }, NOW), false);
     assert.equal(vendidoEn({ ultima_venta: null }, NOW), false);
     assert.equal(vendidoEn({}, NOW), false);
-    assert.equal(SIN_VENTA_DIAS, 730);
+    assert.equal(SIN_VENTA_DIAS, 365, 'Seba fijó el último año el 5/11/2026');
 });
 
-test('cobertura: el histórico tiene que cubrir los 730 días', () => {
+test('cobertura: el histórico tiene que cubrir toda la ventana de ventas', () => {
     assert.equal(coberturaSuficiente({ cobertura_desde: iso(2000) }, NOW), true);
-    assert.equal(coberturaSuficiente({ cobertura_desde: iso(500) }, NOW), false);
+    assert.equal(coberturaSuficiente({ cobertura_desde: iso(377) }, NOW), true, 'D1 tiene 377 días y alcanza para un año');
+    assert.equal(coberturaSuficiente({ cobertura_desde: iso(300) }, NOW), false);
     assert.equal(coberturaSuficiente({ cobertura_desde: null }, NOW), false);
 });
 

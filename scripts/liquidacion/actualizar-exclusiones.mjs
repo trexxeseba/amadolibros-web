@@ -13,7 +13,9 @@
  *   - La foto completa más reciente de la cuenta (`pruebas/<corrida>/libros-todas.tsv`):
  *     una línea por publicación activa con su estado de competencia en ML.
  *       winning / sharing_first_place → "gana precio"
- *       not_listed                    → "sin competencia" (el motor no la ve competir)
+ *       not_listed                    → NO se excluye: son publicaciones fuera del catálogo de
+ *                                       ML, el motor no ve su competencia y no significa que no
+ *                                       tengan (Seba, 5/11/2026: entran a la liquidación)
  *   - `state/libros.json`: las publicaciones que el motor ya bajó al precio ganador
  *     (también cuentan como "gana precio").
  *   - `ultima/libros-filas.json`: la corrida real más reciente. Si una publicación
@@ -44,7 +46,9 @@ const CATEGORIES_PATH = join(ROOT, 'astro-front', 'public', 'data', 'active-cate
 export const MEDICAL_TOPIC = 'medicina-salud';
 
 const GANA = new Set(['winning', 'sharing_first_place']);
-const SIN_COMPETENCIA = new Set(['not_listed']);
+// Mercado Libre no informa competencia para las publicaciones fuera del catálogo (not_listed).
+// No hay ningún estado que diga "sin competencia", así que esta exclusión queda vacía a propósito.
+const SIN_COMPETENCIA = new Set();
 const MLU = /^MLU\d+$/;
 const CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
 export const RECENT_DAYS = 90;
@@ -143,7 +147,7 @@ async function main(argv) {
         data.excluir = {
             ...data.excluir,
             gana_precio: { fuente, criterio: 'estado winning o sharing_first_place en ML, o precio ya bajado por el motor', ids: ex.gana_precio },
-            sin_competencia: { fuente, criterio: 'estado not_listed: el motor no la ve competir en ML', ids: ex.sin_competencia },
+            sin_competencia: { fuente, criterio: 'Sin ids a propósito: las publicaciones fuera del catálogo (not_listed) no tienen competencia informada y entran (Seba, 5/11/2026)', ids: ex.sin_competencia },
         };
         data.excluir.medicos = {
             fuente: 'astro-front/public/data/active-categories.json',

@@ -291,7 +291,8 @@ test('data/liquidacion.json y el módulo generado están sincronizados', () => {
     assert.deepEqual(LIQUIDACION_DATA, json);
     assert.equal(readFileSync('functions/_shared/liquidacion-data.js', 'utf8'), renderModule(json));
     assert.ok(Array.isArray(json.lista.ids));
-    for (const key of ['medicos', 'gana_precio', 'sin_competencia']) {
+    // sin_competencia queda vacía a propósito: las publicaciones fuera del catálogo entran (Seba, 5/11/2026).
+    for (const key of ['medicos', 'gana_precio']) {
         assert.ok(json.excluir[key].ids.length > 0, `${key} viene cargado`);
     }
     for (const key of ['medicos', 'recientes', 'gana_precio', 'sin_competencia']) {
@@ -299,7 +300,7 @@ test('data/liquidacion.json y el módulo generado están sincronizados', () => {
     }
 });
 
-test('exclusiones desde el motor: gana precio, sin competencia y marcadas de hoy', () => {
+test('exclusiones desde el motor: gana precio y marcadas de hoy; las fuera del catálogo no se excluyen', () => {
     const tsv = [
         'id\ttitulo\tprecio\tcatalogo\testado\tmotivo\tdias_demanda\taccion',
         'MLU1\tA\t1500\tsi\twinning\t\t\tmantener',
@@ -313,7 +314,7 @@ test('exclusiones desde el motor: gana precio, sin competencia y marcadas de hoy
     const estado = { publicaciones: { MLU4: {}, MLU6: {} } };
     const ex = buildExclusions({ tsv, filas, estado });
     assert.deepEqual(ex.gana_precio, ['MLU1', 'MLU2', 'MLU4', 'MLU6']);
-    assert.deepEqual(ex.sin_competencia, ['MLU3']);
+    assert.deepEqual(ex.sin_competencia, [], 'not_listed (fuera del catálogo) entra a la liquidación');
 });
 
 test('médicos: cualquier ruta con medicina-salud', () => {
