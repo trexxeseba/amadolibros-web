@@ -50,6 +50,10 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
  const api=apiFactory({sellerId:SELLER,timeouts:{request:60000,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>limited(env,url,options)});
  try{
   await stmt(SCHEMA).run();
+  // Reloj de pedidos a Mercado Libre: en una base nueva (la nube) todavía no existe, y sin él
+  // cada lectura falla. En la PC lo creaba antes el motor.
+  await stmt('CREATE TABLE IF NOT EXISTS ml_vintage_bulk_rate (id INTEGER PRIMARY KEY CHECK(id=1),next_at INTEGER NOT NULL DEFAULT 0,cooldown INTEGER NOT NULL DEFAULT 0,strikes INTEGER NOT NULL DEFAULT 0)').run();
+  await stmt('INSERT OR IGNORE INTO ml_vintage_bulk_rate(id) VALUES(1)').run();
   const columns=(await stmt('PRAGMA table_info(vintage_stock_sync)').all()).results.map(x=>x.name);
   if(!columns.includes('applied_price'))await stmt('ALTER TABLE vintage_stock_sync ADD COLUMN applied_price INTEGER').run();
   if(!columns.includes('competitor_json'))await stmt('ALTER TABLE vintage_stock_sync ADD COLUMN competitor_json TEXT').run();
