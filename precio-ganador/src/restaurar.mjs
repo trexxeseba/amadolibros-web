@@ -5,7 +5,7 @@
 // Sin --real sólo lista lo que haría. Toca únicamente las publicaciones cuyo
 // precio actual sigue siendo el que puso el sistema: si alguien lo cambió a
 // mano, se deja como está.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import { CUENTAS } from './config.mjs';
 import { fuenteTokenD1 } from './token.mjs';
@@ -32,8 +32,10 @@ for (const [id, e] of Object.entries(estado.publicaciones)) {
     console.log(`${id}: ${item.price} → ${body.price}${body.available_quantity !== undefined ? `, stock → ${body.available_quantity}` : ''}`);
     if (!real) continue;
     await ml.put(`/items/${id}`, body);
+    const leido = await ml.get(`/items/${id}?attributes=id,price`);
+    if (Number(leido?.price) !== body.price) { cuenta_.errores++; console.log(`${id}: no se verificó (ML muestra ${leido?.price})`); continue; }
     delete estado.publicaciones[id]; cuenta_.restauradas++;
-    writeFileSync(archivo, JSON.stringify(estado, null, 2) + '\n');
+    writeFileSync(archivo + '.tmp', JSON.stringify(estado, null, 2) + '\n'); renameSync(archivo + '.tmp', archivo);
   } catch (err) { cuenta_.errores++; console.log(`${id}: error ${err?.code ?? 'error'}`); }
 }
 console.log(JSON.stringify({ modo: real ? 'real' : 'dry_run', ...cuenta_ }));

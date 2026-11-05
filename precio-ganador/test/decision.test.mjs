@@ -75,3 +75,8 @@ test('tope del 30 % también en la reversión, contra el original', () => {
 test('ganador nulo no se toma como cero', () => {
   assert.equal(decidir({ item: item(), comp: { marcada: true, ganador: null } }).accion, 'saltear_sin_precio');
 });
+
+test('promoción visible: no libera una que bajamos, no baja una nueva', () => {
+  assert.equal(decidir({ item: item({ price: 720, original_price: 800 }), comp: marcada(700), previo: { precio_original: 1000, precio_aplicado: 800 } }).accion, 'mantener_promo');
+  assert.equal(decidir({ item: item({ original_price: 1200 }), comp: marcada(900) }).accion, 'saltear_promo');
+});

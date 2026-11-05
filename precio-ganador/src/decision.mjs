@@ -23,6 +23,11 @@ export function decidir({ item, comp, promo = false, previo, piso = null, tocarS
   if (item.currency_id !== 'UYU') return { accion: 'saltear_moneda', motivo: item.currency_id };
   if (item.variaciones) return { accion: 'saltear_variaciones', motivo: 'precio por variación' };
 
+  // Promoción visible en la publicación (original_price): no se toca, y si la
+  // habíamos bajado no se libera (el precio que se ve es el de la promo).
+  if (item.original_price !== null && item.original_price !== undefined) {
+    return previo ? { accion: 'mantener_promo', motivo: 'promoción en curso' } : (comp?.marcada ? { accion: 'saltear_promo', motivo: 'promoción en curso' } : { accion: 'sin_marcar', motivo: comp?.estado ?? '' });
+  }
   // Ya la bajamos antes, pero alguien le cambió el precio a mano: queda fuera del sistema.
   if (previo && Number(previo.precio_aplicado) !== precio) return { accion: 'liberar_editada', motivo: `precio actual ${precio}, aplicado ${previo.precio_aplicado}` };
 

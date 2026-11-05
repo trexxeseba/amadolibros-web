@@ -67,11 +67,20 @@ jobs:
         run: |
           git config user.name "precio-ganador[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git fetch --depth=1 origin "$ESTADO_RAMA" 2>/dev/null; then
+          # Distinguir "la rama no existe" (2) de cualquier otra falla: en ese caso se
+          # corta acá, nunca se arranca con un estado vacío por un error de red.
+          set +e; git ls-remote --exit-code --heads origin "$ESTADO_RAMA" >/dev/null; rc=$?; set -e
+          if [ $rc -eq 0 ]; then
+            git fetch origin "$ESTADO_RAMA"
             git worktree add estado "origin/$ESTADO_RAMA" -B "$ESTADO_RAMA"
-          else
+            if [ "${{ matrix.cuenta }}" = "libros" ] && [ ! -f estado/state/libros.json ] && git -C estado log --oneline -- state/libros.json | grep -q .; then
+              echo "La rama tuvo state/libros.json y ya no está: se corta"; exit 1
+            fi
+          elif [ $rc -eq 2 ]; then
             git worktree add --orphan -b "$ESTADO_RAMA" estado
             echo "Rama de estado nueva"
+          else
+            echo "No se pudo consultar la rama de estado"; exit 1
           fi
           mkdir -p estado/state
 
@@ -126,8 +135,14 @@ jobs:
           if git diff --cached --quiet; then echo "Sin cambios de estado"; exit 0; fi
           git commit -q -m "Precio Ganador ${{ matrix.cuenta }}: corrida $GITHUB_RUN_ID [skip ci]"
           for i in 1 2 3 4 5; do
-            if git push -q origin "HEAD:$ESTADO_RAMA"; then echo "Estado guardado"; exit 0; fi
-            sleep $((i * 5)); git pull -q --rebase origin "$ESTADO_RAMA" || true
+            if git push -q origin "HEAD:$ESTADO_RAMA"; then
+              # Confirmar que lo que quedó en el remoto es este commit.
+              git fetch -q origin "$ESTADO_RAMA"
+              if [ "$(git rev-parse HEAD)" = "$(git rev-parse "origin/$ESTADO_RAMA")" ]; then echo "Estado guardado"; exit 0; fi
+              echo "El remoto no quedó con este commit"; exit 1
+            fi
+            sleep $((i * 5))
+            git pull -q --rebase origin "$ESTADO_RAMA" || { git rebase --abort || true; echo "Conflicto al integrar el estado: queda en el artefacto"; exit 1; }
           done
           echo "No se pudo subir el estado"; exit 1
 

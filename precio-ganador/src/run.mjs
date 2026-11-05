@@ -30,11 +30,25 @@ const dirSalida = opt('salida', 'salida');
 const stockDemanda = Number(process.env.STOCK_DEMANDA || STOCK_DEMANDA_DEFAULT);
 
 async function leerJson(f, d) { try { return JSON.parse(await readFile(f, 'utf8')); } catch { return d; } }
+// El estado: sólo "no existe" vale como vacío. Ilegible o roto = corrida fallida,
+// nunca se pisa un estado con precios originales.
+async function leerEstado(f, d) {
+  let txt;
+  try { txt = await readFile(f, 'utf8'); } catch (e) { if (e?.code === 'ENOENT') return d; throw Object.assign(new Error('estado_ilegible'), { fatal: true }); }
+  try { const j = JSON.parse(txt); if (!j || typeof j.publicaciones !== 'object') throw 0; return j; }
+  catch { throw Object.assign(new Error('estado_corrupto'), { fatal: true }); }
+}
 
 async function main() {
   const inicio = new Date();
   const archivoEstado = join(dirEstado, `${cuenta.clave}.json`);
-  const estado = await leerJson(archivoEstado, { cuenta: cuenta.clave, seller_id: cuenta.sellerId, publicaciones: {} });
+  const estado = await leerEstado(archivoEstado, { cuenta: cuenta.clave, seller_id: cuenta.sellerId, publicaciones: {} });
+  const guardarEstado = () => {
+    mkdirSync(dirEstado, { recursive: true });
+    estado.actualizado = new Date().toISOString();
+    writeFileSync(archivoEstado + '.tmp', JSON.stringify(estado, null, 2) + '\n');
+    renameSync(archivoEstado + '.tmp', archivoEstado);
+  };
   const pisos = await leerJson(new URL(`../pisos/${cuenta.clave}.json`, import.meta.url), {});
 
   const ml = crearCliente(fuenteTokenD1(cuenta));
@@ -51,6 +65,20 @@ async function main() {
   console.log(`Fase: detalle de ${orden.length}`);
   const items = await detalle(ml, orden);
   console.log(`${cuenta.nombre}: ${ids.length} activas, ${enEstado.length} en estado`);
+  // Cambios que quedaron a medias en una corrida anterior (se cortó entre el PUT y
+  // la confirmación): se resuelven mirando el precio real en ML.
+  if (real) {
+    let tocado = false;
+    for (const [id, e] of Object.entries(estado.publicaciones)) {
+      if (!e.pendiente) continue;
+      const actual = items.get(id)?.price;
+      if (actual === e.pendiente.precio) { e.precio_aplicado = e.pendiente.precio; e.fecha = e.pendiente.desde; if (e.pendiente.stock_original !== undefined) e.stock_original = e.pendiente.stock_original; }
+      if (actual === e.pendiente.precio && e.pendiente.restaurar) delete estado.publicaciones[id];
+      else { delete e.pendiente; if (e.precio_aplicado === null) delete estado.publicaciones[id]; }
+      tocado = true;
+    }
+    if (tocado) guardarEstado();
+  }
 
   const filas = []; let marcadas = 0;
   const lote = 40;
@@ -85,35 +113,50 @@ async function main() {
   // El estado se graba en disco después de CADA cambio: si la corrida se corta a
   // mitad de camino, lo ya bajado queda registrado y la reversión lo encuentra.
   const ahora = new Date().toISOString();
-  const guardarEstado = () => {
-    mkdirSync(dirEstado, { recursive: true });
-    estado.actualizado = new Date().toISOString();
-    writeFileSync(archivoEstado + '.tmp', JSON.stringify(estado, null, 2) + '\n');
-    renameSync(archivoEstado + '.tmp', archivoEstado);
-  };
+  // Justo antes de aplicar se relee el precio: si cambió desde el listado (por
+  // ejemplo, una edición a mano), esa publicación se saltea en esta corrida.
+  const frescos = real && cambios.length ? await detalle(ml, cambios.map(f => f.item.id)) : new Map();
   for (const f of cambios) {
     f.aplicado = false;
     if (!real) continue;
-    const body = { price: f.d.precio, ...(Number.isFinite(f.d.stock) ? { available_quantity: f.d.stock } : {}) };
-    try {
-      const r = await ml.put(`/items/${f.item.id}`, body);
-      if (Number(r?.price) !== f.d.precio) throw Object.assign(new Error('precio_no_confirmado'), { code: 'precio_no_confirmado' });
-      f.aplicado = true;
-      const id = f.item.id, previo = estado.publicaciones[id];
-      if (f.d.accion === 'restaurar') delete estado.publicaciones[id];
-      else estado.publicaciones[id] = {
-        titulo: f.item.title?.slice(0, 80) ?? '',
-        precio_original: previo?.precio_original ?? f.item.price,
-        precio_aplicado: f.d.precio,
-        fecha_primera_baja: previo?.fecha_primera_baja ?? ahora,
-        fecha: ahora,
-        ...(previo?.stock_original !== undefined ? { stock_original: previo.stock_original } : Number.isFinite(f.d.stock) ? { stock_original: f.item.available_quantity } : {}),
-        ...(f.item.demanda ? { dias_demanda: f.item.dias_demanda } : {}),
-      };
-      guardarEstado();
-    } catch (e) {
-      f.d = { ...f.d, accion: 'error_aplicar', motivo: e?.code ?? 'error', detalle: e?.detalle ?? null };
+    const id = f.item.id, fresco = frescos.get(id);
+    if (!fresco || fresco.price !== f.item.price || fresco.status !== 'active' || fresco.original_price != null) {
+      f.d = { ...f.d, accion: 'saltear_cambio_reciente', motivo: `precio leído ${fresco?.price ?? '?'}` }; continue;
     }
+    const previo = estado.publicaciones[id];
+    const stockOriginal = previo?.stock_original !== undefined ? previo.stock_original : Number.isFinite(f.d.stock) ? f.item.available_quantity : undefined;
+    // 1) Se anota el cambio como pendiente ANTES del PUT: si la corrida se corta,
+    //    la siguiente lo resuelve con el precio real y nunca queda una baja sin registro.
+    estado.publicaciones[id] = {
+      titulo: f.item.title?.slice(0, 80) ?? '',
+      precio_original: previo?.precio_original ?? f.item.price,
+      precio_aplicado: previo?.precio_aplicado ?? null,
+      fecha_primera_baja: previo?.fecha_primera_baja ?? ahora,
+      fecha: previo?.fecha ?? ahora,
+      ...(previo?.stock_original !== undefined ? { stock_original: previo.stock_original } : {}),
+      ...(f.item.demanda ? { dias_demanda: f.item.dias_demanda } : {}),
+      pendiente: { precio: f.d.precio, desde: ahora, restaurar: f.d.accion === 'restaurar', ...(stockOriginal !== undefined ? { stock_original: stockOriginal } : {}) },
+    };
+    guardarEstado();
+    const body = { price: f.d.precio, ...(Number.isFinite(f.d.stock) ? { available_quantity: f.d.stock } : {}) };
+    let confirmado = false, error = null;
+    try { const r = await ml.put(`/items/${id}`, body); confirmado = Number(r?.price) === f.d.precio; if (!confirmado) error = { code: 'precio_no_confirmado' }; }
+    catch (e) { error = e; }
+    // 2) Sin confirmación en la respuesta: se relee la publicación para saber qué pasó.
+    if (!confirmado) {
+      try { const it = (await detalle(ml, [id])).get(id); confirmado = it?.price === f.d.precio; } catch {}
+    }
+    const e = estado.publicaciones[id];
+    if (confirmado) {
+      f.aplicado = true;
+      if (f.d.accion === 'restaurar') delete estado.publicaciones[id];
+      else { e.precio_aplicado = f.d.precio; e.fecha = ahora; if (e.pendiente.stock_original !== undefined) e.stock_original = e.pendiente.stock_original; delete e.pendiente; }
+    } else {
+      delete e.pendiente;
+      if (e.precio_aplicado === null) delete estado.publicaciones[id];
+      f.d = { ...f.d, accion: 'error_aplicar', motivo: error?.code ?? 'no_aplicado', detalle: error?.detalle ?? null };
+    }
+    guardarEstado();
   }
   // Verificación: se vuelve a leer cada publicación cambiada y se compara el precio.
   const aplicadas = cambios.filter(f => f.aplicado);
@@ -133,7 +176,7 @@ async function main() {
   await mkdir(dirSalida, { recursive: true });
   await writeFile(join(dirSalida, `${cuenta.clave}-resumen.json`), JSON.stringify(resumen, null, 2));
   await writeFile(join(dirSalida, `${cuenta.clave}-detalle.md`), tablaMarkdown(filas, { cuenta, real, resumen }));
-  await writeFile(join(dirSalida, `${cuenta.clave}-muestras-api.json`), JSON.stringify(MUESTRAS, null, 2));
+  if (!real) await writeFile(join(dirSalida, `${cuenta.clave}-muestras-api.json`), JSON.stringify(MUESTRAS, null, 2));
   // Filas de las marcadas y de las del estado, para la auditoría independiente.
   await writeFile(join(dirSalida, `${cuenta.clave}-filas.json`), JSON.stringify(filas.filter(f => f.comp?.marcada || f.previo).map(f => ({
     id: f.item.id, precio: f.item.price, moneda: f.item.currency_id, variaciones: f.item.variaciones, marcada: Boolean(f.comp?.marcada),
@@ -153,7 +196,11 @@ async function main() {
   }
   // Sólo conteos en el log (el repo es público).
   console.log(JSON.stringify({ modo: real ? 'real' : 'dry_run', ...resumen.contadores, llamadas: ml.stats.llamadas, reintentos: ml.stats.reintentos }));
-  if (resumen.contadores.errores > 0 && resumen.contadores.errores === resumen.contadores.revisadas) throw new Error('todas las consultas fallaron');
+  // La corrida falla (y GitHub avisa) si no pudo aplicar ninguno de los cambios
+  // planeados o si fallaron más del 10 % de las consultas.
+  const erroresConsulta = filas.filter(f => f.d.accion === 'error_consulta').length;
+  if (real && cambios.length > 0 && !cambios.some(f => f.aplicado) && cambios.some(f => f.d.accion === 'error_aplicar')) throw new Error('ningun_cambio_aplicado');
+  if (erroresConsulta > Math.max(20, ids.length * 0.10)) throw new Error(`demasiados_errores_de_consulta_${erroresConsulta}`);
 }
 
 const num = v => (v === null || v === undefined || !Number.isFinite(Number(v))) ? null : Number(v);

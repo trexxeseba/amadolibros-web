@@ -40,7 +40,7 @@ const ACCION = {
   sin_tocar_umbral: 'No tocar: diferencia de 360 o más', sin_tocar_pct: 'No tocar: bajaría más del 30 %', saltear_promo: 'Saltear: promoción activa',
   saltear_promo_desconocida: 'Saltear: no se pudo confirmar promoción', saltear_piso: 'Saltear: queda bajo el piso',
   saltear_variaciones: 'Saltear: tiene variaciones', saltear_moneda: 'Saltear: no está en pesos', saltear_sin_precio: 'Saltear: sin precio ganador',
-  mantener: 'Mantener', mantener_umbral: 'Mantener: el ganador bajó más de 360 desde el original', mantener_piso: 'Mantener: piso',
+  mantener: 'Mantener', mantener_promo: 'Mantener: promoción en curso', saltear_cambio_reciente: 'Saltear: el precio cambió durante la corrida', mantener_umbral: 'Mantener: el ganador bajó más de 360 desde el original', mantener_piso: 'Mantener: piso',
   liberar_editada: 'Liberar: editada a mano', error_consulta: 'Error de consulta', error_aplicar: 'Error al aplicar', inactiva: 'Inactiva',
 };
 
@@ -80,7 +80,7 @@ export async function enviarResumen({ cuenta, acum, resumen, fetcher = (...a) =>
   const html = `<h2>Precio Ganador · ${cuenta.nombre} · ${fechaMontevideo()}</h2><p>Modo: ${ult.modo === 'real' ? 'real' : 'prueba (DRY_RUN, no se cambió nada)'}</p><table cellpadding="6" style="border-collapse:collapse">${filas.map(([k, v]) => `<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join('')}</table><p>Si este correo no llega un día, algo se rompió: revisá el workflow Precio Ganador en GitHub.</p>`;
   try {
     const res = await fetcher('https://api.resend.com/emails', {
-      method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `precio-ganador-${cuenta.clave}-${fechaMontevideo()}` },
+      method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `precio-ganador-${cuenta.clave}-${fechaMontevideo()}-${process.env.GITHUB_RUN_ID ?? Date.now()}` },
       body: JSON.stringify({ from, to, subject: `Precio Ganador ${cuenta.nombre}: ${suma('bajadas')} bajadas, ${suma('subidas') + suma('restauradas')} subidas, ${suma('errores')} errores`, html, text: texto }),
       signal: AbortSignal.timeout(30000),
     });
