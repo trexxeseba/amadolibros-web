@@ -32,11 +32,20 @@ const VINTAGE_APP_ID='4741021817925208';
 // reciente no se le quita la clave: primero hay que detenerlo con `revoke`.
 export const LIVE_WINDOW_MS=120000;
 
-export async function authorizeRenew(env,header){
- const secret=env?.VINTAGE_RENEW_SECRET;
- if(typeof secret!=='string'||secret.length<32)throw new PublicationError('renew_not_configured',503);
- const given=String(header??'').replace(/^Bearer /,'');
- if(await sha256(given)!==await sha256(secret))throw new PublicationError('renew_unauthorized',401);
+// Claves de corrida del publicador de la nube: el workflow genera una al azar, guarda su hash en
+// D1 con vencimiento y la borra al terminar. Quien puede escribir en D1 ya tiene los tokens de
+// Mercado Libre, así que no abre nada nuevo y evita un secreto más en GitHub.
+export const CLOUD_KEYS_TABLE='ml_vintage_cloud_keys';
+export async function authorizeRenew(env,header,now=Date.now()){
+ const secret=env?.VINTAGE_RENEW_SECRET,given=String(header??'').replace(/^Bearer /,'');
+ const hasSecret=typeof secret==='string'&&secret.length>=32;
+ if(hasSecret&&await sha256(given)===await sha256(secret))return;
+ if(/^[a-f0-9]{64}$/.test(given)&&env?.ORDERS_DB){
+  const table=await env.ORDERS_DB.prepare("SELECT name FROM sqlite_master WHERE name=?").bind(CLOUD_KEYS_TABLE).first();
+  if(table&&await env.ORDERS_DB.prepare(`SELECT 1 FROM ${CLOUD_KEYS_TABLE} WHERE key_hash=? AND expires_at>?`).bind(await sha256(given),now).first())return;
+ }
+ if(!hasSecret&&!/^[a-f0-9]{64}$/.test(given))throw new PublicationError('renew_not_configured',503);
+ throw new PublicationError('renew_unauthorized',401);
 }
 
 export function createVintageRenew({bulk=createVintageBulk(),access=createLocalAccess(),tokens=vintageTokens,now=Date.now}={}){
@@ -84,7 +93,7 @@ export function createVintageRenew({bulk=createVintageBulk(),access=createLocalA
   return {refreshed:true,expires_at:await read()};
  }
  async function command(env,header,action,args={}){
-  await authorizeRenew(env,header);
+  await authorizeRenew(env,header,now());
   if(!Object.hasOwn(RENEW_FIELDS,action))throw new PublicationError('invalid_renew_action',400);
   if(action==='status')return bulk.status(env);
   if(action==='keepalive')return keepalive(env);
