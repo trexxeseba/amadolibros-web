@@ -1,12 +1,13 @@
 {
   "descripcion": "Universo de la Promo Liquidación Amado. lista.ids la entrega Seba (ids MLU de libros sin venta en 2 años en Mercado Libre). Mientras lista.ids esté vacía, /liquidacion sigue con la regla anterior y el feed de Merchant no etiqueta nada. Las exclusiones se regeneran con scripts/liquidacion/actualizar-exclusiones.mjs.",
   "lista": {
-    "entregada": null,
+    "entregada": "2026-11-05",
+    "criterio": "Activos con stock, publicados hace 730 días o más y sin ninguna venta en los últimos 730 días en Mercado Libre: nunca vendieron desde que se publicaron, o D1 (ventas desde 2025-10-24) lo prueba. Sin venta reciente por ISBN ni por título. Lo que no se puede verificar no entra.",
     "ids": []
   },
   "excluir": {
     "gana_precio": {
-      "fuente": "motor Precio Ganador, rama estado/precio-ganador: pruebas/41945328498/libros-todas.tsv (2026-11-05T01:03:09+00:00), state/libros.json y ultima/libros-filas.json",
+      "fuente": "motor Precio Ganador, rama estado/precio-ganador: pruebas/41945328498/libros-todas.tsv (2026-11-05T01:03:09Z), state/libros.json y ultima/libros-filas.json",
       "criterio": "estado winning o sharing_first_place en ML, o precio ya bajado por el motor",
       "ids": [
         "MLU1001092502",
@@ -105,7 +106,6 @@
         "MLU1045513512",
         "MLU1045526506",
         "MLU1045526508",
-        "MLU1047310668",
         "MLU1047570100",
         "MLU1064699146",
         "MLU1064738448",
@@ -369,7 +369,6 @@
         "MLU1438418278",
         "MLU1443557748",
         "MLU1444239490",
-        "MLU1444239492",
         "MLU1444239494",
         "MLU1444639906",
         "MLU1444639908",
@@ -540,7 +539,6 @@
         "MLU629940139",
         "MLU629952453",
         "MLU629952459",
-        "MLU629952461",
         "MLU629952475",
         "MLU629952487",
         "MLU629952505",
@@ -3058,7 +3056,7 @@
       ]
     },
     "sin_competencia": {
-      "fuente": "motor Precio Ganador, rama estado/precio-ganador: pruebas/41945328498/libros-todas.tsv (2026-11-05T01:03:09+00:00), state/libros.json y ultima/libros-filas.json",
+      "fuente": "motor Precio Ganador, rama estado/precio-ganador: pruebas/41945328498/libros-todas.tsv (2026-11-05T01:03:09Z), state/libros.json y ultima/libros-filas.json",
       "criterio": "estado not_listed: el motor no la ve competir en ML",
       "ids": [
         "MLU1001381834",
@@ -8076,5 +8074,5 @@
       "ids": []
     }
   },
-  "excluir_actualizado": "2026-11-05T01:03:09+00:00"
+  "excluir_actualizado": "2026-11-05T01:03:09Z"
 }
