@@ -138,6 +138,8 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
    await s.attachFeed(BULK_RUN,c.feed_id);
    await s.stmt("INSERT OR IGNORE INTO ml_pub_jobs(run_id,isbn,state) SELECT ?,isbn,'pending' FROM ml_pub_stock WHERE feed_id=?",BULK_RUN,c.feed_id).run();
   }
+  // Base guardada entre corridas (la nube la cachea): una prueba anterior cortada vuelve a preflight.
+  if(existing&&validateOnly&&['auth_error','stock_stale','paused','publishing'].includes(existing.state))await s.stmt("UPDATE ml_pub_runs SET state='preflight',approved_hash=NULL,preflight_limit=? WHERE id=? AND lease_until<?",validateOnly,BULK_RUN,Date.now()).run();
   if(existing&&!validateOnly&&['paused','auth_error','stock_stale'].includes(existing.state))await s.stmt("UPDATE ml_pub_runs SET state='publishing' WHERE id=? AND lease_until<?",BULK_RUN,Date.now()).run();
   if(existing&&!validateOnly)await s.reopenForRaisedTarget(BULK_RUN,Date.now());
   if(!existing){
@@ -187,7 +189,7 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
    if(maxMs&&Date.now()-turnStarted>=maxMs){sliceDone=true;break;}
    const remote=await broker('status'),hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0);const dailyCap=Number.isInteger(remote.daily_cap)&&remote.daily_cap>0?remote.daily_cap:1000;if(!validateOnly)await s.stmt('UPDATE ml_pub_runs SET daily_cap=? WHERE id=? AND daily_cap<>?',dailyCap,BULK_RUN,dailyCap).run();if(remote.daily_created>=dailyCap&&!validateOnly&&!hasUncertain){capHit=true;const capped={at:new Date().toISOString(),seller_id:SELLER,state:'daily_cap_reached',published_total:remote.published_total};await fs.writeFile(path.join(directory,'status.json'),JSON.stringify(capped,null,2));onStatus(JSON.stringify(capped));break;}
    if(!validateOnly&&(remote.published_total>=target||limitNew&&reservationsThisProcess>=limitNew))break;
-   const result=await service.tick(env,BULK_RUN),summary=await s.summary(BULK_RUN),published=5+await s.publishedCount(BULK_RUN),status={at:new Date().toISOString(),seller_id:SELLER,mode:validateOnly?'validate_only':'publish',published_total:published,run:summary,state:result.state??summary.state};
+   const result=await service.tick(env,BULK_RUN),summary=await s.summary(BULK_RUN),published=5+await s.publishedCount(BULK_RUN),status={at:new Date().toISOString(),seller_id:SELLER,mode:validateOnly?'validate_only':'publish',published_total:published,run:summary,state:result.state??summary.state,...(result.error?{error:result.error}:{})};
    if(failedReadback)status.state='stopped_item_readback_failed';else if(listingQuotaHit)status.state='stopped_listing_quota';
    await fs.writeFile(path.join(directory,'status.json'),JSON.stringify(status,null,2));onStatus(JSON.stringify(status));
    if(failedReadback||listingQuotaHit)break;

@@ -91,6 +91,15 @@ jobs:
       - name: Clave de corrida
         run: node scripts/vintage-cloud/key.mjs crear
 
+      # La base del motor (recorrido del inventario, trabajos) se guarda entre corridas: el recorrido
+      # completo (~1 h) se hace una vez por lista nueva y no en cada corrida. Si se pierde, se rehace.
+      - name: Traer la base del motor
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/vintage/*.sqlite
+          key: vintage-motor-${{ github.run_id }}
+          restore-keys: vintage-motor-
+
       - name: Correr
         env:
           ACCION: ${{ steps.decidir.outputs.accion }}
@@ -102,6 +111,13 @@ jobs:
           if [[ "$IN_TANDA" =~ ^[0-9]+$ ]]; then ARGS+=(--tanda "$IN_TANDA"); fi
           if [[ "$IN_TOPE" =~ ^[0-9]+$ ]]; then ARGS+=(--tope "$IN_TOPE"); fi
           node --experimental-sqlite scripts/vintage-cloud/run.mjs "${ARGS[@]}"
+
+      - name: Guardar la base del motor
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/vintage/*.sqlite
+          key: vintage-motor-${{ github.run_id }}
 
       # Sólo el reporte (conteos y estados). La conexión y la lista quedan en RUNNER_TEMP y se borran.
       - name: Reporte
