@@ -1,0 +1,26 @@
+{
+  "corridas": [
+    {
+      "fecha": "2026-11-05T04:32:26.740Z",
+      "modo": "real",
+      "activas": 6894,
+      "revisadas": 6894,
+      "marcadas": 38,
+      "bajadas": 7,
+      "ajustadas": 3,
+      "subidas": 1,
+      "restauradas": 0,
+      "sin_tocar_umbral": 26,
+      "sin_tocar_pct": 1,
+      "verificadas": 11,
+      "no_verificadas": 0,
+      "promo": 0,
+      "bajo_piso": 0,
+      "sin_costo": 0,
+      "otras_salteadas": 0,
+      "editadas_a_mano": 0,
+      "errores": 0,
+      "cambios_stock": 0
+    }
+  ]
+}

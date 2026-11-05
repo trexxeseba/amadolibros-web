@@ -1,54 +1,26 @@
 {
-  "fecha": "2026-11-05T00:52:36.175Z",
+  "fecha": "2026-11-05T04:32:44.777Z",
   "muestra": [
     {
-      "id": "MLU783590450",
-      "titulo": "Netter Medicina Del Deporte, De Christopher C. Madden. Nette",
-      "precio": 7500,
+      "id": "MLU912811418",
+      "titulo": "Libro De Textura Y Sonido Universal La Casa De Muñecas De Ga",
+      "precio": 2100,
       "estado": "winning",
-      "precio_para_ganar": 7500,
-      "competidor_mas_barato": 7440,
-      "otras_ofertas": 4,
+      "precio_para_ganar": 2100,
+      "competidor_mas_barato": 1277,
+      "otras_ofertas": 6,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana aunque hay uno más barato (7440): ML pesa envío y reputación",
+      "conclusion": "Gana aunque hay uno más barato (1277): ML pesa envío y reputación",
       "ok": true
     },
     {
-      "id": "MLU644099567",
-      "titulo": "Stick & Color La Casa D Muñecas De Gabby Gabby's Dollhouse, ",
-      "precio": 1537,
+      "id": "MLU658053472",
+      "titulo": "El Tsunami Tecnológico: El Tsunami Tecnológico, De A. Bonet ",
+      "precio": 1377,
       "estado": "winning",
-      "precio_para_ganar": 1537,
-      "competidor_mas_barato": 388,
-      "otras_ofertas": 2,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (388): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU644148169",
-      "titulo": "Atlas Fotografico Alimentos P/ El Conteo D Hidratos Carbono",
-      "precio": 1132,
-      "estado": "winning",
-      "precio_para_ganar": 1132,
-      "competidor_mas_barato": 896,
-      "otras_ofertas": 5,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (896): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU700573106",
-      "titulo": "Tarot Ciro Marchetti Mystic Palette 78 Cartas",
-      "precio": 2400,
-      "estado": "winning",
-      "precio_para_ganar": 1862,
+      "precio_para_ganar": 1377,
       "competidor_mas_barato": null,
       "otras_ofertas": 0,
       "sugerencias_ml": [
@@ -58,87 +30,115 @@
       "ok": true
     },
     {
-      "id": "MLU651094636",
-      "titulo": "Reina De Corazones - Heiland, Julie, De Heiland, Julie. Edit",
-      "precio": 2200,
+      "id": "MLU628756927",
+      "titulo": "El Asunto - Von Rebeur Ana (libro)",
+      "precio": 1377,
       "estado": "winning",
-      "precio_para_ganar": 2200,
-      "competidor_mas_barato": 480,
-      "otras_ofertas": 4,
+      "precio_para_ganar": 1377,
+      "competidor_mas_barato": 1350,
+      "otras_ofertas": 2,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana aunque hay uno más barato (480): ML pesa envío y reputación",
+      "conclusion": "Gana aunque hay uno más barato (1350): ML pesa envío y reputación",
       "ok": true
     },
     {
-      "id": "MLU657236118",
-      "titulo": "Retorno A Lacan, De Vegh, Isidoro. Editorial Paidos, Tapa Bl",
-      "precio": 1490,
+      "id": "MLU669128304",
+      "titulo": "Dificultades De Aprendizaje De Las Matematicas Y Suplemento",
+      "precio": 2100,
       "estado": "winning",
-      "precio_para_ganar": 1490,
-      "competidor_mas_barato": 1914.24,
+      "precio_para_ganar": 2100,
+      "competidor_mas_barato": 3090,
       "otras_ofertas": 1,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana: el competidor más barato está en 1914.24",
+      "conclusion": "Gana: el competidor más barato está en 3090",
       "ok": true
     },
     {
-      "id": "MLU681921118",
-      "titulo": "Manual De Farmacología Y Terapéutica. Goodman & Gilman 2a Ed",
-      "precio": 9500,
+      "id": "MLU658001418",
+      "titulo": "Libro Trastorno De Identidad Disociativo O Personalidad M...",
+      "precio": 2200,
       "estado": "winning",
-      "precio_para_ganar": 9500,
-      "competidor_mas_barato": 8273,
+      "precio_para_ganar": 2200,
+      "competidor_mas_barato": 2117,
       "otras_ofertas": 2,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana aunque hay uno más barato (8273): ML pesa envío y reputación",
+      "conclusion": "Gana aunque hay uno más barato (2117): ML pesa envío y reputación",
       "ok": true
     },
     {
-      "id": "MLU685183802",
-      "titulo": "Libro - Curación Ayurveda - Lad, Vasant",
-      "precio": 1385,
+      "id": "MLU651526142",
+      "titulo": "La Imputacion Objetiva En Derecho Penal - Jakobs, Gunther",
+      "precio": 1569,
       "estado": "winning",
-      "precio_para_ganar": 1385,
-      "competidor_mas_barato": 1400,
-      "otras_ofertas": 4,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana: el competidor más barato está en 1400",
-      "ok": true
-    },
-    {
-      "id": "MLU669846808",
-      "titulo": "Talleres Montessori En La Escuela, De Missant, Beatrice. Edi",
-      "precio": 1380,
-      "estado": "winning",
-      "precio_para_ganar": 1380,
-      "competidor_mas_barato": 2470,
+      "precio_para_ganar": 1569,
+      "competidor_mas_barato": 1603,
       "otras_ofertas": 2,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana: el competidor más barato está en 2470",
+      "conclusion": "Gana: el competidor más barato está en 1603",
       "ok": true
     },
     {
-      "id": "MLU661838331",
-      "titulo": "El Cristo Interior, De Melloni, Javier. Herder Editorial, Ta",
-      "precio": 2100,
+      "id": "MLU638055827",
+      "titulo": "El Diablo De La Botella, De Robert L. Stevenson. Editorial E",
+      "precio": 902,
       "estado": "winning",
-      "precio_para_ganar": 2100,
-      "competidor_mas_barato": 970,
+      "precio_para_ganar": 902,
+      "competidor_mas_barato": 684,
       "otras_ofertas": 4,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana aunque hay uno más barato (970): ML pesa envío y reputación",
+      "conclusion": "Gana aunque hay uno más barato (684): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU690869304",
+      "titulo": "Europe: War Of Kings  Cd De Rock Físico Con 11 Canciones (20",
+      "precio": 2450,
+      "estado": "winning",
+      "precio_para_ganar": 2450,
+      "competidor_mas_barato": null,
+      "otras_ofertas": 0,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: no hay otros vendedores",
+      "ok": true
+    },
+    {
+      "id": "MLU658014432",
+      "titulo": "Homenaje A Lacan.moscon, Julio",
+      "precio": 1400,
+      "estado": "winning",
+      "precio_para_ganar": 1400,
+      "competidor_mas_barato": null,
+      "otras_ofertas": 0,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: no hay otros vendedores",
+      "ok": true
+    },
+    {
+      "id": "MLU631882817",
+      "titulo": "Afectos El Pudor Y Lo Femenino Alma Pérez Abella (gr)",
+      "precio": 1133,
+      "estado": "winning",
+      "precio_para_ganar": 1133,
+      "competidor_mas_barato": 2630,
+      "otras_ofertas": 1,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 2630",
       "ok": true
     }
   ],
@@ -192,8 +192,8 @@
       "id": "MLU862968034",
       "titulo": "Granja, La Libro De Juegos Y Puzzle, De Anónimo. Editorial El Gato De Hojalata, ",
       "original": 415,
-      "aplicado": 396,
-      "en_ml": 396,
+      "aplicado": 386,
+      "en_ml": 386,
       "ok": true,
       "problemas": []
     },
@@ -228,8 +228,8 @@
       "id": "MLU1248458670",
       "titulo": "Libro La Montaña Eres Tú [ Brianna Wiest ] Original, De Brianna Wiest. Editorial",
       "original": 725,
-      "aplicado": 714,
-      "en_ml": 714,
+      "aplicado": 693,
+      "en_ml": 693,
       "ok": true,
       "problemas": []
     },
@@ -237,8 +237,8 @@
       "id": "MLU695916883",
       "titulo": "Gestión Del Talento Humano",
       "original": 3554,
-      "aplicado": 3411,
-      "en_ml": 3411,
+      "aplicado": 3343,
+      "en_ml": 3343,
       "ok": true,
       "problemas": []
     },
@@ -255,8 +255,71 @@
       "id": "MLU728203732",
       "titulo": "Sé Amable Contigo Mismo El Arte De La Compasión Hacia Uno Mismo Kristin Neff Edi",
       "original": 2150,
-      "aplicado": 1890,
-      "en_ml": 1890,
+      "aplicado": 1899,
+      "en_ml": 1899,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU629952461",
+      "titulo": "Enemigo Intimo - Gabriela Arias Uriburu - Libro Kier",
+      "original": 912,
+      "aplicado": 830,
+      "en_ml": 830,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU631748561",
+      "titulo": "Libro Secuencias Didacticas - 30 Preguntas Y Respuestas - Taboada, De Taboada, M",
+      "original": 429,
+      "aplicado": 413,
+      "en_ml": 413,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU669860318",
+      "titulo": "Cómo Te Sientes, De Anthony Browne. Editorial Kalandraka, Tapa Dura En Español",
+      "original": 825,
+      "aplicado": 803,
+      "en_ml": 803,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU884651706",
+      "titulo": "El Ascendente: Tu Gps Existencial. Descubrí La Llave De Tu Destino, De Beatriz L",
+      "original": 571,
+      "aplicado": 554,
+      "en_ml": 554,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU884315176",
+      "titulo": "Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Editorial Siruela Tapa Dura En Esp",
+      "original": 2899,
+      "aplicado": 2840,
+      "en_ml": 2840,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU655257859",
+      "titulo": "Respeto Por La Interpretacion - Uta, Frankel",
+      "original": 767,
+      "aplicado": 746,
+      "en_ml": 746,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1444239492",
+      "titulo": "Está Entre Nosotros: ¿de Dónde Sale Y Hasta Dónde Puede Llegar La Extrema Derech",
+      "original": 805,
+      "aplicado": 755,
+      "en_ml": 755,
       "ok": true,
       "problemas": []
     }
@@ -273,13 +336,13 @@
       "ok": true
     },
     {
-      "id": "MLU650928330",
-      "precio": 1363,
-      "ganador": 1181,
-      "diferencia": 182,
-      "esperado": "saltear",
-      "hecho": "saltear_promo",
-      "precio_nuevo": null,
+      "id": "MLU629952461",
+      "precio": 912,
+      "ganador": 830,
+      "diferencia": 82,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 830,
       "ok": true
     },
     {
@@ -303,6 +366,16 @@
       "ok": true
     },
     {
+      "id": "MLU631748561",
+      "precio": 429,
+      "ganador": 413,
+      "diferencia": 16,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 413,
+      "ok": true
+    },
+    {
       "id": "MLU652640572",
       "precio": 2450,
       "ganador": 827,
@@ -310,6 +383,16 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 827,
+      "ok": true
+    },
+    {
+      "id": "MLU658014482",
+      "precio": 1950,
+      "ganador": 1355,
+      "diferencia": 595,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1355,
       "ok": true
     },
     {
@@ -323,13 +406,13 @@
       "ok": true
     },
     {
-      "id": "MLU636406403",
-      "precio": 651,
-      "ganador": 637,
-      "diferencia": 14,
+      "id": "MLU669860318",
+      "precio": 825,
+      "ganador": 803,
+      "diferencia": 22,
       "esperado": "bajar",
       "hecho": "bajar",
-      "precio_nuevo": 637,
+      "precio_nuevo": 803,
       "ok": true
     },
     {
@@ -393,16 +476,6 @@
       "ok": true
     },
     {
-      "id": "MLU728203732",
-      "precio": 2150,
-      "ganador": 1890,
-      "diferencia": 260,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1890,
-      "ok": true
-    },
-    {
       "id": "MLU728138914",
       "precio": 2050,
       "ganador": 1089,
@@ -433,6 +506,26 @@
       "ok": true
     },
     {
+      "id": "MLU884651706",
+      "precio": 571,
+      "ganador": 554,
+      "diferencia": 17,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 554,
+      "ok": true
+    },
+    {
+      "id": "MLU884315176",
+      "precio": 2899,
+      "ganador": 2840,
+      "diferencia": 59,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2840,
+      "ok": true
+    },
+    {
       "id": "MLU884307200",
       "precio": 2450,
       "ganador": 1890,
@@ -450,6 +543,16 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 869,
+      "ok": true
+    },
+    {
+      "id": "MLU655257859",
+      "precio": 767,
+      "ganador": 746,
+      "diferencia": 21,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 746,
       "ok": true
     },
     {
@@ -535,11 +638,21 @@
     {
       "id": "MLU1444239500",
       "precio": 3750,
-      "ganador": 1909,
-      "diferencia": 1841,
+      "ganador": 1871,
+      "diferencia": 1879,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1909,
+      "precio_nuevo": 1871,
+      "ok": true
+    },
+    {
+      "id": "MLU1444239492",
+      "precio": 805,
+      "ganador": 755,
+      "diferencia": 50,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 755,
       "ok": true
     },
     {

@@ -1,18 +1,5 @@
 [
   {
-    "id": "MLU629952461",
-    "precio": 829,
-    "moneda": "UYU",
-    "variaciones": false,
-    "marcada": false,
-    "ganador": 829,
-    "en_estado_antes": true,
-    "promo": false,
-    "accion": "restaurar",
-    "precio_nuevo": 912,
-    "aplicado": true
-  },
-  {
     "id": "MLU663199900",
     "precio": 1082,
     "moneda": "UYU",
@@ -27,94 +14,94 @@
   },
   {
     "id": "MLU637065821",
-    "precio": 1904,
+    "precio": 1864,
     "moneda": "UYU",
     "variaciones": false,
-    "marcada": true,
+    "marcada": false,
     "ganador": 1864,
     "en_estado_antes": true,
-    "promo": false,
-    "accion": "ajustar",
-    "precio_nuevo": 1864,
-    "aplicado": true
+    "promo": null,
+    "accion": "mantener",
+    "precio_nuevo": null,
+    "aplicado": null
   },
   {
     "id": "MLU691609938",
-    "precio": 1244,
+    "precio": 1218,
     "moneda": "UYU",
     "variaciones": false,
-    "marcada": true,
+    "marcada": false,
     "ganador": 1218,
     "en_estado_antes": true,
-    "promo": false,
-    "accion": "ajustar",
-    "precio_nuevo": 1218,
-    "aplicado": true
+    "promo": null,
+    "accion": "mantener",
+    "precio_nuevo": null,
+    "aplicado": null
   },
   {
     "id": "MLU692647026",
-    "precio": 646,
+    "precio": 654,
     "moneda": "UYU",
     "variaciones": false,
     "marcada": false,
     "ganador": 646,
     "en_estado_antes": true,
-    "promo": false,
-    "accion": "subir",
-    "precio_nuevo": 654,
-    "aplicado": true
+    "promo": null,
+    "accion": "mantener",
+    "precio_nuevo": null,
+    "aplicado": null
   },
   {
     "id": "MLU757785172",
-    "precio": 6640,
+    "precio": 6507,
     "moneda": "UYU",
     "variaciones": false,
     "marcada": true,
-    "ganador": 6507,
+    "ganador": 6377,
     "en_estado_antes": true,
-    "promo": false,
-    "accion": "ajustar",
-    "precio_nuevo": 6507,
-    "aplicado": true
+    "promo": null,
+    "accion": "mantener_umbral",
+    "precio_nuevo": null,
+    "aplicado": null
   },
   {
     "id": "MLU862968034",
-    "precio": 405,
+    "precio": 396,
     "moneda": "UYU",
     "variaciones": false,
     "marcada": true,
-    "ganador": 396,
+    "ganador": 386,
     "en_estado_antes": true,
     "promo": false,
     "accion": "ajustar",
-    "precio_nuevo": 396,
+    "precio_nuevo": 386,
     "aplicado": true
   },
   {
     "id": "MLU889968514",
-    "precio": 838,
+    "precio": 846,
     "moneda": "UYU",
     "variaciones": false,
     "marcada": false,
     "ganador": 838,
     "en_estado_antes": true,
-    "promo": false,
-    "accion": "subir",
-    "precio_nuevo": 846,
-    "aplicado": true
+    "promo": null,
+    "accion": "mantener",
+    "precio_nuevo": null,
+    "aplicado": null
   },
   {
     "id": "MLU888292642",
-    "precio": 2393,
+    "precio": 2417,
     "moneda": "UYU",
     "variaciones": false,
     "marcada": false,
     "ganador": 2393,
     "en_estado_antes": true,
-    "promo": false,
-    "accion": "subir",
-    "precio_nuevo": 2417,
-    "aplicado": true
+    "promo": null,
+    "accion": "mantener",
+    "precio_nuevo": null,
+    "aplicado": null
   },
   {
     "id": "MLU1240815646",
@@ -131,41 +118,54 @@
   },
   {
     "id": "MLU1248458670",
-    "precio": 704,
+    "precio": 714,
     "moneda": "UYU",
     "variaciones": false,
-    "marcada": false,
-    "ganador": 704,
+    "marcada": true,
+    "ganador": 693,
     "en_estado_antes": true,
     "promo": false,
-    "accion": "subir",
-    "precio_nuevo": 714,
-    "aplicado": true
-  },
-  {
-    "id": "MLU1444239492",
-    "precio": 754,
-    "moneda": "UYU",
-    "variaciones": false,
-    "marcada": false,
-    "ganador": 754,
-    "en_estado_antes": true,
-    "promo": false,
-    "accion": "restaurar",
-    "precio_nuevo": 805,
+    "accion": "ajustar",
+    "precio_nuevo": 693,
     "aplicado": true
   },
   {
     "id": "MLU695916883",
-    "precio": 3482,
+    "precio": 3411,
     "moneda": "UYU",
     "variaciones": false,
     "marcada": true,
-    "ganador": 3411,
+    "ganador": 3343,
     "en_estado_antes": true,
     "promo": false,
     "accion": "ajustar",
-    "precio_nuevo": 3411,
+    "precio_nuevo": 3343,
+    "aplicado": true
+  },
+  {
+    "id": "MLU636406403",
+    "precio": 637,
+    "moneda": "UYU",
+    "variaciones": false,
+    "marcada": false,
+    "ganador": 637,
+    "en_estado_antes": true,
+    "promo": null,
+    "accion": "mantener",
+    "precio_nuevo": null,
+    "aplicado": null
+  },
+  {
+    "id": "MLU728203732",
+    "precio": 1890,
+    "moneda": "UYU",
+    "variaciones": false,
+    "marcada": false,
+    "ganador": 1890,
+    "en_estado_antes": true,
+    "promo": false,
+    "accion": "subir",
+    "precio_nuevo": 1899,
     "aplicado": true
   },
   {
@@ -182,17 +182,17 @@
     "aplicado": null
   },
   {
-    "id": "MLU650928330",
-    "precio": 1363,
+    "id": "MLU629952461",
+    "precio": 912,
     "moneda": "UYU",
     "variaciones": false,
     "marcada": true,
-    "ganador": 1181,
+    "ganador": 830,
     "en_estado_antes": false,
-    "promo": true,
-    "accion": "saltear_promo",
-    "precio_nuevo": null,
-    "aplicado": null
+    "promo": false,
+    "accion": "bajar",
+    "precio_nuevo": 830,
+    "aplicado": true
   },
   {
     "id": "MLU651058026",
@@ -221,6 +221,19 @@
     "aplicado": null
   },
   {
+    "id": "MLU631748561",
+    "precio": 429,
+    "moneda": "UYU",
+    "variaciones": false,
+    "marcada": true,
+    "ganador": 413,
+    "en_estado_antes": false,
+    "promo": false,
+    "accion": "bajar",
+    "precio_nuevo": 413,
+    "aplicado": true
+  },
+  {
     "id": "MLU652640572",
     "precio": 2450,
     "moneda": "UYU",
@@ -231,6 +244,19 @@
     "promo": null,
     "accion": "sin_tocar_umbral",
     "precio_nuevo": 827,
+    "aplicado": null
+  },
+  {
+    "id": "MLU658014482",
+    "precio": 1950,
+    "moneda": "UYU",
+    "variaciones": false,
+    "marcada": true,
+    "ganador": 1355,
+    "en_estado_antes": false,
+    "promo": null,
+    "accion": "sin_tocar_umbral",
+    "precio_nuevo": 1355,
     "aplicado": null
   },
   {
@@ -247,16 +273,16 @@
     "aplicado": null
   },
   {
-    "id": "MLU636406403",
-    "precio": 651,
+    "id": "MLU669860318",
+    "precio": 825,
     "moneda": "UYU",
     "variaciones": false,
     "marcada": true,
-    "ganador": 637,
+    "ganador": 803,
     "en_estado_antes": false,
     "promo": false,
     "accion": "bajar",
-    "precio_nuevo": 637,
+    "precio_nuevo": 803,
     "aplicado": true
   },
   {
@@ -338,19 +364,6 @@
     "aplicado": null
   },
   {
-    "id": "MLU728203732",
-    "precio": 2150,
-    "moneda": "UYU",
-    "variaciones": false,
-    "marcada": true,
-    "ganador": 1890,
-    "en_estado_antes": false,
-    "promo": false,
-    "accion": "bajar",
-    "precio_nuevo": 1890,
-    "aplicado": true
-  },
-  {
     "id": "MLU728138914",
     "precio": 2050,
     "moneda": "UYU",
@@ -390,6 +403,32 @@
     "aplicado": null
   },
   {
+    "id": "MLU884651706",
+    "precio": 571,
+    "moneda": "UYU",
+    "variaciones": false,
+    "marcada": true,
+    "ganador": 554,
+    "en_estado_antes": false,
+    "promo": false,
+    "accion": "bajar",
+    "precio_nuevo": 554,
+    "aplicado": true
+  },
+  {
+    "id": "MLU884315176",
+    "precio": 2899,
+    "moneda": "UYU",
+    "variaciones": false,
+    "marcada": true,
+    "ganador": 2840,
+    "en_estado_antes": false,
+    "promo": false,
+    "accion": "bajar",
+    "precio_nuevo": 2840,
+    "aplicado": true
+  },
+  {
     "id": "MLU884307200",
     "precio": 2450,
     "moneda": "UYU",
@@ -414,6 +453,19 @@
     "accion": "sin_tocar_umbral",
     "precio_nuevo": 869,
     "aplicado": null
+  },
+  {
+    "id": "MLU655257859",
+    "precio": 767,
+    "moneda": "UYU",
+    "variaciones": false,
+    "marcada": true,
+    "ganador": 746,
+    "en_estado_antes": false,
+    "promo": false,
+    "accion": "bajar",
+    "precio_nuevo": 746,
+    "aplicado": true
   },
   {
     "id": "MLU655144089",
@@ -525,12 +577,25 @@
     "moneda": "UYU",
     "variaciones": false,
     "marcada": true,
-    "ganador": 1909,
+    "ganador": 1871,
     "en_estado_antes": false,
     "promo": null,
     "accion": "sin_tocar_umbral",
-    "precio_nuevo": 1909,
+    "precio_nuevo": 1871,
     "aplicado": null
+  },
+  {
+    "id": "MLU1444239492",
+    "precio": 805,
+    "moneda": "UYU",
+    "variaciones": false,
+    "marcada": true,
+    "ganador": 755,
+    "en_estado_antes": false,
+    "promo": false,
+    "accion": "bajar",
+    "precio_nuevo": 755,
+    "aplicado": true
   },
   {
     "id": "MLU1470582628",

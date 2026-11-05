@@ -40,9 +40,9 @@
     "MLU862968034": {
       "titulo": "Granja, La Libro De Juegos Y Puzzle, De Anónimo. Editorial El Gato De Hojalata, ",
       "precio_original": 415,
-      "precio_aplicado": 396,
+      "precio_aplicado": 386,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
-      "fecha": "2026-11-05T00:52:11.447Z"
+      "fecha": "2026-11-05T04:32:18.148Z"
     },
     "MLU889968514": {
       "titulo": "Actitud Mental Positiva - Napoleon Hill Y W. Clement Stone",
@@ -68,16 +68,16 @@
     "MLU1248458670": {
       "titulo": "Libro La Montaña Eres Tú [ Brianna Wiest ] Original, De Brianna Wiest. Editorial",
       "precio_original": 725,
-      "precio_aplicado": 714,
+      "precio_aplicado": 693,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
-      "fecha": "2026-11-05T00:52:11.447Z"
+      "fecha": "2026-11-05T04:32:18.148Z"
     },
     "MLU695916883": {
       "titulo": "Gestión Del Talento Humano",
       "precio_original": 3554,
-      "precio_aplicado": 3411,
+      "precio_aplicado": 3343,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
-      "fecha": "2026-11-05T00:52:11.447Z"
+      "fecha": "2026-11-05T04:32:18.148Z"
     },
     "MLU636406403": {
       "titulo": "El Libro Perdido - Cassandra Clare - Destino",
@@ -89,10 +89,59 @@
     "MLU728203732": {
       "titulo": "Sé Amable Contigo Mismo El Arte De La Compasión Hacia Uno Mismo Kristin Neff Edi",
       "precio_original": 2150,
-      "precio_aplicado": 1890,
+      "precio_aplicado": 1899,
       "fecha_primera_baja": "2026-11-05T00:52:11.447Z",
-      "fecha": "2026-11-05T00:52:11.447Z"
+      "fecha": "2026-11-05T04:32:18.148Z"
+    },
+    "MLU629952461": {
+      "titulo": "Enemigo Intimo - Gabriela Arias Uriburu - Libro Kier",
+      "precio_original": 912,
+      "precio_aplicado": 830,
+      "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
+      "fecha": "2026-11-05T04:32:18.148Z"
+    },
+    "MLU631748561": {
+      "titulo": "Libro Secuencias Didacticas - 30 Preguntas Y Respuestas - Taboada, De Taboada, M",
+      "precio_original": 429,
+      "precio_aplicado": 413,
+      "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
+      "fecha": "2026-11-05T04:32:18.148Z"
+    },
+    "MLU669860318": {
+      "titulo": "Cómo Te Sientes, De Anthony Browne. Editorial Kalandraka, Tapa Dura En Español",
+      "precio_original": 825,
+      "precio_aplicado": 803,
+      "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
+      "fecha": "2026-11-05T04:32:18.148Z"
+    },
+    "MLU884651706": {
+      "titulo": "El Ascendente: Tu Gps Existencial. Descubrí La Llave De Tu Destino, De Beatriz L",
+      "precio_original": 571,
+      "precio_aplicado": 554,
+      "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
+      "fecha": "2026-11-05T04:32:18.148Z"
+    },
+    "MLU884315176": {
+      "titulo": "Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Editorial Siruela Tapa Dura En Esp",
+      "precio_original": 2899,
+      "precio_aplicado": 2840,
+      "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
+      "fecha": "2026-11-05T04:32:18.148Z"
+    },
+    "MLU655257859": {
+      "titulo": "Respeto Por La Interpretacion - Uta, Frankel",
+      "precio_original": 767,
+      "precio_aplicado": 746,
+      "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
+      "fecha": "2026-11-05T04:32:18.148Z"
+    },
+    "MLU1444239492": {
+      "titulo": "Está Entre Nosotros: ¿de Dónde Sale Y Hasta Dónde Puede Llegar La Extrema Derech",
+      "precio_original": 805,
+      "precio_aplicado": 755,
+      "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
+      "fecha": "2026-11-05T04:32:18.148Z"
     }
   },
-  "actualizado": "2026-11-05T00:52:20.515Z"
+  "actualizado": "2026-11-05T04:32:26.758Z"
 }
