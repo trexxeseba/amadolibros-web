@@ -276,7 +276,7 @@ export async function onRequest({ request } = {}) {
   <a class="skip" href="#contenido">Saltar al contenido</a>
   <header class="masthead">
     <div class="wrap masthead-inner">
-      <a class="brand" href="/" aria-label="Amado Libros, inicio">
+      <a class="brand" href="/">
         <img src="${BRAND.logo}" alt="" width="48" height="48">
         <span><span class="brand-name">${BRAND.name}</span><span class="brand-note">Librería en línea · Uruguay</span></span>
       </a>
