@@ -25,6 +25,11 @@ on:
       max_marcadas:
         description: 'Cortar al encontrar N marcadas (vacío = todas)'
         required: false
+      cuenta:
+        description: 'Cuenta (vintage sólo en prueba: nunca se le cambia nada)'
+        type: choice
+        options: [libros, vintage]
+        default: libros
       prueba:
         description: 'Prueba: consulta y reporta, no cambia ningún precio'
         type: boolean
@@ -44,12 +49,12 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 120
     strategy:
       max-parallel: 1
       fail-fast: false
       matrix:
-        cuenta: [libros]
+        cuenta: ${{ fromJSON(inputs.cuenta == 'vintage' && '["vintage"]' || '["libros"]') }}
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}

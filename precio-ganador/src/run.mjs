@@ -21,8 +21,9 @@ const flag = n => args.includes('--' + n);
 
 const cuenta = CUENTAS[opt('cuenta')];
 if (!cuenta) { console.error('Cuenta desconocida. Usar --cuenta libros|vintage'); process.exit(2); }
-if (!cuenta.habilitada) { console.error(`${cuenta.nombre} está deshabilitada en precio-ganador/src/config.mjs`); process.exit(2); }
-const real = flag('real') && !flag('dry-run');
+// Una cuenta deshabilitada (Vintage) sólo se puede consultar en prueba: nunca se le cambia nada.
+if (!cuenta.habilitada && flag('real')) { console.error(`${cuenta.nombre} está deshabilitada: sólo se puede correr en prueba`); process.exit(2); }
+const real = flag('real') && !flag('dry-run') && cuenta?.habilitada === true;
 const maxMarcadas = Number(opt('max-marcadas', Infinity));
 const limite = Number(opt('limite', Infinity));
 const dirEstado = opt('estado', 'state');

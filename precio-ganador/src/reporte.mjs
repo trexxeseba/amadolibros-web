@@ -47,15 +47,15 @@ const ACCION = {
 };
 
 export function tablaMarkdown(filas, { cuenta, real, resumen }) {
-  const relevantes = filas.filter(f => f.comp?.marcada || f.previo || /^error/.test(f.d.accion));
+  const relevantes = filas.filter(f => f.comp?.marcada || f.comp?.estado === 'competing' || f.previo || /^error/.test(f.d.accion));
   const l = [`# Precio Ganador · ${cuenta.nombre} · ${real ? 'modo real' : 'DRY_RUN (no se cambió nada)'}`, '', '```json', JSON.stringify(resumen.contadores, null, 2), '```', '',
-    '| Publicación | Tipo | Mi precio | Precio ganador | Diferencia | Qué haría | Stock |', '|---|---|---:|---:|---:|---|---|'];
+    '| Publicación | Tipo | Mi precio | Precio ganador | Diferencia | Qué haría | Stock | Motivo ML |', '|---|---|---:|---:|---:|---|---|---|'];
   for (const f of relevantes) {
     const g = f.comp?.ganador, p = f.item.price;
     const dif = Number.isFinite(g) && Number.isFinite(p) ? Math.round((p - g) * 100) / 100 : '';
     const stock = Number.isFinite(f.d.stock) ? `${f.item.available_quantity} → ${f.d.stock}` : (f.item.demanda ? `a demanda (${f.item.dias_demanda} d)` : '');
     const accion = (ACCION[f.d.accion] ?? f.d.accion) + (CAMBIA.has(f.d.accion) ? ` → ${f.d.precio}` : '') + (f.verificado === true ? ' (aplicado y verificado)' : f.verificado === false ? ` (NO verificado: ML muestra ${f.precio_leido})` : '');
-    l.push(`| [${f.item.id}](${f.item.permalink ?? `https://articulo.mercadolibre.com.uy/${String(f.item.id).replace('MLU', 'MLU-')}`}) ${esc(f.item.title?.slice(0, 50) ?? '')} | ${f.comp?.tipo ?? ''} ${f.comp?.estado ?? ''} | ${p ?? ''} | ${g ?? ''} | ${dif} | ${accion} | ${stock} |`);
+    l.push(`| [${f.item.id}](${f.item.permalink ?? `https://articulo.mercadolibre.com.uy/${String(f.item.id).replace('MLU', 'MLU-')}`}) ${esc(f.item.title?.slice(0, 50) ?? '')} | ${f.comp?.tipo ?? ''} ${f.comp?.estado ?? ''} | ${p ?? ''} | ${g ?? ''} | ${dif} | ${accion} | ${stock} | ${(f.comp?.motivos ?? []).map(m => typeof m === 'string' ? m : (m?.id ?? '')).join(', ')} |`);
   }
   if (Object.keys(resumen.errores).length) l.push('', '## Errores', '', ...Object.entries(resumen.errores).map(([k, v]) => `- ${k}: ${v}`));
   return l.join('\n') + '\n';
