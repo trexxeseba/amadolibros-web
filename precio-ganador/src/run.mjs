@@ -179,6 +179,16 @@ async function main() {
       const it = leidas.get(f.item.id);
       f.verificado = Boolean(it) && it.price === f.d.precio && (!Number.isFinite(f.d.stock) || it.available_quantity === f.d.stock);
       f.precio_leido = it?.price ?? null;
+      // ML aceptó el PUT pero la publicación sigue con el precio anterior (pasa en
+      // algunas): no cambió nada, así que no queda en el estado como bajada.
+      if (!f.verificado && it && it.price === f.item.price) {
+        const id = f.item.id, e = estado.publicaciones[id];
+        if (f.d.accion === 'bajar') delete estado.publicaciones[id];
+        else if (e && f.previo) { e.precio_aplicado = f.previo.precio_aplicado; e.fecha = f.previo.fecha; }
+        f.aplicado = false;
+        f.d = { ...f.d, accion: 'error_aplicar', motivo: 'ml_no_aplico_el_cambio' };
+        guardarEstado();
+      }
     }
   }
   // Editadas a mano: salen del estado sin tocarlas.
