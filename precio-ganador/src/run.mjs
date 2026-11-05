@@ -177,6 +177,9 @@ async function main() {
   await writeFile(join(dirSalida, `${cuenta.clave}-resumen.json`), JSON.stringify(resumen, null, 2));
   await writeFile(join(dirSalida, `${cuenta.clave}-detalle.md`), tablaMarkdown(filas, { cuenta, real, resumen }));
   if (!real) await writeFile(join(dirSalida, `${cuenta.clave}-muestras-api.json`), JSON.stringify(MUESTRAS, null, 2));
+  // En prueba, la foto completa de la cuenta para diagnosticar (una línea por publicación).
+  if (!real) await writeFile(join(dirSalida, `${cuenta.clave}-todas.tsv`), ['id\ttitulo\tprecio\tcatalogo\testado\tmotivo\tdias_demanda\taccion']
+    .concat(filas.map(f => [f.item.id, String(f.item.title ?? '').replace(/\t/g, ' ').slice(0, 90), f.item.price, f.item.catalog_listing ? 'si' : 'no', f.comp?.estado ?? '', (f.comp?.motivos ?? []).join(','), f.item.dias_demanda ?? '', f.d.accion].join('\t'))).join('\n') + '\n');
   // Filas de las marcadas y de las del estado, para la auditoría independiente.
   await writeFile(join(dirSalida, `${cuenta.clave}-filas.json`), JSON.stringify(filas.filter(f => f.comp?.marcada || f.previo).map(f => ({
     id: f.item.id, precio: f.item.price, moneda: f.item.currency_id, variaciones: f.item.variaciones, marcada: Boolean(f.comp?.marcada),

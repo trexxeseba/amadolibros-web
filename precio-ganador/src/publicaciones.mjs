@@ -42,5 +42,6 @@ export function normalizar(b) {
     available_quantity: Number(b.available_quantity), variaciones: Array.isArray(b.variations) && b.variations.length > 0,
     demanda: dias !== null, dias_demanda: dias, original_price: b.original_price ?? null,
     deal_ids: Array.isArray(b.deal_ids) ? b.deal_ids : [], permalink: b.permalink ?? null,
+    sale_terms_ids: Array.isArray(b.sale_terms) ? b.sale_terms.map(t => t?.id) : null,
   };
 }
