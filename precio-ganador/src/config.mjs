@@ -43,6 +43,9 @@ export const CUENTAS = {
     // ni piso por costo. Único piso: nunca menos de UYU 1.500.
     umbral: 400,
     topePct: null,
+    // Vintage tiene 15.000 publicaciones y la primera corrida aprobada por Seba
+    // baja unas 1.500: el freno general de 400 no le sirve.
+    maxCambios: 2500,
     minimo: 1500,
     pisoPorCosto: false,
     habilitada: true,
