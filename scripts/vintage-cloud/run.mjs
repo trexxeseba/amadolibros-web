@@ -90,7 +90,9 @@ async function cloudRunInner({action,directory,campaign,overrides={},env=process
   state.fase='stock';const q=query??d1Client();
   report.stock=await (deps.sync??syncWithD1State)({query:q,directory,connection,excel,mode:action==='publicar'?'stock_only':'report'});
   if(action==='prueba'){
-   state.fase='motor_prueba';const result=await (deps.engine??runEngine)({excel,connection,directory,validateOnly:5,target:settings.target_total,onStatus:x=>console.log(x)});
+   state.fase='motor_prueba';let result;
+   // Un corte de autorización a mitad del recorrido se reintenta: la base guardada sigue desde donde quedó.
+   for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,validateOnly:5,target:settings.target_total,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
    let preview=[];try{preview=JSON.parse(await fs.readFile(path.join(directory,'items.preview.json'),'utf8'));}catch{}
    report.prueba={estado:result.state,altas_preparadas:preview.map(p=>({isbn:p.isbn,estado:p.state,precio:p.payload?.price??null,titulo:p.payload?.title??null,motivo:p.error_code??null}))};
    return {...report,estado:'prueba_lista'};
@@ -99,7 +101,8 @@ async function cloudRunInner({action,directory,campaign,overrides={},env=process
   const n=batchSize(settings,status.daily_created);
   report.freno={altas_hoy:status.daily_created,tope_diario:settings.tope_diario,tanda:n};
   if(n===0)return {...report,estado:'tope_diario_alcanzado'};
-  const result=await (deps.engine??runEngine)({excel,connection,directory,limitNew:n,target:settings.target_total,raiseTargetTo:settings.target_total,maxMs:settings.minutos*60000,onStatus:x=>console.log(x)});
+  let result;
+  for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,limitNew:n,target:settings.target_total,raiseTargetTo:settings.target_total,maxMs:settings.minutos*60000,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
   const after=await (deps.broker??makeBroker)(c)('status');
   report.publicacion={estado:result.state,publicados_total:result.published_total,altas_de_esta_corrida:Math.max(0,after.daily_created-status.daily_created)};
   return {...report,estado:result.state};
@@ -143,6 +146,8 @@ async function main(){
  }
  if(out){await fs.mkdir(out,{recursive:true});await fs.writeFile(path.join(out,'reporte.json'),JSON.stringify(report,null,2));await fs.writeFile(path.join(out,'reporte.md'),markdown(report));}
  if(process.env.GITHUB_STEP_SUMMARY)await fs.appendFile(process.env.GITHUB_STEP_SUMMARY,markdown(report)+'\n');
+ // El reporte también va al registro (sólo conteos y estados, nunca claves).
+ console.log('=== REPORTE ===\n'+JSON.stringify(report));
  console.log(JSON.stringify({estado:report.estado,error:report.error??null}));
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href)await main();

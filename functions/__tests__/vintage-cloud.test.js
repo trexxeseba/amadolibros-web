@@ -100,3 +100,15 @@ test('a fresh engine database seeds receipts whose book left today\'s list (clou
  const stop=Object.assign(new Error('stop_here'),{code:'stop_here'});
  await assert.rejects(()=>run({excel:'x',connection,directory:dir,validateOnly:5,readWorkbook:async()=>({source_date,source_sha256:sha,rows}),apiFactory:()=>({async account(){throw stop;}}),brokerFactory:()=>async()=>({})}),/stop_here/);
 });
+
+test('an authorization cut during the test is retried and resumes from the saved database',async t=>{
+ const h=await harness(t);
+ const states=['auth_error','ready'];
+ const r=await cloudRun({action:'prueba',directory:h.dir,campaign:campaign('pc','prueba'),env:{VINTAGE_RENEW_SECRET:'r'.repeat(40),SBS_EMAIL:'a@b.c',SBS_PASSWORD:'x'},query:async()=>[],deps:{
+  renewClient:()=>async a=>a==='keepalive'?{refreshed:false,expires_at:Date.now()+5*3600000}:{},
+  renew:async({connection:file})=>{await fs.writeFile(file,JSON.stringify({version:1,endpoint:'https://www.amadolibros.com/operations/vintage-local',key:'b'.repeat(64),expires_at:Date.now()+86400000,seller_id:'2341378249',app_id:'4741021817925208',run_id:BULK_RUN,policy,receipts:[]}));return {state:'renewed'};},
+  inspect:async()=>({rows:[]}),sync:async()=>({}),
+  engine:async()=>({state:states.shift()}),
+ }});
+ assert.equal(r.prueba.estado,'ready');assert.equal(r.reintentos_autorizacion,1);
+});
