@@ -27,6 +27,22 @@ test('landing de agotados e importados es indexable, canónica y accionable', as
   assert.match(html, /<meta name="twitter:card" content="summary_large_image">/);
 });
 
+test('la landing de anuncios ofrece confianza, consulta rápida y respuestas sin prometer stock', async () => {
+  const response = await onRequest();
+  const html = await response.text();
+
+  assert.match(html, /4,9 en Google · 74 reseñas/);
+  assert.match(html, /Tienda Oficial en Mercado Libre Uruguay/);
+  assert.match(html, /<form id="encargo-quick-form"[^>]+action="\/pedir-libro\/" method="get">/);
+  assert.match(html, /<input[^>]+name="q"[^>]+required/);
+  assert.match(html, /<button[^>]+type="submit">Enviar consulta por WhatsApp<\/button>/);
+  assert.match(html, /window\.location\.assign\(url\)/);
+  assert.match(html, /Preguntas frecuentes sobre libros por encargo/);
+  assert.match(html, /El plazo estimado para ese libro|plazo estimado para ese libro/i);
+  assert.match(html, /No podemos asegurar disponibilidad antes de buscar/);
+  assert.match(html, /La web no guarda estos datos/);
+});
+
 test('la home V2 posiciona el diferencial comercial y enlaza la landing', () => {
   const home = read('astro-front/src/pages/index.astro');
   const hero = read('astro-front/src/components/HomeV2Hero.astro');
