@@ -111,3 +111,9 @@ test('stock_only (cloud mode) pauses and reactivates but never touches a price: 
  assert.equal(s.activated,1);assert.deepEqual(f.puts,[{id:'MLU900',body:{status:'active',available_quantity:1}}]);
  assert.ok([...f.items.values()].every(i=>i.price===1250));
 });
+test('on a brand-new database (cloud) the request clock table is created, so the real reads do not all fail',async t=>{
+ const f=await fixture(t);
+ await f.run(new Set(ISBNS),{mode:'report'});
+ const db=openDatabase(path.join(f.temp,'publisher.sqlite'));t.after(()=>db.close());
+ assert.ok(await db.prepare('SELECT next_at FROM ml_vintage_bulk_rate WHERE id=1').first());
+});
