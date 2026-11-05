@@ -35,21 +35,17 @@ function fakeMl(state) {
   return async url => {
     const u = new URL(String(url));
     if (state.closed) return new Response('forbidden', { status: 403 });
-    // Usado más barato (44), del exterior (55) y uno sin condición en el listado (MLUC, se completa con /items/bulk).
+    // Usado más barato (44), del exterior (55) y uno sin condición en el listado (MLUC, más caro que un inmediato: no frena).
     const noise = [{ item_id: 'MLUU', seller_id: 44, price: 300, condition: 'used' }, { item_id: 'MLUX', seller_id: 55, price: 400, condition: 'new', international_delivery_mode: 'cbt' }];
     if (u.pathname === '/products/MLU999/items') return Response.json({ paging: { total: state.partial ? 99 : 6 }, results: state.day === 1
-      ? [{ item_id: 'MLU2', seller_id: Number(OWN), price: 1200, condition: 'new' }, { item_id: 'MLUA', seller_id: 11, price: 1000, condition: 'new', shipping: { free_shipping: true, logistic_type: 'fulfillment' } }, { item_id: 'MLUB', seller_id: 22, price: 1100, condition: 'new' }, { item_id: 'MLUP', seller_id: 77, price: 500, condition: 'new', sale_terms: [] }, ...noise]
-      : [{ item_id: 'MLU2', seller_id: Number(OWN), price: 1200, condition: 'new' }, { item_id: 'MLUA', seller_id: 11, price: 900, condition: 'new' }, { item_id: 'MLUC', seller_id: 33, price: 950 }, { item_id: 'MLUP', seller_id: 77, price: 500, condition: 'new', sale_terms: [] }, ...noise] });
-    // MLUP vende a pedido (21 días): no compite con un libro en stock.
-    if (u.pathname === '/items/bulk') {
-      if (state.bulkClosed) return new Response('forbidden', { status: 403 });
-      return Response.json(u.searchParams.get('ids').split(',').filter(id => id !== state.omitBulkId).map(id => ({ status_code: 200, body: {
-        id, status: state.inactive ? 'paused' : 'active', available_quantity: state.noStock ? 0 : 1, currency_id: state.noCurrency ? undefined : 'UYU',
-        condition: id === 'MLUU' ? 'used' : 'new',
-        shipping: { free_shipping: id === 'MLUA' && state.day === 1 },
-        international_delivery_mode: id === 'MLUX' ? 'cbt' : 'none',
-        sale_terms: state.noManufacturing ? [] : [{ id: 'MANUFACTURING_TIME', value_struct: { number: id === 'MLUP' ? 21 : 0, unit: 'días' } }],
-      } })));
+      ? [{ item_id: 'MLU2', seller_id: Number(OWN), price: 1200, condition: 'new' }, { item_id: 'MLUA', seller_id: 11, price: 1000, condition: 'new', shipping: { free_shipping: true, logistic_type: 'fulfillment' } }, { item_id: 'MLUB', seller_id: 22, price: 1100, condition: 'new' }, { item_id: 'MLUP', seller_id: 77, price: 500, condition: 'new' }, ...noise]
+      : [{ item_id: 'MLU2', seller_id: Number(OWN), price: 1200, condition: 'new' }, { item_id: 'MLUA', seller_id: 11, price: 900, condition: 'new' }, { item_id: 'MLUC', seller_id: 33, price: 950 }, { item_id: 'MLUP', seller_id: 77, price: 500, condition: 'new' }, ...noise] });
+    // Plazo por opciones de envío: MLUP vende a pedido (504 h = 21 días); el resto sin preparación.
+    const ship = /^\/items\/(MLU\w+)\/shipping_options$/.exec(u.pathname);
+    if (ship) {
+      if (state.shipClosed) return new Response('forbidden', { status: 403 });
+      if (state.noShipping) return Response.json({ options: [{ display: 'recommended', estimated_delivery_time: { schedule: null, handling: 96, unit: 'hour' } }] });
+      return Response.json({ options: [{ display: 'recommended', estimated_delivery_time: ship[1] === 'MLUP' ? { schedule: 504, handling: 24, unit: 'hour' } : { schedule: null, handling: 24, unit: 'hour' } }] });
     }
     if (u.pathname === '/items/MLU2/price_to_win') return Response.json(state.day === 1 ? { status: 'winning', price_to_win: 1200, winner: { item_id: 'MLU2' } } : { status: 'competing', price_to_win: 880, winner: { item_id: 'MLUA' } });
     const m = /^\/users\/(\d+)$/.exec(u.pathname);
@@ -74,8 +70,8 @@ test('foto diaria: competidores, primer lugar perdido, competidor que dejó de o
   const f = (await competitionByIsbn(db, [ISBN])).get(ISBN);
   assert.equal(f.foto, montevideoDate(DAY2));
   assert.equal(f.competidores, 5);
-  assert.equal(f.competidores_comparables, 2, 'usado, del exterior y a pedido quedan afuera');
-  assert.equal(f.excluidos_de_precio, 3);
+  assert.equal(f.competidores_comparables, 1, 'usado, del exterior, a pedido y sin condición quedan afuera');
+  assert.equal(f.excluidos_de_precio, 4);
   assert.equal(f.precio_minimo, 900, 'el de $500 vende a pedido: no cuenta');
   assert.equal(f.competidores_a_pedido, 1);
   assert.equal(f.precio_minimo_a_pedido, 500);
@@ -92,7 +88,6 @@ test('foto diaria: competidores, primer lugar perdido, competidor que dejó de o
   // Re-ejecutar el mismo día no duplica la foto.
   await runDay(db, state, DAY2 + 3600000);
   assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM comp_snapshots WHERE snap_date=?').get(montevideoDate(DAY2)).n, 6);
-  assert.equal(db.sqlite.prepare("SELECT condition FROM comp_snapshots WHERE item_id='MLUC'").get().condition, 'new', 'condición completada con /items/bulk');
 });
 
 test('si ML cierra el endpoint se detiene, lo registra y Salud lo muestra', async t => {
@@ -149,12 +144,8 @@ test('días de preparación: sólo un cero explícito prueba ausencia de prepara
 });
 
 for (const [name, missing] of [
-  ['bulk cerrado', { bulkClosed: true }],
-  ['bulk omite un vendedor', { omitBulkId: 'MLUP' }],
-  ['bulk sin plazo', { noManufacturing: true }],
-  ['sin stock disponible', { noStock: true }],
-  ['publicación pausada', { inactive: true }],
-  ['moneda sin verificar', { noCurrency: true }],
+  ['opciones de envío cerradas', { shipClosed: true }],
+  ['plazo ilegible', { noShipping: true }],
   ['listado paginado incompleto', { partial: true }],
 ]) test(`${name}: no hay recomendación de inmediatez ni de exclusividad`, async t => {
   const db = await seed(t);
@@ -210,4 +201,13 @@ test('la lista de vendedores viene por páginas: se piden todas y el producto qu
   const f = (await competitionByIsbn(db, [ISBN])).get(ISBN);
   assert.ok(f, 'el producto quedó completo, no parcial');
   assert.equal(f.competidores, 8);
+});
+
+test('opciones de envío: schedule = horas de preparación; sin schedule y despacho ≤ 24 h = inmediato; otra cosa = sin dato', async () => {
+  const { readShipping } = await import('../../worker-sync/ml-competition.js');
+  assert.equal(readShipping({ options: [{ display: 'recommended', estimated_delivery_time: { schedule: 552, handling: 24, unit: 'hour' } }] }).plazo_dias, 23);
+  assert.equal(readShipping({ options: [{ estimated_delivery_time: { schedule: null, handling: 0, unit: 'hour' } }] }).plazo_dias, 0);
+  assert.equal(readShipping({ options: [{ estimated_delivery_time: { schedule: null, handling: 72 } }] }).plazo_dias, null);
+  assert.equal(readShipping({ options: [] }).sin_envio, true);
+  assert.equal(readShipping({}), null);
 });
