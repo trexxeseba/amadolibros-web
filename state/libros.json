@@ -19,9 +19,9 @@
     "MLU691609938": {
       "titulo": "La Nobleza Negra Génesis Del Imperio Veneciano De Jorge Guerra Editorial Indepen",
       "precio_original": 1271,
-      "precio_aplicado": 1193,
+      "precio_aplicado": 1204,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
-      "fecha": "2026-11-05T18:05:10.031Z"
+      "fecha": "2026-11-05T23:17:55.904Z"
     },
     "MLU692647026": {
       "titulo": "Libro Mi Viaje Sin Ti - Alejandro Sequera",
@@ -75,9 +75,9 @@
     "MLU695916883": {
       "titulo": "Gestión Del Talento Humano",
       "precio_original": 3554,
-      "precio_aplicado": 3276,
+      "precio_aplicado": 3308,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
-      "fecha": "2026-11-05T18:05:10.031Z"
+      "fecha": "2026-11-05T23:17:55.904Z"
     },
     "MLU636406403": {
       "titulo": "El Libro Perdido - Cassandra Clare - Destino",
@@ -131,9 +131,9 @@
     "MLU669640600": {
       "titulo": "Cress - Crónicas Lunares Libro 3, De Marissa Meyer., Vol. 3. Editorial V&r, Tapa",
       "precio_original": 716,
-      "precio_aplicado": 696,
+      "precio_aplicado": 705,
       "fecha_primera_baja": "2026-11-05T18:05:10.031Z",
-      "fecha": "2026-11-05T18:05:10.031Z"
+      "fecha": "2026-11-05T23:17:55.904Z"
     },
     "MLU648468395": {
       "titulo": "Todas Aquellas Veces Y Otros Asuntos Pendientes - Alejand...",
@@ -141,7 +141,14 @@
       "precio_aplicado": 1182,
       "fecha_primera_baja": "2026-11-05T18:05:10.031Z",
       "fecha": "2026-11-05T18:05:10.031Z"
+    },
+    "MLU696979022": {
+      "titulo": "Libro Finanzas Descentralizadas, De Pepe Díaz. Editorial Deusto, Tapa Blanda (20",
+      "precio_original": 824,
+      "precio_aplicado": 802,
+      "fecha_primera_baja": "2026-11-05T23:17:55.904Z",
+      "fecha": "2026-11-05T23:17:55.904Z"
     }
   },
-  "actualizado": "2026-11-05T18:05:19.511Z"
+  "actualizado": "2026-11-05T23:18:02.529Z"
 }
