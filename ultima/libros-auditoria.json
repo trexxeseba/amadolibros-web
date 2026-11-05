@@ -1,26 +1,26 @@
 {
-  "fecha": "2026-11-05T04:32:44.777Z",
+  "fecha": "2026-11-05T18:05:45.268Z",
   "muestra": [
     {
-      "id": "MLU912811418",
-      "titulo": "Libro De Textura Y Sonido Universal La Casa De Muñecas De Ga",
-      "precio": 2100,
+      "id": "MLU669666140",
+      "titulo": "Tarot Del Maestro | Scarabeo",
+      "precio": 1335,
       "estado": "winning",
-      "precio_para_ganar": 2100,
-      "competidor_mas_barato": 1277,
-      "otras_ofertas": 6,
+      "precio_para_ganar": 1126,
+      "competidor_mas_barato": 1474.4,
+      "otras_ofertas": 2,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana aunque hay uno más barato (1277): ML pesa envío y reputación",
+      "conclusion": "Gana: el competidor más barato está en 1474.4",
       "ok": true
     },
     {
-      "id": "MLU658053472",
-      "titulo": "El Tsunami Tecnológico: El Tsunami Tecnológico, De A. Bonet ",
-      "precio": 1377,
+      "id": "MLU701277728",
+      "titulo": "Cambridge Igcse English As A Second Language Coursebook, De ",
+      "precio": 4650,
       "estado": "winning",
-      "precio_para_ganar": 1377,
+      "precio_para_ganar": 4650,
       "competidor_mas_barato": null,
       "otras_ofertas": 0,
       "sugerencias_ml": [
@@ -30,81 +30,82 @@
       "ok": true
     },
     {
-      "id": "MLU628756927",
-      "titulo": "El Asunto - Von Rebeur Ana (libro)",
-      "precio": 1377,
+      "id": "MLU695320368",
+      "titulo": "Garfield 1990-1992 Nãâº 07/20, De Davis, Jim. Editorial Plan",
+      "precio": 2517,
       "estado": "winning",
-      "precio_para_ganar": 1377,
-      "competidor_mas_barato": 1350,
-      "otras_ofertas": 2,
+      "precio_para_ganar": 2517,
+      "competidor_mas_barato": null,
+      "otras_ofertas": 0,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana aunque hay uno más barato (1350): ML pesa envío y reputación",
+      "conclusion": "Gana: no hay otros vendedores",
       "ok": true
     },
     {
-      "id": "MLU669128304",
-      "titulo": "Dificultades De Aprendizaje De Las Matematicas Y Suplemento",
-      "precio": 2100,
+      "id": "MLU656981028",
+      "titulo": "Libro Los Monstruos Y Los Criticos - Tolkien, J. R. R",
+      "precio": 908,
       "estado": "winning",
-      "precio_para_ganar": 2100,
-      "competidor_mas_barato": 3090,
+      "precio_para_ganar": 908,
+      "competidor_mas_barato": 1150,
+      "otras_ofertas": 8,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envío gratis"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 1150",
+      "ok": true
+    },
+    {
+      "id": "MLU687510092",
+      "titulo": "Numeros Para Negocios Exitosos : Grigori Grabovoi / Gema Rom",
+      "precio": 2950,
+      "estado": "winning",
+      "precio_para_ganar": 2950,
+      "competidor_mas_barato": 2290,
+      "otras_ofertas": 7,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (2290): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU704440688",
+      "titulo": "Casas Del Siglo Xx, De Enrique Ayala Alonso. Editorial Inst.",
+      "precio": 940,
+      "estado": "winning",
+      "precio_para_ganar": 940,
+      "competidor_mas_barato": 2340,
       "otras_ofertas": 1,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana: el competidor más barato está en 3090",
+      "conclusion": "Gana: el competidor más barato está en 2340",
       "ok": true
     },
     {
-      "id": "MLU658001418",
-      "titulo": "Libro Trastorno De Identidad Disociativo O Personalidad M...",
+      "id": "MLU669860086",
+      "titulo": "Oh, Jerusalén, De Dominique, Lapierre. Editorial Plaza & Jan",
+      "precio": 3300,
+      "estado": "winning",
+      "precio_para_ganar": 3300,
+      "competidor_mas_barato": null,
+      "otras_ofertas": 0,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: no hay otros vendedores",
+      "ok": true
+    },
+    {
+      "id": "MLU652746868",
+      "titulo": "Libro: Maria Montessori. Kramer, Rita. Sm (cesma)",
       "precio": 2200,
       "estado": "winning",
       "precio_para_ganar": 2200,
-      "competidor_mas_barato": 2117,
-      "otras_ofertas": 2,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (2117): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU651526142",
-      "titulo": "La Imputacion Objetiva En Derecho Penal - Jakobs, Gunther",
-      "precio": 1569,
-      "estado": "winning",
-      "precio_para_ganar": 1569,
-      "competidor_mas_barato": 1603,
-      "otras_ofertas": 2,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana: el competidor más barato está en 1603",
-      "ok": true
-    },
-    {
-      "id": "MLU638055827",
-      "titulo": "El Diablo De La Botella, De Robert L. Stevenson. Editorial E",
-      "precio": 902,
-      "estado": "winning",
-      "precio_para_ganar": 902,
-      "competidor_mas_barato": 684,
-      "otras_ofertas": 4,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (684): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU690869304",
-      "titulo": "Europe: War Of Kings  Cd De Rock Físico Con 11 Canciones (20",
-      "precio": 2450,
-      "estado": "winning",
-      "precio_para_ganar": 2450,
       "competidor_mas_barato": null,
       "otras_ofertas": 0,
       "sugerencias_ml": [
@@ -114,31 +115,31 @@
       "ok": true
     },
     {
-      "id": "MLU658014432",
-      "titulo": "Homenaje A Lacan.moscon, Julio",
-      "precio": 1400,
+      "id": "MLU1258310552",
+      "titulo": "La Primera Entrevista Con El Psicoanalista- Maud Mannoni- Gd",
+      "precio": 1750,
       "estado": "winning",
-      "precio_para_ganar": 1400,
-      "competidor_mas_barato": null,
-      "otras_ofertas": 0,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana: no hay otros vendedores",
-      "ok": true
-    },
-    {
-      "id": "MLU631882817",
-      "titulo": "Afectos El Pudor Y Lo Femenino Alma Pérez Abella (gr)",
-      "precio": 1133,
-      "estado": "winning",
-      "precio_para_ganar": 1133,
-      "competidor_mas_barato": 2630,
+      "precio_para_ganar": 1750,
+      "competidor_mas_barato": 1366,
       "otras_ofertas": 1,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana: el competidor más barato está en 2630",
+      "conclusion": "Gana aunque hay uno más barato (1366): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU658053428",
+      "titulo": "Psicoanalisis, Escuela Inglesa, Sus Aportes, De Carlos Tewel",
+      "precio": 1300,
+      "estado": "winning",
+      "precio_para_ganar": 1300,
+      "competidor_mas_barato": 1552,
+      "otras_ofertas": 3,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 1552",
       "ok": true
     }
   ],
@@ -165,8 +166,8 @@
       "id": "MLU691609938",
       "titulo": "La Nobleza Negra Génesis Del Imperio Veneciano De Jorge Guerra Editorial Indepen",
       "original": 1271,
-      "aplicado": 1218,
-      "en_ml": 1218,
+      "aplicado": 1193,
+      "en_ml": 1193,
       "ok": true,
       "problemas": []
     },
@@ -192,8 +193,8 @@
       "id": "MLU862968034",
       "titulo": "Granja, La Libro De Juegos Y Puzzle, De Anónimo. Editorial El Gato De Hojalata, ",
       "original": 415,
-      "aplicado": 386,
-      "en_ml": 386,
+      "aplicado": 376,
+      "en_ml": 376,
       "ok": true,
       "problemas": []
     },
@@ -237,8 +238,8 @@
       "id": "MLU695916883",
       "titulo": "Gestión Del Talento Humano",
       "original": 3554,
-      "aplicado": 3343,
-      "en_ml": 3343,
+      "aplicado": 3276,
+      "en_ml": 3276,
       "ok": true,
       "problemas": []
     },
@@ -261,20 +262,11 @@
       "problemas": []
     },
     {
-      "id": "MLU629952461",
-      "titulo": "Enemigo Intimo - Gabriela Arias Uriburu - Libro Kier",
-      "original": 912,
-      "aplicado": 830,
-      "en_ml": 830,
-      "ok": true,
-      "problemas": []
-    },
-    {
       "id": "MLU631748561",
       "titulo": "Libro Secuencias Didacticas - 30 Preguntas Y Respuestas - Taboada, De Taboada, M",
       "original": 429,
-      "aplicado": 413,
-      "en_ml": 413,
+      "aplicado": 420,
+      "en_ml": 420,
       "ok": true,
       "problemas": []
     },
@@ -282,8 +274,8 @@
       "id": "MLU669860318",
       "titulo": "Cómo Te Sientes, De Anthony Browne. Editorial Kalandraka, Tapa Dura En Español",
       "original": 825,
-      "aplicado": 803,
-      "en_ml": 803,
+      "aplicado": 813,
+      "en_ml": 813,
       "ok": true,
       "problemas": []
     },
@@ -291,8 +283,8 @@
       "id": "MLU884651706",
       "titulo": "El Ascendente: Tu Gps Existencial. Descubrí La Llave De Tu Destino, De Beatriz L",
       "original": 571,
-      "aplicado": 554,
-      "en_ml": 554,
+      "aplicado": 562,
+      "en_ml": 562,
       "ok": true,
       "problemas": []
     },
@@ -300,8 +292,8 @@
       "id": "MLU884315176",
       "titulo": "Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Editorial Siruela Tapa Dura En Esp",
       "original": 2899,
-      "aplicado": 2840,
-      "en_ml": 2840,
+      "aplicado": 2869,
+      "en_ml": 2869,
       "ok": true,
       "problemas": []
     },
@@ -309,17 +301,26 @@
       "id": "MLU655257859",
       "titulo": "Respeto Por La Interpretacion - Uta, Frankel",
       "original": 767,
-      "aplicado": 746,
-      "en_ml": 746,
+      "aplicado": 755,
+      "en_ml": 755,
       "ok": true,
       "problemas": []
     },
     {
-      "id": "MLU1444239492",
-      "titulo": "Está Entre Nosotros: ¿de Dónde Sale Y Hasta Dónde Puede Llegar La Extrema Derech",
-      "original": 805,
-      "aplicado": 755,
-      "en_ml": 755,
+      "id": "MLU669640600",
+      "titulo": "Cress - Crónicas Lunares Libro 3, De Marissa Meyer., Vol. 3. Editorial V&r, Tapa",
+      "original": 716,
+      "aplicado": 696,
+      "en_ml": 696,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU648468395",
+      "titulo": "Todas Aquellas Veces Y Otros Asuntos Pendientes - Alejand...",
+      "original": 1232,
+      "aplicado": 1182,
+      "en_ml": 1182,
       "ok": true,
       "problemas": []
     }
@@ -330,19 +331,10 @@
       "precio": 2800,
       "ganador": 669,
       "diferencia": 2131,
+      "objetivo": 669,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 669,
-      "ok": true
-    },
-    {
-      "id": "MLU629952461",
-      "precio": 912,
-      "ganador": 830,
-      "diferencia": 82,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 830,
       "ok": true
     },
     {
@@ -350,6 +342,7 @@
       "precio": 2850,
       "ganador": 1161,
       "diferencia": 1689,
+      "objetivo": 1161,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1161,
@@ -360,19 +353,10 @@
       "precio": 1400,
       "ganador": 751,
       "diferencia": 649,
+      "objetivo": 751,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 751,
-      "ok": true
-    },
-    {
-      "id": "MLU631748561",
-      "precio": 429,
-      "ganador": 413,
-      "diferencia": 16,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 413,
       "ok": true
     },
     {
@@ -380,6 +364,7 @@
       "precio": 2450,
       "ganador": 827,
       "diferencia": 1623,
+      "objetivo": 827,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 827,
@@ -390,9 +375,21 @@
       "precio": 1950,
       "ganador": 1355,
       "diferencia": 595,
+      "objetivo": 1355,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1355,
+      "ok": true
+    },
+    {
+      "id": "MLU669640600",
+      "precio": 716,
+      "ganador": 696,
+      "diferencia": 20,
+      "objetivo": 696,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 696,
       "ok": true
     },
     {
@@ -400,19 +397,10 @@
       "precio": 1790,
       "ganador": 1003,
       "diferencia": 787,
+      "objetivo": 1003,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1003,
-      "ok": true
-    },
-    {
-      "id": "MLU669860318",
-      "precio": 825,
-      "ganador": 803,
-      "diferencia": 22,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 803,
       "ok": true
     },
     {
@@ -420,6 +408,7 @@
       "precio": 2750,
       "ganador": 1164,
       "diferencia": 1586,
+      "objetivo": 1164,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1164,
@@ -430,6 +419,7 @@
       "precio": 1985,
       "ganador": 933,
       "diferencia": 1052,
+      "objetivo": 933,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 933,
@@ -440,6 +430,7 @@
       "precio": 1990,
       "ganador": 988,
       "diferencia": 1002,
+      "objetivo": 988,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 988,
@@ -450,6 +441,7 @@
       "precio": 2300,
       "ganador": 787,
       "diferencia": 1513,
+      "objetivo": 787,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 787,
@@ -460,9 +452,21 @@
       "precio": 2137,
       "ganador": 1303,
       "diferencia": 834,
+      "objetivo": 1303,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1303,
+      "ok": true
+    },
+    {
+      "id": "MLU648468395",
+      "precio": 1232,
+      "ganador": 1182,
+      "diferencia": 50,
+      "objetivo": 1182,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1182,
       "ok": true
     },
     {
@@ -470,6 +474,7 @@
       "precio": 1450,
       "ganador": 1039,
       "diferencia": 411,
+      "objetivo": 1039,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1039,
@@ -480,6 +485,7 @@
       "precio": 2050,
       "ganador": 1089,
       "diferencia": 961,
+      "objetivo": 1089,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1089,
@@ -488,11 +494,12 @@
     {
       "id": "MLU730247430",
       "precio": 2550,
-      "ganador": 1202,
-      "diferencia": 1348,
+      "ganador": 1082,
+      "diferencia": 1468,
+      "objetivo": 1082,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1202,
+      "precio_nuevo": 1082,
       "ok": true
     },
     {
@@ -500,29 +507,10 @@
       "precio": 3710,
       "ganador": 2474,
       "diferencia": 1236,
+      "objetivo": 2474,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2474,
-      "ok": true
-    },
-    {
-      "id": "MLU884651706",
-      "precio": 571,
-      "ganador": 554,
-      "diferencia": 17,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 554,
-      "ok": true
-    },
-    {
-      "id": "MLU884315176",
-      "precio": 2899,
-      "ganador": 2840,
-      "diferencia": 59,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 2840,
       "ok": true
     },
     {
@@ -530,6 +518,7 @@
       "precio": 2450,
       "ganador": 1890,
       "diferencia": 560,
+      "objetivo": 1890,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1890,
@@ -540,19 +529,21 @@
       "precio": 2350,
       "ganador": 869,
       "diferencia": 1481,
+      "objetivo": 869,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 869,
       "ok": true
     },
     {
-      "id": "MLU655257859",
-      "precio": 767,
-      "ganador": 746,
-      "diferencia": 21,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 746,
+      "id": "MLU1047310668",
+      "precio": 2650,
+      "ganador": 810,
+      "diferencia": 1840,
+      "objetivo": 810,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 810,
       "ok": true
     },
     {
@@ -560,6 +551,7 @@
       "precio": 1801,
       "ganador": 615,
       "diferencia": 1186,
+      "objetivo": 615,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 615,
@@ -568,11 +560,12 @@
     {
       "id": "MLU1183159820",
       "precio": 2350,
-      "ganador": 1332,
-      "diferencia": 1018,
+      "ganador": 1108,
+      "diferencia": 1242,
+      "objetivo": 1108,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1332,
+      "precio_nuevo": 1108,
       "ok": true
     },
     {
@@ -580,6 +573,7 @@
       "precio": 1790,
       "ganador": 584,
       "diferencia": 1206,
+      "objetivo": 584,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 584,
@@ -590,6 +584,7 @@
       "precio": 702,
       "ganador": 391,
       "diferencia": 311,
+      "objetivo": 391,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_pct",
       "precio_nuevo": 391,
@@ -598,11 +593,12 @@
     {
       "id": "MLU693165653",
       "precio": 2150,
-      "ganador": 820,
-      "diferencia": 1330,
+      "ganador": 781,
+      "diferencia": 1369,
+      "objetivo": 781,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 820,
+      "precio_nuevo": 781,
       "ok": true
     },
     {
@@ -610,6 +606,7 @@
       "precio": 2100,
       "ganador": 1028,
       "diferencia": 1072,
+      "objetivo": 1028,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1028,
@@ -620,6 +617,7 @@
       "precio": 1950,
       "ganador": 914,
       "diferencia": 1036,
+      "objetivo": 914,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 914,
@@ -630,6 +628,7 @@
       "precio": 3750,
       "ganador": 2178,
       "diferencia": 1572,
+      "objetivo": 2178,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2178,
@@ -640,19 +639,10 @@
       "precio": 3750,
       "ganador": 1871,
       "diferencia": 1879,
+      "objetivo": 1871,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1871,
-      "ok": true
-    },
-    {
-      "id": "MLU1444239492",
-      "precio": 805,
-      "ganador": 755,
-      "diferencia": 50,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 755,
       "ok": true
     },
     {
@@ -660,6 +650,7 @@
       "precio": 2550,
       "ganador": 1295,
       "diferencia": 1255,
+      "objetivo": 1295,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1295,
