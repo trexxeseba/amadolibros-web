@@ -18,6 +18,7 @@ import { CUENTAS } from './config.mjs';
 import { fuenteTokenD1 } from './token.mjs';
 import { crearCliente } from './ml.mjs';
 import { idsActivos, detalle } from './publicaciones.mjs';
+import { enviarAlarma } from './alarma.mjs';
 
 
 const args = process.argv.slice(2);
@@ -30,7 +31,16 @@ const leer = (f, d) => { try { return JSON.parse(readFileSync(f, 'utf8')); } cat
 const estado = leer(join(dirEstado, `${cuenta.clave}.json`), { publicaciones: {} }).publicaciones;
 const ultima = leer(join(dirSalida, `${cuenta.clave}-filas.json`), []);
 
-const ml = crearCliente(fuenteTokenD1(cuenta), { concurrencia: 3 });
+export function motivosDeFalla({ porTipo, muestraN, erroresAplicar, intentos }) {
+  const m = [];
+  if (porTipo.muestra > 2) m.push(`${porTipo.muestra} de ${muestraN} de la muestra no coinciden con ML`);
+  if (porTipo.regla > 0) m.push(`${porTipo.regla} decisiones no coinciden con la regla`);
+  if (porTipo.estado > 10) m.push(`${porTipo.estado} publicaciones del estado con otro precio en ML`);
+  if (erroresAplicar > 3 && erroresAplicar > intentos * 0.02) m.push(`${erroresAplicar} errores de aplicación sobre ${intentos} intentos`);
+  return m;
+}
+if (process.env.PRECIO_GANADOR_SOLO_IMPORTAR) { /* tests */ }
+const ml = process.env.PRECIO_GANADOR_SOLO_IMPORTAR ? null : crearCliente(fuenteTokenD1(cuenta), { concurrencia: 3 });
 const discrepancias = [], muestra = [], controlEstado = [], controlRegla = [];
 
 async function ofertas(pid) {
@@ -101,8 +111,27 @@ async function main() {
   mkdirSync(dirSalida, { recursive: true });
   writeFileSync(join(dirSalida, `${cuenta.clave}-auditoria.json`), JSON.stringify(informe, null, 2));
   writeFileSync(join(dirSalida, `${cuenta.clave}-auditoria.md`), markdown(informe));
-  console.log(JSON.stringify({ muestra: muestra.length, estado: controlEstado.length, regla: controlRegla.length, discrepancias: discrepancias.length }));
-  if (discrepancias.length) process.exit(1);
+  // Errores de aplicación de la corrida (de las filas que dejó run.mjs).
+  const erroresAplicar = ultima.filter(f => f.accion === 'error_aplicar').length;
+  const intentos = ultima.filter(f => f.accion === 'error_aplicar' || f.aplicado === true).length;
+  const porTipo = { muestra: 0, estado: 0, regla: 0 };
+  for (const d of discrepancias) porTipo[d.tipo]++;
+  // El job falla sólo si el problema es serio: más de 2 de la muestra de 10, una
+  // discrepancia de regla (es un bug), más de 10 publicaciones del estado con otro
+  // precio, o errores de aplicación por encima del 2 % de los intentos (mínimo 3).
+  const motivosFalla = motivosDeFalla({ porTipo, muestraN: muestra.length, erroresAplicar, intentos });
+  console.log(JSON.stringify({ muestra: muestra.length, estado: controlEstado.length, regla: controlRegla.length, discrepancias: discrepancias.length, por_tipo: porTipo, errores_aplicar: erroresAplicar, falla: motivosFalla }));
+  // Cualquier discrepancia se avisa por mail con los IDs; el job queda en verde si no es seria.
+  if (discrepancias.length || erroresAplicar) {
+    const lineas = discrepancias.map(d => `- ${d.id} (${d.tipo}): ${d.detalle}`).join('\n');
+    const errores = ultima.filter(f => f.accion === 'error_aplicar').map(f => `- ${f.id}: ${f.motivo ?? 'error'}`).join('\n');
+    await enviarAlarma({
+      aviso: !motivosFalla.length,
+      asunto: motivosFalla.length ? `auditoría de ${cuenta.nombre} con problemas serios` : `auditoría de ${cuenta.nombre} con avisos (la corrida está bien)`,
+      texto: `${motivosFalla.length ? 'La auditoría FALLÓ: ' + motivosFalla.join('; ') + '.' : 'La corrida terminó bien. La auditoría encontró avisos que no la tumban.'}\n\nDiscrepancias (${discrepancias.length}):\n${lineas || '- ninguna'}\n\nErrores de aplicación (${erroresAplicar}):\n${errores || '- ninguno'}`,
+    });
+  }
+  if (motivosFalla.length) process.exit(1);
 }
 
 function markdown(i) {
@@ -116,4 +145,4 @@ function markdown(i) {
   return l.join('\n') + '\n';
 }
 
-main().catch(e => { console.error('Auditoría fallida:', e?.code ?? e?.message ?? 'error'); process.exit(1); });
+if (!process.env.PRECIO_GANADOR_SOLO_IMPORTAR) main().catch(e => { console.error('Auditoría fallida:', e?.code ?? e?.message ?? 'error'); process.exit(1); });

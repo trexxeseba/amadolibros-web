@@ -181,12 +181,14 @@ async function main() {
       f.precio_leido = it?.price ?? null;
       // ML aceptó el PUT pero la publicación sigue con el precio anterior (pasa en
       // algunas): no cambió nada, así que no queda en el estado como bajada.
-      if (!f.verificado && it && it.price === f.item.price) {
-        const id = f.item.id, e = estado.publicaciones[id];
-        if (f.d.accion === 'bajar') delete estado.publicaciones[id];
-        else if (e && f.previo) { e.precio_aplicado = f.previo.precio_aplicado; e.fecha = f.previo.fecha; }
+      // Si ML dejó el precio anterior, no cambió nada. Si dejó otro (por ejemplo
+      // el original, como pasó con una subida), tampoco es nuestro precio: en los
+      // dos casos la publicación sale del estado y se cuenta como no aplicada.
+      if (!f.verificado && it) {
+        const id = f.item.id;
+        delete estado.publicaciones[id];
         f.aplicado = false;
-        f.d = { ...f.d, accion: 'error_aplicar', motivo: 'ml_no_aplico_el_cambio' };
+        f.d = { ...f.d, accion: 'error_aplicar', motivo: it.price === f.item.price ? 'ml_no_aplico_el_cambio' : 'ml_dejo_otro_precio', precio_leido: it.price };
         guardarEstado();
       }
     }
