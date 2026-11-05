@@ -1,0 +1,96 @@
+name: Mercado Libre — promociones (Amado Libros)
+
+# Camino de respaldo por API cuando las tareas programadas no tienen Chrome.
+# Habla con el Worker (/meli-promos, detrás de SYNC_SECRET), que usa el token OAuth
+# que ya tiene la app de Amado Libros: no hay otra app ni otro secreto.
+#
+#   auditar      Solo lectura. Lista las publicaciones con promo activa o programada,
+#                su % de descuento y las que superan el máximo.
+#   aplicar_tope Saca de la promo a las que superan el máximo. Solo "salir de la promo":
+#                nunca sube precios, ni pausa, ni borra publicaciones.
+#   relampago    Suma a la oferta relámpago los títulos indicados si lo que ML exige
+#                como mínimo de descuento es <= el máximo.
+#
+# Dry-run por defecto: solo escribe con confirm=true, y confirm=true solo corre desde main.
+# Reglas: tope 16 % (excepción de Seba del 29 al 31/10: hasta 20 % con promo + cupón
+# <= $750 y stock 3+), nunca subir precios, no usar Amado Liquidacion 40/30/20, no tocar
+# cupones ni publicidad. El resultado queda en el log y en el JSON del artefacto.
+
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: 'Qué hacer'
+        required: true
+        default: auditar
+        type: choice
+        options:
+          - auditar
+          - aplicar_tope
+          - relampago
+      max_descuento:
+        description: 'Descuento máximo en % (por defecto 16)'
+        required: false
+        default: '16'
+        type: string
+      confirm:
+        description: 'confirm=true aplica los cambios. Apagado = dry-run (no escribe nada)'
+        required: false
+        default: false
+        type: boolean
+      titulos:
+        description: 'Solo relampago: lista de MLU separada por comas o espacios'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: meli-promos
+  cancel-in-progress: false
+
+jobs:
+  promos:
+    name: Promociones
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Confirmar solo desde main
+        if: ${{ inputs.confirm && github.ref != 'refs/heads/main' }}
+        run: |
+          echo "::error::confirm=true solo se permite corriendo desde main (este workflow corre desde ${GITHUB_REF})."
+          exit 1
+
+      - name: Correr
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          ACCION: ${{ inputs.accion }}
+          MAX_DESCUENTO: ${{ inputs.max_descuento }}
+          CONFIRM: ${{ inputs.confirm }}
+          TITULOS: ${{ inputs.titulos }}
+        run: |
+          node scripts/mercadolibre/promos.mjs \
+            --accion "$ACCION" \
+            --max "$MAX_DESCUENTO" \
+            --confirm "$CONFIRM" \
+            --titulos "$TITULOS" \
+            --out reports/meli-promos/resultado.json
+
+      - name: Subir el resultado como artefacto
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meli-promos-${{ github.run_id }}
+          path: reports/meli-promos/resultado.json
+          if-no-files-found: warn
+          retention-days: 30

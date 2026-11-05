@@ -11,6 +11,7 @@ explícito de Seba.
 | Ejecutor web de Vintage (Pages) | `functions/_shared/meli-vintage-bulk.js`, `meli-vintage-pilot.js` | Amado Vintage / Global Emporium (2341378249) | Queda en pausa mientras la PC tiene la conexión |
 | Cola de altas del Worker | `worker-sync/publication-*.js` (`USER_ID` en `worker-sync/wrangler.toml`) | Amado Libros (440298103) | **Solo lectura**: `ML_PUBLISHER_MODE = "disabled"`, `ML_PUBLISH_QUEUE_ENABLED = "false"` |
 | Sincronización del catálogo del sitio | `worker-sync/index.js` | Amado Libros (440298103) | Lee publicaciones para la web; no crea nada |
+| Promociones por API (`meli-promos.yml`, `worker-sync/seller-promotions.js`) | `scripts/mercadolibre/promos.mjs` | Amado Libros (440298103) | Lee promociones; con `confirm=true` solo saca publicaciones de una promo o suma a la oferta relámpago. No publica ni cambia precios. Ver `docs/meli-promos.md` |
 
 ## Para cualquier sesión de Claude
 
