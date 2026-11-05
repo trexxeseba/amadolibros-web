@@ -1,0 +1,69 @@
+---
+// Franja de la home hacia /liquidacion. Sobria a propósito: no anuncia
+// porcentajes (el precio vive en la página y cambia con las fechas de cada
+// promo), solo invita a recorrer la vitrina.
+---
+
+<section class="v2-liq" aria-labelledby="v2-liq-title">
+  <a class="v2-liq-inner" href="/liquidacion">
+    <span class="v2-liq-eyebrow">Liquidación Amado</span>
+    <span class="v2-liq-title" id="v2-liq-title">Libros de nuestra estantería en liquidación, en stock y listos para salir hoy.</span>
+    <span class="v2-liq-cta">Ver la liquidación <span aria-hidden="true">→</span></span>
+  </a>
+</section>
+
+<style>
+  .v2-liq {
+    padding: 0 1rem;
+    margin: 1.25rem auto 0;
+    max-width: 1240px;
+  }
+
+  .v2-liq-inner {
+    display: grid;
+    gap: 0.35rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid #e4d6c6;
+    border-left: 4px solid #b4442a;
+    border-radius: 0.9rem;
+    background: #fff;
+    color: #1b1714;
+    text-decoration: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .v2-liq-inner:hover {
+    border-color: #b4442a;
+    box-shadow: 0 6px 18px rgba(27, 23, 20, 0.06);
+  }
+
+  .v2-liq-eyebrow {
+    color: #b4442a;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .v2-liq-title {
+    font-family: var(--font-display);
+    font-size: 1.12rem;
+    line-height: 1.3;
+  }
+
+  .v2-liq-cta {
+    color: #b4442a;
+    font-size: 0.9rem;
+    font-weight: 800;
+  }
+
+  @media (min-width: 760px) {
+    .v2-liq { padding: 0 2rem; }
+    .v2-liq-inner {
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 1.05rem 1.5rem;
+    }
+  }
+</style>

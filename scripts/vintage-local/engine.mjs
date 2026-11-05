@@ -33,11 +33,22 @@ function identifiers(item){
  const values=[item.seller_custom_field,...(item.attributes??[]).filter(a=>['ISBN','GTIN','EAN','SELLER_SKU'].includes(a.id)).flatMap(a=>[a.value_name,...(a.values??[]).map(x=>x.name)]),...(item.variations??[]).flatMap(v=>[v.seller_custom_field,...(v.attributes??[]).filter(a=>['ISBN','GTIN','SELLER_SKU'].includes(a.id)).map(a=>a.value_name)])];
  const set=new Set();for(const value of values)try{set.add(canonicalIsbn(String(value??'').replace(/^AMADO-AR-/,'')));}catch{}return [...set];
 }
+// price null: reconciliación de un alta de otra corrida (no se sabe qué precio se envió y
+// Precio Ganador o la sincronización pueden haberlo cambiado después). Se exige lo que
+// identifica al alta como nuestra (vendedor, ISBN, moneda, piso, 18 días) y no el precio
+// exacto, la cantidad 1 ni que siga activa.
 export function checkCreated(item,isbn,price){
  const term=(item?.sale_terms??[]).find(x=>x.id==='MANUFACTURING_TIME');
  // Vendido antes de confirmarlo: sin stock pero con ventas sigue siendo nuestro alta.
  const sold=Number(item?.sold_quantity)>0&&item?.available_quantity===0&&['active','paused','closed'].includes(item?.status);
- if(String(item?.seller_id)!==SELLER||!identifiers(item).includes(isbn)||item.price!==price||item.price<VINTAGE_COMPETITIVE_MINIMUM_UYU||item.currency_id!=='UYU'||!sold&&(item.available_quantity!==1||item.status!=='active')||Number(term?.value_struct?.number??parseInt(term?.value_name,10))!==18)throw new MercadoLibreError('created_item_check_failed',409);
+ const known=price!==null;
+ const stateOk=known?sold||item?.available_quantity===1&&item?.status==='active':sold||['active','paused'].includes(item?.status)&&Number(item?.available_quantity)>=1;
+ if(String(item?.seller_id)!==SELLER||!identifiers(item).includes(isbn)||known&&item.price!==price||!(item.price>=VINTAGE_COMPETITIVE_MINIMUM_UYU)||item.currency_id!=='UYU'||!stateOk||Number(term?.value_struct?.number??parseInt(term?.value_name,10))!==18)throw new MercadoLibreError('created_item_check_failed',409);
+}
+// Sube el objetivo (sin el piloto) a `total`; nunca lo baja ni pasa MAX_TARGET_TOTAL.
+export async function raiseTarget(store,total){
+ const to=Math.min(total,MAX_TARGET_TOTAL)-5,current=await store.target(BULK_RUN);
+ if(current&&to>current.target_published)await store.raiseTarget(BULK_RUN,to,MAX_TARGET_TOTAL-5);
 }
 // ¿Se llega de `from` a `to` siguiendo las enmiendas registradas en el servidor?
 export function amendmentChain(amendments,from,to){
@@ -51,7 +62,7 @@ export async function inspectWorkbook(file){
  const bytes=await fs.readFile(file),input=readFullStock(bytes);
  return {...input,source_sha256:await sha256('vintage-bulk-positive-v1:'+await sha256(bytes))};
 }
-export async function run({excel,connection,directory,target=1000,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
+export async function run({excel,connection,directory,target=1000,raiseTargetTo=0,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
  if(!Number.isInteger(target)||target<5||target>MAX_TARGET_TOTAL||!Number.isInteger(validateOnly)||validateOnly<0||validateOnly>5)throw new Error('invalid_local_limits');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
  if(await policyHash(policy)!==c.policy_hash)throw new Error('connection_policy_changed');
@@ -84,8 +95,10 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
     try{
      // El precio enviado queda en el payload del trabajo; el Excel de hoy puede haber cambiado o no traer el ISBN.
      const job=await this.stmt('SELECT payload_json FROM ml_pub_jobs WHERE run_id=? AND isbn=?',BULK_RUN,isbn).first();
+     // Sin payload (alta de otra corrida o de una base nueva) no se sabe qué precio se envió:
+     // se verifica la identidad del alta sin exigir el precio exacto (checkCreated con null).
      let price=null;try{price=JSON.parse(job?.payload_json??'null')?.price??null;}catch{}
-     if(!Number.isFinite(price)){const row=await this.stock(c.feed_id,isbn);if(!row)throw new MercadoLibreError('reconcile_price_unknown',503);price=quoteMercadoLibre(row,policy).price;}
+     if(!Number.isFinite(price))price=null;
      // Mercado Libre downloads pictures after the create, so a new item is briefly paused for that
      // reason only. Wait a bounded time for that exact state; any other mismatch fails at once.
      for(let attempt=0;;attempt++){
@@ -133,9 +146,14 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
     await s.saveIndex(BULK_RUN,c.inventory_checkpoint,c.inventory.map(x=>({id:x.item_id,isbn:x.isbn,titleKey:x.title_key,status:x.status})));
     for(const x of c.identifiers??[])await db.prepare('INSERT OR IGNORE INTO ml_vintage_bulk_identifiers VALUES(?,?,?)').bind(BULK_RUN,x.isbn,x.item_id).run();
    }
-   for(const r of c.receipts??[])if(r.run_id===BULK_RUN)await s.job(BULK_RUN,r.isbn,r.state==='published'?'published':'uncertain',{itemId:r.item_id??undefined});
+   // Un recibo de un libro que ya no viene en la lista de hoy no tiene fila de trabajo en una base
+   // nueva (la nube arranca vacía en cada corrida): se crea antes de marcarlo.
+   for(const r of c.receipts??[])if(r.run_id===BULK_RUN){await s.stmt("INSERT OR IGNORE INTO ml_pub_jobs(run_id,isbn,state) VALUES(?,?,'pending')",BULK_RUN,r.isbn).run();await s.job(BULK_RUN,r.isbn,r.state==='published'?'published':'uncertain',{itemId:r.item_id??undefined});}
    if(validateOnly)await s.stmt("UPDATE ml_pub_runs SET state='preflight',approved_hash=NULL,preflight_limit=? WHERE id=?",validateOnly,BULK_RUN).run();
   }
+  // Base nueva (la nube arranca cada corrida desde D1): el objetivo vuelve al de createRun y hay
+  // que subirlo al de campaign.json, como hace set-target en la PC.
+  if(!existing&&!validateOnly&&raiseTargetTo){await raiseTarget(s,raiseTargetTo);await s.reopenForRaisedTarget(BULK_RUN,Date.now());}
   // Complete inventory scans persist locally; resume does not start again.
   const localApi={...api,async indexSlice(e,index){
    const next=structuredClone(index);

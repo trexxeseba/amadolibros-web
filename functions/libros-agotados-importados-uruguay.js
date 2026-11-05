@@ -25,7 +25,7 @@ const LAST_REVIEWED_ISO = '2026-08-12';
 export async function onRequest() {
     const canonical = `${BASE}${PATH}`;
     const REQUEST_MESSAGE = buildWhatsAppMessage({
-        greeting: 'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran 😊',
+        greeting: 'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran.',
         motive: 'Solicitar una búsqueda por encargo',
         situation: 'Libro agotado, importado o difícil de conseguir',
         page: canonical,
@@ -161,12 +161,12 @@ export async function onRequest() {
         <h1>Conseguimos libros agotados, importados y difíciles de encontrar</h1>
         <p class="lead">Si no aparece en el catálogo local, lo buscamos por título, autor, ISBN o foto de la tapa. Consultamos opciones en Europa y otros mercados y te confirmamos edición, precio y plazo antes de avanzar.</p>
         <div class="cta-row">
-          <a class="cta cta-primary" href="${requestHref}" target="_blank" rel="noopener noreferrer">Pedir búsqueda por WhatsApp</a>
+          <a class="cta cta-primary" href="${requestHref}" target="_blank" rel="noopener noreferrer" data-cta-location="agotados_hero" data-topic="libros_agotados_importados">Pedir búsqueda por WhatsApp</a>
           <a class="cta cta-secondary" href="/catalogo">Buscar en el catálogo</a>
         </div>
       </div>
       <div>
-        <p class="truth"><strong>Respuesta directa:</strong> sí, en muchos casos un libro agotado o fuera de plaza puede conseguirse por encargo desde Uruguay. No podemos asegurar disponibilidad antes de buscar: verificamos título o ISBN, edición, proveedor, precio y plazo para cada consulta.</p>
+        <p class="truth"><strong>Respuesta directa:</strong> sí, en muchos casos un libro agotado o fuera de plaza puede conseguirse por encargo desde Uruguay. Para cada consulta verificamos título o ISBN, edición, proveedor, precio y plazo, y te lo confirmamos antes de avanzar.</p>
         <p class="reviewed">Contenido revisado el 12 de agosto de 2026 por el <a href="/quienes-somos/">equipo de Amado Libros</a>.</p>
       </div>
     </section>
@@ -176,7 +176,7 @@ export async function onRequest() {
       <div class="steps">
         <article class="card"><span class="step-number">1</span><h3>Mandanos los datos</h3><p>Título, autor, ISBN, editorial o una foto. Cuanta más precisión tengamos, mejor podemos buscar la edición correcta.</p></article>
         <article class="card"><span class="step-number">2</span><h3>Buscamos y verificamos</h3><p>Revisamos disponibilidad en proveedores del exterior y comparamos edición, idioma, formato y estado.</p></article>
-        <article class="card"><span class="step-number">3</span><h3>Vos decidís</h3><p>Te informamos precio, seña y plazo estimado. La gestión empieza únicamente después de tu confirmación.</p></article>
+        <article class="card"><span class="step-number">3</span><h3>Vos decidís</h3><p>Te informamos precio, seña y plazo estimado. Arrancamos la gestión con tu confirmación.</p></article>
       </div>
       <p class="guide-link">¿No sabés si una publicación corresponde a la que necesitás? Consultá la <a href="/como-identificar-edicion-correcta-isbn/">guía para identificar la edición correcta por ISBN</a>.</p>
       <p class="guide-link">Conocé también <a href="/quienes-somos/">quién revisa las búsquedas y cómo verificamos cada edición</a>.</p>
@@ -185,7 +185,7 @@ export async function onRequest() {
     <section class="section">
       <h2>Qué podemos buscar</h2>
       <div class="types">
-        <article class="card"><h3>Ediciones agotadas o fuera de plaza</h3><p>Buscamos ejemplares que ya no aparecen en librerías uruguayas, siempre sujetos a disponibilidad real.</p></article>
+        <article class="card"><h3>Ediciones agotadas o fuera de plaza</h3><p>Buscamos ejemplares que ya no aparecen en librerías uruguayas y te confirmamos la disponibilidad real antes de avanzar.</p></article>
         <article class="card"><h3>Libros importados de Europa y otros mercados</h3><p>Consultamos ediciones de España, Argentina, Estados Unidos y otros orígenes según el título.</p></article>
         <article class="card"><h3>Textos académicos y profesionales</h3><p>Material especializado, manuales, libros universitarios y ediciones concretas identificadas por ISBN.</p></article>
         <article class="card"><h3>Idiomas, formatos y ediciones específicas</h3><p>Tapa dura o blanda, idioma original, editorial determinada o una edición que querés volver a encontrar.</p></article>
@@ -203,7 +203,7 @@ export async function onRequest() {
     <section class="closing">
       <h2>¿Cuál libro estás buscando?</h2>
       <p>Mandanos los datos que tengas. Te respondemos con una búsqueda concreta, sin compromiso.</p>
-      <a class="cta cta-primary" href="${requestHref}" target="_blank" rel="noopener noreferrer">Consultar por WhatsApp</a>
+      <a class="cta cta-primary" href="${requestHref}" target="_blank" rel="noopener noreferrer" data-cta-location="agotados_cierre" data-topic="libros_agotados_importados">Consultar por WhatsApp</a>
     </section>
   </main>
   ${footerHtml(undefined, canonical)}

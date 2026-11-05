@@ -1,0 +1,84 @@
+name: Liquidación, armar la lista
+
+# Arma la lista de liquidación (data/liquidacion.json) desde las ventas reales de
+# Mercado Libre que guarda el Worker en D1: libros activos con stock, publicados
+# hace 2 años o más y sin ninguna venta en 730 días. SOLO LEE: no cambia precios,
+# publicaciones ni stock. Deja el resultado en una rama nueva para revisarlo en un
+# PR; no toca main ni activa nada.
+#
+# El repo es público: el log y el resumen muestran solo conteos, nunca ventas,
+# títulos ni ISBN. La clave del Worker llega por secreto y no se imprime.
+#
+# Sólo manual.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: liquidacion-lista
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  lista:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment:
+      name: production
+    env:
+      WORKER: https://amadolibros-sync.undiaes.workers.dev
+      SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Bajar el catálogo y el reporte del motor Precio Ganador
+        run: |
+          set -euo pipefail
+          curl -fsS --max-time 120 -o "$RUNNER_TEMP/catalog.json" https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json
+          git fetch origin estado/precio-ganador
+
+      - name: Verificar que el Worker responde
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $SYNC_SECRET" "$WORKER/sales/status")
+          [ "$code" = "200" ] || { echo "El Worker respondió HTTP $code"; exit 1; }
+
+      - name: Armar la lista por ventas
+        run: node scripts/liquidacion/armar-lista.mjs --catalogo "$RUNNER_TEMP/catalog.json" --parcial-out "$RUNNER_TEMP/parcial.json"
+
+      - name: Aplicar las exclusiones automáticas
+        run: node scripts/liquidacion/actualizar-exclusiones.mjs --catalogo "$RUNNER_TEMP/catalog.json"
+
+      - name: Resumen (solo conteos)
+        run: |
+          node scripts/liquidacion/resumen.mjs --catalogo "$RUNNER_TEMP/catalog.json" --parcial "$RUNNER_TEMP/parcial.json"
+          { echo '### Lista de liquidación (conteos)'; echo '```json'; cat data/liquidacion-resumen.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar el resultado como artefacto (por si el push no se puede)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: liquidacion-lista
+          path: |
+            data/liquidacion.json
+            data/liquidacion-resumen.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Dejar la lista en una rama para revisar
+        run: |
+          set -euo pipefail
+          branch="liquidacion/lista-$(date -u +%Y%m%d)-${GITHUB_RUN_ID}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$branch"
+          git add data/liquidacion.json data/liquidacion-resumen.json functions/_shared/liquidacion-data.js
+          git commit -m 'Liquidación: lista armada por ventas de Mercado Libre (sin venta en 730 días)'
+          git push origin "$branch"
+          echo "Rama: $branch" >> "$GITHUB_STEP_SUMMARY"
