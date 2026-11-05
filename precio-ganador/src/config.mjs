@@ -26,10 +26,8 @@ export const CUENTAS = {
     minimo: null,
     habilitada: true,
   },
-  // Vintage NO corre con este sistema (Seba, 04/11/2026): su precio competitivo lo
-  // maneja el motor de la PC (scripts/vintage-local/stock-sync.mjs, modo correct),
-  // que conoce el costo y nunca baja del 18 % de margen. Correr los dos los haría
-  // pisarse. Queda configurada para no perder el dato, pero deshabilitada.
+  // Vintage corre acá desde el 05/11/2026 (Seba): el motor de la PC no está andando.
+  // Si el motor se vuelve a prender, apagar una de las dos cosas: se pisarían.
   vintage: {
     clave: 'vintage',
     nombre: 'Amado Vintage',
@@ -47,7 +45,7 @@ export const CUENTAS = {
     topePct: null,
     minimo: 1500,
     pisoPorCosto: false,
-    habilitada: false,
+    habilitada: true,
   },
 };
 
