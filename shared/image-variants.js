@@ -38,7 +38,8 @@ export async function readImageVariant(bucket, hash, id) {
   try {
     const object = await bucket.get(key);
     // Sólo objetos publicados por el escritor validado, con metadatos de receta.
-    if (!object?.body || object.customMetadata?.master_sha256 !== hash ||
+    if (!object?.body || !(object.size > 0) || object.httpMetadata?.contentType !== 'image/webp' ||
+        object.customMetadata?.master_sha256 !== hash ||
         object.customMetadata?.recipe !== id || !/^[a-f0-9]{64}$/.test(object.customMetadata?.sha256 || '')) return null;
     return object;
   } catch { return null; }

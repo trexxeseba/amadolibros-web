@@ -1,0 +1,7 @@
+name = "amado-card-canary-preview"
+main = "card-canary-preview.js"
+compatibility_date = "2024-09-23"
+workers_dev = true
+[[r2_buckets]]
+binding = "PRODUCTION_COVERS_READONLY"
+bucket_name = "amadolibros-images-production"

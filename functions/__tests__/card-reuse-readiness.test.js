@@ -1,0 +1,8 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {extendCardReadiness} from '../../scripts/images/extend-card-readiness.mjs';
+import {CARD_RECIPES,PRODUCTION_IMAGE_BUCKET} from '../_shared/card-variant-delivery.js';
+function fixture(count=2790){const row={sha256:'a'.repeat(64),extension:'jpg',source_url:'https://http2.mlstatic.com/D_A-O.jpg'},cards=Object.fromEntries(Array.from({length:count},(_,i)=>['MLU'+(i+1),row]));const baseText=JSON.stringify({schema:'verified-card-readiness-v1',bucket:PRODUCTION_IMAGE_BUCKET,recipes:CARD_RECIPES,masters_sha256:'b'.repeat(64),cards});return {baseText,baseDigest:createHash('sha256').update(baseText).digest('hex'),additions:Array.from({length:29},(_,i)=>({id:'MLU'+(10000+i),...row}))};}
+test('29 aliases extend the verified index without changing masters or recipes',async()=>{const f=fixture(),r=await extendCardReadiness(f),index=JSON.parse(r.text);assert.equal(r.cards,2819);assert.equal(r.added,29);assert.deepEqual(index.recipes,CARD_RECIPES);assert.equal(index.masters_sha256,'b'.repeat(64));assert.equal(r.digest,createHash('sha256').update(r.text).digest('hex'));});
+test('unverified masters, duplicate IDs, corrupt base and excessive entries are rejected',async()=>{for(const change of [f=>f.additions[0].sha256='c'.repeat(64),f=>f.additions[0].id='MLU1',f=>f.additions[1].id=f.additions[0].id,f=>f.baseText+=' ',f=>f.additions.pop(),f=>f.additions[0].source_url='https://evil.example/a.jpg']){const f=fixture();change(f);await assert.rejects(extendCardReadiness(f));}await assert.rejects(extendCardReadiness(fixture(3000)),/entry-budget/);});

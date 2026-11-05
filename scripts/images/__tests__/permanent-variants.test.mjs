@@ -85,15 +85,14 @@ test('pipeline publica una vez por hash/receta, sirve bytes exactos y no genera 
   assert.ok(bucket.objects.has(variantObjectKey(master.hash,'v1-1024-q88')), 'prior master remains intact');
 });
 
-test('variante ausente/inaccesible entrega el original, con caché breve y sin escritura', async () => {
+test('Preview sin variante responde 503 sin original, redireccion productiva ni escritura', async () => {
   const bucket = new Bucket(); const master = await fixture(); await bucket.put(`covers/v1/objects/${master.file}`, master.bytes);
   const count = bucket.writes.length;
   const response = await publicCover({ request: new Request(`https://pr-400.amadolibros-web.pages.dev/preview-cover/MLU1/0/${master.file}?variant=v1-240-q85`),
     params: { path:['MLU1','0',master.file] }, env:{ COVER_R2:bucket, IMAGE_VARIANTS_READ_ENABLED:'true', APP_ENV:'preview' } });
-  assert.equal(response.status,200); assert.equal(response.headers.get('x-cover-variant'),'original-fallback');
-  assert.equal(response.headers.get('content-type'),'image/png');
-  assert.doesNotMatch(response.headers.get('cache-control'),/immutable/);
-  assert.deepEqual(Buffer.from(await response.arrayBuffer()), master.bytes);
+  assert.equal(response.status,503); assert.equal(response.headers.get('x-cover-variant'),'unavailable');
+  assert.equal(response.headers.get('location'),null);
+  assert.equal(response.headers.get('cache-control'),'no-store');
   assert.equal(bucket.writes.length,count);
 });
 
@@ -157,7 +156,7 @@ test('semilla Preview alinea masters e índice, conserva otros productos y jamá
   assert.equal((await handleImageVariants(seed(['invalid']),env)).status,400);
 });
 
-test('generar no activa la entrega: interruptor apagado sirve el original aun con variante existente', async () => {
+test('URLs de variantes ya emitidas sirven WebP con bandera apagada sin regenerar', async () => {
   const bucket = new Bucket(); const master = await fixture();
   await bucket.put(`covers/v1/objects/${master.file}`, master.bytes);
   const env = { COVER_R2: bucket, IMAGE_VARIANTS_WRITE_ENABLED: 'true', APP_ENV: 'production' };
@@ -166,8 +165,10 @@ test('generar no activa la entrega: interruptor apagado sirve el original aun co
   const count = bucket.writes.length;
   const response = await publicCover({ request:new Request(`https://www.amadolibros.com/preview-cover/MLU1/0/${master.file}?variant=v1-240-q85`),
     params:{path:['MLU1','0',master.file]}, env });
-  assert.equal(response.headers.get('x-cover-variant'),'original-fallback');
-  assert.deepEqual(Buffer.from(await response.arrayBuffer()),master.bytes);
+  assert.equal(response.headers.get('x-cover-variant'),'v1-240-q85');
+  assert.equal(response.headers.get('content-type'),'image/webp');
+  const metadata=await sharp(Buffer.from(await response.arrayBuffer())).metadata();
+  assert.equal(metadata.format,'webp');assert.equal(metadata.width,240);
   assert.equal(bucket.writes.length,count);
 });
 

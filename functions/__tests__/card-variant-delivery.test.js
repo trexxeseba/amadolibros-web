@@ -57,3 +57,14 @@ test('same source with newer current master hash cannot select stale readiness',
   assert.equal(await selectSource(f.ctx,f.item,`https://www.amadolibros.com/preview-cover/MLU1/0/${'c'.repeat(64)}.jpg`),null);
   assert.equal(await selectSource(f.ctx,f.item,null),null);
 });
+
+test('compact search primary source is verified against readiness and current hash',async()=>{
+  const f=fixture();f.item.thumbnail=f.item.pictures[0];delete f.item.pictures;
+  assert.ok(await readyCardVariantSource(f.ctx,f.item));
+  f.item.thumbnail='https://http2.mlstatic.com/CHANGED-O.jpg';
+  assert.equal(await readyCardVariantSource(f.ctx,f.item),null);
+  f.item.thumbnail='https://http2.mlstatic.com/D_TEST-O.jpg';
+  assert.equal(await selectSource(f.ctx,f.item,`/preview-cover/MLU1/0/${'c'.repeat(64)}.jpg`),null);
+  f.item.pictures=[];
+  assert.equal(await readyCardVariantSource(f.ctx,f.item),null,'full records never substitute a thumbnail for an absent primary');
+});
