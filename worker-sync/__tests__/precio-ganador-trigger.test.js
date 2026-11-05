@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dispararPrecioGanador, CRONS_PRECIO_GANADOR } from '../precio-ganador-trigger.js';
+import { dispararPrecioGanador, CRONS_PRECIO_GANADOR, cuentaDelHorario } from '../precio-ganador-trigger.js';
 
 const J = (b, status = 200) => new Response(JSON.stringify(b), { status, headers: { 'content-type': 'application/json' } });
 const env = { GITHUB_TOKEN: 'x', RESEND_API_KEY: 'r', PRECIO_GANADOR_EMAIL_TO: 'a@b.c' };
@@ -42,4 +42,14 @@ test('sin GITHUB_TOKEN no llama a GitHub y avisa', async () => {
   const fetcher = async url => { if (String(url).includes('github')) github++; return J({ id: '1' }); };
   const r = await dispararPrecioGanador({ ...env, GITHUB_TOKEN: '' }, { fetcher });
   assert.deepEqual([r.state, r.alerta, github], ['sin_token', 'enviada', 0]);
+});
+
+test('Vintage corre dos veces por día (09:00 y 21:00 de Montevideo); Libros en los tres horarios', async () => {
+  assert.equal(cuentaDelHorario('0 0 * * *'), 'ambas');
+  assert.equal(cuentaDelHorario('0 12 * * *'), 'ambas');
+  assert.equal(cuentaDelHorario('0 18 * * *'), 'libros');
+  let body = null;
+  const fetcher = async (url, o) => { if (o?.method === 'POST') { body = JSON.parse(o.body); return new Response(null, { status: 204 }); } return J({ workflow_runs: [] }); };
+  await dispararPrecioGanador(env, { cron: '0 18 * * *', fetcher, now: () => ahora });
+  assert.equal(body.inputs.cuenta, 'libros');
 });
