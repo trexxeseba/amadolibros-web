@@ -109,8 +109,12 @@ motor (recalcula la regla desde cero). Sólo lee:
    original y nunca bajó 360 o más ni más del 30 %.
 3. Todas las marcadas de la corrida: la regla recalculada da la misma acción.
 
-Resultado en `ultima/libros-auditoria.md` de la rama de estado. Con una sola
-discrepancia el workflow falla y GitHub manda el mail de falla. Para correrla sola,
+Resultado en `ultima/<cuenta>-auditoria.md` de la rama de estado. Cualquier
+discrepancia se avisa por mail con los IDs. El job falla sólo si es serio: más de
+2 de la muestra de 10, una decisión que no coincide con la regla, más de 10
+publicaciones del estado con otro precio, o errores de aplicación por encima del
+2 % de los intentos (mínimo 3). El vigía (`precio-ganador-vigia.yml`, cada 3 horas)
+distingue "no corrió" de "corrió con avisos" y lo dice en el mail. Para correrla sola,
 sin tocar precios: Run workflow con acción `auditar`.
 
 ## Frenos

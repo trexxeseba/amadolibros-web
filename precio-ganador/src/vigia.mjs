@@ -5,18 +5,39 @@ import { enviarAlarma } from './alarma.mjs';
 
 const MAX_HORAS = Number(process.env.VIGIA_MAX_HORAS || 7);
 const repo = process.env.GITHUB_REPOSITORY, token = process.env.GITHUB_TOKEN;
-const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/precio-ganador.yml/runs?branch=main&status=success&per_page=20`, {
-  headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(20000),
-});
+const cab = { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' };
+const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/precio-ganador.yml/runs?branch=main&per_page=30`, { headers: cab, signal: AbortSignal.timeout(20000) });
 if (!res.ok) { await enviarAlarma({ asunto: 'el vigía no pudo consultar GitHub', texto: `HTTP ${res.status}` }); process.exit(1); }
-const runs = (await res.json()).workflow_runs ?? [];
-// Cuentan las corridas normales (programadas o a mano), no las de sólo auditoría o restaurar.
-const ultima = runs.find(r => r.event === 'schedule' || r.event === 'workflow_dispatch');
-const horas = ultima ? (Date.now() - Date.parse(ultima.updated_at)) / 3600e3 : Infinity;
-console.log(JSON.stringify({ ultima: ultima?.html_url ?? null, horas: Number.isFinite(horas) ? Math.round(horas * 10) / 10 : null, max: MAX_HORAS }));
+const runs = ((await res.json()).workflow_runs ?? []).filter(r => (r.event === 'schedule' || r.event === 'workflow_dispatch') && r.status === 'completed');
+const horasDe = r => (Date.now() - Date.parse(r.updated_at)) / 3600e3;
+// "Corrió" = el paso Correr terminó bien en todos los jobs de esa corrida, aunque
+// después la auditoría o el guardado hayan fallado. Se mira job por job.
+async function corrio(run) {
+  const r = await fetch(`https://api.github.com/repos/${repo}/actions/runs/${run.id}/jobs?per_page=10`, { headers: cab, signal: AbortSignal.timeout(20000) });
+  if (!r.ok) return null;
+  const jobs = (await r.json()).jobs ?? [];
+  const pasos = jobs.flatMap(j => (j.steps ?? []).filter(p => p.name === 'Correr'));
+  if (!pasos.length) return null;
+  return { corrio: pasos.every(p => p.conclusion === 'success'), avisos: jobs.some(j => j.conclusion !== 'success') };
+}
+let ultimaOk = null, ultimaConAvisos = null, ultimaFallida = null;
+for (const run of runs) {
+  if (horasDe(run) > MAX_HORAS * 3) break;
+  if (run.conclusion === 'success') { ultimaOk ??= run; continue; }
+  const c = await corrio(run);
+  if (c?.corrio) ultimaConAvisos ??= run; else ultimaFallida ??= run;
+}
+const ultima = [ultimaOk, ultimaConAvisos].filter(Boolean).sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at))[0] ?? null;
+const horas = ultima ? horasDe(ultima) : Infinity;
+console.log(JSON.stringify({ ultima: ultima?.html_url ?? null, con_avisos: ultima === ultimaConAvisos, horas: Number.isFinite(horas) ? Math.round(horas * 10) / 10 : null, max: MAX_HORAS, ultima_fallida: ultimaFallida?.html_url ?? null }));
 if (horas > MAX_HORAS) {
-  const r = await enviarAlarma({ asunto: `no corre desde hace ${Number.isFinite(horas) ? Math.round(horas) + ' horas' : 'nunca'}`,
-    texto: `La última corrida exitosa de Precio Ganador fue ${ultima ? `el ${ultima.updated_at} (${ultima.html_url})` : 'nunca'}.\nDebería correr a las 09:00, 15:00 y 21:00. Revisá Actions > Precio Ganador.` });
+  const h = Number.isFinite(horas) ? `${Math.round(horas)} horas` : 'nunca';
+  const caso = ultimaFallida && (!ultima || Date.parse(ultimaFallida.updated_at) > Date.parse(ultima.updated_at))
+    ? `Caso: CORRIÓ PERO FALLÓ. La última corrida (${ultimaFallida.html_url}) no completó el paso Correr.`
+    : 'Caso: NO CORRIÓ. No hay ninguna corrida reciente (el cron de GitHub se atrasó o no se lanzó).';
+  const r = await enviarAlarma({ asunto: `no corre bien desde hace ${h}`,
+    texto: `${caso}\nÚltima corrida que terminó el paso Correr: ${ultima ? `${ultima.updated_at} (${ultima.html_url})${ultima === ultimaConAvisos ? ', con avisos de auditoría' : ''}` : 'ninguna'}.\nDebería correr a las 09:00, 15:00 y 21:00. Revisá Actions > Precio Ganador.` });
   console.log('Alarma:', JSON.stringify(r));
   process.exit(1);
 }
+if (ultima === ultimaConAvisos) console.log('La última corrida terminó con avisos de auditoría; el paso Correr estuvo bien.');
