@@ -9,7 +9,7 @@
 // sobre el lote de Amado Vintage: no acepta vendedor, política ni run_id.
 import {createVintageBulk,VintageBulkStore,BULK_RUN} from './meli-vintage-bulk.js';
 import {createLocalAccess} from './vintage-local-access.js';
-import {VINTAGE_SELLER_ID} from './meli-vintage-token.js';
+import {VINTAGE_SELLER_ID,vintageTokens} from './meli-vintage-token.js';
 import {localExecutorState,stopLocalExecutor} from './vintage-executor-state.js';
 import {vintagePolicy,vintageCompetitivePolicy} from '../../worker-sync/vintage-pricing.js';
 import {PublicationError,policyHash,sha256} from '../../worker-sync/publication-policy.js';
@@ -21,7 +21,13 @@ export const RENEW_FIELDS={
  renew:['feed_id'],
  revoke:[],
  status:[],
+ keepalive:[],
 };
+// keepalive renueva el token de Vintage si le quedan menos de 3 horas, para que Precio Ganador
+// (que sólo lo lee de D1 y espera 8 minutos) lo encuentre vigente sin depender de la PC.
+// Nunca devuelve el token: sólo su vencimiento.
+export const KEEPALIVE_MARGIN_MS=3*3600000;
+const VINTAGE_APP_ID='4741021817925208';
 // Un ejecutor vivo consulta al servidor cada pocos segundos. Con actividad
 // reciente no se le quita la clave: primero hay que detenerlo con `revoke`.
 export const LIVE_WINDOW_MS=120000;
@@ -33,7 +39,7 @@ export async function authorizeRenew(env,header){
  if(await sha256(given)!==await sha256(secret))throw new PublicationError('renew_unauthorized',401);
 }
 
-export function createVintageRenew({bulk=createVintageBulk(),access=createLocalAccess(),now=Date.now}={}){
+export function createVintageRenew({bulk=createVintageBulk(),access=createLocalAccess(),tokens=vintageTokens,now=Date.now}={}){
  async function renew(env,{feed_id}){
   const state=await localExecutorState(env,now());
   if(state.active&&state.last_at&&now()-state.last_at<LIVE_WINDOW_MS)throw new PublicationError('local_executor_running',409);
@@ -63,10 +69,25 @@ export function createVintageRenew({bulk=createVintageBulk(),access=createLocalA
   ]);
   return hash;
  }
+ async function keepalive(env){
+  const read=async()=>Number((await env.ORDERS_DB.prepare('SELECT access_expires_at FROM ml_oauth_sellers WHERE app_id=? AND seller_id=?').bind(VINTAGE_APP_ID,VINTAGE_SELLER_ID).first())?.access_expires_at??0);
+  const before=await read();
+  if(before-now()>=KEEPALIVE_MARGIN_MS)return {refreshed:false,expires_at:before};
+  // Vencer el token actual en D1 obliga al proveedor a rotarlo (con su lock y su control de identidad).
+  await env.ORDERS_DB.prepare('UPDATE ml_oauth_sellers SET access_expires_at=0 WHERE app_id=? AND seller_id=? AND access_expires_at=?').bind(VINTAGE_APP_ID,VINTAGE_SELLER_ID,before).run();
+  try{await tokens.getAccessToken(env);}
+  catch(error){
+   // Si Mercado Libre no rotó, el token anterior sigue sirviendo: se le devuelve su vencimiento.
+   await env.ORDERS_DB.prepare('UPDATE ml_oauth_sellers SET access_expires_at=? WHERE app_id=? AND seller_id=? AND access_expires_at=0').bind(before,VINTAGE_APP_ID,VINTAGE_SELLER_ID).run();
+   throw error;
+  }
+  return {refreshed:true,expires_at:await read()};
+ }
  async function command(env,header,action,args={}){
   await authorizeRenew(env,header);
   if(!Object.hasOwn(RENEW_FIELDS,action))throw new PublicationError('invalid_renew_action',400);
   if(action==='status')return bulk.status(env);
+  if(action==='keepalive')return keepalive(env);
   if(['begin','import','commit'].includes(action))return bulk.command(env,action,args);
   // Revocar también pausa el lote: ningún ejecutor sigue publicando.
   if(action==='revoke')return bulk.command(env,'pause',{run_id:BULK_RUN});

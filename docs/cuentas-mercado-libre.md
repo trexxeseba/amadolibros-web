@@ -7,7 +7,8 @@ explícito de Seba.
 
 | Camino | Código | Cuenta (seller_id) | Estado |
 | --- | --- | --- | --- |
-| Motor local en la PC de Seba (tarea `AmadoVintagePublisher`) | `scripts/vintage-local/`, `scripts/vintage_autorun.py` | **Amado Vintage / Global Emporium (2341378249)** | **Activo: único camino que publica** |
+| Motor local en la PC de Seba (tarea `AmadoVintagePublisher`) | `scripts/vintage-local/`, `scripts/vintage_autorun.py` | **Amado Vintage / Global Emporium (2341378249)** | Publica cuando `campaign.json` dice `"ejecutor": "pc"` |
+| Publicador en la nube (workflow `Vintage publicador (nube)`) | `scripts/vintage-cloud/`, `.github/workflows/vintage-nube.yml` | **Amado Vintage / Global Emporium (2341378249)** | Publica sólo con `"ejecutor": "nube"` y `"nube.modo": "real"`; hoy en prueba. Ver `docs/vintage-nube.md` |
 | Ejecutor web de Vintage (Pages) | `functions/_shared/meli-vintage-bulk.js`, `meli-vintage-pilot.js` | Amado Vintage / Global Emporium (2341378249) | Queda en pausa mientras la PC tiene la conexión |
 | Cola de altas del Worker | `worker-sync/publication-*.js` (`USER_ID` en `worker-sync/wrangler.toml`) | Amado Libros (440298103) | **Solo lectura**: `ML_PUBLISHER_MODE = "disabled"`, `ML_PUBLISH_QUEUE_ENABLED = "false"` |
 | Sincronización del catálogo del sitio | `worker-sync/index.js` | Amado Libros (440298103) | Lee publicaciones para la web; no crea nada |

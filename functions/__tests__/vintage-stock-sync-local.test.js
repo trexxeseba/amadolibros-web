@@ -97,3 +97,17 @@ test('a suspiciously incomplete list, report mode, pause_only, grace and identit
  await assert.rejects(()=>f.run(new Set(ISBNS),{readWorkbook:async()=>({source_date:f.c.source_date,source_sha256:'f'.repeat(64),rows:[]})}),/workbook_does_not_match_current_approved_stock/);
  await assert.rejects(()=>f.run(new Set(ISBNS),{mode:'close_all'}),/invalid_stock_sync_mode/);
 });
+test('stock_only (cloud mode) pauses and reactivates but never touches a price: Precio Ganador owns them',async t=>{
+ const f=await fixture(t),all=new Set(ISBNS);
+ const list=Object.fromEntries(ISBNS.map(isbn=>[isbn,40000]));
+ const workbook=stocked=>async()=>({source_date:f.c.source_date,source_sha256:f.c.source_sha256,rows:ISBNS.map(isbn=>({isbn,title:'x',listArs:list[isbn],weightKg:.5,stock:stocked.has(isbn)?'3':'0'}))});
+ for(const item of f.items.values()){item.price=1250;item.currency_id='UYU';}
+ let s=await f.run(all,{readWorkbook:workbook(all),mode:'stock_only'});assert.equal(s.repriced,undefined);assert.equal(f.puts.length,0);
+ list[ISBNS[0]]=90000;
+ const gone=new Set(ISBNS.slice(1));
+ s=await f.run(gone,{readWorkbook:workbook(gone),mode:'stock_only'});
+ assert.equal(s.paused,1);assert.ok(f.puts.every(p=>!('price' in p.body)));
+ f.puts.length=0;s=await f.run(all,{readWorkbook:workbook(all),mode:'stock_only'});
+ assert.equal(s.activated,1);assert.deepEqual(f.puts,[{id:'MLU900',body:{status:'active',available_quantity:1}}]);
+ assert.ok([...f.items.values()].every(i=>i.price===1250));
+});

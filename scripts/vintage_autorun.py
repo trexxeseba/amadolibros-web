@@ -362,6 +362,14 @@ class Runner:
             return "publish_and_correct"
         return "correct_only" if value == "correct_only" else "publish_and_correct"
 
+    def repo_executor(self):
+        """'nube' si campaign.json dice "ejecutor": "nube" (llega con el git pull): publica GitHub y la PC no hace nada."""
+        try:
+            value = json.loads(CAMPAIGN_FILE.read_text("utf-8")).get("ejecutor")
+        except (OSError, ValueError, AttributeError):
+            return "pc"
+        return "nube" if value == "nube" else "pc"
+
     def correct_only_turn(self):
         """Una vuelta sin motor: corregir precios casi toda la hora y decidir cuánto esperar según cómo terminó."""
         last = self.correct_prices(minutes=CORRECT_ONLY_SLICE_MIN)
@@ -396,6 +404,12 @@ class Runner:
         if self.update_code():
             self.log("código nuevo: reinicio del supervisor")
             return 75  # launch.cmd relanza con el código actualizado
+        if self.repo_executor() == "nube":
+            # El publicador corre en GitHub (vintage-nube.yml). La PC no renueva, no sincroniza ni
+            # publica: si renovara, le revocaría la conexión a la nube y se pisarían.
+            self.notify("Vintage: la PC queda en espera", "El publicador corre en la nube. Esta PC no publica ni toca precios.", key="ejecutor-nube", every_s=24 * 3600)
+            self.wait(3600, "ejecutor en la nube")
+            return None
         self.apply_repo_target()
         if self.force_renew or self.connection_expires_at() - time.time() < RENEW_MARGIN_S:
             code, result = self.renew()
