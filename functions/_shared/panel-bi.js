@@ -12,6 +12,7 @@ import { ownStockIndex } from '../../worker-sync/reposicion-facts.js';
 import { competitionByIsbn } from '../../worker-sync/ml-competition.js';
 import { bookIsbn } from '../../worker-sync/isbn.js';
 import { latestFx } from '../../worker-sync/fx-rates.js';
+import { longTailReview, loadVisitsIndex } from '../../worker-sync/long-tail.js';
 
 const DAY = 86400000;
 const COUNTED = COUNTED_STATUSES.map(s => `'${s}'`).join(',');
@@ -215,6 +216,7 @@ export function priceRaises(facts, books, model = null) {
   for (const [isbn, f] of facts) {
     const b = byIsbn.get(isbn);
     if (!b) continue;
+    // Hay inmediatos con otro tipo de envío: ni "solo" ni comparable; no se sugiere.
     if ((f.competidores_inmediatos ?? 0) > 0 && !f.competidores_comparables) continue;
     const c = model?.costs.get(isbn);
     // Nadie más lo tiene con entrega inmediata. Si los que lo venden a pedido
@@ -333,7 +335,7 @@ export async function loadSinStockMarket(db, aSinStock, model = null) {
     if (!f) return { estado: 'sin_dato' };
     resumen.vigilados++;
     const nacionales = f.competidores_inmediatos ?? f.competidores_comparables ?? 0, min = f.precio_minimo;
-    if (!nacionales) { resumen.solo++; return { estado: 'solo', nacionales: 0, texto: `Nadie más lo tiene con entrega inmediata${f.competidores_a_pedido ? ` (${f.competidores_a_pedido} lo venden a pedido)` : ''}: reponer y quedarte con la venta.` }; }
+    if (!nacionales) { resumen.solo++; return { estado: 'solo', nacionales: 0, texto: `No detectamos otra oferta con entrega inmediata verificada en la ficha de ML${f.competidores_a_pedido ? ` (${f.competidores_a_pedido} lo venden a pedido)` : ''}: reponer y quedarte con la venta.` }; }
     if (min == null) return { estado: 'sin_dato', texto: 'Hay vendedores con stock verificado, pero falta un precio comparable con el mismo envío. Revisar antes de reponer.' };
     const c = model?.costs.get(b.isbn), atMin = c ? marginOf(min, c.cost, model.feeRate) : null;
     if (atMin) {
@@ -373,7 +375,25 @@ export async function loadBi(db, catalog, now = Date.now()) {
       }
     }
   }
-  return { generado: new Date(now).toISOString(), kpis, weekly, abc: abcRes, inventario: inv, margen, precios, compras, editoriales: pubs, competencia };
+  // Long tail: cómo está cada título (quiebre, con ventas, lentas, sin evidencia,
+  // poca exposición, visitas sin conversión) y parejas catálogo / no catálogo.
+  let longTail = { ok: false, error: table.error };
+  if (table.ok) {
+    longTail = await section(async () => {
+      const visits = await loadVisitsIndex(db, now);
+      let ventanaCompleta = true;
+      try { const f = await db.prepare('SELECT MIN(date_created_ms) AS first FROM ml_sales_orders').first(); ventanaCompleta = f?.first != null && now - Number(f.first) >= 365 * DAY; } catch { ventanaCompleta = false; }
+      return longTailReview({ books: table.data.books, stock: table.data.stock, meta: table.data.meta, visits, catalog, ventana_365_completa: ventanaCompleta, nowMs: now });
+    });
+  }
+  // Antigüedad del stock propio: catalog.json se sincroniza una vez por día (y
+  // backfill cada 5 minutos). "Sin stock" acá es el stock al momento de esta
+  // foto, no en vivo: una reposición física después de la última sincronización
+  // no se refleja hasta la próxima corrida. Se muestra siempre, no sólo como
+  // alerta a las 48 h (esa alerta global es para "el sync dejó de correr", no
+  // para decir cuán vieja es cada lectura individual).
+  const catalogoActualizado = catalog?.updated_at ?? null;
+  return { generado: new Date(now).toISOString(), catalogo_actualizado: catalogoActualizado, kpis, weekly, abc: abcRes, inventario: inv, margen, precios, compras, editoriales: pubs, competencia, longTail };
 }
 
 // Lo más urgente de Brújula para el correo de la mañana: pocas filas por

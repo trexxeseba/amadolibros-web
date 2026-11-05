@@ -10,7 +10,8 @@ import { salesByIsbn, topOwnSalesIsbns } from './ml-sales.js';
 import { purchaseSummary, readCoverage, missingCoverage, purchasesWithoutIsbn, SUPPLIER_LEAD_DAYS } from './purchases.js';
 import { readSalesHealth, evaluateSalesHealth } from './sales-health.js';
 import { bookIsbn } from './isbn.js';
-import { competitionByIsbn, competitionEvents } from './ml-competition.js';
+import { competitionByIsbn, competitionEvents, competitionCoverage } from './ml-competition.js';
+import { externalSignals } from './importacion-externa.js';
 
 const RECENT_PURCHASE_DAYS = 60;
 
@@ -69,7 +70,8 @@ export function createReposicionFacts({ now = Date.now, loadCatalog }) {
     const valid = [...new Set(sales.filter(s => s.isbn).map(s => s.isbn))];
     const sup = valid.length ? await sbs(db, valid) : { feed: null, rows: new Map() };
     const sbsAge = sup.feed ? Math.floor((now() - Date.parse(sup.feed.source_date)) / DAY_MS) : null;
-    const comp = await competitionByIsbn(db, valid).catch(() => new Map());
+    const comp = await competitionByIsbn(db, valid, now()).catch(() => new Map());
+    const ext = await externalSignals(db, valid).catch(() => new Map());
     const resultados = sales.map((s, i) => {
       if (!s.isbn) return s;
       const p = purchases[i], stock = g.cat.index.get(s.isbn) ?? { stock_propio: 0, publicaciones: [] };
@@ -98,7 +100,11 @@ export function createReposicionFacts({ now = Date.now, loadCatalog }) {
         compras: { d30: p.unidades_30d, d90: p.unidades_90d, d180: p.unidades_180d, d365: p.unidades_365d, ultima_fecha: p.ultima_compra_fecha, ultima_cantidad: p.ultima_compra_cantidad, ultimo_proveedor: p.ultima_compra_proveedor, documentos: p.documentos, en_transito_estimado: p.en_transito_estimado, sin_isbn_posibles: p.compras_sin_isbn_posibles },
         sbs: sup.feed ? { disponible: sbsRow ? sbsRow.stock ?? null : 'no_figura', feed_fecha: sup.feed.source_date, feed_edad_dias: sbsAge, vigente: sbsAge <= SBS_STALE_DAYS } : { disponible: 'desconocida', feed_fecha: null },
         plazo_entrega_dias: SUPPLIER_LEAD_DAYS.default,
-        competencia: c ? { catalog_product_id: c.catalog_product_id, foto: c.foto, competidores: c.competidores, precio_minimo: c.precio_minimo, tu_precio: c.tu_precio, precio_relativo: c.precio_relativo, primer_lugar: c.primer_lugar, precio_para_ganar: c.precio_para_ganar, vendedores: c.vendedores } : null,
+        competencia: c ? { catalog_product_id: c.catalog_product_id, foto: c.foto, foto_edad_horas: c.foto_edad_horas, foto_completa: c.foto_completa, captura_posterior: c.captura_posterior, listado: c.listado,
+          competidores: c.competidores, competidores_comparables: c.competidores_comparables, competidores_a_pedido: c.competidores_a_pedido, desconocidos: c.desconocidos, otra_moneda: c.otra_moneda,
+          precio_minimo: c.precio_minimo, precio_minimo_a_pedido: c.precio_minimo_a_pedido, tu_precio: c.tu_precio, precio_relativo: c.precio_relativo, primer_lugar: c.primer_lugar, precio_para_ganar: c.precio_para_ganar, vendedores: c.vendedores, etiquetas: c.etiquetas } : null,
+        // Señales externas (Nubimetrics / Administrado cargadas): estimadas, una por fuente y ventana, sin sumar.
+        senales_externas: ext.get(s.isbn) ?? [],
         avisos,
         fuente_incompleta: fuente, revisar,
         estado_datos: fuente.length ? 'FUENTE INCOMPLETA' : revisar.length ? 'REVISAR' : 'LISTO_PARA_DECIDIR',
@@ -122,5 +128,11 @@ export function createReposicionFacts({ now = Date.now, loadCatalog }) {
 
   const events = (db, limit = 30) => competitionEvents(db, { limit });
 
-  return { globalState, facts, candidates, identityQueue, events };
+  // Cobertura y frescura de la vigilancia de competencia, con las brechas del catálogo.
+  async function coverage(db) {
+    const data = await loadCatalog().catch(() => null);
+    return competitionCoverage(db, data, now());
+  }
+
+  return { globalState, facts, candidates, identityQueue, events, coverage };
 }
