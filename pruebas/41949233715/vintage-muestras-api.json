@@ -1,0 +1,53 @@
+{
+  "price_to_win": [
+    {
+      "item_id": "MLU717110198",
+      "current_price": null,
+      "currency_id": null,
+      "price_to_win": null,
+      "boosts": null,
+      "status": "not_listed",
+      "consistent": false,
+      "visit_share": null,
+      "competitors_sharing_first_place": null,
+      "reason": [
+        "item_not_opted_in"
+      ],
+      "catalog_product_id": null
+    },
+    {
+      "item_id": "MLU716980044",
+      "current_price": null,
+      "currency_id": null,
+      "price_to_win": null,
+      "boosts": null,
+      "status": "not_listed",
+      "consistent": false,
+      "visit_share": null,
+      "competitors_sharing_first_place": null,
+      "reason": [
+        "item_not_opted_in"
+      ],
+      "catalog_product_id": null
+    },
+    {
+      "item_id": "MLU716980078",
+      "current_price": null,
+      "currency_id": null,
+      "price_to_win": null,
+      "boosts": null,
+      "status": "not_listed",
+      "consistent": false,
+      "visit_share": null,
+      "competitors_sharing_first_place": null,
+      "reason": [
+        "item_not_opted_in"
+      ],
+      "catalog_product_id": null
+    }
+  ],
+  "suggestions": [],
+  "products_items": [],
+  "seller_promotions": [],
+  "sale_price": []
+}
