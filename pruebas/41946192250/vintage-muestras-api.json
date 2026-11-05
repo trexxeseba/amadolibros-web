@@ -1,0 +1,318 @@
+{
+  "price_to_win": [
+    {
+      "item_id": "MLU717006090",
+      "current_price": null,
+      "currency_id": null,
+      "price_to_win": null,
+      "boosts": null,
+      "status": "not_listed",
+      "consistent": false,
+      "visit_share": null,
+      "competitors_sharing_first_place": null,
+      "reason": [
+        "item_not_opted_in"
+      ],
+      "catalog_product_id": null
+    },
+    {
+      "item_id": "MLU717110198",
+      "current_price": null,
+      "currency_id": null,
+      "price_to_win": null,
+      "boosts": null,
+      "status": "not_listed",
+      "consistent": false,
+      "visit_share": null,
+      "competitors_sharing_first_place": null,
+      "reason": [
+        "item_not_opted_in"
+      ],
+      "catalog_product_id": null
+    },
+    {
+      "item_id": "MLU716980078",
+      "current_price": null,
+      "currency_id": null,
+      "price_to_win": null,
+      "boosts": null,
+      "status": "not_listed",
+      "consistent": false,
+      "visit_share": null,
+      "competitors_sharing_first_place": null,
+      "reason": [
+        "item_not_opted_in"
+      ],
+      "catalog_product_id": null
+    }
+  ],
+  "suggestions": [],
+  "products_items": [],
+  "seller_promotions": [
+    [
+      {
+        "id": "C-MLU1010327",
+        "type": "VOLUME",
+        "sub_type": "SPONTH",
+        "status": "started",
+        "price": 0,
+        "original_price": 758,
+        "start_date": "2026-10-20T00:00:00",
+        "finish_date": "2026-11-19T23:59:59",
+        "name": "LIKI",
+        "buy_quantity": 2,
+        "discount_percentage": 30,
+        "allow_combination": true
+      },
+      {
+        "type": "PRICE_DISCOUNT",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 758,
+        "name": "",
+        "min_discounted_price": 151.61,
+        "max_discounted_price": 720.1,
+        "suggested_discounted_price": 720.1
+      },
+      {
+        "id": "P-MLU18109362",
+        "type": "DEAL",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 758,
+        "start_date": "2026-11-02T00:00:00-03:00",
+        "finish_date": "2026-11-11T23:00:00-03:00",
+        "name": "Ciberlunes",
+        "min_discounted_price": 151.61,
+        "max_discounted_price": 735.26,
+        "suggested_discounted_price": 659.46
+      },
+      {
+        "id": "P-MLU18109364",
+        "type": "DEAL",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 758,
+        "start_date": "2026-11-11T00:00:00-03:00",
+        "finish_date": "2026-11-11T23:00:00-03:00",
+        "name": "Ofertas por 24hs 11/11",
+        "min_discounted_price": 151.61,
+        "max_discounted_price": 720.1,
+        "suggested_discounted_price": 720.1
+      },
+      {
+        "id": "C-MLU1058894",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 350,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 758,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2027-01-02T23:59:59",
+        "name": "Cupón para carritos abandonados"
+      },
+      {
+        "id": "C-MLU1059160",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_PERCENTAGE",
+        "fixed_percentage": 10,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 758,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-12-03T23:59:59",
+        "name": "Bienvenida 10"
+      },
+      {
+        "id": "C-MLU1059165",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_PERCENTAGE",
+        "fixed_percentage": 12,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 758,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-12-03T23:59:59",
+        "name": "Seguidores 12"
+      }
+    ],
+    [
+      {
+        "id": "C-MLU1010327",
+        "type": "VOLUME",
+        "sub_type": "SPONTH",
+        "status": "started",
+        "price": 0,
+        "original_price": 884,
+        "start_date": "2026-10-20T00:00:00",
+        "finish_date": "2026-11-19T23:59:59",
+        "name": "LIKI",
+        "buy_quantity": 2,
+        "discount_percentage": 30,
+        "allow_combination": true
+      },
+      {
+        "type": "PRICE_DISCOUNT",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 884,
+        "name": "",
+        "min_discounted_price": 176.8,
+        "max_discounted_price": 839.8,
+        "suggested_discounted_price": 839.8
+      },
+      {
+        "id": "P-MLU18109362",
+        "type": "DEAL",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 884,
+        "start_date": "2026-11-02T00:00:00-03:00",
+        "finish_date": "2026-11-11T23:00:00-03:00",
+        "name": "Ciberlunes",
+        "min_discounted_price": 176.8,
+        "max_discounted_price": 857.48,
+        "suggested_discounted_price": 769.07
+      },
+      {
+        "id": "P-MLU18109364",
+        "type": "DEAL",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 884,
+        "start_date": "2026-11-11T00:00:00-03:00",
+        "finish_date": "2026-11-11T23:00:00-03:00",
+        "name": "Ofertas por 24hs 11/11",
+        "min_discounted_price": 176.8,
+        "max_discounted_price": 839.8,
+        "suggested_discounted_price": 839.8
+      },
+      {
+        "id": "C-MLU1058894",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 350,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 884,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2027-01-02T23:59:59",
+        "name": "Cupón para carritos abandonados"
+      },
+      {
+        "id": "C-MLU1059160",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_PERCENTAGE",
+        "fixed_percentage": 10,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 884,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-12-03T23:59:59",
+        "name": "Bienvenida 10"
+      },
+      {
+        "id": "C-MLU1059165",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_PERCENTAGE",
+        "fixed_percentage": 12,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 884,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-12-03T23:59:59",
+        "name": "Seguidores 12"
+      }
+    ],
+    [
+      {
+        "id": "C-MLU1010327",
+        "type": "VOLUME",
+        "sub_type": "SPONTH",
+        "status": "started",
+        "price": 0,
+        "original_price": 954,
+        "start_date": "2026-10-20T00:00:00",
+        "finish_date": "2026-11-19T23:59:59",
+        "name": "LIKI",
+        "buy_quantity": 2,
+        "discount_percentage": 30,
+        "allow_combination": true
+      },
+      {
+        "type": "PRICE_DISCOUNT",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 954,
+        "name": "",
+        "min_discounted_price": 190.8,
+        "max_discounted_price": 906.3,
+        "suggested_discounted_price": 906.3
+      },
+      {
+        "id": "P-MLU18109362",
+        "type": "DEAL",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 954,
+        "start_date": "2026-11-02T00:00:00-03:00",
+        "finish_date": "2026-11-11T23:00:00-03:00",
+        "name": "Ciberlunes",
+        "min_discounted_price": 190.8,
+        "max_discounted_price": 925.38,
+        "suggested_discounted_price": 829.98
+      },
+      {
+        "id": "P-MLU18109364",
+        "type": "DEAL",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 954,
+        "start_date": "2026-11-11T00:00:00-03:00",
+        "finish_date": "2026-11-11T23:00:00-03:00",
+        "name": "Ofertas por 24hs 11/11",
+        "min_discounted_price": 190.8,
+        "max_discounted_price": 906.3,
+        "suggested_discounted_price": 906.3
+      },
+      {
+        "id": "C-MLU1058894",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 350,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 954,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2027-01-02T23:59:59",
+        "name": "Cupón para carritos abandonados"
+      },
+      {
+        "id": "C-MLU1059160",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_PERCENTAGE",
+        "fixed_percentage": 10,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 954,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-12-03T23:59:59",
+        "name": "Bienvenida 10"
+      },
+      {
+        "id": "C-MLU1059165",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_PERCENTAGE",
+        "fixed_percentage": 12,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 954,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-12-03T23:59:59",
+        "name": "Seguidores 12"
+      }
+    ]
+  ],
+  "sale_price": []
+}
