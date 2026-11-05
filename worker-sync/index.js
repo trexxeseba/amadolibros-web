@@ -1,3 +1,4 @@
+import { dispararPrecioGanador, CRONS_PRECIO_GANADOR } from './precio-ganador-trigger.js';
 import { IMAGE_SOURCE_POLICY_VERSION } from '../functions/_shared/image-source-policy.js';
 /**
  * worker-sync/index.js
@@ -162,6 +163,14 @@ export default {
           return { state: 'error' };
         }),
       ]));
+      return;
+    }
+    // Precio Ganador: a las 09:00, 15:00 y 21:00 de Montevideo le pide a GitHub
+    // que corra el workflow (el cron de GitHub se atrasa horas; queda de respaldo).
+    if (CRONS_PRECIO_GANADOR.includes(event?.cron)) {
+      ctx.waitUntil(dispararPrecioGanador(env).then(result => {
+        console.log('[precio ganador]', JSON.stringify(result));
+      }));
       return;
     }
     // Correo diario del panel (08:03 Montevideo; el segundo disparo, una hora
