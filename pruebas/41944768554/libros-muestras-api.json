@@ -1,0 +1,709 @@
+{
+  "price_to_win": [
+    {
+      "item_id": "MLU663199900",
+      "current_price": 1082,
+      "currency_id": "UYU",
+      "price_to_win": 1072,
+      "boosts": [
+        {
+          "id": "fulfillment",
+          "status": "opportunity",
+          "description": "Envíos Full"
+        },
+        {
+          "id": "free_installments",
+          "status": "boosted",
+          "description": "Cuotas sin recargo"
+        },
+        {
+          "id": "free_shipping",
+          "status": "boosted",
+          "description": "Envío gratis"
+        },
+        {
+          "id": "shipping_collect",
+          "status": "boosted",
+          "description": "Envíos con colecta"
+        },
+        {
+          "id": "same_day_shipping",
+          "status": "boosted",
+          "description": "Envíos en el día"
+        }
+      ],
+      "status": "sharing_first_place",
+      "consistent": true,
+      "visit_share": "medium",
+      "competitors_sharing_first_place": 1,
+      "reason": [],
+      "catalog_product_id": "MLU24601610",
+      "winner": {
+        "item_id": "MLU663199900",
+        "price": 1082,
+        "currency_id": "UYU",
+        "boosts": [
+          {
+            "id": "fulfillment",
+            "status": "opportunity",
+            "description": "Envíos Full"
+          },
+          {
+            "id": "free_installments",
+            "status": "boosted",
+            "description": "Cuotas sin recargo"
+          },
+          {
+            "id": "free_shipping",
+            "status": "boosted",
+            "description": "Envío gratis"
+          },
+          {
+            "id": "shipping_collect",
+            "status": "boosted",
+            "description": "Envíos con colecta"
+          },
+          {
+            "id": "same_day_shipping",
+            "status": "boosted",
+            "description": "Envíos en el día"
+          }
+        ]
+      }
+    },
+    {
+      "item_id": "MLU637065821",
+      "current_price": 1864,
+      "currency_id": "UYU",
+      "price_to_win": 1864,
+      "boosts": [
+        {
+          "id": "fulfillment",
+          "status": "opportunity",
+          "description": "Envíos Full"
+        },
+        {
+          "id": "free_installments",
+          "status": "boosted",
+          "description": "Cuotas sin recargo"
+        },
+        {
+          "id": "free_shipping",
+          "status": "boosted",
+          "description": "Envío gratis"
+        },
+        {
+          "id": "shipping_collect",
+          "status": "boosted",
+          "description": "Envíos con colecta"
+        },
+        {
+          "id": "same_day_shipping",
+          "status": "boosted",
+          "description": "Envíos en el día"
+        }
+      ],
+      "status": "winning",
+      "consistent": false,
+      "visit_share": "maximum",
+      "competitors_sharing_first_place": 0,
+      "reason": [],
+      "catalog_product_id": "MLU29866655",
+      "winner": {
+        "item_id": "MLU695585689",
+        "price": 1884,
+        "currency_id": "UYU",
+        "boosts": [
+          {
+            "id": "fulfillment",
+            "status": "opportunity",
+            "description": "Envíos Full"
+          },
+          {
+            "id": "free_installments",
+            "status": "boosted",
+            "description": "Cuotas sin recargo"
+          },
+          {
+            "id": "free_shipping",
+            "status": "boosted",
+            "description": "Envío gratis"
+          },
+          {
+            "id": "shipping_collect",
+            "status": "boosted",
+            "description": "Envíos con colecta"
+          },
+          {
+            "id": "same_day_shipping",
+            "status": "boosted",
+            "description": "Envíos en el día"
+          }
+        ]
+      }
+    },
+    {
+      "item_id": "MLU692647026",
+      "current_price": 654,
+      "currency_id": "UYU",
+      "price_to_win": 646,
+      "boosts": [
+        {
+          "id": "fulfillment",
+          "status": "opportunity",
+          "description": "Envíos Full"
+        },
+        {
+          "id": "free_installments",
+          "status": "boosted",
+          "description": "Cuotas sin recargo"
+        },
+        {
+          "id": "free_shipping",
+          "status": "opportunity",
+          "description": "Envío gratis"
+        },
+        {
+          "id": "shipping_collect",
+          "status": "boosted",
+          "description": "Envíos con colecta"
+        },
+        {
+          "id": "same_day_shipping",
+          "status": "boosted",
+          "description": "Envíos en el día"
+        }
+      ],
+      "status": "sharing_first_place",
+      "consistent": false,
+      "visit_share": "medium",
+      "competitors_sharing_first_place": 1,
+      "reason": [],
+      "catalog_product_id": "MLU20760811",
+      "winner": {
+        "item_id": "MLU692647026",
+        "price": 654,
+        "currency_id": "UYU",
+        "boosts": [
+          {
+            "id": "fulfillment",
+            "status": "opportunity",
+            "description": "Envíos Full"
+          },
+          {
+            "id": "free_installments",
+            "status": "boosted",
+            "description": "Cuotas sin recargo"
+          },
+          {
+            "id": "free_shipping",
+            "status": "opportunity",
+            "description": "Envío gratis"
+          },
+          {
+            "id": "shipping_collect",
+            "status": "boosted",
+            "description": "Envíos con colecta"
+          },
+          {
+            "id": "same_day_shipping",
+            "status": "boosted",
+            "description": "Envíos en el día"
+          }
+        ]
+      }
+    }
+  ],
+  "suggestions": [],
+  "products_items": [
+    {
+      "paging": {
+        "total": 5,
+        "offset": 0,
+        "limit": 50
+      },
+      "primero": {
+        "item_id": "MLU663199900",
+        "price": 1082,
+        "seller_id": 440298103
+      }
+    },
+    {
+      "paging": {
+        "total": 8,
+        "offset": 0,
+        "limit": 50
+      },
+      "primero": {
+        "item_id": "MLU692647026",
+        "price": 654,
+        "seller_id": 440298103
+      }
+    },
+    {
+      "paging": {
+        "total": 6,
+        "offset": 0,
+        "limit": 50
+      },
+      "primero": {
+        "item_id": "MLU695585689",
+        "price": 1884,
+        "seller_id": 88978433
+      }
+    }
+  ],
+  "seller_promotions": [
+    [
+      {
+        "type": "PRICE_DISCOUNT",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1864,
+        "name": "",
+        "min_discounted_price": 372.8,
+        "max_discounted_price": 1770.8,
+        "suggested_discounted_price": 1166.4
+      },
+      {
+        "id": "P-MLU18109362",
+        "type": "DEAL",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1864,
+        "start_date": "2026-11-02T00:00:00-03:00",
+        "finish_date": "2026-11-11T23:00:00-03:00",
+        "name": "Ciberlunes",
+        "min_discounted_price": 372.8,
+        "max_discounted_price": 1674.22,
+        "suggested_discounted_price": 1487.82
+      },
+      {
+        "id": "P-MLU18109364",
+        "type": "DEAL",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1864,
+        "start_date": "2026-11-11T00:00:00-03:00",
+        "finish_date": "2026-11-11T23:00:00-03:00",
+        "name": "Ofertas por 24hs 11/11",
+        "min_discounted_price": 372.8,
+        "max_discounted_price": 1770.8,
+        "suggested_discounted_price": 1166.4
+      },
+      {
+        "id": "C-MLU1021947",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 300,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1864,
+        "start_date": "2026-10-24T00:00:00",
+        "finish_date": "2026-11-22T23:59:59",
+        "name": "Cupón para carritos abandonados"
+      },
+      {
+        "id": "C-MLU1021958",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 300,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1864,
+        "start_date": "2026-10-24T00:00:00",
+        "finish_date": "2026-11-22T23:59:59",
+        "name": "Bienvenida Amado"
+      },
+      {
+        "id": "C-MLU1029974",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 500,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1864,
+        "start_date": "2026-10-27T00:00:00",
+        "finish_date": "2026-11-25T23:59:59",
+        "name": "Cupon de recompra"
+      },
+      {
+        "id": "C-MLU1040730",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 400,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1864,
+        "start_date": "2026-10-30T00:00:00",
+        "finish_date": "2026-11-28T23:59:59",
+        "name": "Seguidores 400"
+      },
+      {
+        "id": "C-MLU1040790",
+        "type": "SELLER_CAMPAIGN",
+        "sub_type": "FLEXIBLE_PERCENTAGE",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1864,
+        "start_date": "2026-11-01T00:00:00",
+        "finish_date": "2026-11-30T23:59:59",
+        "name": "Amado 15",
+        "min_discounted_price": 372.8,
+        "max_discounted_price": 1770.8,
+        "suggested_discounted_price": 1166.4
+      },
+      {
+        "id": "C-MLU1056007",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 300,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1864,
+        "start_date": "2026-11-03T00:00:00",
+        "finish_date": "2026-12-02T23:59:59",
+        "name": "Seguidores Amado"
+      },
+      {
+        "id": "C-MLU1058888",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 600,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1864,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-11-11T23:59:59",
+        "name": "Ciber Amado 600"
+      },
+      {
+        "id": "C-MLU1059173",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_PERCENTAGE",
+        "fixed_percentage": 20,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1864,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-12-03T23:59:59",
+        "name": "Seguidores 700"
+      },
+      {
+        "id": "C-MLU1059178",
+        "type": "VOLUME",
+        "sub_type": "SPONTH",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1864,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-11-10T23:59:59",
+        "name": "Llevá 2 y ahorrá",
+        "buy_quantity": 2,
+        "discount_percentage": 40,
+        "allow_combination": true
+      }
+    ],
+    [
+      {
+        "type": "PRICE_DISCOUNT",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1271,
+        "name": "",
+        "min_discounted_price": 254.2,
+        "max_discounted_price": 1207.44,
+        "suggested_discounted_price": 1016.8
+      },
+      {
+        "id": "P-MLU18109362",
+        "type": "DEAL",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1271,
+        "start_date": "2026-11-02T00:00:00-03:00",
+        "finish_date": "2026-11-11T23:00:00-03:00",
+        "name": "Ciberlunes",
+        "min_discounted_price": 254.2,
+        "max_discounted_price": 986.3,
+        "suggested_discounted_price": 859.2
+      },
+      {
+        "id": "P-MLU18109364",
+        "type": "DEAL",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1271,
+        "start_date": "2026-11-11T00:00:00-03:00",
+        "finish_date": "2026-11-11T23:00:00-03:00",
+        "name": "Ofertas por 24hs 11/11",
+        "min_discounted_price": 254.2,
+        "max_discounted_price": 1207.44,
+        "suggested_discounted_price": 1016.8
+      },
+      {
+        "id": "C-MLU1021947",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 300,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1271,
+        "start_date": "2026-10-24T00:00:00",
+        "finish_date": "2026-11-22T23:59:59",
+        "name": "Cupón para carritos abandonados"
+      },
+      {
+        "id": "C-MLU1021958",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 300,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1271,
+        "start_date": "2026-10-24T00:00:00",
+        "finish_date": "2026-11-22T23:59:59",
+        "name": "Bienvenida Amado"
+      },
+      {
+        "id": "C-MLU1029974",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 500,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1271,
+        "start_date": "2026-10-27T00:00:00",
+        "finish_date": "2026-11-25T23:59:59",
+        "name": "Cupon de recompra"
+      },
+      {
+        "id": "C-MLU1040730",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 400,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1271,
+        "start_date": "2026-10-30T00:00:00",
+        "finish_date": "2026-11-28T23:59:59",
+        "name": "Seguidores 400"
+      },
+      {
+        "id": "C-MLU1040790",
+        "type": "SELLER_CAMPAIGN",
+        "sub_type": "FLEXIBLE_PERCENTAGE",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1271,
+        "start_date": "2026-11-01T00:00:00",
+        "finish_date": "2026-11-30T23:59:59",
+        "name": "Amado 15",
+        "min_discounted_price": 254.2,
+        "max_discounted_price": 1207.43,
+        "suggested_discounted_price": 1016.8
+      },
+      {
+        "id": "C-MLU1056007",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 300,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1271,
+        "start_date": "2026-11-03T00:00:00",
+        "finish_date": "2026-12-02T23:59:59",
+        "name": "Seguidores Amado"
+      },
+      {
+        "id": "C-MLU1058888",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 600,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1271,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-11-11T23:59:59",
+        "name": "Ciber Amado 600"
+      },
+      {
+        "id": "C-MLU1059173",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_PERCENTAGE",
+        "fixed_percentage": 20,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1271,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-12-03T23:59:59",
+        "name": "Seguidores 700"
+      },
+      {
+        "id": "C-MLU1059178",
+        "type": "VOLUME",
+        "sub_type": "SPONTH",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 1271,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-11-10T23:59:59",
+        "name": "Llevá 2 y ahorrá",
+        "buy_quantity": 2,
+        "discount_percentage": 40,
+        "allow_combination": true
+      }
+    ],
+    [
+      {
+        "type": "PRICE_DISCOUNT",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 3411,
+        "name": "",
+        "min_discounted_price": 682.2,
+        "max_discounted_price": 3240.45,
+        "suggested_discounted_price": 2295
+      },
+      {
+        "id": "P-MLU18109362",
+        "type": "DEAL",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 3411,
+        "start_date": "2026-11-02T00:00:00-03:00",
+        "finish_date": "2026-11-11T23:00:00-03:00",
+        "name": "Ciberlunes",
+        "min_discounted_price": 682.2,
+        "max_discounted_price": 3308.67,
+        "suggested_discounted_price": 2967.56
+      },
+      {
+        "id": "P-MLU18109364",
+        "type": "DEAL",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 3411,
+        "start_date": "2026-11-11T00:00:00-03:00",
+        "finish_date": "2026-11-11T23:00:00-03:00",
+        "name": "Ofertas por 24hs 11/11",
+        "min_discounted_price": 682.2,
+        "max_discounted_price": 3240.45,
+        "suggested_discounted_price": 2295
+      },
+      {
+        "id": "C-MLU1021947",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 300,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 3411,
+        "start_date": "2026-10-24T00:00:00",
+        "finish_date": "2026-11-22T23:59:59",
+        "name": "Cupón para carritos abandonados"
+      },
+      {
+        "id": "C-MLU1021958",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 300,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 3411,
+        "start_date": "2026-10-24T00:00:00",
+        "finish_date": "2026-11-22T23:59:59",
+        "name": "Bienvenida Amado"
+      },
+      {
+        "id": "C-MLU1029974",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 500,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 3411,
+        "start_date": "2026-10-27T00:00:00",
+        "finish_date": "2026-11-25T23:59:59",
+        "name": "Cupon de recompra"
+      },
+      {
+        "id": "C-MLU1040730",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 400,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 3411,
+        "start_date": "2026-10-30T00:00:00",
+        "finish_date": "2026-11-28T23:59:59",
+        "name": "Seguidores 400"
+      },
+      {
+        "id": "C-MLU1040790",
+        "type": "SELLER_CAMPAIGN",
+        "sub_type": "FLEXIBLE_PERCENTAGE",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 3411,
+        "start_date": "2026-11-01T00:00:00",
+        "finish_date": "2026-11-30T23:59:59",
+        "name": "Amado 15",
+        "min_discounted_price": 682.2,
+        "max_discounted_price": 3240.45,
+        "suggested_discounted_price": 2295
+      },
+      {
+        "id": "C-MLU1056007",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 300,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 3411,
+        "start_date": "2026-11-03T00:00:00",
+        "finish_date": "2026-12-02T23:59:59",
+        "name": "Seguidores Amado"
+      },
+      {
+        "id": "C-MLU1058888",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 600,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 3411,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-11-11T23:59:59",
+        "name": "Ciber Amado 600"
+      },
+      {
+        "id": "C-MLU1059173",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_PERCENTAGE",
+        "fixed_percentage": 20,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 3411,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-12-03T23:59:59",
+        "name": "Seguidores 700"
+      },
+      {
+        "id": "C-MLU1059178",
+        "type": "VOLUME",
+        "sub_type": "SPONTH",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 3411,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-11-10T23:59:59",
+        "name": "Llevá 2 y ahorrá",
+        "buy_quantity": 2,
+        "discount_percentage": 40,
+        "allow_combination": true
+      }
+    ]
+  ],
+  "sale_price": []
+}
