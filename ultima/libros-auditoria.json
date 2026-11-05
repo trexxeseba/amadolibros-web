@@ -1,0 +1,267 @@
+{
+  "fecha": "2026-11-05T00:45:21.636Z",
+  "muestra": [
+    {
+      "id": "MLU695191187",
+      "titulo": "Libro De Los Ositos Rezamos A Mama Maria (cartone)",
+      "precio": 1200,
+      "estado": "winning",
+      "precio_para_ganar": 1200,
+      "competidor_mas_barato": null,
+      "otras_ofertas": 0,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: no hay otros vendedores",
+      "ok": true
+    },
+    {
+      "id": "MLU665242544",
+      "titulo": "Aulas Híbridas Y Bimodalidad: Entornos Integrados De Aprendi",
+      "precio": 1400,
+      "estado": "winning",
+      "precio_para_ganar": 1400,
+      "competidor_mas_barato": 1860,
+      "otras_ofertas": 5,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 1860",
+      "ok": true
+    },
+    {
+      "id": "MLU643913581",
+      "titulo": "Testigos De La Vida: Un Libro Para Los Mayores Y Para Los Qu",
+      "precio": 2300,
+      "estado": "winning",
+      "precio_para_ganar": 2300,
+      "competidor_mas_barato": 2270,
+      "otras_ofertas": 1,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (2270): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU637118299",
+      "titulo": "La Gran Esperanza, De Elena G. De White. Editorial Sudameric",
+      "precio": 1200,
+      "estado": "winning",
+      "precio_para_ganar": 1200,
+      "competidor_mas_barato": 3210,
+      "otras_ofertas": 1,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 3210",
+      "ok": true
+    },
+    {
+      "id": "MLU737107746",
+      "titulo": "Santa Biblia: «reina Valera»: Revisión 1960 (letra Súpergiga",
+      "precio": 3850,
+      "estado": "winning",
+      "precio_para_ganar": 3850,
+      "competidor_mas_barato": 3800,
+      "otras_ofertas": 4,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (3800): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU658040488",
+      "titulo": "Qué Le Pasa A Mugán? - Cuentos Para Sentir, De Ibarrola, Beg",
+      "precio": 807,
+      "estado": "winning",
+      "precio_para_ganar": 807,
+      "competidor_mas_barato": 1720,
+      "otras_ofertas": 2,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 1720",
+      "ok": true
+    },
+    {
+      "id": "MLU652746868",
+      "titulo": "Libro: Maria Montessori. Kramer, Rita. Sm (cesma)",
+      "precio": 2200,
+      "estado": "winning",
+      "precio_para_ganar": 2200,
+      "competidor_mas_barato": null,
+      "otras_ofertas": 0,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: no hay otros vendedores",
+      "ok": true
+    },
+    {
+      "id": "MLU673126600",
+      "titulo": "Libro Fundamentos Y Practicas De Comunicacion No Violenta",
+      "precio": 930,
+      "estado": "winning",
+      "precio_para_ganar": 930,
+      "competidor_mas_barato": 1045,
+      "otras_ofertas": 7,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 1045",
+      "ok": true
+    },
+    {
+      "id": "MLU639049973",
+      "titulo": "La Bella Durmiente, De Equipo Editorial. Editorial Libsa, Ta",
+      "precio": 1662,
+      "estado": "winning",
+      "precio_para_ganar": 1662,
+      "competidor_mas_barato": 1460,
+      "otras_ofertas": 6,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (1460): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU654724674",
+      "titulo": "Libro Jacques Derrida, Una Introducción, De Goldschmit, Marc",
+      "precio": 1650,
+      "estado": "winning",
+      "precio_para_ganar": 1650,
+      "competidor_mas_barato": 3530,
+      "otras_ofertas": 1,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 3530",
+      "ok": true
+    }
+  ],
+  "control_estado": [
+    {
+      "id": "MLU629952461",
+      "titulo": "Enemigo Intimo - Gabriela Arias Uriburu - Libro Kier",
+      "original": 912,
+      "aplicado": 829,
+      "en_ml": 829,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU663199900",
+      "titulo": "Libro La Última Encrucijada - Jorge Liotti - Planeta",
+      "original": 1106,
+      "aplicado": 1082,
+      "en_ml": 1082,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU637065821",
+      "titulo": "The adidas Archive. The Footwear Collection, De Christian Habermeier. Editorial ",
+      "original": 1944,
+      "aplicado": 1904,
+      "en_ml": 1904,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU691609938",
+      "titulo": "La Nobleza Negra Génesis Del Imperio Veneciano De Jorge Guerra Editorial Indepen",
+      "original": 1271,
+      "aplicado": 1244,
+      "en_ml": 1244,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU692647026",
+      "titulo": "Libro Mi Viaje Sin Ti - Alejandro Sequera",
+      "original": 764,
+      "aplicado": 646,
+      "en_ml": 646,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU757785172",
+      "titulo": "Instrumentación Quirúrgica Principios Y Práctica De Joanna Kotcher Fuller Vol 1 ",
+      "original": 6775,
+      "aplicado": 6640,
+      "en_ml": 6640,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU862968034",
+      "titulo": "Granja, La Libro De Juegos Y Puzzle, De Anónimo. Editorial El Gato De Hojalata, ",
+      "original": 415,
+      "aplicado": 405,
+      "en_ml": 405,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU889968514",
+      "titulo": "Actitud Mental Positiva - Napoleon Hill Y W. Clement Stone",
+      "original": 910,
+      "aplicado": 838,
+      "en_ml": 838,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU888292642",
+      "titulo": "Netter Flashcards De Histología",
+      "original": 2694,
+      "aplicado": 2393,
+      "en_ml": 2393,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1240815646",
+      "titulo": "El Pequeño Gran Libro Del Crochet, De Marie Noelle Bayard. Editorial Hoaki, Tapa",
+      "original": 1250,
+      "aplicado": 1173,
+      "en_ml": 1173,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1248458670",
+      "titulo": "Libro La Montaña Eres Tú [ Brianna Wiest ] Original, De Brianna Wiest. Editorial",
+      "original": 725,
+      "aplicado": 704,
+      "en_ml": 704,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1444239492",
+      "titulo": "Está Entre Nosotros: ¿de Dónde Sale Y Hasta Dónde Puede Llegar La Extrema Derech",
+      "original": 805,
+      "aplicado": 754,
+      "en_ml": 754,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU695916883",
+      "titulo": "Gestión Del Talento Humano",
+      "original": 3554,
+      "aplicado": 3482,
+      "en_ml": 3482,
+      "ok": true,
+      "problemas": []
+    }
+  ],
+  "control_regla": [],
+  "discrepancias": [],
+  "llamadas": 437
+}
