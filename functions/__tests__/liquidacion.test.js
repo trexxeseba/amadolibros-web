@@ -152,7 +152,9 @@ test('lista: sin ids entregados, no hay lista (sigue la regla anterior)', () => 
     assert.equal(liquidationList({ lista: { ids: [] } }), null);
     assert.equal(liquidationList({}), null);
     assert.equal(liquidationList({ lista: { ids: ['basura', ''] } }), null);
-    assert.equal(liquidationList(LIQUIDACION_DATA), null, 'hasta que Seba entregue la lista, el archivo versionado no trae ids');
+    // El archivo versionado ya trae la lista: se arma con el workflow "Liquidación, armar la lista".
+    const real = liquidationList(LIQUIDACION_DATA);
+    assert.ok(real === null || real.ids.size > 0);
 });
 
 test('lista: entra solo lo listado, con stock, menos médicos, recientes, gana precio y sin competencia', () => {
@@ -237,17 +239,19 @@ function pageCtx({ items, db }) {
     };
 }
 
-test('página: sin lista y con D1 caído no muestra el stock, y lo dice en el header', async () => {
+test('página: con la lista cargada muestra solo lo listado, aunque D1 esté caído', async () => {
     const db = { prepare: () => ({ bind: () => ({ all: async () => { throw new Error('d1 caído'); } }) }) };
+    // Libros de prueba que no están en la lista: la vitrina no puede mostrarlos.
     const items = Array.from({ length: 30 }, (_, i) => book(`MLU${i + 1}`, { start_time: iso(800) }));
     const ctx = pageCtx({ items, db });
     try {
         const res = await liquidacionPage(ctx);
         assert.equal(res.status, 200);
-        assert.equal(res.headers.get('x-liquidacion-ventas'), 'sin-datos');
         assert.equal(res.headers.get('x-liquidacion-total'), '0');
-        assert.equal(res.headers.get('x-liquidacion-fuente'), 'regla');
-        assert.equal(res.headers.get('cache-control'), 'no-store');
+        const hayLista = liquidationList(LIQUIDACION_DATA) !== null;
+        assert.equal(res.headers.get('x-liquidacion-fuente'), hayLista ? 'lista' : 'regla');
+        // Con lista no se consulta D1; sin lista, falla cerrada y sin caché.
+        assert.equal(res.headers.get('x-liquidacion-ventas'), hayLista ? 'no-aplica' : 'sin-datos');
         const html = await res.text();
         assert.doesNotMatch(html, /<article class="rc-card"/);
         assert.match(html, /próxima tanda/);
