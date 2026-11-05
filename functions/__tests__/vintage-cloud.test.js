@@ -87,3 +87,16 @@ test('the pause state goes to D1 in chunks under the 100-parameter limit',async(
  assert.ok(sent[0].sql.includes(CLOUD_STOCK_TABLE));
  sent.length=0;assert.deepEqual(await loadStockState(query),[{isbn:'1',item_id:'MLU1'}]);assert.match(sent[0].sql,/CREATE TABLE IF NOT EXISTS/);
 });
+
+test('a fresh engine database seeds receipts whose book left today\'s list (cloud runs start empty)',async t=>{
+ const {run}=await import('../../scripts/vintage-local/engine.mjs');
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'vintage-fresh-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+ const now=Date.now(),source_date=new Date(now-3600000).toISOString(),sha='c'.repeat(64);
+ const isbn=n=>{const stem='978'+String(n).padStart(9,'0');const sum=[...stem].reduce((t,c,i)=>t+Number(c)*(i%2?3:1),0);return stem+((10-sum%10)%10);};
+ const rows=[{isbn:isbn(1),title:'Hoy',listArs:40000,weightKg:.5,stock:'2'}];
+ const receipts=[{seller_id:'2341378249',isbn:isbn(1),state:'published',item_id:'MLU1',run_id:BULK_RUN,created_at:1,updated_at:1},{seller_id:'2341378249',isbn:isbn(2),state:'published',item_id:'MLU2',run_id:BULK_RUN,created_at:1,updated_at:1},{seller_id:'2341378249',isbn:isbn(3),state:'uncertain',item_id:null,run_id:BULK_RUN,created_at:1,updated_at:1}];
+ const c={version:1,endpoint:'https://www.amadolibros.com/operations/vintage-local',key:'b'.repeat(64),expires_at:now+86400000,seller_id:'2341378249',app_id:'4741021817925208',run_id:BULK_RUN,policy,policy_hash:await policyHash(policy),feed_id:crypto.randomUUID(),source_date,source_sha256:sha,receipts,inventory:[],identifiers:[],amendments:[],inventory_checkpoint:{status:'all',scroll:null,pending:[],done:true,seen:0}};
+ const connection=path.join(dir,'connection.json');await fs.writeFile(connection,JSON.stringify(c));
+ const stop=Object.assign(new Error('stop_here'),{code:'stop_here'});
+ await assert.rejects(()=>run({excel:'x',connection,directory:dir,validateOnly:5,readWorkbook:async()=>({source_date,source_sha256:sha,rows}),apiFactory:()=>({async account(){throw stop;}}),brokerFactory:()=>async()=>({})}),/stop_here/);
+});
