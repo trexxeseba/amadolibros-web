@@ -19,7 +19,7 @@ export const entero = n => Math.floor(Number(n) + 1e-9);
 
 // umbralInclusivo: la diferencia igual al umbral también se baja (Vintage: <= 400).
 // descuento: fracción por debajo del ganador (Vintage 0.01 = 99 % del ganador).
-export function decidir({ item, comp, promo = false, previo, piso = null, tocarStock = false, stockDemanda = STOCK_DEMANDA_DEFAULT, umbral = UMBRAL_UYU, topePct = TOPE_PCT, umbralInclusivo = false, descuento = 0 }) {
+export function decidir({ item, comp, promo = false, previo, piso = null, tocarStock = false, stockDemanda = STOCK_DEMANDA_DEFAULT, umbral = UMBRAL_UYU, topePct = TOPE_PCT, umbralInclusivo = false, descuento = 0, pasoMinimoSubida = 1 }) {
   const precio = Number(item.price);
   if (comp?.error) return { accion: 'error_consulta', motivo: comp.error };
   if (item.currency_id !== 'UYU') return { accion: 'saltear_moneda', motivo: item.currency_id };
@@ -33,7 +33,7 @@ export function decidir({ item, comp, promo = false, previo, piso = null, tocarS
   // Ya la bajamos antes, pero alguien le cambió el precio a mano: queda fuera del sistema.
   if (previo && Number(previo.precio_aplicado) !== precio) return { accion: 'liberar_editada', motivo: `precio actual ${precio}, aplicado ${previo.precio_aplicado}` };
 
-  const reglas = { umbral, topePct, umbralInclusivo, descuento };
+  const reglas = { umbral, topePct, umbralInclusivo, descuento, pasoMinimoSubida };
   const r = previo ? decidirConEstado({ precio, comp, previo, piso, ...reglas }) : decidirNueva({ precio, comp, piso, ...reglas });
   if (!CAMBIA.has(r.accion)) return r;
   if (promo === true) return { accion: 'saltear_promo', motivo: 'promoción activa' };
@@ -67,7 +67,7 @@ const MOTIVO_BLOQUEO = { ganador_inmediato: 'el ganador entrega de inmediato', g
 // Precio objetivo: el ganador menos el descuento, hacia abajo al peso.
 export const objetivoDe = (ganador, descuento = 0) => entero(ganador * (1 - (descuento || 0)));
 
-function decidirConEstado({ precio, comp, previo, piso, umbral, topePct, umbralInclusivo, descuento }) {
+function decidirConEstado({ precio, comp, previo, piso, umbral, topePct, umbralInclusivo, descuento, pasoMinimoSubida }) {
   const original = Number(previo.precio_original);
   // Marcada contra un ganador a demanda (o sin filtro de plazo): seguirlo.
   if (comp?.marcada && !comp?.bloqueo && fin(comp.ganador)) {
@@ -88,5 +88,6 @@ function decidirConEstado({ precio, comp, previo, piso, umbral, topePct, umbralI
   const motivo = comp?.bloqueo ? `ganador de entrega inmediata, no se compite` : null;
   if (objetivo <= precio) return { accion: 'mantener', motivo: motivo ?? 'gana con el precio aplicado' };
   if (objetivo >= original) return { accion: 'restaurar', precio: original, motivo: motivo ?? 'sin competidor más barato' };
+  if (objetivo - precio < pasoMinimoSubida) return { accion: 'mantener', motivo: `subiría ${objetivo - precio}, menos de ${pasoMinimoSubida}` };
   return { accion: 'subir', precio: objetivo, motivo: motivo ?? `competidor a demanda más barato en ${comp?.techo_de ?? '?'}` };
 }

@@ -17,7 +17,8 @@ El plazo del ganador se lee por `/items/{id}/shipping_options` (destino Cordón)
 la misma lectura que el panel de competencia (`worker-sync/ml-competition.js`).
 Una publicación que el sistema bajó sigue al ganador a demanda al 99 %; si el
 ganador de hoy entrega de inmediato, vuelve hacia su precio original. Las subidas
-se limitan al 99 % del competidor a demanda más barato.
+se limitan al 99 % del competidor a demanda más barato y sólo se hacen si el salto
+es de 10 pesos o más.
 
 Vintage corre acá desde el 05/11/2026 porque el motor de la PC no está andando.
 Si el motor se vuelve a prender hay que apagar uno de los dos: se pisarían.

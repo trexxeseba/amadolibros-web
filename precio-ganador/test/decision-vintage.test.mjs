@@ -60,3 +60,9 @@ test('Libros sigue igual: < 360, 30 %, un peso abajo', () => {
   assert.equal(decidir({ item: item({ price: 1000, demanda: false }), comp: { marcada: true, ganador: 640 } }).accion, 'sin_tocar_umbral');
   assert.equal(decidir({ item: item({ price: 800, demanda: false }), comp: { marcada: false, techo: 949 }, previo: { precio_original: 1000, precio_aplicado: 800 } }).precio, 949);
 });
+
+test('subida mínima de 10 pesos: 1 peso no se mueve, 15 sí', () => {
+  const p = { precio_original: 2000, precio_aplicado: 1751 };
+  assert.equal(decidir({ item: item({ price: 1751 }), comp: { marcada: false, estado: 'winning', techo: 1752, techo_de: 1770 }, previo: p, pasoMinimoSubida: 10, ...V }).accion, 'mantener');
+  assert.equal(decidir({ item: item({ price: 1751 }), comp: { marcada: false, estado: 'winning', techo: 1766, techo_de: 1784 }, previo: p, pasoMinimoSubida: 10, ...V }).accion, 'subir');
+});

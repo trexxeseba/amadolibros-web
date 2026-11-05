@@ -53,6 +53,8 @@ export const CUENTAS = {
     pisoPorCosto: false,
     // Freno: la regla nueva puede tocar unas 4.000 en la primera corrida.
     maxCambios: 5000,
+    // Subir sólo si el salto es de 10 pesos o más: no mover precios por 1 peso.
+    pasoMinimoSubida: 10,
     habilitada: true,
   },
 };

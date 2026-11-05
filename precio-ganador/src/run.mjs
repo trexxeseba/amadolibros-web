@@ -90,7 +90,7 @@ async function main() {
     const candidatos = [num(pisos[id]), num(cuenta.minimo), pisoCosto ? (pisoCosto(items.get(id)) ?? SIN_COSTO) : null].filter(v => v !== null);
     return candidatos.length ? Math.max(...candidatos) : null;
   };
-  const reglas = { umbral: cuenta.umbral ?? UMBRAL_UYU, topePct: cuenta.topePct === undefined ? undefined : cuenta.topePct, umbralInclusivo: cuenta.umbralInclusivo === true, descuento: cuenta.descuento ?? 0 };
+  const reglas = { umbral: cuenta.umbral ?? UMBRAL_UYU, topePct: cuenta.topePct === undefined ? undefined : cuenta.topePct, umbralInclusivo: cuenta.umbralInclusivo === true, descuento: cuenta.descuento ?? 0, pasoMinimoSubida: cuenta.pasoMinimoSubida ?? 1 };
   const cacheEntrega = new Map();
   const filas = []; let marcadas = 0;
   const lote = 40;
