@@ -50,15 +50,26 @@ jobs:
           [ "$code" = "200" ] || { echo "El Worker respondió HTTP $code"; exit 1; }
 
       - name: Armar la lista por ventas
-        run: node scripts/liquidacion/armar-lista.mjs --catalogo "$RUNNER_TEMP/catalog.json"
+        run: node scripts/liquidacion/armar-lista.mjs --catalogo "$RUNNER_TEMP/catalog.json" --parcial-out "$RUNNER_TEMP/parcial.json"
 
       - name: Aplicar las exclusiones automáticas
         run: node scripts/liquidacion/actualizar-exclusiones.mjs --catalogo "$RUNNER_TEMP/catalog.json"
 
       - name: Resumen (solo conteos)
         run: |
-          node scripts/liquidacion/resumen.mjs --catalogo "$RUNNER_TEMP/catalog.json"
+          node scripts/liquidacion/resumen.mjs --catalogo "$RUNNER_TEMP/catalog.json" --parcial "$RUNNER_TEMP/parcial.json"
           { echo '### Lista de liquidación (conteos)'; echo '```json'; cat data/liquidacion-resumen.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar el resultado como artefacto (por si el push no se puede)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: liquidacion-lista
+          path: |
+            data/liquidacion.json
+            data/liquidacion-resumen.json
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Dejar la lista en una rama para revisar
         run: |
