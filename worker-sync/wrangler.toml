@@ -17,10 +17,13 @@ cpu_ms = 300000
 
 # ── Cron: sincronización automática 1 vez por día — 07:15 UTC (04:15 Montevideo)
 [triggers]
-crons = ["15 7 * * *", "*/5 * * * *", "3 11 * * *", "3 12 * * *", "* * * * *"]
+crons = ["15 7 * * *", "*/5 * * * *", "3 11 * * *", "3 12 * * *", "* * * * *", "0 12 * * *", "0 18 * * *", "0 0 * * *"]
 
 # ── Variables no sensibles ────────────────────────────────────────────────────
 [vars]
+# Precio Ganador: a quién avisar si el Worker no puede lanzar la corrida.
+# El token de GitHub va como secreto: wrangler secret put GITHUB_TOKEN
+PRECIO_GANADOR_EMAIL_TO = "undiaes@gmail.com"
 APP_ID          = "4741021817925208"
 USER_ID         = "440298103"
 # SOLO LECTURA (decisión de Seba, 26/10/2026): este Worker publica en la cuenta
