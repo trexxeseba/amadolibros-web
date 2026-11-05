@@ -86,7 +86,11 @@ async function main() {
   let pisoCosto = null, infoPisos = null;
   if (cuenta.pisoPorCosto) { const r = await cargarPisosVintage(); pisoCosto = r.pisoDe; infoPisos = r.info; console.log('Pisos:', JSON.stringify(infoPisos)); }
   const SIN_COSTO = 1e12;
-  const pisoDe = id => { const fijo = num(pisos[id]); if (!pisoCosto) return fijo; const c = pisoCosto(items.get(id)) ?? SIN_COSTO; return fijo === null ? c : Math.max(fijo, c); };
+  const pisoDe = id => {
+    const candidatos = [num(pisos[id]), num(cuenta.minimo), pisoCosto ? (pisoCosto(items.get(id)) ?? SIN_COSTO) : null].filter(v => v !== null);
+    return candidatos.length ? Math.max(...candidatos) : null;
+  };
+  const reglas = { umbral: cuenta.umbral ?? UMBRAL_UYU, topePct: cuenta.topePct === undefined ? undefined : cuenta.topePct };
   const filas = []; let marcadas = 0;
   const lote = 40;
   for (let i = 0; i < orden.length; i += lote) {
@@ -95,11 +99,11 @@ async function main() {
       const item = items.get(id), previo = estado.publicaciones[id];
       try {
         const comp = await competencia(ml, item, { necesitaTecho: Boolean(previo), sellerId: cuenta.sellerId });
-        let d = decidir({ item, comp, promo: false, previo, piso: pisoDe(id), tocarStock: cuenta.tocarStockDemanda, stockDemanda });
+        let d = decidir({ item, comp, promo: false, previo, piso: pisoDe(id), tocarStock: cuenta.tocarStockDemanda, stockDemanda, ...reglas });
         let promo;
         if (CAMBIA.has(d.accion)) {
           promo = await promocionActiva(ml, id);
-          d = decidir({ item, comp, promo, previo, piso: pisoDe(id), tocarStock: cuenta.tocarStockDemanda, stockDemanda });
+          d = decidir({ item, comp, promo, previo, piso: pisoDe(id), tocarStock: cuenta.tocarStockDemanda, stockDemanda, ...reglas });
         }
         return { item, comp, d, previo, promo };
       } catch (e) {
@@ -179,7 +183,7 @@ async function main() {
   // Editadas a mano: salen del estado sin tocarlas.
   if (real) for (const f of filas) if (f.d.accion === 'liberar_editada') delete estado.publicaciones[f.item.id];
 
-  const resumen = resumir(filas, { cuenta, real, inicio, ids: ids.length, stats: ml.stats, umbral: UMBRAL_UYU });
+  const resumen = resumir(filas, { cuenta, real, inicio, ids: ids.length, stats: ml.stats, umbral: reglas.umbral });
   if (infoPisos) resumen.pisos = infoPisos;
   await mkdir(dirSalida, { recursive: true });
   await writeFile(join(dirSalida, `${cuenta.clave}-resumen.json`), JSON.stringify(resumen, null, 2));

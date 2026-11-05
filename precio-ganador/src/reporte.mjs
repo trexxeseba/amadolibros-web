@@ -41,7 +41,7 @@ export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
 
 const ACCION = {
   bajar: 'Bajar al ganador', ajustar: 'Ajustar al ganador', subir: 'Subir (sigue ganando)', restaurar: 'Volver al original',
-  sin_tocar_umbral: 'No tocar: diferencia de 360 o más', sin_tocar_pct: 'No tocar: bajaría más del 30 %', saltear_promo: 'Saltear: promoción activa',
+  sin_tocar_umbral: 'No tocar: diferencia por encima del tope', sin_tocar_pct: 'No tocar: bajaría más del 30 %', saltear_promo: 'Saltear: promoción activa',
   saltear_promo_desconocida: 'Saltear: no se pudo confirmar promoción', saltear_piso: 'Saltear: queda bajo el piso',
   saltear_variaciones: 'Saltear: tiene variaciones', saltear_moneda: 'Saltear: no está en pesos', saltear_sin_precio: 'Saltear: sin precio ganador',
   mantener: 'Mantener', mantener_promo: 'Mantener: promoción en curso', saltear_cambio_reciente: 'Saltear: el precio cambió durante la corrida', mantener_umbral: 'Mantener: el ganador bajó más de 360 desde el original', mantener_piso: 'Mantener: piso',
@@ -75,7 +75,7 @@ export async function enviarResumen({ cuenta, acum, resumen, fetcher = (...a) =>
     ['Corridas del día', acum.corridas.length], ['Marcadas (última corrida)', ult.marcadas ?? 0],
     ['Bajadas al ganador', suma('bajadas')], ['Ajustadas al ganador', suma('ajustadas')],
     ['Subidas o vueltas al original', suma('subidas') + suma('restauradas')],
-    ['Sin tocar por diferencia de 360 o más (última)', ult.sin_tocar_umbral ?? 0], ['Sin tocar por bajar más del 30 % (última)', ult.sin_tocar_pct ?? 0],
+    ['Sin tocar por diferencia por encima del tope (última)', ult.sin_tocar_umbral ?? 0], ['Sin tocar por bajar más del 30 % (última)', ult.sin_tocar_pct ?? 0],
     ['Salteadas por promoción (última)', ult.promo ?? 0], ['Errores', suma('errores')], ['Cambios de stock', suma('cambios_stock')],
   ];
   const est = resumen.catalogo?.estados ?? {};

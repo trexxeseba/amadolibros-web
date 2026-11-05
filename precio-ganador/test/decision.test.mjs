@@ -80,3 +80,10 @@ test('promoción visible: no libera una que bajamos, no baja una nueva', () => {
   assert.equal(decidir({ item: item({ price: 720, original_price: 800 }), comp: marcada(700), previo: { precio_original: 1000, precio_aplicado: 800 } }).accion, 'mantener_promo');
   assert.equal(decidir({ item: item({ original_price: 1200 }), comp: marcada(900) }).accion, 'saltear_promo');
 });
+
+test('regla simple de Vintage: umbral 400, sin tope de porcentaje, mínimo 1500 como piso', () => {
+  assert.equal(decidir({ item: item({ price: 2000 }), comp: marcada(1601), umbral: 400, topePct: null, piso: 1500 }).accion, 'bajar');
+  assert.equal(decidir({ item: item({ price: 2000 }), comp: marcada(1600), umbral: 400, topePct: null, piso: 1500 }).accion, 'sin_tocar_umbral');
+  assert.equal(decidir({ item: item({ price: 1800 }), comp: marcada(1450), umbral: 400, topePct: null, piso: 1500 }).accion, 'saltear_piso');
+  assert.equal(decidir({ item: item({ price: 702 }), comp: marcada(391), umbral: 400, topePct: null }).accion, 'bajar');
+});

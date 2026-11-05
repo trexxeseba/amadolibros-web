@@ -19,11 +19,12 @@ import { fuenteTokenD1 } from './token.mjs';
 import { crearCliente } from './ml.mjs';
 import { idsActivos, detalle } from './publicaciones.mjs';
 
-const UMBRAL = 360, TOPE = 0.30;
+
 const args = process.argv.slice(2);
 const opt = (n, d = null) => { const i = args.indexOf('--' + n); return i >= 0 ? args[i + 1] : d; };
 const cuenta = CUENTAS[opt('cuenta')];
-if (!cuenta) { console.error('Usar --cuenta libros'); process.exit(2); }
+if (!cuenta) { console.error('Usar --cuenta libros|vintage'); process.exit(2); }
+const UMBRAL = cuenta.umbral ?? 360, TOPE = cuenta.topePct ?? null, MINIMO = cuenta.minimo ?? null;
 const dirEstado = opt('estado', 'state'), dirSalida = opt('salida', 'salida'), N = Number(opt('muestra', 10));
 const leer = (f, d) => { try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return d; } };
 const estado = leer(join(dirEstado, `${cuenta.clave}.json`), { publicaciones: {} }).publicaciones;
@@ -75,7 +76,8 @@ async function main() {
     if (real !== apl) problemas.push(`precio en ML ${real}, registrado ${apl}`);
     if (apl > orig) problemas.push('aplicado mayor al original');
     if (orig - apl >= UMBRAL) problemas.push(`bajó ${orig - apl} (360 o más)`);
-    if ((orig - apl) / orig > TOPE + 1e-9) problemas.push(`bajó ${Math.round((orig - apl) / orig * 100)} % (más de 30)`);
+    if (TOPE !== null && (orig - apl) / orig > TOPE + 1e-9) problemas.push(`bajó ${Math.round((orig - apl) / orig * 100)} % (más de ${TOPE * 100})`);
+    if (MINIMO !== null && apl < MINIMO) problemas.push(`aplicado ${apl} por debajo del mínimo ${MINIMO}`);
     controlEstado.push({ id, titulo: e.titulo, original: orig, aplicado: apl, en_ml: real, ok: !problemas.length, problemas });
     if (problemas.length) discrepancias.push({ tipo: 'estado', id, detalle: problemas.join('; ') });
   }
@@ -85,7 +87,8 @@ async function main() {
     const g = Math.floor(f.ganador + 1e-9), dif = f.precio - g;
     let esperado;
     if (f.moneda !== 'UYU' || f.variaciones) esperado = 'saltear';
-    else if (dif >= UMBRAL || dif / f.precio > TOPE) esperado = 'no_tocar';
+    else if (dif >= UMBRAL || (TOPE !== null && dif / f.precio > TOPE)) esperado = 'no_tocar';
+    else if (MINIMO !== null && g < MINIMO) esperado = 'saltear';
     else if (f.promo === true || f.promo === null) esperado = 'saltear';
     else esperado = 'bajar';
     const hecho = f.accion === 'bajar' ? 'bajar' : /^sin_tocar/.test(f.accion) ? 'no_tocar' : /^saltear/.test(f.accion) ? 'saltear' : f.accion;

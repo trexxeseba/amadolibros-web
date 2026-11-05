@@ -21,6 +21,9 @@ export const CUENTAS = {
     token: { tabla: 'ml_oauth', appId: '4741021817925208' },
     // Libros: el stock no se toca nunca (tiene libros de estantería mezclados).
     tocarStockDemanda: false,
+    umbral: 360,
+    topePct: 0.30,
+    minimo: null,
     habilitada: true,
   },
   // Vintage NO corre con este sistema (Seba, 04/11/2026): su precio competitivo lo
@@ -37,9 +40,13 @@ export const CUENTAS = {
     // publicación a demanda, stock 5, conservando sus días de disponibilidad. Al volver
     // al precio original se restaura el stock que tenía.
     tocarStockDemanda: true,
-    // Piso por publicación: costo según SBS con margen mínimo del 18 % y nunca
-    // menos de UYU 1.500 (Seba, 05/11/2026). Sin costo conocido no se baja.
-    pisoPorCosto: true,
+    // Regla simple de Vintage (Seba, 05/11/2026): si pierde y la diferencia con el
+    // precio para ganar es menor a 400, bajar a ese precio. Sin tope de porcentaje
+    // ni piso por costo. Único piso: nunca menos de UYU 1.500.
+    umbral: 400,
+    topePct: null,
+    minimo: 1500,
+    pisoPorCosto: false,
     habilitada: false,
   },
 };
