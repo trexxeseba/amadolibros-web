@@ -4,12 +4,14 @@
  * ventas reales de Mercado Libre que guarda el Worker en D1.
  *
  * Criterio (el de Seba): libros activos, con stock, publicados hace 2 años o
- * más, SIN ninguna venta en los últimos 730 días. Dos formas de comprobarlo:
+ * más, SIN ninguna venta en el último año (365 días; Seba lo fijó el 5/11/2026
+ * porque el histórico de D1 cubre 377 días). Dos formas de comprobarlo:
  *
  *   1. `sold_quantity` = 0 en la publicación (nunca vendió desde que se publicó,
  *      y se publicó hace 2 años o más). Es la prueba más fuerte.
- *   2. Última venta en D1 anterior a 730 días, pero SOLO si el histórico de D1
- *      cubre los 730 días (si no, "sin venta" no prueba nada y no entra).
+ *   2. Última venta en D1 fuera de la ventana de ventas, pero SOLO si el
+ *      histórico de D1 cubre toda la ventana (si no, "sin venta" no prueba nada
+ *      y no entra).
  *
  * Además, cualquier venta reciente en D1 saca al libro, aunque sold_quantity
  * sea 0: se busca por ISBN (todas las publicaciones del mismo ISBN) y por
@@ -41,7 +43,7 @@ const DAY_MS = 86400000;
 // ISBN válido solo para preguntarle al Worker desde cuándo tiene ventas.
 const ISBN_SONDA = '9780306406157';
 
-export const SIN_VENTA_DIAS = 730;
+export const SIN_VENTA_DIAS = 365;
 export const MIN_PUBLICADO_DIAS = 730;
 export const ISBN_BATCH = 50;
 // D1 rechaza patrones LIKE de más de 50 caracteres (500 internal_error). El Worker busca
@@ -155,7 +157,7 @@ export async function evaluar(items, query, { now = Date.now(), concurrency = 2 
 
     // 2) Por título, para las ventas que quedaron sin ISBN en D1.
     const enLista = [];
-    const sinVentaEnD1 = []; // sin venta en lo que D1 cubre, aunque no alcance para probar 730 días
+    const sinVentaEnD1 = []; // sin venta en lo que D1 cubre, aunque no alcance para probar la ventana
     await mapLimit(paraTitulo, concurrency, async item => {
         const clave = claveTitulo(item.title);
         if (clave.length < TITULO_CLAVE_MIN) { conteos.titulo_no_verificable++; return; }
@@ -171,7 +173,7 @@ export async function evaluar(items, query, { now = Date.now(), concurrency = 2 
         if (!Array.isArray(data?.resultados)) throw new Error('respuesta de ventas por título sin resultados');
         if (data.resultados.some(r => vendidoEn(r, now))) { conteos.vendido_por_titulo++; return; }
         sinVentaEnD1.push(String(item.id));
-        // Sin venta reciente en D1: prueba suficiente si nunca vendió o si D1 cubre los 730 días.
+        // Sin venta reciente en D1: prueba suficiente si nunca vendió o si D1 cubre toda la ventana de ventas.
         if (nuncaVendido(item) || conteos.cobertura_completa) enLista.push(String(item.id));
         else conteos.no_verificable_por_cobertura++;
     });
