@@ -3,7 +3,8 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 
 import {
-    candidatos, vendidoEn, coberturaSuficiente, nuncaVendido, evaluar, SIN_VENTA_DIAS, MIN_PUBLICADO_DIAS, ISBN_BATCH,
+    candidatos, vendidoEn, coberturaSuficiente, nuncaVendido, evaluar, workerQuery, tipoDeConsulta,
+    SIN_VENTA_DIAS, MIN_PUBLICADO_DIAS, ISBN_BATCH,
 } from '../../scripts/liquidacion/armar-lista.mjs';
 import { resumenFinal } from '../../scripts/liquidacion/resumen.mjs';
 
@@ -175,4 +176,32 @@ test('el script no imprime títulos, ISBN ni ventas, y no nombra al vendedor', (
     assert.doesNotMatch(src, /440298103/);
     assert.match(src, /\/sales\/query/);
     assert.doesNotMatch(src, /\/sales\/sync|\/sales\/reidentify/);
+});
+
+test('workerQuery: reintenta los 5xx y, si sigue fallando, dice qué consulta falló y el código, sin datos', async () => {
+    let n = 0;
+    const fetchFn = async () => { n++; return new Response(JSON.stringify({ error: 'internal_error', titulo: 'secreto' }), { status: 500 }); };
+    const query = workerQuery({ worker: 'https://w.example', secret: 'x', fetchFn, sleep: async () => {} });
+    await assert.rejects(query({ titulo: 'Un libro cualquiera' }), error => {
+        assert.equal(error.status, 500);
+        assert.equal(error.tipo, 'titulo');
+        assert.match(error.message, /500 en la consulta titulo \(internal_error\)/);
+        assert.doesNotMatch(error.message, /secreto|cualquiera/);
+        return true;
+    });
+    assert.equal(n, 5);
+});
+
+test('workerQuery: un reintento exitoso alcanza', async () => {
+    let n = 0;
+    const fetchFn = async () => (++n < 3 ? new Response('{}', { status: 502 }) : new Response(JSON.stringify({ resultados: [] }), { status: 200 }));
+    const query = workerQuery({ worker: 'https://w.example', secret: 'x', fetchFn, sleep: async () => {} });
+    assert.deepEqual(await query({ isbns: ['9780306406157'] }), { resultados: [] });
+    assert.equal(n, 3);
+});
+
+test('tipoDeConsulta distingue sonda, lote y título', () => {
+    assert.equal(tipoDeConsulta({ titulo: 'x' }), 'titulo');
+    assert.equal(tipoDeConsulta({ isbns: ['1'] }), 'isbn_uno');
+    assert.equal(tipoDeConsulta({ isbns: ['1', '2'] }), 'isbn_lote');
 });

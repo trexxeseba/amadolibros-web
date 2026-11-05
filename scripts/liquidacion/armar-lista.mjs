@@ -91,7 +91,7 @@ async function mapLimit(list, limit, fn) {
  * nada. Un histórico corto no es un error: solo deja afuera a los libros que
  * únicamente se podrían probar con él (los que ya vendieron alguna vez).
  */
-export async function evaluar(items, query, { now = Date.now(), concurrency = 4 } = {}) {
+export async function evaluar(items, query, { now = Date.now(), concurrency = 2 } = {}) {
     const conteos = {
         candidatos: items.length, con_sold_quantity: 0, nunca_vendidos: 0,
         cobertura_desde: null, cobertura_dias: null, cobertura_completa: false,
@@ -162,21 +162,32 @@ export async function evaluar(items, query, { now = Date.now(), concurrency = 4 
     return { ids: enLista.sort(), conteos };
 }
 
-function workerQuery({ worker, secret, fetchFn = globalThis.fetch }) {
+/** Qué clase de consulta es, para que un error diga dónde falló (sin datos de ventas). */
+export function tipoDeConsulta(body) {
+    if (body?.titulo !== undefined) return 'titulo';
+    return Array.isArray(body?.isbns) && body.isbns.length === 1 ? 'isbn_uno' : 'isbn_lote';
+}
+
+export function workerQuery({ worker, secret, fetchFn = globalThis.fetch, sleep = ms => new Promise(r => setTimeout(r, ms)) }) {
     return async function query(body) {
-        for (let attempt = 0; attempt < 4; attempt++) {
+        const tipo = tipoDeConsulta(body);
+        for (let attempt = 0; attempt < 5; attempt++) {
             const res = await fetchFn(`${worker}/sales/query`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
             if (res.ok) return res.json();
-            if ((res.status === 429 || res.status >= 500) && attempt < 3) {
-                await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+            if ((res.status === 429 || res.status >= 500) && attempt < 4) {
+                await sleep(2000 * (attempt + 1));
                 continue;
             }
-            const error = new Error(`el Worker respondió ${res.status}`);
+            // Solo el código de error del Worker (p. ej. internal_error), nunca el cuerpo completo.
+            let code = '';
+            try { code = String((await res.json())?.error ?? '').replace(/[^a-z0-9_]/gi, '').slice(0, 40); } catch { /* sin cuerpo */ }
+            const error = new Error(`el Worker respondió ${res.status} en la consulta ${tipo}${code ? ` (${code})` : ''}`);
             error.status = res.status;
+            error.tipo = tipo;
             throw error;
         }
         throw new Error('el Worker no respondió');
