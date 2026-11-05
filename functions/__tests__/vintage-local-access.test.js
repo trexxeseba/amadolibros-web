@@ -225,3 +225,14 @@ test('the PC accepts the competitive policy only when the server recorded it as 
  assert.equal((await h.run({...h.options,brokerFactory:capped,onStatus:x=>seen.push(JSON.parse(x).state)})).state,'daily_cap_reached');
  assert.ok(seen.includes('policy_amended'));
 });
+
+test('a reconciled create of another run is accepted without the exact price, quantity 1 or active state',()=>{
+ const item={seller_id:2341378249,seller_custom_field:'AMADO-AR-9789502323060',attributes:[],price:1450,currency_id:'UYU',available_quantity:5,status:'paused',sale_terms:[{id:'MANUFACTURING_TIME',value_name:'18 días'}]};
+ assert.doesNotThrow(()=>checkCreated(item,'9789502323060',null));
+ assert.throws(()=>checkCreated(item,'9789502323060',1450),/created_item_check_failed/);
+ assert.throws(()=>checkCreated({...item,price:1100},'9789502323060',null),/created_item_check_failed/);
+ assert.throws(()=>checkCreated({...item,seller_id:440298103},'9789502323060',null),/created_item_check_failed/);
+ assert.throws(()=>checkCreated({...item,sale_terms:[]},'9789502323060',null),/created_item_check_failed/);
+ assert.throws(()=>checkCreated({...item,status:'closed'},'9789502323060',null),/created_item_check_failed/);
+ assert.doesNotThrow(()=>checkCreated({...item,available_quantity:1,status:'active'},'9789502323060',1450));
+});

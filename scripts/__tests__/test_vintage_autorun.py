@@ -20,6 +20,7 @@ def make_runner(directory, published_by_run):
     current = {"published_total": published_by_run[0]}
     runner.update_code = lambda: False
     runner.repo_mode = lambda: "publish_and_correct"  # aislado del campaign.json real del repo
+    runner.repo_executor = lambda: "pc"
     runner.apply_repo_target = lambda: None
     runner.connection_expires_at = lambda: time.time() + 86400
     runner.renew = lambda: (0, {"state": "renewed"})
@@ -82,6 +83,29 @@ class RepoTargetTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             runner = vintage_autorun.Runner(types.SimpleNamespace(directory=directory, excel=None, connection=None, secret_file=None, sbs_file=None, node=None, target=10000, notify_url=None))
             self.assertEqual(runner.repo_target(), 80000)
+
+
+class ExecutorTest(unittest.TestCase):
+    def test_with_the_cloud_executor_the_pc_never_renews_nor_publishes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = make_runner(directory, [100])
+            runner.repo_executor = lambda: "nube"
+            calls = []
+            runner.renew = lambda: calls.append("renew") or (0, {"state": "renewed"})
+            runner.run_engine = lambda: calls.append("engine") or (0, None)
+            runner.force_renew = True
+            self.assertIsNone(runner.cycle())
+            self.assertEqual(calls, [])
+            self.assertEqual(runner.waits, ["ejecutor en la nube"])
+
+    def test_the_executor_is_read_from_the_campaign_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runner = vintage_autorun.Runner(types.SimpleNamespace(directory=directory, excel=None, connection=None, secret_file=None, sbs_file=None, node=None, target=10000, notify_url=None))
+            path = Path(directory) / "campaign.json"
+            for content, expected in [('{"ejecutor": "nube"}', "nube"), ('{"ejecutor": "pc"}', "pc"), ('{}', "pc"), ("roto", "pc")]:
+                path.write_text(content, "utf-8")
+                with unittest.mock.patch.object(vintage_autorun, "CAMPAIGN_FILE", path):
+                    self.assertEqual(runner.repo_executor(), expected)
 
 
 class RenewLoopTest(unittest.TestCase):

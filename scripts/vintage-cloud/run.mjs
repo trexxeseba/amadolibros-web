@@ -1,0 +1,139 @@
+// Publicador de Amado Vintage (seller 2341378249) en la nube, sin la PC.
+//
+// Corre en GitHub Actions (.github/workflows/vintage-nube.yml) con el mismo código que usaba la PC
+// (scripts/vintage-local/): renew.mjs baja la lista de SBS con usuario y la carga a D1, el servidor
+// emite una conexión temporal (el token de Mercado Libre lo sigue renovando Cloudflare), y la
+// reserva por ISBN sigue en D1. Lo que en la PC era SQLite se arma de cero en cada corrida desde
+// D1; el estado de pausas se guarda en D1 (ml_vintage_cloud_stock_sync).
+//
+// Acciones:
+//   keepalive  sólo mantiene vigente el token de Vintage (Precio Ganador lo lee de D1).
+//   numeros    baja la lista, la carga y cuenta (sin Mercado Libre).
+//   prueba     numeros + qué pausaría o reactivaría + 5 altas preparadas sin enviar (nunca POST /items).
+//   publicar   pausa/reactiva según la lista (nunca toca precios: eso es de Precio Ganador) y publica
+//              una tanda con freno diario. Exige campaign.json "ejecutor": "nube" y "nube.modo": "real".
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {pathToFileURL,fileURLToPath} from 'node:url';
+import {renewConnection,makeRenewClient} from '../vintage-local/renew.mjs';
+import {run as runEngine,inspectWorkbook,makeBroker,checkConfiguration,SELLER} from '../vintage-local/engine.mjs';
+import {syncStock} from '../vintage-local/stock-sync.mjs';
+import {openDatabase} from '../vintage-local/db.mjs';
+import {campaignNumbers} from './numbers.mjs';
+import {d1Client,loadStockState,saveStockState,STOCK_COLUMNS} from './d1.mjs';
+
+export const ACTIONS=['keepalive','numeros','prueba','publicar'];
+export const HARD_MAX_PER_RUN=1000,HARD_MAX_PER_DAY=5000;
+const CAMPAIGN=path.join(path.dirname(fileURLToPath(import.meta.url)),'..','vintage-local','campaign.json');
+const problem=(code,detail={})=>Object.assign(new Error(code),{code,detail});
+
+// Qué permite campaign.json. Publicar de verdad exige las dos llaves; los números salen de acá.
+export function cloudSettings(campaign,{tanda,tope}={}){
+ const nube=campaign?.nube??{},int=(v,d)=>Number.isInteger(Number(v))&&Number(v)>=0&&String(v).trim()!==''?Number(v):d;
+ return {
+  real:campaign?.ejecutor==='nube'&&nube.modo==='real',
+  ejecutor:campaign?.ejecutor==='nube'?'nube':'pc',
+  modo:nube.modo==='real'?'real':nube.modo==='apagado'?'apagado':'prueba',
+  tanda:Math.min(HARD_MAX_PER_RUN,int(tanda,int(nube.tanda,50))),
+  tope_diario:Math.min(HARD_MAX_PER_DAY,int(tope,int(nube.tope_diario,300))),
+  minutos:Math.min(150,Math.max(5,int(nube.minutos,90))),
+  target_total:Number.isInteger(campaign?.target_total)?campaign.target_total:10000,
+ };
+}
+export function batchSize(settings,dailyCreated){return Math.max(0,Math.min(settings.tanda,settings.tope_diario-Math.max(0,Number(dailyCreated)||0)));}
+
+async function syncWithD1State({query,directory,connection,excel,mode,now=Date.now}){
+ const db=openDatabase(path.join(directory,'publisher.sqlite'));
+ try{
+  await db.prepare(`CREATE TABLE IF NOT EXISTS vintage_stock_sync (isbn TEXT PRIMARY KEY,item_id TEXT NOT NULL,desired_status TEXT,applied_status TEXT,missing_since INTEGER NOT NULL DEFAULT 0,feed_id TEXT,attempts INTEGER NOT NULL DEFAULT 0,next_at INTEGER NOT NULL DEFAULT 0,last_error TEXT,updated_at INTEGER NOT NULL DEFAULT 0,applied_price INTEGER,competitor_json TEXT,competitor_at INTEGER)`).run();
+  for(const r of await loadStockState(query))await db.prepare(`INSERT OR REPLACE INTO vintage_stock_sync(${STOCK_COLUMNS.join(',')}) VALUES(${STOCK_COLUMNS.map(()=>'?').join(',')})`).bind(...STOCK_COLUMNS.map(c=>r[c]??null)).run();
+ }finally{db.close();}
+ const started=now(),summary=await syncStock({connection,excel,directory,mode,now});
+ let saved=0;
+ if(mode!=='report'){
+  const db2=openDatabase(path.join(directory,'publisher.sqlite'));
+  try{saved=await saveStockState(query,(await db2.prepare(`SELECT ${STOCK_COLUMNS.join(',')} FROM vintage_stock_sync WHERE updated_at>=?`).bind(started).all()).results);}finally{db2.close();}
+ }
+ return {...summary,estado_guardado_en_d1:saved};
+}
+
+export async function cloudRun({action,directory,campaign,overrides={},env=process.env,query=null,deps={}}){
+ if(!ACTIONS.includes(action))throw problem('accion_invalida');
+ const settings=cloudSettings(campaign,overrides),report={accion:action,cuenta:'Amado Vintage',seller_id:SELLER,ajustes:settings,inicio:new Date().toISOString()};
+ if(action==='publicar'&&!settings.real)throw problem('publicar_no_habilitado',{ejecutor:settings.ejecutor,modo:settings.modo});
+ const secret=env.VINTAGE_RENEW_SECRET;
+ const post=(deps.renewClient??makeRenewClient)(secret);
+ // El token se mantiene vivo siempre, aun con el publicador apagado: Precio Ganador lo necesita.
+ report.token=await post('keepalive');
+ if(action==='keepalive')return {...report,estado:'token_vigente'};
+ if(settings.modo==='apagado')return {...report,estado:'apagado'};
+ const sbs=env.SBS_EMAIL&&env.SBS_PASSWORD?{email:env.SBS_EMAIL,password:env.SBS_PASSWORD}:null;
+ if(!sbs)throw problem('sbs_credentials_missing');
+ await fs.mkdir(directory,{recursive:true});
+ const excel=path.join(directory,'sbs.xlsx'),connection=path.join(directory,'connection.json');
+ try{
+  report.lista=await (deps.renew??renewConnection)({excel,connection,secret,sbs,log:x=>console.log(JSON.stringify(x))});
+ }catch(error){
+  if(['supplier_stock_stale','supplier_stock_stale_or_future'].includes(error.code))return {...report,estado:'lista_vieja',detalle:error.detail};
+  throw error;
+ }
+ try{
+  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
+  const input=await (deps.inspect??inspectWorkbook)(excel);
+  report.numeros=campaignNumbers(input.rows,c.receipts,policy);
+  if(action==='numeros')return {...report,estado:'listo'};
+  const q=query??d1Client();
+  report.stock=await (deps.sync??syncWithD1State)({query:q,directory,connection,excel,mode:action==='publicar'?'stock_only':'report'});
+  if(action==='prueba'){
+   const result=await (deps.engine??runEngine)({excel,connection,directory,validateOnly:5,target:settings.target_total,onStatus:x=>console.log(x)});
+   let preview=[];try{preview=JSON.parse(await fs.readFile(path.join(directory,'items.preview.json'),'utf8'));}catch{}
+   report.prueba={estado:result.state,altas_preparadas:preview.map(p=>({isbn:p.isbn,estado:p.state,precio:p.payload?.price??null,titulo:p.payload?.title??null,motivo:p.error_code??null}))};
+   return {...report,estado:'prueba_lista'};
+  }
+  const status=await (deps.broker??makeBroker)(c)('status');
+  const n=batchSize(settings,status.daily_created);
+  report.freno={altas_hoy:status.daily_created,tope_diario:settings.tope_diario,tanda:n};
+  if(n===0)return {...report,estado:'tope_diario_alcanzado'};
+  const result=await (deps.engine??runEngine)({excel,connection,directory,limitNew:n,target:settings.target_total,raiseTargetTo:settings.target_total,maxMs:settings.minutos*60000,onStatus:x=>console.log(x)});
+  const after=await (deps.broker??makeBroker)(c)('status');
+  report.publicacion={estado:result.state,publicados_total:result.published_total,altas_de_esta_corrida:Math.max(0,after.daily_created-status.daily_created)};
+  return {...report,estado:result.state};
+ }finally{
+  // La conexión no queda abierta entre corridas: la próxima pide una nueva.
+  await post('revoke').catch(()=>{});
+  await fs.rm(connection,{force:true});
+ }
+}
+
+const peso=n=>n===null||n===undefined?'—':'$ '+Number(n).toLocaleString('es-UY');
+export function markdown(r){
+ const lines=[`## Vintage en la nube: ${r.accion}`,'',`Estado: **${r.estado??r.error}**`,''];
+ const a=r.ajustes;if(a)lines.push(`Ejecutor: ${a.ejecutor} · modo: ${a.modo} · tanda: ${a.tanda} · tope diario: ${a.tope_diario}`,'');
+ if(r.token)lines.push(`Token de Vintage: ${r.token.refreshed?'renovado':'vigente'}, vence ${new Date(r.token.expires_at).toLocaleString('es-UY',{timeZone:'America/Montevideo'})}`,'');
+ if(r.lista)lines.push(`Lista de SBS: ${r.lista.source_date}, ${r.lista.rows?.toLocaleString('es-UY')} filas, cargada en D1.`,'');
+ const n=r.numeros;
+ if(n)lines.push('| | Libros |','|---|---:|',`| Filas en la lista | ${n.filas_lista} |`,`| Con stock en SBS | ${n.con_stock} |`,`| Publicados en Vintage | ${n.publicados} |`,`| Altas sin confirmar | ${n.sin_confirmar} |`,`| Publicados que hoy no tienen stock | ${n.publicados_sin_stock_hoy} |`,`| **Candidatos a publicar** | **${n.candidatos_nuevos}** |`,'',`Precio completo de los candidatos (antes de mirar al ganador): mínimo ${peso(n.precio_lista_completo.minimo)}, mediana ${peso(n.precio_lista_completo.mediana)}, 90 % por debajo de ${peso(n.precio_lista_completo.p90)}.`,'');
+ if(r.stock)lines.push(`Stock: ${r.stock.mode==='report'?'(sólo informe) ':''}publicados ${r.stock.published??'—'}, con stock ${r.stock.in_stock??'—'}, faltan ${r.stock.missing??'—'}${r.stock.suspicious_feed?' (lista incompleta: no se pausa nada)':''}; pausados ${r.stock.paused??0}, reactivados ${r.stock.activated??0}.`,'');
+ if(r.prueba){lines.push(`Prueba de altas (no se envió nada a Mercado Libre): ${r.prueba.estado}`,'','| ISBN | Estado | Precio | Título |','|---|---|---:|---|');for(const p of r.prueba.altas_preparadas)lines.push(`| ${p.isbn} | ${p.estado}${p.motivo?' ('+p.motivo+')':''} | ${peso(p.precio)} | ${(p.titulo??'').replace(/\|/g,'/')} |`);lines.push('');}
+ if(r.freno)lines.push(`Freno: ${r.freno.altas_hoy} altas hoy, tope ${r.freno.tope_diario}, tanda de esta corrida ${r.freno.tanda}.`,'');
+ if(r.publicacion)lines.push(`Publicación: ${r.publicacion.altas_de_esta_corrida} altas nuevas; total ${r.publicacion.publicados_total}.`,'');
+ return lines.join('\n');
+}
+
+async function main(){
+ const args=process.argv.slice(2),get=n=>args.includes(n)?args[args.indexOf(n)+1]:undefined;
+ const action=get('--accion')??'prueba',directory=get('--dir'),out=get('--salida');
+ let report;
+ try{
+  const campaign=JSON.parse(await fs.readFile(CAMPAIGN,'utf8'));
+  report=await cloudRun({action,directory,campaign,overrides:{tanda:get('--tanda'),tope:get('--tope')}});
+ }catch(error){
+  const code=[error.code,error.message].find(x=>/^[a-z0-9_]{1,100}$/.test(x??''))??'fallo_nube';
+  report={accion:action,estado:'fallo',error:code,detalle:error.detail??{}};
+  process.exitCode=1;
+ }
+ if(out){await fs.mkdir(out,{recursive:true});await fs.writeFile(path.join(out,'reporte.json'),JSON.stringify(report,null,2));await fs.writeFile(path.join(out,'reporte.md'),markdown(report));}
+ if(process.env.GITHUB_STEP_SUMMARY)await fs.appendFile(process.env.GITHUB_STEP_SUMMARY,markdown(report)+'\n');
+ console.log(JSON.stringify({estado:report.estado,error:report.error??null}));
+}
+if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href)await main();

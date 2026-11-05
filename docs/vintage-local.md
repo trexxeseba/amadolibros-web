@@ -1,5 +1,7 @@
 # Publicador local de Vintage
 
+> Reemplazo sin PC: `docs/vintage-nube.md`. Con `"ejecutor": "nube"` en `campaign.json` el supervisor de la PC queda en espera.
+
 `scripts/vintage_local.py` runs on the owner's PC without a browser or queue.
 Python owns the OS process lock and supervises the existing Node publication
 engine, rather than duplicating its validated metadata, shipping and pricing code.
