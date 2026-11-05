@@ -36,7 +36,7 @@ const SCHEMA=`CREATE TABLE IF NOT EXISTS vintage_stock_sync (isbn TEXT PRIMARY K
 const TRANSIENT_MS=300000,LONG_MS=86400000;
 function competitorOf(row){try{const value=JSON.parse(row?.competitor_json??'null');return value&&typeof value==='object'?value:null;}catch{return null;}}
 
-export async function syncStock({connection,excel,directory,mode='pause_and_reactivate',graceHours=0,maxMissingPct=30,batch=500,budgetMs=18*60000,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,now=Date.now,onStatus=()=>{}}){
+export async function syncStock({connection,excel,directory,mode='pause_and_reactivate',graceHours=0,maxMissingPct=30,batch=500,budgetMs=18*60000,intervalMs=2000,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,now=Date.now,onStatus=()=>{}}){
  if(!MODES.includes(mode))throw new Error('invalid_stock_sync_mode');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c,now());
  const input=await readWorkbook(excel);
@@ -45,7 +45,7 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
  await fs.mkdir(directory,{recursive:true});
  const db=openDatabase(path.join(directory,'publisher.sqlite')),stmt=(sql,...args)=>db.prepare(sql).bind(...args);
  const env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id};
- const broker=brokerFactory(c),limited=createVintageBulkFetch();
+ const broker=brokerFactory(c),limited=createVintageBulkFetch({intervalMs});
  let tokenCache=null;
  const api=apiFactory({sellerId:SELLER,timeouts:{request:60000,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>limited(env,url,options)});
  try{

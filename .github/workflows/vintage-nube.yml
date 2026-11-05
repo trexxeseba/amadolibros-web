@@ -9,11 +9,11 @@ name: Vintage publicador (nube)
 #   "nube": {"modo": "prueba" | "real" | "apagado", "tanda", "tope_diario", "minutos"}
 # Publica de verdad sólo con "ejecutor": "nube" y "modo": "real" a la vez.
 #
-# Cada 2 horas: con las dos llaves, publica una tanda; si no, sólo mantiene vivo el token
+# Cada hora: con las dos llaves, publica una tanda (hasta "minutos" y el tope del día); si no, sólo mantiene vivo el token
 # de Vintage (lo usa Precio Ganador). Nunca toca precios: eso es de Precio Ganador.
 on:
   schedule:
-    - cron: '37 1-23/2 * * *'
+    - cron: '37 * * * *'
   workflow_dispatch:
     inputs:
       accion:

@@ -112,3 +112,28 @@ test('an authorization cut during the test is retried and resumes from the saved
  }});
  assert.equal(r.prueba.estado,'ready');assert.equal(r.reintentos_autorizacion,1);
 });
+
+test('the request interval is configurable for the cloud, clamped between 0.4 and 2 seconds',()=>{
+ assert.equal(cloudSettings(campaign('nube','real',{intervalo_ms:500})).intervalo_ms,500);
+ assert.equal(cloudSettings(campaign('nube','real',{intervalo_ms:50})).intervalo_ms,400);
+ assert.equal(cloudSettings(campaign('nube','real')).intervalo_ms,2000);
+});
+
+test('the committed campaign publishes from the cloud at up to 5000 a day',async()=>{
+ const c=JSON.parse(await fs.readFile(new URL('../../scripts/vintage-local/campaign.json',import.meta.url),'utf8'));
+ const s=cloudSettings(c);
+ assert.equal(s.real,true);assert.equal(s.tope_diario,5000);assert.ok(s.intervalo_ms>=400);
+});
+
+test('the Vintage request clock spaces requests by the configured interval',async()=>{
+ const {createVintageBulkFetch}=await import('../_shared/meli-vintage-bulk.js');
+ const {openDatabase}=await import('../../scripts/vintage-local/db.mjs');
+ const db=openDatabase(':memory:');
+ await db.prepare('CREATE TABLE ml_vintage_bulk_rate (id INTEGER PRIMARY KEY,next_at INTEGER NOT NULL DEFAULT 0,cooldown INTEGER NOT NULL DEFAULT 0,strikes INTEGER NOT NULL DEFAULT 0)').run();
+ await db.prepare('INSERT INTO ml_vintage_bulk_rate(id) VALUES(1)').run();
+ let clock=1_000_000;const waits=[];
+ const limited=createVintageBulkFetch({intervalMs:500,now:()=>clock,sleep:async ms=>{waits.push(ms);clock+=ms;},fetcher:async()=>new Response('{}')});
+ for(let i=0;i<3;i++)await limited({ORDERS_DB:db},'https://api.mercadolibre.com/items/MLU1',{});
+ assert.deepEqual(waits,[500,500]);
+ db.close();
+});

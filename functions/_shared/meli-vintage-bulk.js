@@ -59,7 +59,9 @@ export class VintageBulkStore extends VintageStore {
 
 // A persistent seller-wide request clock prevents bursts across tabs/isolates.
 // It is an application budget (30 requests/minute), not a claimed ML limit.
-export function createVintageBulkFetch({fetcher=(...args)=>fetch(...args),now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),random=Math.random}={}){
+// intervalMs: separación mínima entre pedidos a Mercado Libre (2 s por defecto; la nube puede bajarlo).
+export function createVintageBulkFetch({fetcher=(...args)=>fetch(...args),now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),random=Math.random,intervalMs=2000}={}){
+ const gap=Math.max(250,Math.min(10000,Number(intervalMs)||2000));
  let tail=Promise.resolve();
  return (env,url,options)=>{
   const task=tail.then(async()=>{
@@ -67,9 +69,9 @@ export function createVintageBulkFetch({fetcher=(...args)=>fetch(...args),now=Da
    if(rate.cooldown>now())throw new MercadoLibreError('vintage_rate_cooldown',429,Math.ceil((rate.cooldown-now())/1000));
    const parsed=new URL(url),cacheable=(options.method??'GET')==='GET'&&parsed.origin==='https://api.mercadolibre.com'&&(/^\/categories\/MLU\d+(?:\/attributes)?$/.test(parsed.pathname)||/^\/catalog_domains\/MLU-[A-Z_]+\/categories$/.test(parsed.pathname));
    if(cacheable){const cached=await db.prepare('SELECT response_json FROM ml_vintage_bulk_cache WHERE url=? AND expires_at>?').bind(url,now()).first();if(cached)return new Response(cached.response_json,{headers:{'Content-Type':'application/json'}});}
-   const slot=await db.prepare('UPDATE ml_vintage_bulk_rate SET next_at=MAX(next_at,?)+2000 WHERE id=1 AND cooldown<=? RETURNING next_at').bind(now(),now()).first();
+   const slot=await db.prepare('UPDATE ml_vintage_bulk_rate SET next_at=MAX(next_at,?)+? WHERE id=1 AND cooldown<=? RETURNING next_at').bind(now(),gap,now()).first();
    if(!slot)throw new MercadoLibreError('vintage_rate_cooldown',429,120);
-   const wait=slot.next_at-2000-now();
+   const wait=slot.next_at-gap-now();
    if(wait>30000)throw new MercadoLibreError('vintage_rate_budget',429,Math.ceil(wait/1000));
    if(wait>0)await sleep(wait);
    const again=await db.prepare('SELECT cooldown FROM ml_vintage_bulk_rate WHERE id=1').first();
