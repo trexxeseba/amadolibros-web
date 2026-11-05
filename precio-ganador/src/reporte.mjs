@@ -25,14 +25,16 @@ export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
   };
   // Cómo está la cuenta en la competencia de catálogo, para contrastar con los
   // contadores del panel de ML (que suman sugerencias, no sólo las que pierden).
-  const estados = {}, sugerencias = {};
+  const estados = {}, sugerencias = {}, motivos = {}, porTipo = {};
   for (const f of filas) if ((f.comp?.tipo === 'catalogo' || f.comp?.tipo === 'tradicional') && !f.comp.error) {
     estados[f.comp.estado || 'sin_estado'] = (estados[f.comp.estado || 'sin_estado'] ?? 0) + 1;
     for (const o of f.comp.oportunidades ?? []) sugerencias[o] = (sugerencias[o] ?? 0) + 1;
+    for (const m of f.comp.motivos ?? []) { const k = `${f.comp.estado}:${typeof m === 'string' ? m : (m?.id ?? JSON.stringify(m))}`; motivos[k] = (motivos[k] ?? 0) + 1; }
+    const k2 = `${f.comp.tipo}:${f.comp.estado}:${f.item.demanda ? 'a_demanda' : 'con_stock'}`; porTipo[k2] = (porTipo[k2] ?? 0) + 1;
   }
   const errores = {};
   for (const f of filas) if (/^error/.test(f.d.accion)) errores[f.d.motivo] = (errores[f.d.motivo] ?? 0) + 1;
-  return { cuenta: cuenta.clave, umbral, duracion_s: Math.round((Date.now() - inicio) / 1000), contadores, catalogo: { estados, publicaciones_con_alguna_sugerencia: filas.filter(f => f.comp?.oportunidades?.length).length, sugerencias }, errores, llamadas: stats.llamadas, por_status: stats.porStatus };
+  return { cuenta: cuenta.clave, umbral, duracion_s: Math.round((Date.now() - inicio) / 1000), contadores, catalogo: { estados, publicaciones_con_alguna_sugerencia: filas.filter(f => f.comp?.oportunidades?.length).length, sugerencias, motivos, por_tipo: porTipo, errores_por_tipo: filas.filter(f => f.comp?.error).reduce((a, f) => (a[f.comp.error] = (a[f.comp.error] ?? 0) + 1, a), {}) }, errores, llamadas: stats.llamadas, por_status: stats.porStatus };
 }
 
 const ACCION = {
