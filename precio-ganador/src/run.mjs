@@ -14,6 +14,7 @@ import { idsActivos, detalle } from './publicaciones.mjs';
 import { competencia, promocionActiva, MUESTRAS } from './competencia.mjs';
 import { decidir, CAMBIA } from './decision.mjs';
 import { resumir, tablaMarkdown, enviarResumen } from './reporte.mjs';
+import { cargarPisosVintage } from './costos-vintage.mjs';
 
 const args = process.argv.slice(2);
 const opt = (n, d = null) => { const i = args.indexOf('--' + n); return i >= 0 ? args[i + 1] : d; };
@@ -81,6 +82,11 @@ async function main() {
     if (tocado) guardarEstado();
   }
 
+  // Piso por costo (Vintage). Sin costo conocido, el piso es inalcanzable: no se baja.
+  let pisoCosto = null, infoPisos = null;
+  if (cuenta.pisoPorCosto) { const r = await cargarPisosVintage(); pisoCosto = r.pisoDe; infoPisos = r.info; console.log('Pisos:', JSON.stringify(infoPisos)); }
+  const SIN_COSTO = 1e12;
+  const pisoDe = id => { const fijo = num(pisos[id]); if (!pisoCosto) return fijo; const c = pisoCosto(items.get(id)) ?? SIN_COSTO; return fijo === null ? c : Math.max(fijo, c); };
   const filas = []; let marcadas = 0;
   const lote = 40;
   for (let i = 0; i < orden.length; i += lote) {
@@ -89,11 +95,11 @@ async function main() {
       const item = items.get(id), previo = estado.publicaciones[id];
       try {
         const comp = await competencia(ml, item, { necesitaTecho: Boolean(previo), sellerId: cuenta.sellerId });
-        let d = decidir({ item, comp, promo: false, previo, piso: num(pisos[id]), tocarStock: cuenta.tocarStockDemanda, stockDemanda });
+        let d = decidir({ item, comp, promo: false, previo, piso: pisoDe(id), tocarStock: cuenta.tocarStockDemanda, stockDemanda });
         let promo;
         if (CAMBIA.has(d.accion)) {
           promo = await promocionActiva(ml, id);
-          d = decidir({ item, comp, promo, previo, piso: num(pisos[id]), tocarStock: cuenta.tocarStockDemanda, stockDemanda });
+          d = decidir({ item, comp, promo, previo, piso: pisoDe(id), tocarStock: cuenta.tocarStockDemanda, stockDemanda });
         }
         return { item, comp, d, previo, promo };
       } catch (e) {
@@ -174,6 +180,7 @@ async function main() {
   if (real) for (const f of filas) if (f.d.accion === 'liberar_editada') delete estado.publicaciones[f.item.id];
 
   const resumen = resumir(filas, { cuenta, real, inicio, ids: ids.length, stats: ml.stats, umbral: UMBRAL_UYU });
+  if (infoPisos) resumen.pisos = infoPisos;
   await mkdir(dirSalida, { recursive: true });
   await writeFile(join(dirSalida, `${cuenta.clave}-resumen.json`), JSON.stringify(resumen, null, 2));
   await writeFile(join(dirSalida, `${cuenta.clave}-detalle.md`), tablaMarkdown(filas, { cuenta, real, resumen }));

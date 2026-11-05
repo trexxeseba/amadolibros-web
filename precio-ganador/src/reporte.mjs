@@ -18,7 +18,9 @@ export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
     verificadas: filas.filter(f => f.verificado === true).length,
     no_verificadas: filas.filter(f => f.verificado === false).length,
     promo: c('saltear_promo') + c('saltear_promo_desconocida'),
-    otras_salteadas: filas.filter(f => /^saltear_(moneda|variaciones|piso|sin_precio)$/.test(f.d.accion)).length,
+    bajo_piso: filas.filter(f => f.d.accion === 'saltear_piso' && !/piso 1000000000000/.test(f.d.motivo)).length,
+    sin_costo: filas.filter(f => f.d.accion === 'saltear_piso' && /piso 1000000000000/.test(f.d.motivo)).length,
+    otras_salteadas: filas.filter(f => /^saltear_(moneda|variaciones|sin_precio)$/.test(f.d.accion)).length,
     editadas_a_mano: c('liberar_editada'),
     errores: c('error_consulta') + c('error_aplicar'),
     cambios_stock: filas.filter(f => Number.isFinite(f.d.stock) && (real ? f.aplicado : true)).length,
@@ -54,7 +56,7 @@ export function tablaMarkdown(filas, { cuenta, real, resumen }) {
     const g = f.comp?.ganador, p = f.item.price;
     const dif = Number.isFinite(g) && Number.isFinite(p) ? Math.round((p - g) * 100) / 100 : '';
     const stock = Number.isFinite(f.d.stock) ? `${f.item.available_quantity} → ${f.d.stock}` : (f.item.demanda ? `a demanda (${f.item.dias_demanda} d)` : '');
-    const accion = (ACCION[f.d.accion] ?? f.d.accion) + (CAMBIA.has(f.d.accion) ? ` → ${f.d.precio}` : '') + (f.verificado === true ? ' (aplicado y verificado)' : f.verificado === false ? ` (NO verificado: ML muestra ${f.precio_leido})` : '');
+    const accion = (f.d.accion === 'saltear_piso' && /piso 1000000000000/.test(f.d.motivo) ? 'Saltear: sin costo conocido en la lista de SBS' : f.d.accion === 'saltear_piso' ? `Saltear: queda bajo el piso (${f.d.motivo.replace('piso ', '')})` : (ACCION[f.d.accion] ?? f.d.accion)) + (CAMBIA.has(f.d.accion) ? ` → ${f.d.precio}` : '') + (f.verificado === true ? ' (aplicado y verificado)' : f.verificado === false ? ` (NO verificado: ML muestra ${f.precio_leido})` : '');
     l.push(`| [${f.item.id}](${f.item.permalink ?? `https://articulo.mercadolibre.com.uy/${String(f.item.id).replace('MLU', 'MLU-')}`}) ${esc(f.item.title?.slice(0, 50) ?? '')} | ${f.comp?.tipo ?? ''} ${f.comp?.estado ?? ''} | ${p ?? ''} | ${g ?? ''} | ${dif} | ${accion} | ${stock} | ${(f.comp?.motivos ?? []).map(m => typeof m === 'string' ? m : (m?.id ?? '')).join(', ')} |`);
   }
   if (Object.keys(resumen.errores).length) l.push('', '## Errores', '', ...Object.entries(resumen.errores).map(([k, v]) => `- ${k}: ${v}`));
