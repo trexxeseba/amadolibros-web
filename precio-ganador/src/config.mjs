@@ -21,20 +21,31 @@ export const CUENTAS = {
     token: { tabla: 'ml_oauth', appId: '4741021817925208' },
     // Libros: el stock no se toca nunca (tiene libros de estantería mezclados).
     tocarStockDemanda: false,
+    umbral: 360,
+    topePct: 0.30,
+    minimo: null,
     habilitada: true,
   },
-  // Vintage NO corre con este sistema (Seba, 04/11/2026): su precio competitivo lo
-  // maneja el motor de la PC (scripts/vintage-local/stock-sync.mjs, modo correct),
-  // que conoce el costo y nunca baja del 18 % de margen. Correr los dos los haría
-  // pisarse. Queda configurada para no perder el dato, pero deshabilitada.
+  // Vintage corre acá desde el 05/11/2026 (Seba): el motor de la PC no está andando.
+  // Si el motor se vuelve a prender, apagar una de las dos cosas: se pisarían.
   vintage: {
     clave: 'vintage',
     nombre: 'Amado Vintage',
     sellerId: '2341378249',
     // Fila de ml_oauth_sellers que renueva el panel (meli-vintage-token.js).
     token: { tabla: 'ml_oauth_sellers', appId: '4741021817925208' },
+    // Stock fijo en las a demanda (Seba, 05/11/2026): al bajarle el precio a una
+    // publicación a demanda, stock 5, conservando sus días de disponibilidad. Al volver
+    // al precio original se restaura el stock que tenía.
     tocarStockDemanda: true,
-    habilitada: false,
+    // Regla simple de Vintage (Seba, 05/11/2026): si pierde y la diferencia con el
+    // precio para ganar es menor a 400, bajar a ese precio. Sin tope de porcentaje
+    // ni piso por costo. Único piso: nunca menos de UYU 1.500.
+    umbral: 400,
+    topePct: null,
+    minimo: 1500,
+    pisoPorCosto: false,
+    habilitada: true,
   },
 };
 

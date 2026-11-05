@@ -1,9 +1,17 @@
-# Precio Ganador (Amado Libros)
+# Precio Ganador (Amado Libros y Amado Vintage)
 
-Baja automáticamente al precio ganador las publicaciones de **Amado Libros
-(440298103)** que Mercado Libre marca como perdedoras, con un tope de 360 pesos, y
-las vuelve a subir cuando dejan de estar marcadas. Amado Vintage **no** corre acá:
-su precio lo maneja el motor de la PC (`scripts/vintage-local/stock-sync.mjs`).
+Baja automáticamente al precio ganador las publicaciones que Mercado Libre marca
+como perdedoras y las vuelve a subir cuando dejan de estar marcadas.
+
+| | Amado Libros (440298103) | Amado Vintage (2341378249) |
+|---|---|---|
+| Baja si la diferencia es menor a | 360 | 400 |
+| Tope de porcentaje | 30 % | sin tope |
+| Piso | el de `pisos/libros.json`, si existe | nunca menos de UYU 1.500 |
+| Stock | no se toca | a demanda: stock 5 al bajar, se restaura al revertir |
+
+Vintage corre acá desde el 05/11/2026 porque el motor de la PC no está andando.
+Si el motor se vuelve a prender hay que apagar uno de los dos: se pisarían.
 
 ## Qué hace en cada corrida
 

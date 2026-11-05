@@ -17,6 +17,12 @@ const muestra = (k, v) => { if (MUESTRAS[k].length < 3) MUESTRAS[k].push(v); };
 
 export async function competencia(ml, item, { necesitaTecho = false, sellerId }) {
   if (item.catalog_listing) return catalogo(ml, item, { necesitaTecho, sellerId });
+  // Publicaciones tradicionales que también compiten por ser la destacada de un
+  // producto (el panel las cuenta en "Para ganar la competencia"): price_to_win
+  // responde para ellas igual que para las de catálogo. Si no compiten, 404.
+  const c = await catalogo(ml, item, { necesitaTecho, sellerId });
+  if (!c.error) return { ...c, tipo: 'tradicional' };
+  if (c.error !== 'http_404' && c.error !== 'http_400') return c;
   return referencia(ml, item);
 }
 

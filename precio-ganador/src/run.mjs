@@ -14,6 +14,7 @@ import { idsActivos, detalle } from './publicaciones.mjs';
 import { competencia, promocionActiva, MUESTRAS } from './competencia.mjs';
 import { decidir, CAMBIA } from './decision.mjs';
 import { resumir, tablaMarkdown, enviarResumen } from './reporte.mjs';
+import { cargarPisosVintage } from './costos-vintage.mjs';
 
 const args = process.argv.slice(2);
 const opt = (n, d = null) => { const i = args.indexOf('--' + n); return i >= 0 ? args[i + 1] : d; };
@@ -21,8 +22,9 @@ const flag = n => args.includes('--' + n);
 
 const cuenta = CUENTAS[opt('cuenta')];
 if (!cuenta) { console.error('Cuenta desconocida. Usar --cuenta libros|vintage'); process.exit(2); }
-if (!cuenta.habilitada) { console.error(`${cuenta.nombre} está deshabilitada en precio-ganador/src/config.mjs`); process.exit(2); }
-const real = flag('real') && !flag('dry-run');
+// Una cuenta deshabilitada (Vintage) sólo se puede consultar en prueba: nunca se le cambia nada.
+if (!cuenta.habilitada && flag('real')) { console.error(`${cuenta.nombre} está deshabilitada: sólo se puede correr en prueba`); process.exit(2); }
+const real = flag('real') && !flag('dry-run') && cuenta?.habilitada === true;
 const maxMarcadas = Number(opt('max-marcadas', Infinity));
 const limite = Number(opt('limite', Infinity));
 const dirEstado = opt('estado', 'state');
@@ -80,6 +82,15 @@ async function main() {
     if (tocado) guardarEstado();
   }
 
+  // Piso por costo (Vintage). Sin costo conocido, el piso es inalcanzable: no se baja.
+  let pisoCosto = null, infoPisos = null;
+  if (cuenta.pisoPorCosto) { const r = await cargarPisosVintage(); pisoCosto = r.pisoDe; infoPisos = r.info; console.log('Pisos:', JSON.stringify(infoPisos)); }
+  const SIN_COSTO = 1e12;
+  const pisoDe = id => {
+    const candidatos = [num(pisos[id]), num(cuenta.minimo), pisoCosto ? (pisoCosto(items.get(id)) ?? SIN_COSTO) : null].filter(v => v !== null);
+    return candidatos.length ? Math.max(...candidatos) : null;
+  };
+  const reglas = { umbral: cuenta.umbral ?? UMBRAL_UYU, topePct: cuenta.topePct === undefined ? undefined : cuenta.topePct };
   const filas = []; let marcadas = 0;
   const lote = 40;
   for (let i = 0; i < orden.length; i += lote) {
@@ -88,11 +99,11 @@ async function main() {
       const item = items.get(id), previo = estado.publicaciones[id];
       try {
         const comp = await competencia(ml, item, { necesitaTecho: Boolean(previo), sellerId: cuenta.sellerId });
-        let d = decidir({ item, comp, promo: false, previo, piso: num(pisos[id]), tocarStock: cuenta.tocarStockDemanda, stockDemanda });
+        let d = decidir({ item, comp, promo: false, previo, piso: pisoDe(id), tocarStock: cuenta.tocarStockDemanda, stockDemanda, ...reglas });
         let promo;
         if (CAMBIA.has(d.accion)) {
           promo = await promocionActiva(ml, id);
-          d = decidir({ item, comp, promo, previo, piso: num(pisos[id]), tocarStock: cuenta.tocarStockDemanda, stockDemanda });
+          d = decidir({ item, comp, promo, previo, piso: pisoDe(id), tocarStock: cuenta.tocarStockDemanda, stockDemanda, ...reglas });
         }
         return { item, comp, d, previo, promo };
       } catch (e) {
@@ -172,11 +183,15 @@ async function main() {
   // Editadas a mano: salen del estado sin tocarlas.
   if (real) for (const f of filas) if (f.d.accion === 'liberar_editada') delete estado.publicaciones[f.item.id];
 
-  const resumen = resumir(filas, { cuenta, real, inicio, ids: ids.length, stats: ml.stats, umbral: UMBRAL_UYU });
+  const resumen = resumir(filas, { cuenta, real, inicio, ids: ids.length, stats: ml.stats, umbral: reglas.umbral });
+  if (infoPisos) resumen.pisos = infoPisos;
   await mkdir(dirSalida, { recursive: true });
   await writeFile(join(dirSalida, `${cuenta.clave}-resumen.json`), JSON.stringify(resumen, null, 2));
   await writeFile(join(dirSalida, `${cuenta.clave}-detalle.md`), tablaMarkdown(filas, { cuenta, real, resumen }));
   if (!real) await writeFile(join(dirSalida, `${cuenta.clave}-muestras-api.json`), JSON.stringify(MUESTRAS, null, 2));
+  // En prueba, la foto completa de la cuenta para diagnosticar (una línea por publicación).
+  if (!real) await writeFile(join(dirSalida, `${cuenta.clave}-todas.tsv`), ['id\ttitulo\tprecio\tcatalogo\testado\tmotivo\tdias_demanda\taccion']
+    .concat(filas.map(f => [f.item.id, String(f.item.title ?? '').replace(/\t/g, ' ').slice(0, 90), f.item.price, f.item.catalog_listing ? 'si' : 'no', f.comp?.estado ?? '', (f.comp?.motivos ?? []).join(','), f.item.dias_demanda ?? '', f.d.accion].join('\t'))).join('\n') + '\n');
   // Filas de las marcadas y de las del estado, para la auditoría independiente.
   await writeFile(join(dirSalida, `${cuenta.clave}-filas.json`), JSON.stringify(filas.filter(f => f.comp?.marcada || f.previo).map(f => ({
     id: f.item.id, precio: f.item.price, moneda: f.item.currency_id, variaciones: f.item.variaciones, marcada: Boolean(f.comp?.marcada),

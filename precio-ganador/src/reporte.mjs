@@ -18,26 +18,30 @@ export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
     verificadas: filas.filter(f => f.verificado === true).length,
     no_verificadas: filas.filter(f => f.verificado === false).length,
     promo: c('saltear_promo') + c('saltear_promo_desconocida'),
-    otras_salteadas: filas.filter(f => /^saltear_(moneda|variaciones|piso|sin_precio)$/.test(f.d.accion)).length,
+    bajo_piso: filas.filter(f => f.d.accion === 'saltear_piso' && !/piso 1000000000000/.test(f.d.motivo)).length,
+    sin_costo: filas.filter(f => f.d.accion === 'saltear_piso' && /piso 1000000000000/.test(f.d.motivo)).length,
+    otras_salteadas: filas.filter(f => /^saltear_(moneda|variaciones|sin_precio)$/.test(f.d.accion)).length,
     editadas_a_mano: c('liberar_editada'),
     errores: c('error_consulta') + c('error_aplicar'),
     cambios_stock: filas.filter(f => Number.isFinite(f.d.stock) && (real ? f.aplicado : true)).length,
   };
   // Cómo está la cuenta en la competencia de catálogo, para contrastar con los
   // contadores del panel de ML (que suman sugerencias, no sólo las que pierden).
-  const estados = {}, sugerencias = {};
-  for (const f of filas) if (f.comp?.tipo === 'catalogo' && !f.comp.error) {
+  const estados = {}, sugerencias = {}, motivos = {}, porTipo = {};
+  for (const f of filas) if ((f.comp?.tipo === 'catalogo' || f.comp?.tipo === 'tradicional') && !f.comp.error) {
     estados[f.comp.estado || 'sin_estado'] = (estados[f.comp.estado || 'sin_estado'] ?? 0) + 1;
     for (const o of f.comp.oportunidades ?? []) sugerencias[o] = (sugerencias[o] ?? 0) + 1;
+    for (const m of f.comp.motivos ?? []) { const k = `${f.comp.estado}:${typeof m === 'string' ? m : (m?.id ?? JSON.stringify(m))}`; motivos[k] = (motivos[k] ?? 0) + 1; }
+    const k2 = `${f.comp.tipo}:${f.comp.estado}:${f.item.demanda ? 'a_demanda' : 'con_stock'}`; porTipo[k2] = (porTipo[k2] ?? 0) + 1;
   }
   const errores = {};
   for (const f of filas) if (/^error/.test(f.d.accion)) errores[f.d.motivo] = (errores[f.d.motivo] ?? 0) + 1;
-  return { cuenta: cuenta.clave, umbral, duracion_s: Math.round((Date.now() - inicio) / 1000), contadores, catalogo: { estados, publicaciones_con_alguna_sugerencia: filas.filter(f => f.comp?.oportunidades?.length).length, sugerencias }, errores, llamadas: stats.llamadas, por_status: stats.porStatus };
+  return { cuenta: cuenta.clave, umbral, duracion_s: Math.round((Date.now() - inicio) / 1000), contadores, catalogo: { estados, publicaciones_con_alguna_sugerencia: filas.filter(f => f.comp?.oportunidades?.length).length, sugerencias, motivos, por_tipo: porTipo, errores_por_tipo: filas.filter(f => f.comp?.error).reduce((a, f) => (a[f.comp.error] = (a[f.comp.error] ?? 0) + 1, a), {}) }, errores, llamadas: stats.llamadas, por_status: stats.porStatus };
 }
 
 const ACCION = {
   bajar: 'Bajar al ganador', ajustar: 'Ajustar al ganador', subir: 'Subir (sigue ganando)', restaurar: 'Volver al original',
-  sin_tocar_umbral: 'No tocar: diferencia de 360 o más', sin_tocar_pct: 'No tocar: bajaría más del 30 %', saltear_promo: 'Saltear: promoción activa',
+  sin_tocar_umbral: 'No tocar: diferencia por encima del tope', sin_tocar_pct: 'No tocar: bajaría más del 30 %', saltear_promo: 'Saltear: promoción activa',
   saltear_promo_desconocida: 'Saltear: no se pudo confirmar promoción', saltear_piso: 'Saltear: queda bajo el piso',
   saltear_variaciones: 'Saltear: tiene variaciones', saltear_moneda: 'Saltear: no está en pesos', saltear_sin_precio: 'Saltear: sin precio ganador',
   mantener: 'Mantener', mantener_promo: 'Mantener: promoción en curso', saltear_cambio_reciente: 'Saltear: el precio cambió durante la corrida', mantener_umbral: 'Mantener: el ganador bajó más de 360 desde el original', mantener_piso: 'Mantener: piso',
@@ -45,15 +49,15 @@ const ACCION = {
 };
 
 export function tablaMarkdown(filas, { cuenta, real, resumen }) {
-  const relevantes = filas.filter(f => f.comp?.marcada || f.previo || /^error/.test(f.d.accion));
+  const relevantes = filas.filter(f => f.comp?.marcada || f.comp?.estado === 'competing' || f.previo || /^error/.test(f.d.accion));
   const l = [`# Precio Ganador · ${cuenta.nombre} · ${real ? 'modo real' : 'DRY_RUN (no se cambió nada)'}`, '', '```json', JSON.stringify(resumen.contadores, null, 2), '```', '',
-    '| Publicación | Tipo | Mi precio | Precio ganador | Diferencia | Qué haría | Stock |', '|---|---|---:|---:|---:|---|---|'];
+    '| Publicación | Tipo | Mi precio | Precio ganador | Diferencia | Qué haría | Stock | Motivo ML |', '|---|---|---:|---:|---:|---|---|---|'];
   for (const f of relevantes) {
     const g = f.comp?.ganador, p = f.item.price;
     const dif = Number.isFinite(g) && Number.isFinite(p) ? Math.round((p - g) * 100) / 100 : '';
     const stock = Number.isFinite(f.d.stock) ? `${f.item.available_quantity} → ${f.d.stock}` : (f.item.demanda ? `a demanda (${f.item.dias_demanda} d)` : '');
-    const accion = (ACCION[f.d.accion] ?? f.d.accion) + (CAMBIA.has(f.d.accion) ? ` → ${f.d.precio}` : '') + (f.verificado === true ? ' (aplicado y verificado)' : f.verificado === false ? ` (NO verificado: ML muestra ${f.precio_leido})` : '');
-    l.push(`| [${f.item.id}](${f.item.permalink ?? `https://articulo.mercadolibre.com.uy/${String(f.item.id).replace('MLU', 'MLU-')}`}) ${esc(f.item.title?.slice(0, 50) ?? '')} | ${f.comp?.tipo ?? ''} ${f.comp?.estado ?? ''} | ${p ?? ''} | ${g ?? ''} | ${dif} | ${accion} | ${stock} |`);
+    const accion = (f.d.accion === 'saltear_piso' && /piso 1000000000000/.test(f.d.motivo) ? 'Saltear: sin costo conocido en la lista de SBS' : f.d.accion === 'saltear_piso' ? `Saltear: queda bajo el piso (${f.d.motivo.replace('piso ', '')})` : (ACCION[f.d.accion] ?? f.d.accion)) + (CAMBIA.has(f.d.accion) ? ` → ${f.d.precio}` : '') + (f.verificado === true ? ' (aplicado y verificado)' : f.verificado === false ? ` (NO verificado: ML muestra ${f.precio_leido})` : '');
+    l.push(`| [${f.item.id}](${f.item.permalink ?? `https://articulo.mercadolibre.com.uy/${String(f.item.id).replace('MLU', 'MLU-')}`}) ${esc(f.item.title?.slice(0, 50) ?? '')} | ${f.comp?.tipo ?? ''} ${f.comp?.estado ?? ''} | ${p ?? ''} | ${g ?? ''} | ${dif} | ${accion} | ${stock} | ${(f.comp?.motivos ?? []).map(m => typeof m === 'string' ? m : (m?.id ?? '')).join(', ')} |`);
   }
   if (Object.keys(resumen.errores).length) l.push('', '## Errores', '', ...Object.entries(resumen.errores).map(([k, v]) => `- ${k}: ${v}`));
   return l.join('\n') + '\n';
@@ -71,7 +75,7 @@ export async function enviarResumen({ cuenta, acum, resumen, fetcher = (...a) =>
     ['Corridas del día', acum.corridas.length], ['Marcadas (última corrida)', ult.marcadas ?? 0],
     ['Bajadas al ganador', suma('bajadas')], ['Ajustadas al ganador', suma('ajustadas')],
     ['Subidas o vueltas al original', suma('subidas') + suma('restauradas')],
-    ['Sin tocar por diferencia de 360 o más (última)', ult.sin_tocar_umbral ?? 0], ['Sin tocar por bajar más del 30 % (última)', ult.sin_tocar_pct ?? 0],
+    ['Sin tocar por diferencia por encima del tope (última)', ult.sin_tocar_umbral ?? 0], ['Sin tocar por bajar más del 30 % (última)', ult.sin_tocar_pct ?? 0],
     ['Salteadas por promoción (última)', ult.promo ?? 0], ['Errores', suma('errores')], ['Cambios de stock', suma('cambios_stock')],
   ];
   const est = resumen.catalogo?.estados ?? {};

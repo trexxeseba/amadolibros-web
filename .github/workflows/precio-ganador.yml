@@ -1,7 +1,7 @@
 name: Precio Ganador
 
-# Precio ganador automático en Mercado Libre para Amado Libros (440298103).
-# Amado Vintage no corre acá: su precio lo maneja el motor de la PC.
+# Precio ganador automático en Mercado Libre para Amado Libros (440298103) y
+# Amado Vintage (2341378249). Reglas por cuenta en precio-ganador/src/config.mjs.
 #
 # 09:00, 15:00 y 21:00 de Montevideo (UTC-3). El mail diario sale con la de las 21:00.
 # Modo real si precio-ganador/modo.json dice "real" para la cuenta. Para pausar sin
@@ -25,6 +25,15 @@ on:
       max_marcadas:
         description: 'Cortar al encontrar N marcadas (vacío = todas)'
         required: false
+      cuenta:
+        description: 'Cuenta (a mano corre una sola; las programadas corren las dos)'
+        type: choice
+        options: [libros, vintage]
+        default: libros
+      prueba:
+        description: 'Prueba: consulta y reporta, no cambia ningún precio'
+        type: boolean
+        default: false
       correo:
         description: 'Mandar el mail de resumen'
         type: boolean
@@ -40,12 +49,12 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 120
     strategy:
       max-parallel: 1
       fail-fast: false
       matrix:
-        cuenta: [libros]
+        cuenta: ${{ fromJSON(github.event_name == 'schedule' && '["libros","vintage"]' || inputs.cuenta == 'vintage' && '["vintage"]' || '["libros"]') }}
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
@@ -94,19 +103,20 @@ jobs:
           IN_ACCION: ${{ inputs.accion }}
           IN_MAX: ${{ inputs.max_marcadas }}
           IN_CORREO: ${{ inputs.correo }}
+          IN_PRUEBA: ${{ inputs.prueba }}
           CUENTA: ${{ matrix.cuenta }}
         run: |
           ARGS=(--cuenta "$CUENTA" --estado estado/state)
           REAL=no
           MODO=$(node -e "console.log(require('./precio-ganador/modo.json')[process.argv[1]] ?? 'dry_run')" "$CUENTA")
-          if [ "$MODO" = "real" ] && [ "$DRY_VAR" != "true" ] && [ "$EVENTO" != "push" ]; then REAL=si; ARGS+=(--real); fi
+          if [ "$MODO" = "real" ] && [ "$DRY_VAR" != "true" ] && [ "$EVENTO" != "push" ] && [ "$IN_PRUEBA" != "true" ]; then REAL=si; ARGS+=(--real); fi
           echo "real=$REAL" >> "$GITHUB_OUTPUT"
           echo "Modo: $([ $REAL = si ] && echo REAL || echo DRY_RUN)"
           if [ "$IN_ACCION" = "restaurar" ]; then
             node precio-ganador/src/restaurar.mjs "${ARGS[@]}"
             exit $?
           fi
-          if [ "$EVENTO" = "push" ]; then SALIDA="estado/pruebas/$GITHUB_RUN_ID"; ARGS+=(--max-marcadas 100); else SALIDA="estado/ultima"; fi
+          if [ "$EVENTO" = "push" ] || [ "$REAL" = "no" ]; then SALIDA="estado/pruebas/$GITHUB_RUN_ID"; else SALIDA="estado/ultima"; fi
           echo "salida=$SALIDA" >> "$GITHUB_OUTPUT"
           if [ "$IN_ACCION" = "auditar" ]; then echo "Sólo auditoría"; exit 0; fi
           if [[ "$IN_MAX" =~ ^[0-9]+$ ]]; then ARGS+=(--max-marcadas "$IN_MAX"); fi
@@ -145,6 +155,15 @@ jobs:
             git pull -q --rebase origin "$ESTADO_RAMA" || { git rebase --abort || true; echo "Conflicto al integrar el estado: queda en el artefacto"; exit 1; }
           done
           echo "No se pudo subir el estado"; exit 1
+
+      # Cualquier paso que falle (corrida, auditoría, guardado): alarma inmediata por mail.
+      - name: Alarma
+        if: failure()
+        env:
+          DETALLE: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CUENTA: ${{ matrix.cuenta }}
+        run: |
+          node precio-ganador/src/alarma.mjs "falló la corrida ($CUENTA)" "Falló un paso de Precio Ganador. Detalle en $DETALLE"
 
       # Respaldo del estado por si el push falló.
       - name: Respaldo del estado

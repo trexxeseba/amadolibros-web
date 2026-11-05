@@ -50,7 +50,7 @@ function decidirNueva({ precio, comp, piso, umbral, topePct }) {
   const objetivo = entero(comp.ganador);
   if (objetivo >= precio) return { accion: 'sin_marcar', motivo: 'el ganador no es más barato' };
   if (precio - objetivo >= umbral) return { accion: 'sin_tocar_umbral', precio: objetivo, motivo: `diferencia ${precio - objetivo}` };
-  if ((precio - objetivo) / precio > topePct) return { accion: 'sin_tocar_pct', precio: objetivo, motivo: `baja ${Math.round((precio - objetivo) / precio * 100)} %` };
+  if (topePct !== null && (precio - objetivo) / precio > topePct) return { accion: 'sin_tocar_pct', precio: objetivo, motivo: `baja ${Math.round((precio - objetivo) / precio * 100)} %` };
   if (fin(piso) && objetivo < piso) return { accion: 'saltear_piso', precio: objetivo, motivo: `piso ${piso}` };
   if (objetivo <= 0) return { accion: 'saltear_sin_precio', motivo: 'precio ganador inválido' };
   return { accion: 'bajar', precio: objetivo, motivo: `diferencia ${precio - objetivo}` };
@@ -61,7 +61,7 @@ function decidirConEstado({ precio, comp, previo, piso, umbral, topePct }) {
   if (comp?.marcada && fin(comp.ganador)) {
     const objetivo = Math.min(entero(comp.ganador), original);
     // Más de 360 contra el precio original: no se sigue bajando, se mantiene lo aplicado.
-    if (original - objetivo >= umbral || (original - objetivo) / original > topePct) return { accion: 'mantener_umbral', motivo: `ganador ${objetivo}, original ${original}` };
+    if (original - objetivo >= umbral || (topePct !== null && (original - objetivo) / original > topePct)) return { accion: 'mantener_umbral', motivo: `ganador ${objetivo}, original ${original}` };
     if (fin(piso) && objetivo < piso) return { accion: 'mantener_piso', motivo: `piso ${piso}` };
     if (objetivo === precio) return { accion: 'mantener', motivo: 'sigue al ganador' };
     if (objetivo >= original) return { accion: 'restaurar', precio: original, motivo: 'el ganador llegó al original' };
