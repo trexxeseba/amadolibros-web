@@ -1,9 +1,10 @@
 /**
  * /liquidacion — Promo Liquidación Amado.
  *
- * Vitrina de los libros en stock que llevan más de un año publicados y no se
- * vendieron en los últimos 12 meses (regla en _shared/liquidacion.js). Se arma
- * sola desde el catálogo: entra lo que cumple la regla, sale lo que se vende.
+ * Vitrina de la liquidación (selección en _shared/liquidacion.js): la lista de
+ * Seba en data/liquidacion.json, menos las exclusiones automáticas. Mientras la
+ * lista esté vacía sigue la regla anterior (1 año sin ventas), con falla
+ * cerrada: si D1 no responde, la vitrina queda vacía, nunca todo el stock.
  *
  * Precios: los del catálogo vigente, iguales a los de la ficha y el carrito
  * (con la promo web aplicada cuando hay una activa). Esta página no inventa
@@ -19,7 +20,7 @@ import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_HEADER_SCRIPT, SITE_FONTS_HEAD
 import { bookCoverUrl, CARD_IMAGE_SIZES, responsiveImage } from './_shared/cloudflare-images.js';
 import { deriveBookDisplayTitle } from './_shared/book-display-title.js';
 import { promoAwareCacheControl, promoWasHtml, webPromoActive, WEB_PROMO } from './_shared/web-promo.js';
-import { LIQUIDACION, recentSales, selectLiquidation, sortLiquidation } from './_shared/liquidacion.js';
+import { LIQUIDACION, resolveLiquidation, sortLiquidation } from './_shared/liquidacion.js';
 import { buildWhatsAppMessage, whatsappHref } from '../shared/whatsapp-messages.js';
 
 export const PAGE_SIZE = 48;
@@ -88,7 +89,7 @@ function pagePath({ tema = '', page = 1 }) {
 
 export function liquidationWhatsAppMessage(book, href) {
     return buildWhatsAppMessage({
-        greeting: 'Hola, vi este libro en la Promo Liquidación de Amado Libros y lo quiero 😊',
+        greeting: 'Hola, vi este libro en la Promo Liquidación de Amado Libros y lo quiero.',
         motive: LIQUIDACION.name,
         book: book.title,
         author: book.author,
@@ -98,7 +99,7 @@ export function liquidationWhatsAppMessage(book, href) {
     });
 }
 
-function cardHtml(book, idx, env) {
+function cardHtml(book, idx, env, topic = '') {
     const href = `/libro/${book.id}/${slugify(book.title)}`;
     const source = env?.APP_ENV === 'production'
         ? bookCoverUrl(book.id)
@@ -117,7 +118,7 @@ function cardHtml(book, idx, env) {
     return `<article class="rc-card">
   <a href="${escapeHtml(href)}" class="rc-img">${img}</a>
   <div class="rc-body">
-    <span class="liq-badge">Últimas unidades</span>
+    <span class="liq-badge">Liquidación</span>
     <a href="${escapeHtml(href)}" class="rc-title-link"><p class="rc-title">${title}</p></a>
     ${book.author ? `<p class="rc-author">${escapeHtml(book.author)}</p>` : ''}
     <div class="rc-prices">
@@ -127,7 +128,7 @@ function cardHtml(book, idx, env) {
       ${price >= FREE_SHIPPING_THRESHOLD_UYU ? '<span class="rc-free-shipping">Envío gratis</span>' : ''}
     </div>
     <div class="rc-actions">
-      <a href="${escapeHtml(wa)}" class="rc-cta rc-wa" target="_blank" rel="noopener noreferrer" data-cta-location="liquidacion_card">Lo quiero</a>
+      <a href="${escapeHtml(wa)}" class="rc-cta rc-wa" target="_blank" rel="noopener noreferrer" data-cta-location="liquidacion_card" data-mlu="${escapeHtml(book.id)}"${topic ? ` data-topic="${escapeHtml(topic)}"` : ''}>Lo quiero</a>
       <a href="${escapeHtml(href)}" class="rc-cta">Ver ficha</a>
     </div>
   </div>
@@ -177,8 +178,9 @@ export async function onRequest(ctx) {
     if (!catalog || !Array.isArray(catalog.items)) return unavailable();
 
     const now = Date.now();
-    const [sold, categoryData] = await Promise.all([recentSales(ctx, now), fetchCategories(ctx)]);
-    const selected = sortLiquidation(selectLiquidation(catalog.items, sold, now), now);
+    const categoryData = await fetchCategories(ctx);
+    const liquidation = await resolveLiquidation(ctx, catalog.items, { now });
+    const selected = sortLiquidation(liquidation.selected, now);
     const topics = liquidationTopics(selected, categoryData);
     const rawTema = url.searchParams.get('tema')?.trim() || '';
     const tema = topics.some(t => t.id === rawTema) ? rawTema : '';
@@ -195,11 +197,11 @@ export async function onRequest(ctx) {
         ? `Libros que te esperan en nuestros estantes, listos para salir hoy. Con la ${escapeHtml(WEB_PROMO.name)}, ${WEB_PROMO.percent}% menos hasta el ${escapeHtml(WEB_PROMO.endLabel)}, y 12% más pagando por transferencia.`
         : 'Libros que te esperan en nuestros estantes, en stock y listos para salir hoy. Pagando por transferencia tenés 12% menos.';
     const heading = temaName ? `${LIQUIDACION.name}: ${escapeHtml(temaName)}` : LIQUIDACION.name;
-    const title = `${temaName ? `${temaName} en liquidación` : 'Promo Liquidación Amado: últimas unidades'}${page > 1 ? ` — Página ${page}` : ''} | Amado Libros`;
-    const description = `${filtered.length} libros en stock con entrega inmediata en Uruguay: últimas unidades de Amado Libros${temaName ? ` en ${temaName}` : ''}.`;
+    const title = `${temaName ? `${temaName} en liquidación` : 'Promo Liquidación Amado: libros en stock'}${page > 1 ? ` — Página ${page}` : ''} | Amado Libros`;
+    const description = `${filtered.length} libros en stock con entrega inmediata en Uruguay: la liquidación de Amado Libros${temaName ? ` en ${temaName}` : ''}.`;
     const canonical = `${BASE}${pagePath({ tema, page })}`;
     const generalWa = whatsappHref(buildWhatsAppMessage({
-        greeting: 'Hola, estoy mirando la Promo Liquidación de Amado Libros 😊',
+        greeting: 'Hola, estoy mirando la Promo Liquidación de Amado Libros.',
         motive: LIQUIDACION.name,
         page: pagePath({ tema, page }),
         closing: 'Quisiera que me recomienden algo de la liquidación. Gracias.',
@@ -277,7 +279,7 @@ export async function onRequest(ctx) {
 ${siteHeaderHtml({ current: 'liquidacion' })}
 <main class="wrap">
   <section class="liq-hero">
-    <p class="liq-eyebrow">Últimas unidades · Entrega inmediata</p>
+    <p class="liq-eyebrow">En stock · Entrega inmediata</p>
     <h1>${heading}</h1>
     <p>${lead}</p>
     <a href="${escapeHtml(generalWa)}" target="_blank" rel="noopener noreferrer" data-cta-location="liquidacion_hero">Pedinos una recomendación por WhatsApp</a>
@@ -285,8 +287,8 @@ ${siteHeaderHtml({ current: 'liquidacion' })}
   ${topicsHtml(topics, tema, selected.length)}
   <p class="sub">${filtered.length} libros${totalPages > 1 ? ` · página ${page} de ${totalPages}` : ''}</p>
   ${slice.length
-        ? `<div class="grid">${slice.map((b, i) => cardHtml(b, i, ctx.env)).join('\n')}</div>${pagerHtml(page, totalPages, tema)}`
-        : '<p class="empty">En este momento no hay libros en liquidación. Mirá <a href="/catalogo">todo el catálogo</a>.</p>'}
+        ? `<div class="grid">${slice.map((b, i) => cardHtml(b, i, ctx.env, firstCategory(categoryData, b.id) || tema)).join('\n')}</div>${pagerHtml(page, totalPages, tema)}`
+        : '<p class="empty">Estamos preparando la próxima tanda de la liquidación. Mientras tanto, te esperan <a href="/catalogo">todos los libros del catálogo</a>.</p>'}
 </main>
 ${footerHtml(new Date(now).getFullYear(), pagePath({ tema, page }))}
 ${waFloatHtml(null, pagePath({ tema, page }))}
@@ -297,9 +299,14 @@ ${SITE_HEADER_SCRIPT}
     return new Response(html, {
         headers: {
             'content-type': 'text/html;charset=UTF-8',
-            'cache-control': promoAwareCacheControl(900, new Date(now), ctx.env),
+            // Vitrina vacía por falta de datos: no se cachea, para que vuelva sola.
+            'cache-control': liquidation.sales === 'sin-datos'
+                ? 'no-store'
+                : promoAwareCacheControl(900, new Date(now), ctx.env),
             'x-liquidacion-total': String(selected.length),
-            'x-liquidacion-ventas': sold ? 'd1' : 'sin-datos',
+            'x-liquidacion-fuente': liquidation.mode,
+            'x-liquidacion-ventas': liquidation.sales,
+            ...(liquidation.excluded ? { 'x-liquidacion-excluidos': Object.entries(liquidation.excluded).map(([k, v]) => `${k}=${v}`).join(';') } : {}),
         },
     });
 }
