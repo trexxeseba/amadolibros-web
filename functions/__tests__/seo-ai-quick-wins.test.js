@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
+import { onRequest as renderEncargo } from '../libros-agotados-importados-uruguay.js';
 import { onRequest as renderSitemap, STATIC_SITEMAP_ENTRIES } from '../sitemap-pages.xml.js';
 
 const root = (rel) => fileURLToPath(new URL('../../' + rel, import.meta.url));
@@ -30,14 +31,21 @@ test('el formulario de búsqueda ofrece ayuda contextual antes del envío', () =
   assert.match(page, /cómo funciona un encargo de libro agotado o importado/i);
 });
 
-test('la landing de agotados publica respuesta directa, revisión y entidades conectadas', () => {
-  const page = read('functions/libros-agotados-importados-uruguay.js');
+test('la landing de agotados publica respuesta directa, revisión y entidades conectadas', async () => {
+  const page = await (await renderEncargo()).text();
   assert.match(page, /<strong>Respuesta directa:<\/strong>/);
-  assert.match(page, /Contenido revisado el 12 de agosto de 2026/);
-  assert.match(page, /'@type': 'WebPage'/);
-  assert.match(page, /'@type': 'Service'/);
-  assert.match(page, /'@type': 'BreadcrumbList'/);
-  assert.match(page, /'reviewedBy'/);
+  const script = page.match(/<script type="application\/ld\+json">([^<]+)<\/script>/);
+  assert.ok(script, 'La landing debe publicar datos estructurados');
+  const { '@graph': entities } = JSON.parse(script[1]);
+  const webPage = entities.find(entity => entity['@type'] === 'WebPage');
+  assert.match(webPage?.dateModified ?? '', /^\d{4}-\d{2}-\d{2}$/);
+  const reviewDate = new Intl.DateTimeFormat('es-UY', {
+    dateStyle: 'long', timeZone: 'UTC',
+  }).format(new Date(webPage.dateModified));
+  assert.ok(page.includes(`Contenido revisado el ${reviewDate}`));
+  assert.equal(webPage.reviewedBy?.['@id'], entities.find(entity => entity['@type'] === 'OnlineStore')['@id']);
+  assert.equal(webPage.mainEntity?.['@id'], entities.find(entity => entity['@type'] === 'Service')['@id']);
+  assert.ok(entities.some(entity => entity['@type'] === 'BreadcrumbList'));
   assert.match(page, /href=\"\/quienes-somos\/\"/);
 });
 
