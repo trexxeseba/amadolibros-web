@@ -214,7 +214,7 @@ test('feed: la etiqueta usa solo la lista del JSON, nunca la regla de 1 año', (
 
 test('el feed arma la etiqueta desde la lista, sin la regla de ventas', () => {
     const feed = readFileSync('functions/feed.xml.js', 'utf8');
-    assert.match(feed, /liquidationIds\(sortedItems\)/);
+    assert.match(feed, /liquidationIds\(sortedItems, \{ env: context\.env \}\)/);
     assert.doesNotMatch(feed, /recentSales|selectLiquidation/);
 });
 

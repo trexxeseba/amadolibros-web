@@ -238,3 +238,18 @@ test('transfer: sólo conserva las cuentas de destino; no devuelve bancos de ori
   assert.equal(Object.hasOwn(data, 'payer_channels'), false);
   assert.equal(JSON.stringify(data).includes('https://'), false);
 });
+
+// TOPE-25: el pedido trae el total por transferencia ya calculado con el tope
+// de 25 % (libros en liquidación no suman el 12 %). El endpoint cobra eso.
+test('transfer: usa transfer_products_total_uyu guardado en el pedido (tope de 25 %)', async () => {
+  const { data } = await call({ order: openOrder({ transfer_products_total_uyu: 2000 }) });
+  assert.equal(data.payment.transfer_products_total_uyu, 2000);
+  assert.equal(data.payment.transfer_discount_uyu, 0);
+  assert.equal(data.payment.transfer_total_uyu, 1850);
+});
+
+test('transfer: pedidos anteriores sin el total guardado siguen con el 12 % de siempre', async () => {
+  const { data } = await call({ order: openOrder({ transfer_products_total_uyu: null }) });
+  assert.equal(data.payment.transfer_products_total_uyu, 1760);
+  assert.equal(data.payment.transfer_total_uyu, 1610);
+});

@@ -22,6 +22,7 @@ import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_FONTS_HEAD } from '../_shared/
 import { isGenericAuthor, realAuthor, stripGenericAuthorMention } from '../_shared/generic-author.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 import { promoAwareCacheControl, promoWasHtml } from '../_shared/web-promo.js';
+import { transferDisplayPrice } from '../_shared/descuentos.js';
 // QW3A: misma validación de ISBN→GTIN que ya usa el feed de Merchant — nunca
 // inventa ni corrige dígitos, sólo evita publicar un ISBN mal formado.
 import { isBookProduct, normalizeIsbnToGtin } from '../feed.xml.js';
@@ -468,9 +469,11 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const currency      = String(item.currency || item.currency_id || 'UYU').trim().toUpperCase() || 'UYU';
     const checkoutCurrencySupported = currency === 'UYU';
     const priceUY       = price.toLocaleString('es-UY');
-    const transferAmount = Math.round(price * 0.88);
-    const transferPrice = transferAmount.toLocaleString('es-UY');
-    const transferSaving = (price - transferAmount).toLocaleString('es-UY');
+    // Con el tope de 25 % (descuentos.js), un libro ya en liquidación no suma
+    // el 12 % por transferencia: se muestra un único precio final.
+    const transferAmount = transferDisplayPrice(item);
+    const transferPrice = transferAmount === null ? '' : transferAmount.toLocaleString('es-UY');
+    const transferSaving = transferAmount === null ? '' : (price - transferAmount).toLocaleString('es-UY');
     const installment   = Math.round(price / 12).toLocaleString('es-UY');
     const stockQty      = Number(item.available_quantity) || 0;
     const inStock       = item.status === 'active' && stockQty > 0;
@@ -690,10 +693,10 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         ${promoNoteHtml}
       </div>
       <div class="price-installment">Hasta 12 cuotas de aprox. $${installment} UYU</div>
-      <div class="price-transfer">
+      ${transferAmount === null ? '' : `<div class="price-transfer">
         <span class="price-transfer-line"><span aria-hidden="true">🏷️</span> 12% menos por transferencia: <strong>$${transferPrice} UYU</strong></span>
         <span class="price-saving">Ahorrás $${transferSaving} UYU</span>
-      </div>
+      </div>`}
       ${hasFreeShipping ? '<div class="price-free-shipping"><span aria-hidden="true">🚚</span> Envío gratis</div>' : ''}
     </div>`
         : inStock

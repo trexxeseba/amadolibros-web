@@ -4,6 +4,7 @@ import {
   consolidateItems,
   buildSnapshot,
   calculateTotals,
+  transferProductsTotalForSnapshot,
   generateFingerprint,
   generatePublicCode,
   normalizeBuyerEmail,
@@ -131,6 +132,7 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
 
     const { productsTotal, pickupDiscount, shippingCost, payableTotal } =
       calculateTotals(snapshot, body.delivery_type);
+    const transferProductsTotal = transferProductsTotalForSnapshot(snapshot, now);
 
     let publicCode = null;
     try {
@@ -167,6 +169,7 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
         'address, locality, department, ' +
         'requested_delivery_date, requested_delivery_from, requested_delivery_to, delivery_notes, ' +
         'products_total_uyu, pickup_discount_uyu, shipping_cost_uyu, payable_total_uyu, ' +
+        'transfer_products_total_uyu, ' +
         'currency, created_at, expires_at, updated_at' +
       ') VALUES (' +
         '?, ?, ?, ?, ' +
@@ -176,6 +179,7 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
         '?, ?, ?, ' +
         '?, ?, ?, ?, ' +
         '?, ?, ?, ?, ' +
+        '?, ' +
         "'UYU', ?, ?, ?" +
       ')'
     ).bind(
@@ -200,6 +204,7 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
       pickupDiscount,
       shippingCost,
       payableTotal,
+      transferProductsTotal,
       createdAt,
       expiresAt,
       createdAt

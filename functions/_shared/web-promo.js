@@ -9,6 +9,8 @@
 // las constantes de abajo. Corte inmediato sin esperar al fin de ventana:
 // variable WEB_PROMO_OFF=1 en el entorno de Cloudflare Pages.
 
+import { LIQUIDACION_PRECIO } from './descuentos.js';
+
 export const WEB_PROMO = Object.freeze({
     name: 'Amado Week',
     percent: 15,
@@ -77,6 +79,9 @@ export function promoWasHtml(item, promo = WEB_PROMO) {
     const price = Number(item?.price);
     if (!(original > 0) || !(price > 0) || original <= price) return '';
     const habitual = original.toLocaleString('es-UY');
+    if (item?.liquidation === true) {
+        return `<span class="promo-was" style="display:block;font-size:.82rem;font-weight:700;color:#9a3412;margin-top:.1rem">Precio de liquidación. Precio habitual: <s>$${habitual} UYU</s></span>`;
+    }
     return `<span class="promo-was" style="display:block;font-size:.82rem;font-weight:700;color:#9a3412;margin-top:.1rem">${promo.name}: ${promo.percent}% menos hasta el ${promo.endLabel}. Precio habitual: <s>$${habitual} UYU</s></span>`;
 }
 
@@ -87,7 +92,9 @@ export function secondsToNextPromoBoundary(now = new Date(), promo = WEB_PROMO) 
     const start = Date.parse(promo.startsAt);
     const afterEnd = Date.parse(promo.endsAt) + 1000;
     if (![t, start, afterEnd].every(Number.isFinite)) return null;
-    const next = [start, afterEnd].filter(boundary => boundary > t).sort((a, b) => a - b)[0];
+    // También vence al entrar el precio de liquidación y el tope de descuentos.
+    const liquidation = Date.parse(LIQUIDACION_PRECIO.startsAt);
+    const next = [start, afterEnd, liquidation].filter(boundary => boundary > t).sort((a, b) => a - b)[0];
     return next === undefined ? null : Math.max(1, Math.ceil((next - t) / 1000));
 }
 
