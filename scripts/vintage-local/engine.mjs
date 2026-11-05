@@ -62,7 +62,7 @@ export async function inspectWorkbook(file){
  const bytes=await fs.readFile(file),input=readFullStock(bytes);
  return {...input,source_sha256:await sha256('vintage-bulk-positive-v1:'+await sha256(bytes))};
 }
-export async function run({excel,connection,directory,target=1000,raiseTargetTo=0,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
+export async function run({excel,connection,directory,target=1000,raiseTargetTo=0,intervalMs=2000,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
  if(!Number.isInteger(target)||target<5||target>MAX_TARGET_TOTAL||!Number.isInteger(validateOnly)||validateOnly<0||validateOnly>5)throw new Error('invalid_local_limits');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
  if(await policyHash(policy)!==c.policy_hash)throw new Error('connection_policy_changed');
@@ -71,7 +71,7 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
  await fs.mkdir(directory,{recursive:true});
  const db=openDatabase(path.join(directory,validateOnly?'validation.sqlite':'publisher.sqlite')),broker=brokerFactory(c),env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id,ML_PUBLISHER_MODE:'enabled',ML_PUBLISH_QUEUE_ENABLED:'false'};
  let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false,capHit=false,sliceDone=false;
- const limited=createVintageBulkFetch(),rateLog=path.join(directory,'rate-limit-events.jsonl');let listingQuotaHit=false;
+ const limited=createVintageBulkFetch({intervalMs}),rateLog=path.join(directory,'rate-limit-events.jsonl');let listingQuotaHit=false;
  // Records which endpoint got a real 429 (no ids or tokens) and notices the listing-quota refusal.
  const watched=async(url,options)=>{
   const response=await limited(env,url,options);

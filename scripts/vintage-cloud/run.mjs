@@ -37,18 +37,20 @@ export function cloudSettings(campaign,{tanda,tope}={}){
   tanda:Math.min(HARD_MAX_PER_RUN,int(tanda,int(nube.tanda,50))),
   tope_diario:Math.min(HARD_MAX_PER_DAY,int(tope,int(nube.tope_diario,300))),
   minutos:Math.min(150,Math.max(5,int(nube.minutos,90))),
+  // Separación entre pedidos a Mercado Libre: 2 s en la PC; la nube puede bajarla hasta 0,4 s.
+  intervalo_ms:Math.min(2000,Math.max(400,int(nube.intervalo_ms,2000))),
   target_total:Number.isInteger(campaign?.target_total)?campaign.target_total:10000,
  };
 }
 export function batchSize(settings,dailyCreated){return Math.max(0,Math.min(settings.tanda,settings.tope_diario-Math.max(0,Number(dailyCreated)||0)));}
 
-async function syncWithD1State({query,directory,connection,excel,mode,now=Date.now}){
+async function syncWithD1State({query,directory,connection,excel,mode,intervalMs=2000,now=Date.now}){
  const db=openDatabase(path.join(directory,'publisher.sqlite'));
  try{
   await db.prepare(`CREATE TABLE IF NOT EXISTS vintage_stock_sync (isbn TEXT PRIMARY KEY,item_id TEXT NOT NULL,desired_status TEXT,applied_status TEXT,missing_since INTEGER NOT NULL DEFAULT 0,feed_id TEXT,attempts INTEGER NOT NULL DEFAULT 0,next_at INTEGER NOT NULL DEFAULT 0,last_error TEXT,updated_at INTEGER NOT NULL DEFAULT 0,applied_price INTEGER,competitor_json TEXT,competitor_at INTEGER)`).run();
   for(const r of await loadStockState(query))await db.prepare(`INSERT OR REPLACE INTO vintage_stock_sync(${STOCK_COLUMNS.join(',')}) VALUES(${STOCK_COLUMNS.map(()=>'?').join(',')})`).bind(...STOCK_COLUMNS.map(c=>r[c]??null)).run();
  }finally{db.close();}
- const started=now(),summary=await syncStock({connection,excel,directory,mode,now});
+ const started=now(),summary=await syncStock({connection,excel,directory,mode,intervalMs,now});
  let saved=0;
  if(mode!=='report'){
   const db2=openDatabase(path.join(directory,'publisher.sqlite'));
@@ -88,11 +90,11 @@ async function cloudRunInner({action,directory,campaign,overrides={},env=process
   report.numeros=campaignNumbers(input.rows,c.receipts,policy);
   if(action==='numeros')return {...report,estado:'listo'};
   state.fase='stock';const q=query??d1Client();
-  report.stock=await (deps.sync??syncWithD1State)({query:q,directory,connection,excel,mode:action==='publicar'?'stock_only':'report'});
+  report.stock=await (deps.sync??syncWithD1State)({query:q,directory,connection,excel,mode:action==='publicar'?'stock_only':'report',intervalMs:settings.intervalo_ms});
   if(action==='prueba'){
    state.fase='motor_prueba';let result;
    // Un corte de autorización a mitad del recorrido se reintenta: la base guardada sigue desde donde quedó.
-   for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,validateOnly:5,target:settings.target_total,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
+   for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,validateOnly:5,target:settings.target_total,intervalMs:settings.intervalo_ms,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
    let preview=[];try{preview=JSON.parse(await fs.readFile(path.join(directory,'items.preview.json'),'utf8'));}catch{}
    report.prueba={estado:result.state,altas_preparadas:preview.map(p=>({isbn:p.isbn,estado:p.state,precio:p.payload?.price??null,titulo:p.payload?.title??null,motivo:p.error_code??null}))};
    return {...report,estado:'prueba_lista'};
@@ -102,7 +104,7 @@ async function cloudRunInner({action,directory,campaign,overrides={},env=process
   report.freno={altas_hoy:status.daily_created,tope_diario:settings.tope_diario,tanda:n};
   if(n===0)return {...report,estado:'tope_diario_alcanzado'};
   let result;
-  for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,limitNew:n,target:settings.target_total,raiseTargetTo:settings.target_total,maxMs:settings.minutos*60000,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
+  for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,limitNew:n,target:settings.target_total,raiseTargetTo:settings.target_total,intervalMs:settings.intervalo_ms,maxMs:settings.minutos*60000,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
   const after=await (deps.broker??makeBroker)(c)('status');
   report.publicacion={estado:result.state,publicados_total:result.published_total,altas_de_esta_corrida:Math.max(0,after.daily_created-status.daily_created)};
   return {...report,estado:result.state};
