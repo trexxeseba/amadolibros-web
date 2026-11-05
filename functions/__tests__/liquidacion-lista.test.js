@@ -3,8 +3,8 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 
 import {
-    candidatos, vendidoEn, coberturaSuficiente, nuncaVendido, evaluar, workerQuery, tipoDeConsulta,
-    SIN_VENTA_DIAS, MIN_PUBLICADO_DIAS, ISBN_BATCH,
+    candidatos, vendidoEn, coberturaSuficiente, nuncaVendido, evaluar, workerQuery, tipoDeConsulta, claveTitulo,
+    SIN_VENTA_DIAS, MIN_PUBLICADO_DIAS, ISBN_BATCH, TITULO_CLAVE_MAX, MAX_ERRORES_TITULO,
 } from '../../scripts/liquidacion/armar-lista.mjs';
 import { resumenFinal } from '../../scripts/liquidacion/resumen.mjs';
 
@@ -56,8 +56,11 @@ function fakeWorker({ porIsbn = {}, porTitulo = {}, cobertura = iso(5000), calls
         if (body.isbns) {
             return { resultados: body.isbns.map(isbn => ({ isbn, ultima_venta: porIsbn[isbn] ?? null, cobertura_desde: cobertura })) };
         }
-        if (body.titulo in porTitulo && porTitulo[body.titulo] === 400) { const e = new Error('corto'); e.status = 400; throw e; }
-        const last = porTitulo[body.titulo];
+        // Como el Worker real: un patrón LIKE de más de 50 caracteres es un 500.
+        if (`%${body.titulo}%`.length > 50) { const e = new Error('internal_error'); e.status = 500; throw e; }
+        const key = Object.keys(porTitulo).find(k => claveTitulo(k) === body.titulo);
+        if (key !== undefined && porTitulo[key] === 400) { const e = new Error('corto'); e.status = 400; throw e; }
+        const last = key === undefined ? null : porTitulo[key];
         return { titulo: body.titulo, resultados: last ? [{ ultima_venta: last }] : [] };
     }, { calls });
 }
@@ -137,9 +140,6 @@ test('evaluar: falla cerrada ante errores del Worker o respuestas raras', async 
     await assert.rejects(evaluar(items, sinResultados, { now: NOW }), /cobertura/);
     const rechaza = async b => ({ resultados: b.isbns.map(isbn => ({ isbn, error: 'invalid_isbn' })) });
     await assert.rejects(evaluar(items, rechaza, { now: NOW }), /cobertura/);
-    // Un error del Worker por título que no es "título corto" tampoco se traga.
-    const tituloRoto = async b => { if (b.isbns) return fakeWorker()(b); const e = new Error('x'); e.status = 500; throw e; };
-    await assert.rejects(evaluar(items, tituloRoto, { now: NOW }), /x/);
 });
 
 test('resumenFinal: cuenta lo que sobrevive a las exclusiones', () => {
@@ -204,4 +204,46 @@ test('tipoDeConsulta distingue sonda, lote y título', () => {
     assert.equal(tipoDeConsulta({ titulo: 'x' }), 'titulo');
     assert.equal(tipoDeConsulta({ isbns: ['1'] }), 'isbn_uno');
     assert.equal(tipoDeConsulta({ isbns: ['1', '2'] }), 'isbn_lote');
+});
+
+test('claveTitulo: normaliza como el Worker y recorta para no pasar el límite de LIKE de D1', () => {
+    assert.equal(claveTitulo('Ficciones — Edición Ilustrada, ¡Nueva!'), 'ficcionesedicionilustradanueva');
+    const larga = claveTitulo('Cien años de soledad edición conmemorativa de la Real Academia Española con prólogo de Gabriel García Márquez');
+    assert.equal(larga.length, TITULO_CLAVE_MAX);
+    assert.ok(`%${larga}%`.length <= 50);
+    assert.equal(claveTitulo(null), '');
+});
+
+test('evaluar: un título largo no rompe la consulta y su venta reciente lo saca', async () => {
+    const titulo = 'Cien años de soledad edición conmemorativa de la Real Academia Española con prólogo de García Márquez';
+    const items = [
+        book('MLU1', { isbn: ISBN[0], sold_quantity: 0, title: titulo }),
+        book('MLU2', { isbn: ISBN[1], sold_quantity: 0, title: 'Otro libro con un título extremadamente largo para probar el límite de D1' }),
+    ];
+    const worker = fakeWorker({ cobertura: iso(300), porTitulo: { [titulo]: iso(15) } });
+    const { ids, conteos } = await evaluar(items, worker, { now: NOW });
+    assert.deepEqual(ids, ['MLU2']);
+    assert.equal(conteos.vendido_por_titulo, 1);
+    assert.equal(conteos.titulo_con_error, 0);
+    assert.ok(worker.calls.filter(c => c.titulo !== undefined).every(c => c.titulo.length <= TITULO_CLAVE_MAX));
+});
+
+test('evaluar: un título con error del Worker deja afuera a ese libro, pero muchos errores abortan', async () => {
+    const mk = n => Array.from({ length: n }, (_, i) => book(`MLU${i + 1}`, { isbn: ISBN[i % ISBN.length], sold_quantity: 0, title: `Libro número ${i + 1} de prueba` }));
+    const falla = async body => {
+        if (body.isbns) return fakeWorker()(body);
+        const e = new Error('el Worker respondió 500'); e.status = 500; throw e;
+    };
+    const pocos = await evaluar(mk(MAX_ERRORES_TITULO), falla, { now: NOW });
+    assert.deepEqual(pocos.ids, []);
+    assert.equal(pocos.conteos.titulo_con_error, MAX_ERRORES_TITULO);
+    await assert.rejects(evaluar(mk(MAX_ERRORES_TITULO + 1), falla, { now: NOW }), /500/);
+});
+
+test('evaluar: un título demasiado corto no se consulta', async () => {
+    const worker = fakeWorker();
+    const { ids, conteos } = await evaluar([book('MLU1', { isbn: ISBN[0], sold_quantity: 0, title: 'Of!' })], worker, { now: NOW });
+    assert.deepEqual(ids, []);
+    assert.equal(conteos.titulo_no_verificable, 1);
+    assert.equal(worker.calls.filter(c => c.titulo !== undefined).length, 0);
 });

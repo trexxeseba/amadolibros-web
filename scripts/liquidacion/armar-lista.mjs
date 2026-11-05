@@ -44,6 +44,17 @@ const ISBN_SONDA = '9780306406157';
 export const SIN_VENTA_DIAS = 730;
 export const MIN_PUBLICADO_DIAS = 730;
 export const ISBN_BATCH = 50;
+// D1 rechaza patrones LIKE de más de 50 caracteres (500 internal_error). El Worker busca
+// `%clave%` con el título normalizado (minúsculas, sin acentos ni signos), así que se
+// consulta por el comienzo de esa clave: 44 + 2 comodines = 46.
+export const TITULO_CLAVE_MAX = 44;
+export const TITULO_CLAVE_MIN = 4;
+export const MAX_ERRORES_TITULO = 10;
+
+/** Misma normalización que el Worker (publication-policy.normalizedTitle), recortada. */
+export function claveTitulo(title, max = TITULO_CLAVE_MAX) {
+    return String(title ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, max);
+}
 
 /** Activos, con stock y precio, publicados hace MIN_PUBLICADO_DIAS o más. */
 export function candidatos(items, now = Date.now(), minDays = MIN_PUBLICADO_DIAS) {
@@ -95,7 +106,7 @@ export async function evaluar(items, query, { now = Date.now(), concurrency = 2 
     const conteos = {
         candidatos: items.length, con_sold_quantity: 0, nunca_vendidos: 0,
         cobertura_desde: null, cobertura_dias: null, cobertura_completa: false,
-        sin_isbn: 0, vendido_por_isbn: 0, titulo_no_verificable: 0, vendido_por_titulo: 0,
+        sin_isbn: 0, vendido_por_isbn: 0, titulo_no_verificable: 0, titulo_con_error: 0, vendido_por_titulo: 0,
         no_verificable_por_cobertura: 0, en_lista: 0,
     };
 
@@ -145,11 +156,15 @@ export async function evaluar(items, query, { now = Date.now(), concurrency = 2 
     // 2) Por título, para las ventas que quedaron sin ISBN en D1.
     const enLista = [];
     await mapLimit(paraTitulo, concurrency, async item => {
+        const clave = claveTitulo(item.title);
+        if (clave.length < TITULO_CLAVE_MIN) { conteos.titulo_no_verificable++; return; }
         let data;
         try {
-            data = await query({ titulo: String(item.title || '') });
+            data = await query({ titulo: clave });
         } catch (error) {
             if (error?.status === 400) { conteos.titulo_no_verificable++; return; }
+            // Un título que el Worker no puede buscar deja afuera a ese libro; si son varios, algo anda mal.
+            if (error?.status >= 500 && ++conteos.titulo_con_error <= MAX_ERRORES_TITULO) return;
             throw error;
         }
         if (!Array.isArray(data?.resultados)) throw new Error('respuesta de ventas por título sin resultados');
