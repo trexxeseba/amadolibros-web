@@ -33,9 +33,10 @@ export const CUENTAS = {
     sellerId: '2341378249',
     // Fila de ml_oauth_sellers que renueva el panel (meli-vintage-token.js).
     token: { tabla: 'ml_oauth_sellers', appId: '4741021817925208' },
-    // Stock fijo en las a demanda: pendiente de confirmación de Seba (el motor
-    // trabajaba con stock 1). Mientras tanto no se toca.
-    tocarStockDemanda: false,
+    // Stock fijo en las a demanda (Seba, 05/11/2026): al bajarle el precio a una
+    // publicación a demanda, stock 5, conservando sus días de disponibilidad. Al volver
+    // al precio original se restaura el stock que tenía.
+    tocarStockDemanda: true,
     // Piso por publicación: costo según SBS con margen mínimo del 18 % y nunca
     // menos de UYU 1.500 (Seba, 05/11/2026). Sin costo conocido no se baja.
     pisoPorCosto: true,
