@@ -42,7 +42,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 170
     env:
-      VINTAGE_RENEW_SECRET: ${{ secrets.VINTAGE_RENEW_SECRET }}
       SBS_EMAIL: ${{ secrets.SBS_EMAIL }}
       SBS_PASSWORD: ${{ secrets.SBS_PASSWORD }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -73,10 +72,11 @@ jobs:
           else
             ACCION="$IN_ACCION"
           fi
-          if [ -z "$VINTAGE_RENEW_SECRET" ]; then
-            echo "Falta el secreto VINTAGE_RENEW_SECRET en GitHub (ver docs/vintage-nube.md)."
-            if [ "$EVENTO" = "schedule" ]; then echo "accion=nada" >> "$GITHUB_OUTPUT"; exit 0; fi
-            exit 1
+          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then echo "Faltan los secretos de Cloudflare"; exit 1; fi
+          if [ "$ACCION" != "keepalive" ] && { [ -z "$SBS_EMAIL" ] || [ -z "$SBS_PASSWORD" ]; }; then
+            echo "Faltan los secretos SBS_EMAIL y SBS_PASSWORD en GitHub (ver docs/vintage-nube.md): esta vuelta sólo cuida el token."
+            if [ "$EVENTO" != "schedule" ]; then exit 1; fi
+            ACCION=keepalive
           fi
           # Precio Ganador y el publicador no se cruzan: si está corriendo, esta vuelta sólo cuida el token.
           if [ "$ACCION" = "publicar" ]; then
@@ -86,8 +86,12 @@ jobs:
           echo "Acción: $ACCION (publicación real habilitada: $REAL)"
           echo "accion=$ACCION" >> "$GITHUB_OUTPUT"
 
+      # Clave de un solo uso para /operations/vintage-renew: el hash va a D1 y vence en 4 h.
+      # Así no hace falta un secreto VINTAGE_RENEW_SECRET en GitHub.
+      - name: Clave de corrida
+        run: node scripts/vintage-cloud/key.mjs crear
+
       - name: Correr
-        if: steps.decidir.outputs.accion != 'nada'
         env:
           ACCION: ${{ steps.decidir.outputs.accion }}
           IN_TANDA: ${{ inputs.tanda }}
@@ -101,10 +105,14 @@ jobs:
 
       # Sólo el reporte (conteos y estados). La conexión y la lista quedan en RUNNER_TEMP y se borran.
       - name: Reporte
-        if: always() && steps.decidir.outputs.accion != 'nada'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vintage-nube-${{ github.run_id }}
           path: ${{ runner.temp }}/reporte/
           retention-days: 30
           if-no-files-found: ignore
+
+      - name: Borrar la clave de corrida
+        if: always()
+        run: node scripts/vintage-cloud/key.mjs borrar || true

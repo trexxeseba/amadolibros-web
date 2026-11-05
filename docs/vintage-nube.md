@@ -14,7 +14,7 @@ Reemplaza a la PC (`scripts/vintage_autorun.py` + tarea `AmadoVintagePublisher`)
 | Antes (PC) | Ahora (nube) |
 | --- | --- |
 | Usuario y clave de SBS en `private/sbs.json` | Secretos de GitHub `SBS_EMAIL` y `SBS_PASSWORD`. El portal de SBS responde desde GitHub (probado el 05/11/2026: login 200). |
-| `VINTAGE_RENEW_SECRET` en `private/renew-secret.txt` | Secreto de GitHub `VINTAGE_RENEW_SECRET` (el mismo valor que ya está en Cloudflare Pages). |
+| `VINTAGE_RENEW_SECRET` en `private/renew-secret.txt` | Ya no hace falta: cada corrida genera una clave al azar, guarda su hash en D1 (`ml_vintage_cloud_keys`, vence en 4 h) y la borra al terminar (`scripts/vintage-cloud/key.mjs`). El sitio la acepta igual que el secreto. Quien puede escribir en D1 ya tiene los tokens de Mercado Libre, así que no abre nada nuevo. |
 | Token de Mercado Libre pedido por la PC | Lo sigue renovando Cloudflare (`functions/_shared/meli-vintage-token.js`). La acción nueva `keepalive` de `/operations/vintage-renew` lo rota si le quedan menos de 3 horas; el workflow la llama cada 2 horas, aun en prueba o apagado, para que Precio Ganador lo encuentre vigente. Nunca devuelve el token. |
 | SQLite local (`publisher.sqlite`) | Se arma de cero en cada corrida con lo que devuelve el servidor (recibos, inventario, identificadores). La reserva por ISBN ya estaba en D1. El estado de pausas (qué pausamos nosotros y desde cuándo falta un libro) se guarda en D1, tabla `ml_vintage_cloud_stock_sync`. |
 | Proceso largo con la PC despierta | Corridas cortas cada 2 horas (`37 1-23/2 * * *`, hora UTC), con tope de minutos. |
@@ -61,25 +61,19 @@ publicador de la nube **no toca precios**: la sincronización corre en modo `sto
 cada alta nueva sale de la política aprobada, como en la PC; después lo maneja Precio Ganador.
 Si Precio Ganador está corriendo cuando toca publicar, esa vuelta sólo cuida el token.
 
-## Secretos que carga Seba en GitHub
+## Secretos en GitHub
 
-En GitHub: repo `amadolibros-web`, **Settings**, **Secrets and variables**, **Actions**,
-**New repository secret**. Uno por uno:
+Sólo dos, los del portal de SBS. Se cargan en
+https://github.com/trexxeseba/amadolibros-web/settings/secrets/actions/new, uno por vez:
 
-1. `SBS_EMAIL`: el usuario del portal ag.sbs.com.ar (el mismo de `private\sbs.json` en la PC).
-2. `SBS_PASSWORD`: la clave de ese usuario.
-3. `VINTAGE_RENEW_SECRET`: el mismo valor que está en Cloudflare Pages. En la PC está en
-   `%LOCALAPPDATA%\Amado\VintagePublisher\private\renew-secret.txt`. Si no se encuentra,
-   se genera uno nuevo de 40 caracteres o más y se carga igual en los dos lugares: Cloudflare,
-   **Workers & Pages**, proyecto del sitio, **Settings**, **Variables and Secrets**, Production,
-   `VINTAGE_RENEW_SECRET` (tipo Secret), y en GitHub con el mismo nombre. Con el nuevo, la PC
-   deja de poder renovar: está bien, es la idea.
+1. Name `SBS_EMAIL`, Secret: el usuario de ag.sbs.com.ar (el de `private\sbs.json` en la PC).
+2. Name `SBS_PASSWORD`, Secret: su clave.
 
-`CLOUDFLARE_ACCOUNT_ID` y `CLOUDFLARE_API_TOKEN` ya existen (los usa Precio Ganador).
+Los de Cloudflare ya estaban. Sin los de SBS, el workflow igual mantiene vivo el token de Vintage.
 
 ## Cómo se prende, paso a paso
 
-1. Seba carga los tres secretos.
+1. Seba carga los dos secretos de SBS.
 2. Corrida `prueba` a mano: se revisan los números y las 5 altas de muestra.
 3. Con el OK de Seba: `"ejecutor": "nube"` y `"modo": "real"` en `campaign.json`, mergear.
    Desde ahí cada 2 horas publica una tanda, con el tope diario. La PC, si está prendida,

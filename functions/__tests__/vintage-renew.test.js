@@ -211,3 +211,18 @@ test('a failed keepalive rotation puts the previous expiry back so readers keep 
  await assert.rejects(()=>renew.command(f.env,BEARER,'keepalive'),/vintage_auth_upstream/);
  assert.equal((await f.db.prepare("SELECT access_expires_at e FROM ml_oauth_sellers").first()).e,expiry);
 });
+
+test('a cloud run key stored as a hash in D1 authorizes until it expires, without any GitHub secret',async t=>{
+ const {createKey,deleteKey,SCHEMA}=await import('../../scripts/vintage-cloud/key.mjs');
+ const f=await fixture(t,{secret:''});
+ const query=async(sql,params=[])=>{const st=f.db.prepare(sql).bind(...params);return /^\s*SELECT/i.test(sql)?(await st.all()).results:(await st.run(),[]);};
+ const key=await createKey(query,f.clock.value);
+ assert.match(key,/^[a-f0-9]{64}$/);
+ assert.ok(!JSON.stringify((await f.db.prepare('SELECT * FROM ml_vintage_cloud_keys').all()).results).includes(key),'only the hash is stored');
+ await authorizeRenew(f.env,'Bearer '+key,f.clock.value);
+ await assert.rejects(()=>authorizeRenew(f.env,'Bearer '+'0'.repeat(64),f.clock.value),/renew_unauthorized/);
+ await assert.rejects(()=>authorizeRenew(f.env,'Bearer '+key,f.clock.value+4*3600000+1),/renew_unauthorized/);
+ await deleteKey(query,key,f.clock.value);
+ await assert.rejects(()=>authorizeRenew(f.env,'Bearer '+key,f.clock.value),/renew_unauthorized/);
+ assert.ok(SCHEMA.includes('key_hash'));
+});
