@@ -155,6 +155,7 @@ export async function evaluar(items, query, { now = Date.now(), concurrency = 2 
 
     // 2) Por título, para las ventas que quedaron sin ISBN en D1.
     const enLista = [];
+    const sinVentaEnD1 = []; // sin venta en lo que D1 cubre, aunque no alcance para probar 730 días
     await mapLimit(paraTitulo, concurrency, async item => {
         const clave = claveTitulo(item.title);
         if (clave.length < TITULO_CLAVE_MIN) { conteos.titulo_no_verificable++; return; }
@@ -169,12 +170,13 @@ export async function evaluar(items, query, { now = Date.now(), concurrency = 2 
         }
         if (!Array.isArray(data?.resultados)) throw new Error('respuesta de ventas por título sin resultados');
         if (data.resultados.some(r => vendidoEn(r, now))) { conteos.vendido_por_titulo++; return; }
+        sinVentaEnD1.push(String(item.id));
         // Sin venta reciente en D1: prueba suficiente si nunca vendió o si D1 cubre los 730 días.
         if (nuncaVendido(item) || conteos.cobertura_completa) enLista.push(String(item.id));
         else conteos.no_verificable_por_cobertura++;
     });
     conteos.en_lista = enLista.length;
-    return { ids: enLista.sort(), conteos };
+    return { ids: enLista.sort(), sinVentaEnD1: sinVentaEnD1.sort(), conteos };
 }
 
 /** Qué clase de consulta es, para que un error diga dónde falló (sin datos de ventas). */
@@ -225,7 +227,10 @@ async function main(argv) {
     const now = Date.now();
     const activos = (catalog.items ?? []).filter(i => i?.status === 'active');
     const cands = candidatos(catalog.items, now);
-    const { ids, conteos } = await evaluar(cands, workerQuery({ worker, secret }), { now });
+    const { ids, sinVentaEnD1, conteos } = await evaluar(cands, workerQuery({ worker, secret }), { now });
+    // Para el escenario "aceptar el histórico parcial": fuera del repo, solo lo lee resumen.mjs.
+    const parcialOut = argv.indexOf('--parcial-out');
+    if (parcialOut >= 0) writeFileSync(argv[parcialOut + 1], JSON.stringify(sinVentaEnD1));
     const resumen = { generado: new Date(now).toISOString(), catalogo_activo: activos.length, ...conteos };
 
     const data = JSON.parse(readFileSync(DATA_PATH, 'utf8'));

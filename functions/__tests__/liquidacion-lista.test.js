@@ -6,7 +6,7 @@ import {
     candidatos, vendidoEn, coberturaSuficiente, nuncaVendido, evaluar, workerQuery, tipoDeConsulta, claveTitulo,
     SIN_VENTA_DIAS, MIN_PUBLICADO_DIAS, ISBN_BATCH, TITULO_CLAVE_MAX, MAX_ERRORES_TITULO,
 } from '../../scripts/liquidacion/armar-lista.mjs';
-import { resumenFinal } from '../../scripts/liquidacion/resumen.mjs';
+import { resumenFinal, escenarioParcial } from '../../scripts/liquidacion/resumen.mjs';
 
 const NOW = Date.parse('2026-11-05T12:00:00-03:00');
 const DAY = 86400000;
@@ -246,4 +246,36 @@ test('evaluar: un título demasiado corto no se consulta', async () => {
     assert.deepEqual(ids, []);
     assert.equal(conteos.titulo_no_verificable, 1);
     assert.equal(worker.calls.filter(c => c.titulo !== undefined).length, 0);
+});
+
+test('evaluar informa los libros sin venta en lo que D1 cubre, aunque no alcance para probar 730 días', async () => {
+    const items = [
+        book('MLU1', { isbn: ISBN[0] }),
+        book('MLU2', { isbn: ISBN[1] }),
+    ];
+    const worker = fakeWorker({ cobertura: iso(300), porIsbn: { [ISBN[1]]: iso(30) } });
+    const { ids, sinVentaEnD1, conteos } = await evaluar(items, worker, { now: NOW });
+    assert.deepEqual(ids, []);
+    assert.deepEqual(sinVentaEnD1, ['MLU1']);
+    assert.equal(conteos.no_verificable_por_cobertura, 1);
+});
+
+test('escenarioParcial: cuenta lo que sobrevive a las exclusiones si se aceptara el histórico parcial', () => {
+    const data = {
+        excluir: { medicos: { ids: ['MLU2'] }, recientes: { ids: [] }, gana_precio: { ids: ['MLU3'] }, sin_competencia: { ids: ['MLU4'] } },
+    };
+    const items = ['MLU1', 'MLU2', 'MLU3', 'MLU4', 'MLU5'].map(id => book(id));
+    assert.deepEqual(escenarioParcial(items, data, ['MLU1', 'MLU2', 'MLU3', 'MLU4', 'MLU5']), {
+        sin_venta_en_d1: 5, elegibles: 2,
+        excluidos: { fuera_de_stock: 0, medicos: 1, recientes: 0, gana_precio: 1, sin_competencia: 1 },
+    });
+    assert.deepEqual(escenarioParcial(items, data, []), { sin_venta_en_d1: 0, elegibles: 0, excluidos: null });
+});
+
+test('el workflow guarda un artefacto y el escenario parcial queda fuera del repo', () => {
+    const wf = readFileSync('.github/workflows/liquidacion-lista.yml', 'utf8');
+    assert.match(wf, /actions\/upload-artifact@v4/);
+    assert.match(wf, /--parcial-out "\$RUNNER_TEMP\/parcial\.json"/);
+    assert.match(wf, /--parcial "\$RUNNER_TEMP\/parcial\.json"/);
+    assert.doesNotMatch(wf, /git add[^\n]*parcial/);
 });
