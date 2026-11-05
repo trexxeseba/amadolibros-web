@@ -207,7 +207,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
           <!-- Datos del comprador -->
           <section class="cart-section">
             <h2 class="cart-section-h2">Tus datos</h2>
-            <p class="buyer-note">Mientras completás el pedido, recordamos estos datos sólo en esta pestaña para que no los pierdas si abrís el banco o WhatsApp.</p>
+            <p class="buyer-note">Mientras completás el pedido, recordamos estos datos en esta pestaña para que no los pierdas si abrís el banco o WhatsApp.</p>
 
             <!-- CUENTA-1 · Identificarse es OPCIONAL: el formulario de abajo
                  está disponible desde el primer momento y la compra como
@@ -603,7 +603,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
   }
 
   /* Desktop: el resumen siempre está expandido. Corrección revisión
-     ChatGPT #4: ya no se fuerza visualmente vía CSS (dependía de
+     Revisión #4: ya no se fuerza visualmente vía CSS (dependía de
      ::details-content, un pseudo-elemento interno de Chromium sin garantía
      de comportamiento igual en WebKit/Firefox) — ahora es JS
      (syncSummaryDesktopState) el que fuerza el atributo real "open" del
@@ -951,7 +951,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
     background: rgba(191, 87, 60, 0.06);
   }
 
-  /* V1.1 REDESIGN (corrección revisión ChatGPT #2): medio de pago congelado
+  /* V1.1 REDESIGN (corrección de revisión #2): medio de pago congelado
      mientras un submit está en curso — se ve claramente no interactuable. */
   .payment-opt:has(input[type="radio"]:disabled) {
     opacity: 0.65;
@@ -1809,7 +1809,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       });
     }
 
-    // V1.1 REDESIGN (corrección revisión ChatGPT #2): congelar el medio de
+    // V1.1 REDESIGN (corrección de revisión #2): congelar el medio de
     // pago mientras btnTransfer o btnPrepare están en curso (aria-busy). Un
     // radio deshabilitado no dispara 'change' aunque se lo toque por mouse
     // o teclado, así que mientras está congelado es físicamente imposible
@@ -1826,7 +1826,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       return !!(radio && radio.disabled);
     }
 
-    // V1.1 REDESIGN (corrección revisión ChatGPT #3): único punto que decide
+    // V1.1 REDESIGN (corrección de revisión #3): único punto que decide
     // a qué falta el CTA neutro debe llevar, siguiendo el mismo orden del
     // flujo aprobado (Entrega → Nombre → WhatsApp/Teléfono → Email →
     // [envío: Dirección/Barrio/Departamento] → Medio de pago). No duplica la
@@ -1838,7 +1838,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       if (!requireDeliveryType()) return false;
       var deliveryType = getDeliveryType();
 
-      // Corrección revisión ChatGPT (ronda final): la aceptación de retiro
+      // Corrección de revisión (ronda final): la aceptación de retiro
       // va inmediatamente después de Entrega — mismo mensaje/foco/scroll que
       // ya usan createTransferOrder()/btnPrepare al confirmar, para no
       // mandar al comprador a elegir Pago y recién ahí hacerlo volver acá.
@@ -2499,7 +2499,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
 
       if (transferButton && !transferButton.hasAttribute('aria-busy')) transferButton.disabled = !technicallyReady;
       if (mercadoPagoButton && !mercadoPagoButton.hasAttribute('aria-busy')) mercadoPagoButton.disabled = !technicallyReady;
-      // V1.1 REDESIGN (corrección revisión ChatGPT #2): con el medio de pago
+      // V1.1 REDESIGN (corrección de revisión #2): con el medio de pago
       // congelado (submit en curso) el CTA neutro ya está hidden porque hay
       // un método elegido — este disabled es una segunda barrera explícita,
       // no el mecanismo principal.
@@ -2634,7 +2634,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
         var pickupDiscount = pickupEligible ? RETIRO_DISCOUNT : 0;
         var total = Math.max(0, subtotal - pickupDiscount);
 
-        // V1.1 REDESIGN (corrección revisión ChatGPT #1): preview de
+        // V1.1 REDESIGN (corrección de revisión #1): preview de
         // "Pagás $X" — espejo EXACTO de calculateTransferTotals() en
         // functions/api/_orders_logic.js (mismo TRANSFER_FACTOR, mismo
         // pickupDiscount ya calculado acá mismo, sin envío). Sólo de
@@ -2678,7 +2678,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
         var shippingCost      = subtotal < FREE_SHIPPING_THRESHOLD_UYU ? SHIPPING_COST : 0;
         var totalWithShipping = subtotal + shippingCost;
 
-        // V1.1 REDESIGN (corrección revisión ChatGPT #1): mismo espejo que
+        // V1.1 REDESIGN (corrección de revisión #1): mismo espejo que
         // en la rama de retiro, ahora con shippingCost (sin pickupDiscount)
         // — igual que calculateTransferTotals() del servidor. displayTotal
         // decide qué importe real mostrar en resumen/sticky según el medio
@@ -3079,7 +3079,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
     });
 
     // ── V1.1 REDESIGN: CTA neutro cuando todavía no se eligió pago ───────
-    // Corrección revisión ChatGPT #3: ya no salta directo de Entrega a
+    // Corrección de revisión #3: ya no salta directo de Entrega a
     // Pago — sigue el orden completo vía focusFirstMissingRequirement().
     var btnConfirmNeutral = document.getElementById('btn-confirm-neutral');
     if (btnConfirmNeutral) {
@@ -3093,7 +3093,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
     // <details> ya dispara "toggle" nativamente al abrir/cerrar — se usa acá
     // en vez de un truco de CSS con contenido dinámico en ::before.
     //
-    // Corrección revisión ChatGPT #4: en desktop el resumen se fuerza
+    // Corrección de revisión #4: en desktop el resumen se fuerza
     // realmente abierto por JS (atributo "open" genuino, no un efecto
     // visual de CSS) según el viewport — comportamiento nativo del
     // navegador, sin depender de ::details-content. Además, en desktop el

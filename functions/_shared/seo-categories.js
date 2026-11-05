@@ -212,7 +212,7 @@ export const SEO_CATEGORIES = [
         title: 'Biblias en Uruguay | Ediciones, Reina-Valera y católicas | Amado Libros',
         h1: 'Biblias en Uruguay: ediciones para comparar y comprar',
         description: 'Biblias disponibles en Uruguay: Reina-Valera, ediciones católicas, de estudio, letra grande, infantiles y para regalo. Compará la edición y consultá stock real.',
-        intro: 'Elegí una Biblia por traducción, tamaño de letra, tipo de estudio y formato. Mostramos únicamente ejemplares con stock real y también buscamos por encargo una edición o ISBN específico.',
+        intro: 'Elegí una Biblia por traducción, tamaño de letra, tipo de estudio y formato. Mostramos ejemplares con stock real y también buscamos por encargo una edición o ISBN específico.',
     },
     {
         id: 'biblias/reina-valera',
