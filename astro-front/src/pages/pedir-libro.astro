@@ -63,7 +63,7 @@ const jsonLd = {
             <option value="novedades-tecnicas">Novedades de una especialidad</option>
             <option value="digital">Una edición digital</option>
             <option value="antiguo">Un libro antiguo, facsímil o reedición</option>
-            <option value="tapa">Sólo recuerdo la tapa o parte del título</option>
+            <option value="tapa">Recuerdo la tapa o parte del título</option>
             <option value="bibliografia">Bibliografía técnica o de estudio</option>
             <option value="regalo">Recomendación para un regalo</option>
           </select>
@@ -149,12 +149,13 @@ const jsonLd = {
         </p>
 
         <div class="form-actions field-wide">
-          <button type="submit">Enviar pedido por WhatsApp</button>
+          <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp-field">
+          <button type="submit" id="request-submit">Enviar pedido por WhatsApp</button>
           <a id="catalog-search-link" href="/catalogo">Buscar primero en el catálogo</a>
         </div>
 
         <p class="privacy-note field-wide">
-          Este formulario no guarda datos en la web. Al continuar se abre WhatsApp con la información ordenada para que podamos buscarla manualmente.
+          Guardamos el pedido con un código para seguirlo, sin pedirte datos personales. Al continuar se abre WhatsApp con la información ordenada para que podamos buscarlo.
         </p>
       </form>
     </div>
@@ -172,7 +173,7 @@ const jsonLd = {
     'novedades-tecnicas': 'Novedades de una especialidad',
     digital: 'Edición digital',
     antiguo: 'Libro antiguo, facsímil o reedición',
-    tapa: 'Sólo recuerda la tapa o parte del título',
+    tapa: 'Recuerda la tapa o parte del título',
     bibliografia: 'Bibliografía técnica o de estudio',
     regalo: 'Recomendación para un regalo',
   };
@@ -228,25 +229,83 @@ const jsonLd = {
     window.gtag?.('event', 'book_request_type_selected', { request_type: effectiveType() });
   });
 
-  form.addEventListener('submit', event => {
+  const submitButton = document.getElementById('request-submit');
+  let submitting = false;
+
+  // PEDIDO-LIBRO-1: el pedido se registra primero en el servidor. Solo con la
+  // confirmación (201) se dispara book_request_submitted, la conversión que
+  // importa Google Ads. Si el registro falla, el cliente igual sigue a
+  // WhatsApp, sin contar la conversión.
+  async function registerRequest(payload) {
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), 4000) : null;
+    try {
+      const response = await fetch('/api/book-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller?.signal,
+      });
+      const data = await response.json().catch(() => null);
+      return response.status === 201 && data?.received === true && typeof data.request_code === 'string'
+        ? data.request_code
+        : '';
+    } catch {
+      return '';
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  function trackSubmitted(type, code) {
+    return new Promise(resolve => {
+      if (typeof window.gtag !== 'function') { resolve(); return; }
+      const done = setTimeout(resolve, 900);
+      window.gtag('event', 'book_request_submitted', {
+        request_type: type,
+        request_code: code,
+        transport_type: 'beacon',
+        event_callback: () => { clearTimeout(done); resolve(); },
+        event_timeout: 800,
+      });
+    });
+  }
+
+  form.addEventListener('submit', async event => {
     event.preventDefault();
-    if (!form.reportValidity()) return;
+    if (!form.reportValidity() || submitting) return;
+    submitting = true;
+    if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Registrando tu pedido…'; }
 
     const data = new FormData(form);
     const type = effectiveType();
     const query = String(data.get('query') || '').trim();
     const wa = window.AmadoWhatsApp;
+    const authorIsbn = String(data.get('author_isbn') || '').trim();
+    const budget = String(data.get('budget') || '').trim();
+    const details = String(data.get('details') || '').trim();
+
+    const code = await registerRequest({
+      request_type: type,
+      query,
+      author_isbn: authorIsbn,
+      format: String(data.get('format') || ''),
+      language: String(data.get('language') || ''),
+      budget: budget === '' ? null : Number(budget),
+      details,
+      source_url: window.location.href,
+      website: String(data.get('website') || ''),
+    });
+
     const lines = [
-      'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran 😊',
+      'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran.',
       '',
       `Motivo: ${typeLabels[type] || typeLabels.exacto}`,
       `Libro: ${query}`,
       'Situación: Búsqueda manual por encargo',
       `Página: ${wa ? wa.absolutePage(window.location.href) : window.location.href}`,
     ];
-    const authorIsbn = String(data.get('author_isbn') || '').trim();
-    const budget = String(data.get('budget') || '').trim();
-    const details = String(data.get('details') || '').trim();
+    if (code) lines.push(`Pedido: ${code}`);
     if (authorIsbn) lines.push(`Autor, editorial o ISBN: ${authorIsbn}`);
     lines.push(`Formato: ${data.get('format')}`);
     lines.push(`Idioma: ${data.get('language')}`);
@@ -255,7 +314,7 @@ const jsonLd = {
     if (typeSelect.value === 'tapa') lines.push('Voy a mandar la foto de la tapa en el próximo mensaje.');
     lines.push('', 'Quisiera saber si pueden conseguirlo, el precio y cuánto demoraría. Gracias.');
 
-    window.gtag?.('event', 'book_request_submitted', { request_type: type });
+    if (code) await trackSubmitted(type, code);
     window.AmadoAnalytics?.trackWhatsApp({
       ctaLocation: 'book_request_form',
       topic: type,
@@ -269,6 +328,14 @@ const jsonLd = {
 </script>
 
 <style>
+  .hp-field {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+
   .request-page {
     padding: 0 1rem 3.5rem;
     background:

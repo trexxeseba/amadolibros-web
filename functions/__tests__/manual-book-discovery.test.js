@@ -51,11 +51,14 @@ test('los accesos editoriales cubren diferenciales concretos y conducen al formu
   assert.match(ideas, /No es una respuesta automática/i);
 });
 
-test('el pedido ordena los datos y termina en WhatsApp sin guardar información', () => {
+// PEDIDO-LIBRO-1: el pedido se registra en el servidor (sin datos personales)
+// para que book_request_submitted mida pedidos recibidos; después sigue a WhatsApp.
+test('el pedido ordena los datos, se registra sin datos personales y termina en WhatsApp', () => {
   for (const field of ['request_type', 'query', 'author_isbn', 'format', 'language', 'budget', 'details']) {
     assert.match(requestPage, new RegExp(`name="${field}"`));
   }
-  assert.match(requestPage, /Este formulario no guarda datos en la web/);
+  assert.match(requestPage, /Guardamos el pedido con un código para seguirlo, sin pedirte datos personales/);
+  assert.doesNotMatch(requestPage, /name="(name|phone|email|whatsapp)"/);
   assert.match(requestPage, /https:\/\/wa\.me\/\$\{WA_NUMBER\}\?text=/);
   assert.match(requestPage, /const WA_NUMBER = '59899841325'/);
   assert.doesNotMatch(requestPage, /Claude|Anthropic|anthropic/i);
