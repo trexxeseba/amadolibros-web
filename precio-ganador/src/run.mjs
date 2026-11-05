@@ -118,7 +118,8 @@ async function main() {
   for (const id of enEstado) if (!items.has(id) || items.get(id).status !== 'active') filas.push({ item: items.get(id) ?? { id }, comp: null, d: { accion: 'inactiva', motivo: 'no está activa' }, previo: estado.publicaciones[id] });
 
   const cambios = filas.filter(f => CAMBIA.has(f.d.accion));
-  if (real && cambios.length > MAX_CAMBIOS_POR_CORRIDA) throw Object.assign(new Error(`freno: ${cambios.length} cambios planeados (máximo ${MAX_CAMBIOS_POR_CORRIDA})`), { fatal: true });
+  const maxCambios = cuenta.maxCambios ?? MAX_CAMBIOS_POR_CORRIDA;
+  if (real && cambios.length > maxCambios) throw Object.assign(new Error(`freno: ${cambios.length} cambios planeados (máximo ${maxCambios})`), { fatal: true });
 
   // Aplicar (sólo en modo real). Una que falla no frena a las demás.
   // El estado se graba en disco después de CADA cambio: si la corrida se corta a
