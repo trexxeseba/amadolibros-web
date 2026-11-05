@@ -21,6 +21,7 @@ import { bookCoverUrl, CARD_IMAGE_SIZES, responsiveImage } from './_shared/cloud
 import { deriveBookDisplayTitle } from './_shared/book-display-title.js';
 import { promoAwareCacheControl, promoWasHtml, webPromoActive, WEB_PROMO } from './_shared/web-promo.js';
 import { LIQUIDACION, resolveLiquidation, sortLiquidation } from './_shared/liquidacion.js';
+import { liquidationPricingActive, transferDisplayPrice } from './_shared/descuentos.js';
 import { buildWhatsAppMessage, whatsappHref } from '../shared/whatsapp-messages.js';
 
 export const PAGE_SIZE = 48;
@@ -109,7 +110,8 @@ function cardHtml(book, idx, env, topic = '') {
     const title = escapeHtml(display.removedParts.length ? display.title : book.title);
     const price = Number(book.price) || 0;
     const priceStr = price.toLocaleString('es-UY');
-    const transfer = Math.round(price * 0.88).toLocaleString('es-UY');
+    const transferValue = transferDisplayPrice(book);
+    const transfer = transferValue === null ? '' : transferValue.toLocaleString('es-UY');
     const responsive = image.srcset ? ` srcset="${escapeHtml(image.srcset)}" sizes="${escapeHtml(image.sizes)}"` : '';
     const img = image.src
         ? `<img src="${escapeHtml(image.src)}"${responsive} alt="${title}" loading="${idx < 8 ? 'eager' : 'lazy'}" decoding="async" width="280" height="373">`
@@ -124,7 +126,7 @@ function cardHtml(book, idx, env, topic = '') {
     <div class="rc-prices">
       <span class="rc-base">$${escapeHtml(priceStr)} UYU</span>
       ${promoWasHtml(book)}
-      <span class="rc-transfer">12% menos por transferencia: $${escapeHtml(transfer)} UYU</span>
+      ${transfer ? `<span class="rc-transfer">12% menos por transferencia: $${escapeHtml(transfer)} UYU</span>` : ''}
       ${price >= FREE_SHIPPING_THRESHOLD_UYU ? '<span class="rc-free-shipping">Envío gratis</span>' : ''}
     </div>
     <div class="rc-actions">
@@ -193,7 +195,10 @@ export async function onRequest(ctx) {
 
     const temaName = tema ? topics.find(t => t.id === tema).name : '';
     const promoOn = webPromoActive(new Date(now), ctx.env);
-    const lead = promoOn
+    const liquidationPriced = liquidation.mode === 'lista' && liquidationPricingActive(new Date(now), ctx.env);
+    const lead = liquidationPriced
+        ? 'Libros que te esperan en nuestros estantes, en stock y listos para salir hoy, con 25% menos sobre su precio habitual.'
+        : promoOn
         ? `Libros que te esperan en nuestros estantes, listos para salir hoy. Con la ${escapeHtml(WEB_PROMO.name)}, ${WEB_PROMO.percent}% menos hasta el ${escapeHtml(WEB_PROMO.endLabel)}, y 12% más pagando por transferencia.`
         : 'Libros que te esperan en nuestros estantes, en stock y listos para salir hoy. Pagando por transferencia tenés 12% menos.';
     const heading = temaName ? `${LIQUIDACION.name}: ${escapeHtml(temaName)}` : LIQUIDACION.name;

@@ -3,6 +3,7 @@ export const PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU = 1300;
 export const SHIPPING_COST           = 250;
 export const FREE_SHIPPING_THRESHOLD = 1500;
 export const TRANSFER_FACTOR         = 0.88;
+import { transferProductsTotal as cappedTransferProductsTotal } from '../_shared/descuentos.js';
 export const EXPIRY_MINUTES          = 60;
 export const MAX_BODY_BYTES          = 32 * 1024;
 export const MAX_ITEMS               = 20;
@@ -251,6 +252,10 @@ export function buildSnapshot(consolidatedItems, catalogItems) {
     }
 
     const unitPrice = Math.round(rawPrice);
+    // Precio habitual (antes de liquidación o promo web), para el tope de 25 %
+    // del descuento por transferencia. No se guarda en order_items.
+    const rawHabitual = Math.round(Number(catalogItem.original_price));
+    const habitualUnit = Number.isFinite(rawHabitual) && rawHabitual > unitPrice ? rawHabitual : unitPrice;
     const title = typeof catalogItem.title === 'string' ? catalogItem.title : '';
     const imageUrl = typeof catalogItem.thumbnail === 'string'
       ? catalogItem.thumbnail
@@ -262,6 +267,7 @@ export function buildSnapshot(consolidatedItems, catalogItems) {
       unit_price_uyu: unitPrice,
       quantity: item.quantity,
       line_total_uyu: unitPrice * item.quantity,
+      habitual_unit_uyu: habitualUnit,
       image_url: imageUrl,
       observed_available_quantity: available,
     });
@@ -401,8 +407,13 @@ export function calculateTotals(snapshotItems, deliveryType) {
 // por retiro conservan su valor nominal. Esta función recibe totales ya
 // calculados y validados por el servidor; nunca usa precios enviados por el
 // navegador.
-export function calculateTransferTotals({ productsTotal, pickupDiscount, shippingCost }) {
-  const transferProductsTotal = Math.round(productsTotal * TRANSFER_FACTOR);
+//
+// TOPE-25: `transferProductsTotal` puede venir ya calculado al crear el pedido
+// (orders.transfer_products_total_uyu, con el tope de 25 % por libro). Si no
+// viene (pedidos anteriores), se usa el cálculo de siempre.
+export function calculateTransferTotals({ productsTotal, pickupDiscount, shippingCost, transferProductsTotal: stored = null }) {
+  const storedValid = Number.isInteger(stored) && stored >= 0 && stored <= productsTotal;
+  const transferProductsTotal = storedValid ? stored : Math.round(productsTotal * TRANSFER_FACTOR);
   const transferDiscount = productsTotal - transferProductsTotal;
   const transferPayableTotal = Math.max(
     0,
@@ -447,4 +458,11 @@ export function generatePublicCode(now = new Date()) {
     suffix += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
   }
   return `AL-${localDate}-${suffix}`;
+}
+
+// Total de libros pagando por transferencia para guardar al crear el pedido.
+// Antes del 10/11/2026 da lo mismo que round(products_total * 0.88); desde
+// entonces respeta el tope de 25 % por libro (descuentos.js).
+export function transferProductsTotalForSnapshot(snapshotItems, now = new Date()) {
+  return cappedTransferProductsTotal(snapshotItems, now);
 }

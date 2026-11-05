@@ -1,5 +1,6 @@
 import { perfNow, recordPerf } from './perf.js';
 import { applyWebPromoToCatalog, applyWebPromoToItems } from './web-promo.js';
+import { applyLiquidationPrices, applyLiquidationToCatalog } from './liquidacion.js';
 
 export const R2_BASE = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev';
 export const CATALOG_URL = `${R2_BASE}/catalog.json`;
@@ -117,10 +118,16 @@ export async function fetchCatalogRaw(ctx) {
     return fetchJsonCached(ctx, CATALOG_URL, 60, 'catalog');
 }
 
-// Catálogo de cara al cliente: aplica la promo web vigente (si hay una).
+// Catálogo de cara al cliente: aplica la promo web vigente (si hay una) y,
+// desde el 10/11/2026, el precio de liquidación (tope de 25 %, descuentos.js).
 export async function fetchCatalog(ctx) {
     const catalog = await fetchCatalogRaw(ctx);
-    return applyWebPromoToCatalog(catalog, { env: ctx?.env });
+    return applyLiquidationToCatalog(applyWebPromoToCatalog(catalog, { env: ctx?.env }), { env: ctx?.env });
+}
+
+// Mismos precios de cara al cliente para el índice activo (carrito y cobro).
+function storeItems(items, ctx) {
+    return applyLiquidationPrices(applyWebPromoToItems(items, { env: ctx?.env }), { env: ctx?.env });
 }
 
 // CF-R2-2-BRIDGE: única fuente de verdad de "qué manifest le corresponde a
@@ -297,7 +304,7 @@ export async function fetchActiveIndex(ctx) {
             if (gzipItems) {
                 return {
                     version: descriptor.version,
-                    items: applyWebPromoToItems(gzipItems, { env: ctx?.env }),
+                    items: storeItems(gzipItems, ctx),
                 };
             }
         }
@@ -307,7 +314,7 @@ export async function fetchActiveIndex(ctx) {
         if (items) {
             return {
                 version: descriptor.version,
-                items: applyWebPromoToItems(items, { env: ctx?.env }),
+                items: storeItems(items, ctx),
             };
         }
     }

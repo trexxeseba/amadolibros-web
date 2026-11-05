@@ -56,7 +56,8 @@ function seed() {
   const db = new DatabaseSync(':memory:');
   for (const name of ['0001_orders.sql', '0002_orders_shipping_date_montevideo.sql',
     '0005_orders_delivery_coordination.sql', '0006_orders_buyer_email.sql',
-    '0008_orders_ga4_attribution.sql', '0010_orders_paid_amount.sql', '0014_orders_archived.sql']) {
+    '0008_orders_ga4_attribution.sql', '0010_orders_paid_amount.sql', '0014_orders_archived.sql',
+    '0015_orders_transfer_cap.sql']) {
     db.exec(migration(name));
   }
   const insert = db.prepare(`

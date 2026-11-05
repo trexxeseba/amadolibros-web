@@ -8,7 +8,8 @@
  * Qué hace, y nada más:
  *   - pasa el pedido a pagado (status='paid', payment_status='approved'),
  *     con payment_provider='bank_transfer', la fecha y el monto realmente
- *     cobrado (el total con el 12 % de descuento en libros);
+ *     cobrado (el total con el descuento por transferencia en libros, con el
+ *     tope de 25 % guardado al crear el pedido);
  *   - deja una fila `transfer_confirmed` en el historial con el monto.
  *
  * Funciona aunque el pedido figure vencido: la transferencia suele llegar
@@ -31,6 +32,8 @@ export function transferAmountFor(order) {
     productsTotal: Number(order?.products_total_uyu) || 0,
     pickupDiscount: Number(order?.pickup_discount_uyu) || 0,
     shippingCost: Number(order?.shipping_cost_uyu) || 0,
+    // TOPE-25: el mismo total que vio y pagó el cliente (NULL en pedidos viejos).
+    transferProductsTotal: order?.transfer_products_total_uyu == null ? null : Number(order.transfer_products_total_uyu),
   });
   return {
     amount: totals.transferPayableTotal,

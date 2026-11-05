@@ -21,12 +21,17 @@
  *
  * El feed de Merchant usa solo el modo lista: sin lista, no etiqueta nada.
  *
- * Esta capa no cambia precios: muestra el precio vigente del catálogo (el
- * mismo que cobran ficha, carrito y checkout).
+ * Precio: desde el 10/11/2026 00:00 (descuentos.js) applyLiquidationPrices
+ * pone el precio de liquidación (25 % sobre el habitual, piso $1.200) al leer
+ * el catálogo, igual que la promo web. Ficha, listados, feed, carrito y cobro
+ * leen ese mismo precio. Los libros que quedarían bajo el piso no reciben
+ * descuento y salen de la vitrina y del feed (header x-liquidacion-excluidos,
+ * motivo bajo_piso).
  */
 import { COUNTED_STATUSES } from '../../worker-sync/ml-sales.js';
 import { bookIsbn } from '../../worker-sync/isbn.js';
 import LIQUIDACION_DATA from './liquidacion-data.js';
+import { liquidationPrice, liquidationPricingActive } from './descuentos.js';
 
 const DAY_MS = 86400000;
 
@@ -180,15 +185,51 @@ export async function resolveLiquidation(ctx, items, { now = Date.now(), data = 
     const list = liquidationList(data);
     if (list) {
         const { selected, excluded } = selectFromList(items, list);
-        return { mode: 'lista', sales: 'no-aplica', selected, excluded };
+        if (!liquidationPricingActive(now, ctx?.env)) return { mode: 'lista', sales: 'no-aplica', selected, excluded };
+        const priced = selected.filter(item => item.liquidation === true);
+        excluded.bajo_piso = selected.filter(item => item.liquidation_skip === 'bajo_piso').length;
+        return { mode: 'lista', sales: 'no-aplica', selected: priced, excluded };
     }
     const sold = await recentSales(ctx, now);
     return { mode: 'regla', sales: sold ? 'd1' : 'sin-datos', selected: selectLiquidation(items, sold, now), excluded: null };
 }
 
-/** Set de ids en liquidación para el feed: solo la lista de Seba, nunca la regla de 1 año. */
-export function liquidationIds(items, { data = LIQUIDACION_DATA } = {}) {
+/**
+ * Set de ids en liquidación para el feed: solo la lista de Seba, nunca la
+ * regla de 1 año. Con el precio de liquidación vigente, solo los que lo
+ * recibieron (los que quedarían bajo el piso no se promocionan).
+ */
+export function liquidationIds(items, { data = LIQUIDACION_DATA, now = Date.now(), env = {} } = {}) {
     const list = liquidationList(data);
     if (!list) return new Set();
-    return new Set(selectFromList(items, list).selected.map(item => String(item.id)));
+    let selected = selectFromList(items, list).selected;
+    if (liquidationPricingActive(now, env)) selected = selected.filter(item => item.liquidation === true);
+    return new Set(selected.map(item => String(item.id)));
+}
+
+/**
+ * Precio de liquidación al leer el catálogo (desde LIQUIDACION_PRECIO.startsAt).
+ * Devuelve una copia: los elegibles con `price` de liquidación,
+ * `original_price` = habitual y `liquidation: true`; los que quedarían bajo el
+ * piso, intactos con `liquidation_skip: 'bajo_piso'`. Idempotente.
+ */
+export function applyLiquidationPrices(items, { now = Date.now(), env = {}, data = LIQUIDACION_DATA } = {}) {
+    if (!Array.isArray(items) || !liquidationPricingActive(now, env)) return items;
+    const list = liquidationList(data);
+    if (!list) return items;
+    const eligible = new Set(selectFromList(items, list).selected.map(item => String(item.id)));
+    if (eligible.size === 0) return items;
+    return items.map(item => {
+        if (!item || !eligible.has(String(item.id)) || item.liquidation === true || item.liquidation_skip) return item;
+        const habitual = Number(item.original_price) > 0 ? Number(item.original_price) : Number(item.price);
+        const result = liquidationPrice(habitual);
+        if (!result.applied) return { ...item, liquidation_skip: result.reason };
+        return { ...item, price: result.price, original_price: habitual, liquidation: true };
+    });
+}
+
+export function applyLiquidationToCatalog(catalog, options = {}) {
+    if (!catalog || !Array.isArray(catalog.items)) return catalog;
+    const items = applyLiquidationPrices(catalog.items, options);
+    return items === catalog.items ? catalog : { ...catalog, items };
 }
