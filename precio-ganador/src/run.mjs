@@ -61,11 +61,12 @@ async function main() {
       try {
         const comp = await competencia(ml, item, { necesitaTecho: Boolean(previo), sellerId: cuenta.sellerId });
         let d = decidir({ item, comp, promo: false, previo, piso: num(pisos[id]), tocarStock: cuenta.tocarStockDemanda, stockDemanda });
+        let promo;
         if (CAMBIA.has(d.accion)) {
-          const promo = await promocionActiva(ml, id);
+          promo = await promocionActiva(ml, id);
           d = decidir({ item, comp, promo, previo, piso: num(pisos[id]), tocarStock: cuenta.tocarStockDemanda, stockDemanda });
         }
-        return { item, comp, d, previo };
+        return { item, comp, d, previo, promo };
       } catch (e) {
         if (e?.fatal) throw e;
         return { item, comp: null, d: { accion: 'error_consulta', motivo: e?.code ?? 'error' }, previo };
@@ -133,6 +134,11 @@ async function main() {
   await writeFile(join(dirSalida, `${cuenta.clave}-resumen.json`), JSON.stringify(resumen, null, 2));
   await writeFile(join(dirSalida, `${cuenta.clave}-detalle.md`), tablaMarkdown(filas, { cuenta, real, resumen }));
   await writeFile(join(dirSalida, `${cuenta.clave}-muestras-api.json`), JSON.stringify(MUESTRAS, null, 2));
+  // Filas de las marcadas y de las del estado, para la auditoría independiente.
+  await writeFile(join(dirSalida, `${cuenta.clave}-filas.json`), JSON.stringify(filas.filter(f => f.comp?.marcada || f.previo).map(f => ({
+    id: f.item.id, precio: f.item.price, moneda: f.item.currency_id, variaciones: f.item.variaciones, marcada: Boolean(f.comp?.marcada),
+    ganador: f.comp?.ganador ?? null, en_estado_antes: Boolean(f.previo), promo: f.promo ?? null, accion: f.d.accion, precio_nuevo: f.d.precio ?? null, aplicado: f.aplicado ?? null,
+  })), null, 2));
   if (real) {
     guardarEstado();
     // Acumulado del día para el mail de las 21:00.

@@ -18,9 +18,9 @@ on:
   workflow_dispatch:
     inputs:
       accion:
-        description: 'correr = corrida normal · restaurar = volver todo al precio original'
+        description: 'correr = corrida normal (con auditoría) · auditar = sólo la auditoría, no cambia nada · restaurar = volver todo al precio original'
         type: choice
-        options: [correr, restaurar]
+        options: [correr, auditar, restaurar]
         default: correr
       max_marcadas:
         description: 'Cortar al encontrar N marcadas (vacío = todas)'
@@ -98,9 +98,22 @@ jobs:
             exit $?
           fi
           if [ "$EVENTO" = "push" ]; then SALIDA="estado/pruebas/$GITHUB_RUN_ID"; ARGS+=(--max-marcadas 100); else SALIDA="estado/ultima"; fi
+          echo "salida=$SALIDA" >> "$GITHUB_OUTPUT"
+          if [ "$IN_ACCION" = "auditar" ]; then echo "Sólo auditoría"; exit 0; fi
           if [[ "$IN_MAX" =~ ^[0-9]+$ ]]; then ARGS+=(--max-marcadas "$IN_MAX"); fi
           if [ "$SCHEDULE" = "0 0 * * *" ] || [ "$IN_CORREO" = "true" ]; then ARGS+=(--correo-diario); fi
           node precio-ganador/src/run.mjs "${ARGS[@]}" --salida "$SALIDA"
+
+      # Auditoría independiente (sólo lee): 10 publicaciones de catálogo al azar,
+      # todas las que el sistema bajó y la regla recalculada sobre las marcadas.
+      # Si encuentra una discrepancia, el workflow falla y GitHub manda el mail.
+      - name: Auditoría
+        if: success() && inputs.accion != 'restaurar'
+        shell: bash
+        env:
+          CUENTA: ${{ matrix.cuenta }}
+          SALIDA: ${{ steps.correr.outputs.salida }}
+        run: node precio-ganador/src/auditoria.mjs --cuenta "$CUENTA" --estado estado/state --salida "$SALIDA" --muestra 10
 
       # Siempre, aunque la corrida haya fallado a mitad: lo que se alcanzó a bajar
       # ya está en state/ y tiene que quedar guardado para poder revertirlo.
