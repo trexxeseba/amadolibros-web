@@ -28,7 +28,7 @@ const SIGNIFICANT_PAGE_UPDATES = Object.freeze({
   [`${BASE}/`]: '2026-08-27',
   [`${BASE}/pedir-libro/`]: '2026-08-12',
   [`${BASE}/como-identificar-edicion-correcta-isbn/`]: '2026-08-12',
-  [`${BASE}/libros-agotados-importados-uruguay`]: '2026-08-12',
+  [`${BASE}/libros-agotados-importados-uruguay`]: '2026-11-05',
   [`${BASE}/libros-por-encargo`]: '2026-08-17',
   [`${BASE}/liquidacion`]: '2026-11-04',
   [`${BASE}/quienes-somos/`]: '2026-08-12',

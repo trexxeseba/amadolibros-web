@@ -31,9 +31,8 @@ test('el formulario de búsqueda ofrece ayuda contextual antes del envío', () =
   assert.match(page, /cómo funciona un encargo de libro agotado o importado/i);
 });
 
-test('la landing de agotados publica respuesta directa, revisión y entidades conectadas', async () => {
+test('la landing de agotados publica una revisión visible y entidades conectadas', async () => {
   const page = await (await renderEncargo()).text();
-  assert.match(page, /<strong>Respuesta directa:<\/strong>/);
   const script = page.match(/<script type="application\/ld\+json">([^<]+)<\/script>/);
   assert.ok(script, 'La landing debe publicar datos estructurados');
   const { '@graph': entities } = JSON.parse(script[1]);
@@ -42,7 +41,8 @@ test('la landing de agotados publica respuesta directa, revisión y entidades co
   const reviewDate = new Intl.DateTimeFormat('es-UY', {
     dateStyle: 'long', timeZone: 'UTC',
   }).format(new Date(webPage.dateModified));
-  assert.ok(page.includes(`Contenido revisado el ${reviewDate}`));
+  assert.ok(page.includes(`Contenido revisado el <time datetime="${webPage.dateModified}">${reviewDate}</time>`));
+  assert.equal(STATIC_SITEMAP_ENTRIES.find(entry => entry.loc === webPage.url)?.lastmod, webPage.dateModified);
   assert.equal(webPage.reviewedBy?.['@id'], entities.find(entity => entity['@type'] === 'OnlineStore')['@id']);
   assert.equal(webPage.mainEntity?.['@id'], entities.find(entity => entity['@type'] === 'Service')['@id']);
   assert.ok(entities.some(entity => entity['@type'] === 'BreadcrumbList'));

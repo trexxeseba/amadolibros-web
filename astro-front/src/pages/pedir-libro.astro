@@ -46,7 +46,10 @@ const jsonLd = {
         </ul>
       </section>
 
-      <form id="manual-book-request" class="request-form">
+      <noscript>
+        <p>Podés <a href="https://wa.me/59899841325" rel="noreferrer">escribirnos por WhatsApp</a> con los datos del libro.</p>
+      </noscript>
+      <form id="manual-book-request" class="request-form" hidden>
         <aside class="request-guides field-wide" aria-labelledby="request-guides-title">
           <strong id="request-guides-title">¿Querés verificar los datos antes de enviar?</strong>
           <p>
@@ -212,7 +215,8 @@ const jsonLd = {
     queryHelpEl.textContent = queryHelp[typeSelect.value] || 'Escribí lo más concreto que puedas.';
     photoNote.hidden = typeSelect.value !== 'tapa';
     const query = queryInput.value.trim();
-    catalogLink.href = query ? `/catalogo?q=${encodeURIComponent(query)}` : '/catalogo';
+    // En el recorrido de libros agotados, el texto de la consulta queda fuera de las URLs del sitio.
+    catalogLink.href = query && requestedType !== 'agotado' ? `/catalogo?q=${encodeURIComponent(query)}` : '/catalogo';
   }
 
   let started = false;
@@ -266,9 +270,12 @@ const jsonLd = {
   });
 
   updateContext();
+  form.hidden = false;
 </script>
 
 <style>
+  .request-form[hidden] { display: none; }
+
   .request-page {
     padding: 0 1rem 3.5rem;
     background:
