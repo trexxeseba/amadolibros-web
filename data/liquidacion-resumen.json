@@ -1,0 +1,39 @@
+{
+  "generado": "2026-11-05T18:31:49.857Z",
+  "catalogo_activo": 6894,
+  "candidatos": 3863,
+  "con_sold_quantity": 0,
+  "nunca_vendidos": 0,
+  "cobertura_desde": "2025-10-24",
+  "cobertura_dias": 377,
+  "cobertura_completa": true,
+  "sin_isbn": 94,
+  "vendido_por_isbn": 629,
+  "titulo_no_verificable": 0,
+  "titulo_con_error": 0,
+  "vendido_por_titulo": 2,
+  "no_verificable_por_cobertura": 0,
+  "en_lista": 3138,
+  "tras_exclusiones": {
+    "lista": 3138,
+    "elegibles": 1615,
+    "excluidos": {
+      "fuera_de_stock": 0,
+      "medicos": 281,
+      "recientes": 0,
+      "gana_precio": 1242,
+      "sin_competencia": 0
+    }
+  },
+  "escenario_cobertura_parcial": {
+    "sin_venta_en_d1": 3138,
+    "elegibles": 1615,
+    "excluidos": {
+      "fuera_de_stock": 0,
+      "medicos": 281,
+      "recientes": 0,
+      "gana_precio": 1242,
+      "sin_competencia": 0
+    }
+  }
+}
