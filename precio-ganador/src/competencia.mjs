@@ -28,7 +28,8 @@ async function catalogo(ml, item, { necesitaTecho, sellerId }) {
   const estado = String(p?.status ?? '');
   const ganador = num(p?.price_to_win);
   const marcada = estado === 'competing' && ganador !== null && ganador < Number(item.price);
-  const r = { tipo: 'catalogo', estado, ganador, marcada, ganadorItem: p?.winner?.item_id ?? null, motivos: Array.isArray(p?.reason) ? p.reason : [] };
+  const r = { tipo: 'catalogo', estado, ganador, marcada, ganadorItem: p?.winner?.item_id ?? null, motivos: Array.isArray(p?.reason) ? p.reason : [],
+    oportunidades: (Array.isArray(p?.boosts) ? p.boosts : []).filter(b => b?.status === 'opportunity').map(b => String(b.id)) };
   if (!marcada && necesitaTecho && item.catalog_product_id) {
     try {
       const otros = await ofertasCatalogo(ml, item.catalog_product_id);

@@ -81,6 +81,21 @@ En Actions, **Precio Ganador**, *Run workflow*, con acción `restaurar`:
 Desde una PC: `node precio-ganador/src/restaurar.mjs --cuenta libros --estado <carpeta>`,
 agregando `--real` para que aplique los cambios.
 
+## Auditoría independiente
+
+Después de cada corrida, `src/auditoria.mjs` revisa lo hecho sin usar el código del
+motor (recalcula la regla desde cero). Sólo lee:
+
+1. 10 publicaciones de catálogo al azar: relee el estado en la ficha y las ofertas de
+   los otros vendedores, y confirma si gana o pierde y contra quién.
+2. Todas las que el sistema bajó: el precio en ML es el registrado, nunca supera el
+   original y nunca bajó 360 o más ni más del 30 %.
+3. Todas las marcadas de la corrida: la regla recalculada da la misma acción.
+
+Resultado en `ultima/libros-auditoria.md` de la rama de estado. Con una sola
+discrepancia el workflow falla y GitHub manda el mail de falla. Para correrla sola,
+sin tocar precios: Run workflow con acción `auditar`.
+
 ## Frenos
 
 - Después de cada cambio vuelve a leer la publicación y verifica el precio.

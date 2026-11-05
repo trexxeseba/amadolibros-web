@@ -23,9 +23,16 @@ export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
     errores: c('error_consulta') + c('error_aplicar'),
     cambios_stock: filas.filter(f => Number.isFinite(f.d.stock) && (real ? f.aplicado : true)).length,
   };
+  // Cómo está la cuenta en la competencia de catálogo, para contrastar con los
+  // contadores del panel de ML (que suman sugerencias, no sólo las que pierden).
+  const estados = {}, sugerencias = {};
+  for (const f of filas) if (f.comp?.tipo === 'catalogo' && !f.comp.error) {
+    estados[f.comp.estado || 'sin_estado'] = (estados[f.comp.estado || 'sin_estado'] ?? 0) + 1;
+    for (const o of f.comp.oportunidades ?? []) sugerencias[o] = (sugerencias[o] ?? 0) + 1;
+  }
   const errores = {};
   for (const f of filas) if (/^error/.test(f.d.accion)) errores[f.d.motivo] = (errores[f.d.motivo] ?? 0) + 1;
-  return { cuenta: cuenta.clave, umbral, duracion_s: Math.round((Date.now() - inicio) / 1000), contadores, errores, llamadas: stats.llamadas, por_status: stats.porStatus };
+  return { cuenta: cuenta.clave, umbral, duracion_s: Math.round((Date.now() - inicio) / 1000), contadores, catalogo: { estados, publicaciones_con_alguna_sugerencia: filas.filter(f => f.comp?.oportunidades?.length).length, sugerencias }, errores, llamadas: stats.llamadas, por_status: stats.porStatus };
 }
 
 const ACCION = {
@@ -33,7 +40,7 @@ const ACCION = {
   sin_tocar_umbral: 'No tocar: diferencia de 360 o más', sin_tocar_pct: 'No tocar: bajaría más del 30 %', saltear_promo: 'Saltear: promoción activa',
   saltear_promo_desconocida: 'Saltear: no se pudo confirmar promoción', saltear_piso: 'Saltear: queda bajo el piso',
   saltear_variaciones: 'Saltear: tiene variaciones', saltear_moneda: 'Saltear: no está en pesos', saltear_sin_precio: 'Saltear: sin precio ganador',
-  mantener: 'Mantener', mantener_umbral: 'Mantener: el ganador bajó más de 360 desde el original', mantener_piso: 'Mantener: piso',
+  mantener: 'Mantener', mantener_promo: 'Mantener: promoción en curso', saltear_cambio_reciente: 'Saltear: el precio cambió durante la corrida', mantener_umbral: 'Mantener: el ganador bajó más de 360 desde el original', mantener_piso: 'Mantener: piso',
   liberar_editada: 'Liberar: editada a mano', error_consulta: 'Error de consulta', error_aplicar: 'Error al aplicar', inactiva: 'Inactiva',
 };
 
@@ -67,11 +74,13 @@ export async function enviarResumen({ cuenta, acum, resumen, fetcher = (...a) =>
     ['Sin tocar por diferencia de 360 o más (última)', ult.sin_tocar_umbral ?? 0], ['Sin tocar por bajar más del 30 % (última)', ult.sin_tocar_pct ?? 0],
     ['Salteadas por promoción (última)', ult.promo ?? 0], ['Errores', suma('errores')], ['Cambios de stock', suma('cambios_stock')],
   ];
+  const est = resumen.catalogo?.estados ?? {};
+  filas.push(['Catálogo: ganando', est.winning ?? 0], ['Catálogo: comparten el primer lugar', est.sharing_first_place ?? 0], ['Catálogo: perdiendo', est.competing ?? 0], ['Catálogo: con alguna sugerencia de ML (Full, cuotas, etc.)', resumen.catalogo?.publicaciones_con_alguna_sugerencia ?? 0]);
   const texto = filas.map(([k, v]) => `${k}: ${v}`).join('\n');
   const html = `<h2>Precio Ganador · ${cuenta.nombre} · ${fechaMontevideo()}</h2><p>Modo: ${ult.modo === 'real' ? 'real' : 'prueba (DRY_RUN, no se cambió nada)'}</p><table cellpadding="6" style="border-collapse:collapse">${filas.map(([k, v]) => `<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join('')}</table><p>Si este correo no llega un día, algo se rompió: revisá el workflow Precio Ganador en GitHub.</p>`;
   try {
     const res = await fetcher('https://api.resend.com/emails', {
-      method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `precio-ganador-${cuenta.clave}-${fechaMontevideo()}` },
+      method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `precio-ganador-${cuenta.clave}-${fechaMontevideo()}-${process.env.GITHUB_RUN_ID ?? Date.now()}` },
       body: JSON.stringify({ from, to, subject: `Precio Ganador ${cuenta.nombre}: ${suma('bajadas')} bajadas, ${suma('subidas') + suma('restauradas')} subidas, ${suma('errores')} errores`, html, text: texto }),
       signal: AbortSignal.timeout(30000),
     });
