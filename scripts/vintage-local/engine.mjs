@@ -146,7 +146,9 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
     await s.saveIndex(BULK_RUN,c.inventory_checkpoint,c.inventory.map(x=>({id:x.item_id,isbn:x.isbn,titleKey:x.title_key,status:x.status})));
     for(const x of c.identifiers??[])await db.prepare('INSERT OR IGNORE INTO ml_vintage_bulk_identifiers VALUES(?,?,?)').bind(BULK_RUN,x.isbn,x.item_id).run();
    }
-   for(const r of c.receipts??[])if(r.run_id===BULK_RUN)await s.job(BULK_RUN,r.isbn,r.state==='published'?'published':'uncertain',{itemId:r.item_id??undefined});
+   // Un recibo de un libro que ya no viene en la lista de hoy no tiene fila de trabajo en una base
+   // nueva (la nube arranca vacía en cada corrida): se crea antes de marcarlo.
+   for(const r of c.receipts??[])if(r.run_id===BULK_RUN){await s.stmt("INSERT OR IGNORE INTO ml_pub_jobs(run_id,isbn,state) VALUES(?,?,'pending')",BULK_RUN,r.isbn).run();await s.job(BULK_RUN,r.isbn,r.state==='published'?'published':'uncertain',{itemId:r.item_id??undefined});}
    if(validateOnly)await s.stmt("UPDATE ml_pub_runs SET state='preflight',approved_hash=NULL,preflight_limit=? WHERE id=?",validateOnly,BULK_RUN).run();
   }
   // Base nueva (la nube arranca cada corrida desde D1): el objetivo vuelve al de createRun y hay

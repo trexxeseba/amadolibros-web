@@ -57,14 +57,19 @@ async function syncWithD1State({query,directory,connection,excel,mode,now=Date.n
  return {...summary,estado_guardado_en_d1:saved};
 }
 
-export async function cloudRun({action,directory,campaign,overrides={},env=process.env,query=null,deps={}}){
+export async function cloudRun(options){
+ const state={fase:'inicio'};
+ try{return await cloudRunInner(options,state);}
+ catch(error){error.fase=state.fase;throw error;}
+}
+async function cloudRunInner({action,directory,campaign,overrides={},env=process.env,query=null,deps={}},state){
  if(!ACTIONS.includes(action))throw problem('accion_invalida');
  const settings=cloudSettings(campaign,overrides),report={accion:action,cuenta:'Amado Vintage',seller_id:SELLER,ajustes:settings,inicio:new Date().toISOString()};
  if(action==='publicar'&&!settings.real)throw problem('publicar_no_habilitado',{ejecutor:settings.ejecutor,modo:settings.modo});
  const secret=env.VINTAGE_RENEW_SECRET;
  const post=(deps.renewClient??makeRenewClient)(secret);
  // El token se mantiene vivo siempre, aun con el publicador apagado: Precio Ganador lo necesita.
- report.token=await post('keepalive');
+ state.fase='keepalive';report.token=await post('keepalive');
  if(action==='keepalive')return {...report,estado:'token_vigente'};
  if(settings.modo==='apagado')return {...report,estado:'apagado'};
  const sbs=env.SBS_EMAIL&&env.SBS_PASSWORD?{email:env.SBS_EMAIL,password:env.SBS_PASSWORD}:null;
@@ -72,25 +77,25 @@ export async function cloudRun({action,directory,campaign,overrides={},env=proce
  await fs.mkdir(directory,{recursive:true});
  const excel=path.join(directory,'sbs.xlsx'),connection=path.join(directory,'connection.json');
  try{
-  report.lista=await (deps.renew??renewConnection)({excel,connection,secret,sbs,log:x=>console.log(JSON.stringify(x))});
+  state.fase='lista';report.lista=await (deps.renew??renewConnection)({excel,connection,secret,sbs,log:x=>console.log(JSON.stringify(x))});
  }catch(error){
   if(['supplier_stock_stale','supplier_stock_stale_or_future'].includes(error.code))return {...report,estado:'lista_vieja',detalle:error.detail};
   throw error;
  }
  try{
-  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
+  state.fase='numeros';const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
   const input=await (deps.inspect??inspectWorkbook)(excel);
   report.numeros=campaignNumbers(input.rows,c.receipts,policy);
   if(action==='numeros')return {...report,estado:'listo'};
-  const q=query??d1Client();
+  state.fase='stock';const q=query??d1Client();
   report.stock=await (deps.sync??syncWithD1State)({query:q,directory,connection,excel,mode:action==='publicar'?'stock_only':'report'});
   if(action==='prueba'){
-   const result=await (deps.engine??runEngine)({excel,connection,directory,validateOnly:5,target:settings.target_total,onStatus:x=>console.log(x)});
+   state.fase='motor_prueba';const result=await (deps.engine??runEngine)({excel,connection,directory,validateOnly:5,target:settings.target_total,onStatus:x=>console.log(x)});
    let preview=[];try{preview=JSON.parse(await fs.readFile(path.join(directory,'items.preview.json'),'utf8'));}catch{}
    report.prueba={estado:result.state,altas_preparadas:preview.map(p=>({isbn:p.isbn,estado:p.state,precio:p.payload?.price??null,titulo:p.payload?.title??null,motivo:p.error_code??null}))};
    return {...report,estado:'prueba_lista'};
   }
-  const status=await (deps.broker??makeBroker)(c)('status');
+  state.fase='motor';const status=await (deps.broker??makeBroker)(c)('status');
   const n=batchSize(settings,status.daily_created);
   report.freno={altas_hoy:status.daily_created,tope_diario:settings.tope_diario,tanda:n};
   if(n===0)return {...report,estado:'tope_diario_alcanzado'};
@@ -107,7 +112,8 @@ export async function cloudRun({action,directory,campaign,overrides={},env=proce
 
 const peso=n=>n===null||n===undefined?'—':'$ '+Number(n).toLocaleString('es-UY');
 export function markdown(r){
- const lines=[`## Vintage en la nube: ${r.accion}`,'',`Estado: **${r.estado??r.error}**`,''];
+ const lines=[`## Vintage en la nube: ${r.accion}`,'',`Estado: **${r.estado??r.error}**${r.error?` (${r.error}, fase ${r.fase})`:''}`,''];
+ if(r.donde?.length)lines.push('```',...r.donde,'```','');
  const a=r.ajustes;if(a)lines.push(`Ejecutor: ${a.ejecutor} · modo: ${a.modo} · tanda: ${a.tanda} · tope diario: ${a.tope_diario}`,'');
  if(r.token)lines.push(`Token de Vintage: ${r.token.refreshed?'renovado':'vigente'}, vence ${new Date(r.token.expires_at).toLocaleString('es-UY',{timeZone:'America/Montevideo'})}`,'');
  if(r.lista)lines.push(`Lista de SBS: ${r.lista.source_date}, ${r.lista.rows?.toLocaleString('es-UY')} filas, cargada en D1.`,'');
@@ -129,7 +135,10 @@ async function main(){
   report=await cloudRun({action,directory,campaign,overrides:{tanda:get('--tanda'),tope:get('--tope')}});
  }catch(error){
   const code=[error.code,error.message].find(x=>/^[a-z0-9_]{1,100}$/.test(x??''))??'fallo_nube';
-  report={accion:action,estado:'fallo',error:code,detalle:error.detail??{}};
+  // Dónde falló: fase y primeras líneas de la pila con rutas del repo (sin valores ni claves).
+  const donde=String(error.stack??'').split('\n').filter(l=>/scripts\/|functions\/|worker-sync\//.test(l)).slice(0,4).map(l=>l.trim().replace(/^at /,'').replace(/.*amadolibros-web\//,'').replace(/\)$/,''));
+  report={accion:action,estado:'fallo',error:code,fase:error.fase??null,http:error.status??error.detail?.http_status??null,donde,detalle:error.detail??{}};
+  console.error(JSON.stringify({fase:report.fase,error:code,donde}));
   process.exitCode=1;
  }
  if(out){await fs.mkdir(out,{recursive:true});await fs.writeFile(path.join(out,'reporte.json'),JSON.stringify(report,null,2));await fs.writeFile(path.join(out,'reporte.md'),markdown(report));}
