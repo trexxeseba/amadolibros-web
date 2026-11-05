@@ -1,0 +1,40 @@
+name: Control de precios — Fase 0 (diagnóstico, solo lectura)
+
+# Lee el inventario publicado y prueba, con una muestra, qué endpoints de la API
+# de Mercado Libre Uruguay muestran a los demás vendedores. No escribe nada, no
+# toca publicaciones ni precios, y no usa el refresh token de la tienda.
+
+on:
+  push:
+    branches:
+      - agent/price-watch-fase0
+    paths:
+      - 'scripts/price-watch/**'
+      - '.github/workflows/price-watch-fase0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fase0:
+    name: Diagnóstico de la API de MLU
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - name: Probar la API con una muestra
+        env:
+          ML_APP_ID: ${{ secrets.ML_APP_ID }}
+          ML_CLIENT_SECRET: ${{ secrets.ML_CLIENT_SECRET }}
+          SAMPLE_SIZE: '20'
+        run: node scripts/price-watch/phase0-probe.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: price-watch-fase0
+          path: artifacts/price-watch/
+          retention-days: 30
