@@ -39,6 +39,7 @@
 import { isLikelyBot, recordSearchMiss } from './_shared/search-misses.js';
 import { slugify } from './_shared/slug.js';
 import { promoAwareCacheControl, promoWasHtml } from './_shared/web-promo.js';
+import { transferDisplayPrice } from './_shared/descuentos.js';
 // GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
 import { faviconHeadHtml } from './_shared/brand.js';
 import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_HEADER_SCRIPT, SITE_FONTS_HEAD } from './_shared/site-header.js';
@@ -979,7 +980,8 @@ export async function onRequest(ctx) {
         // (CF-CATEGORÍAS-2D) — habilitado en Preview y producción.
         const isPaused   = b.status === 'paused' && categoryFeaturesEnabled;
         const price     = Number(b.price) || 0;
-        const transfer  = Math.round(price * 0.88).toLocaleString('es-UY');
+        const transferValue = transferDisplayPrice(b);
+        const transfer  = transferValue === null ? '' : transferValue.toLocaleString('es-UY');
         const priceStr  = price.toLocaleString('es-UY');
         const installment = Math.round(price / 12).toLocaleString('es-UY');
         const hasFreeShipping = price >= FREE_SHIPPING_THRESHOLD_UYU;
@@ -1003,7 +1005,7 @@ export async function onRequest(ctx) {
       <span class="rc-base"><span class="rc-lbl">Precio web/tarjeta:</span> $${escapeHtml(priceStr)} UYU</span>
       ${promoWasHtml(b)}
       <span class="rc-installment">Hasta 12 cuotas de aprox. $${escapeHtml(installment)} UYU</span>
-      <span class="rc-transfer"><span aria-hidden="true">🏷️</span> 12% menos por transferencia: $${escapeHtml(transfer)} UYU</span>
+      ${transfer ? `<span class="rc-transfer"><span aria-hidden="true">🏷️</span> 12% menos por transferencia: $${escapeHtml(transfer)} UYU</span>` : ''}
       ${hasFreeShipping ? '<span class="rc-free-shipping"><span aria-hidden="true">🚚</span> Envío gratis</span>' : ''}
     </div>
     <a href="${href}" class="rc-cta">Ver ficha →</a>`

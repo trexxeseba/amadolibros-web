@@ -135,7 +135,7 @@ export async function onRequest(context) {
         // Promo Liquidación Amado: etiqueta para la campaña de Shopping que
         // muestra solo esos libros. Si falla, el feed sale igual sin etiqueta.
         let liquidation = new Set();
-        try { liquidation = liquidationIds(sortedItems); } catch { /* sin etiqueta */ }
+        try { liquidation = liquidationIds(sortedItems, { env: context.env }); } catch { /* sin etiqueta */ }
 
         let feedItems = '';
         for (const item of sortedItems) {
