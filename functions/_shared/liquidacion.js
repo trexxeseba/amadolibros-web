@@ -1,25 +1,32 @@
 /**
- * Promo Liquidación Amado: libros en stock que llevan más de un año publicados
- * y no tuvieron ninguna venta en Mercado Libre en los últimos 12 meses.
+ * Promo Liquidación Amado: qué libros entran en /liquidacion y en la etiqueta
+ * `custom_label_0=liquidacion` del feed de Merchant.
  *
- * La selección se arma sola en cada lectura del catálogo: entra lo que cumple
- * la regla y sale lo que se vende. La usan la página /liquidacion y el feed de
- * Merchant (custom_label_0 = "liquidacion", para la campaña de Shopping que
- * muestra solo estos libros).
+ * Dos modos:
+ *
+ * 1. Lista (el bueno): `data/liquidacion.json` → `lista.ids`, la lista de Seba
+ *    con los libros sin venta en 2 años en Mercado Libre. Entra solo lo que está
+ *    en la lista, activo y con stock, menos las exclusiones automáticas:
+ *      - libros médicos (tema medicina-salud, `excluir.medicos`);
+ *      - publicados hace menos de 90 días o sin fecha (`excluir.recientes`);
+ *      - "gana precio" o sin competencia, según el último reporte del motor
+ *        Precio Ganador (`excluir.*.ids`, regenerado con
+ *        scripts/liquidacion/actualizar-exclusiones.mjs).
+ *    Todo sale del JSON versionado y del catálogo (stock y fecha), sin datos
+ *    en vivo: así la página, el carrito y el cobro deciden exactamente igual.
+ *
+ * 2. Regla anterior (mientras la lista esté vacía): más de un año publicado y
+ *    sin ventas en 12 meses en D1. Falla cerrada: si D1 no responde, la
+ *    selección queda vacía; nunca se muestra todo el stock.
+ *
+ * El feed de Merchant usa solo el modo lista: sin lista, no etiqueta nada.
  *
  * Esta capa no cambia precios: muestra el precio vigente del catálogo (el
- * mismo que cobran ficha, carrito y checkout, con la promo web activa si la
- * hay). Así no existe forma de que la página prometa un precio que el carrito
- * no respete.
- *
- * Ventas: tabla ml_sales_* de D1 (la misma del panel). Se excluye por id de
- * publicación y por ISBN, porque un mismo libro puede venderse por su
- * publicación de catálogo y seguir en stock en la publicación común. Si D1 no
- * responde, la selección queda solo por antigüedad: afecta qué se muestra, no
- * lo que se cobra.
+ * mismo que cobran ficha, carrito y checkout).
  */
 import { COUNTED_STATUSES } from '../../worker-sync/ml-sales.js';
 import { bookIsbn } from '../../worker-sync/isbn.js';
+import LIQUIDACION_DATA from './liquidacion-data.js';
 
 const DAY_MS = 86400000;
 
@@ -46,12 +53,13 @@ export function ageDays(item, now = Date.now()) {
 }
 
 /**
- * Selección pura (sin red): activos con stock, publicados hace más de
+ * Regla anterior, pura (sin red): activos con stock, publicados hace más de
  * `minAgeDays`, sin venta reciente por id ni por ISBN.
- * `sold` = { ids: Set, isbns: Set } o null si no hay datos de ventas.
+ * `sold` = { ids: Set, isbns: Set }. Sin datos de ventas (null) devuelve []:
+ * falla cerrada, para no ofrecer todo el stock como liquidación.
  */
 export function selectLiquidation(items, sold = null, now = Date.now(), rules = LIQUIDACION) {
-    if (!Array.isArray(items)) return [];
+    if (!Array.isArray(items) || !sold) return [];
     const soldIds = sold?.ids instanceof Set ? sold.ids : new Set();
     const soldIsbns = sold?.isbns instanceof Set ? sold.isbns : new Set();
     return items.filter(item => {
@@ -125,8 +133,62 @@ export async function recentSales(ctx, now = Date.now()) {
     }
 }
 
-/** Set de ids en liquidación, para el feed. */
-export async function liquidationIds(ctx, items, now = Date.now()) {
+/** La lista de Seba ya normalizada, o null si todavía no la entregó. */
+export function liquidationList(data = LIQUIDACION_DATA) {
+    const ids = (Array.isArray(data?.lista?.ids) ? data.lista.ids : [])
+        .map(id => String(id).trim().toUpperCase())
+        .filter(id => /^MLU\d+$/.test(id));
+    if (ids.length === 0) return null;
+    const set = key => new Set((data?.excluir?.[key]?.ids ?? []).map(String));
+    return {
+        ids: new Set(ids),
+        medicos: set('medicos'),
+        recientes: set('recientes'),
+        ganaPrecio: set('gana_precio'),
+        sinCompetencia: set('sin_competencia'),
+    };
+}
+
+/**
+ * Modo lista, puro y determinista (solo JSON + catálogo). Devuelve los
+ * elegibles y cuántos quedaron afuera por cada exclusión (cada libro cuenta
+ * en la primera que lo saca, en este orden).
+ */
+export function selectFromList(items, list) {
+    const excluded = { fuera_de_stock: 0, medicos: 0, recientes: 0, gana_precio: 0, sin_competencia: 0 };
+    if (!list || !Array.isArray(items)) return { selected: [], excluded };
+    const inList = items.filter(item => list.ids.has(String(item?.id)));
+    const stocked = inList.filter(isStocked);
+    excluded.fuera_de_stock = list.ids.size - stocked.length;
+    const selected = [];
+    for (const item of stocked) {
+        const id = String(item.id);
+        if (list.medicos.has(id)) { excluded.medicos++; continue; }
+        if (list.recientes.has(id)) { excluded.recientes++; continue; }
+        if (list.ganaPrecio.has(id)) { excluded.gana_precio++; continue; }
+        if (list.sinCompetencia.has(id)) { excluded.sin_competencia++; continue; }
+        selected.push(item);
+    }
+    return { selected, excluded };
+}
+
+/**
+ * Selección completa para la página. `mode` = 'lista' | 'regla';
+ * `sales` = 'd1' | 'sin-datos' | 'no-aplica'.
+ */
+export async function resolveLiquidation(ctx, items, { now = Date.now(), data = LIQUIDACION_DATA } = {}) {
+    const list = liquidationList(data);
+    if (list) {
+        const { selected, excluded } = selectFromList(items, list);
+        return { mode: 'lista', sales: 'no-aplica', selected, excluded };
+    }
     const sold = await recentSales(ctx, now);
-    return new Set(selectLiquidation(items, sold, now).map(item => String(item.id)));
+    return { mode: 'regla', sales: sold ? 'd1' : 'sin-datos', selected: selectLiquidation(items, sold, now), excluded: null };
+}
+
+/** Set de ids en liquidación para el feed: solo la lista de Seba, nunca la regla de 1 año. */
+export function liquidationIds(items, { data = LIQUIDACION_DATA } = {}) {
+    const list = liquidationList(data);
+    if (!list) return new Set();
+    return new Set(selectFromList(items, list).selected.map(item => String(item.id)));
 }
