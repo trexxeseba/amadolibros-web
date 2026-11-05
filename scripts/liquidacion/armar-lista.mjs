@@ -4,11 +4,18 @@
  * ventas reales de Mercado Libre que guarda el Worker en D1.
  *
  * Criterio (el de Seba): libros activos, con stock, publicados hace 2 años o
- * más, SIN ninguna venta en los últimos 730 días. La venta se busca por ISBN
- * (todas las publicaciones del mismo ISBN) y también por título, porque
- * alrededor del 5 % de las líneas de venta no tienen ISBN. Si no se puede
- * verificar un libro (sin ISBN, título muy corto), NO entra: ante la duda, no
- * se rebaja un libro que quizá se vende.
+ * más, SIN ninguna venta en los últimos 730 días. Dos formas de comprobarlo:
+ *
+ *   1. `sold_quantity` = 0 en la publicación (nunca vendió desde que se publicó,
+ *      y se publicó hace 2 años o más). Es la prueba más fuerte.
+ *   2. Última venta en D1 anterior a 730 días, pero SOLO si el histórico de D1
+ *      cubre los 730 días (si no, "sin venta" no prueba nada y no entra).
+ *
+ * Además, cualquier venta reciente en D1 saca al libro, aunque sold_quantity
+ * sea 0: se busca por ISBN (todas las publicaciones del mismo ISBN) y por
+ * título, porque alrededor del 5 % de las líneas de venta no tienen ISBN. Si no
+ * se puede verificar un libro, NO entra: ante la duda, no se rebaja un libro
+ * que quizá se vende.
  *
  * Solo lee: el catálogo público y POST /sales/query del Worker (la clave llega
  * por la variable SYNC_SECRET, nunca se imprime). El repo es público: el log
@@ -31,6 +38,8 @@ const DATA_PATH = join(ROOT, 'data', 'liquidacion.json');
 const SUMMARY_PATH = join(ROOT, 'data', 'liquidacion-resumen.json');
 const CATALOG_URL = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json';
 const DAY_MS = 86400000;
+// ISBN válido solo para preguntarle al Worker desde cuándo tiene ventas.
+const ISBN_SONDA = '9780306406157';
 
 export const SIN_VENTA_DIAS = 730;
 export const MIN_PUBLICADO_DIAS = 730;
@@ -50,6 +59,12 @@ export function candidatos(items, now = Date.now(), minDays = MIN_PUBLICADO_DIAS
 export function vendidoEn(result, now = Date.now(), days = SIN_VENTA_DIAS) {
     const last = Date.parse(result?.ultima_venta || '');
     return Number.isFinite(last) && now - last <= days * DAY_MS;
+}
+
+/** Nunca vendió desde que se publicó (contador de Mercado Libre). */
+export function nuncaVendido(item) {
+    return item?.sold_quantity !== null && item?.sold_quantity !== undefined && item.sold_quantity !== ''
+        && Number.isFinite(Number(item.sold_quantity)) && Number(item.sold_quantity) === 0;
 }
 
 /** La base de ventas tiene que cubrir toda la ventana, si no "sin venta" no prueba nada. */
@@ -72,18 +87,34 @@ async function mapLimit(list, limit, fn) {
 
 /**
  * Decide qué candidatos entran. `query(body)` = POST /sales/query del Worker.
- * Falla cerrada: cualquier error de consulta o cobertura insuficiente tira
- * excepción y no se escribe nada.
+ * Falla cerrada: cualquier error de consulta tira excepción y no se escribe
+ * nada. Un histórico corto no es un error: solo deja afuera a los libros que
+ * únicamente se podrían probar con él (los que ya vendieron alguna vez).
  */
 export async function evaluar(items, query, { now = Date.now(), concurrency = 4 } = {}) {
     const conteos = {
-        candidatos: items.length, sin_isbn: 0, vendido_por_isbn: 0, titulo_no_verificable: 0,
-        vendido_por_titulo: 0, en_lista: 0,
+        candidatos: items.length, con_sold_quantity: 0, nunca_vendidos: 0,
+        cobertura_desde: null, cobertura_dias: null, cobertura_completa: false,
+        sin_isbn: 0, vendido_por_isbn: 0, titulo_no_verificable: 0, vendido_por_titulo: 0,
+        no_verificable_por_cobertura: 0, en_lista: 0,
     };
+
+    // 0) Sonda: desde cuándo hay ventas guardadas.
+    const sonda = await query({ isbns: [ISBN_SONDA] });
+    const base = sonda?.resultados?.[0];
+    if (!base || base.error) throw new Error('el Worker no informó la cobertura de ventas');
+    const cobertura = Date.parse(base.cobertura_desde || '');
+    conteos.cobertura_desde = Number.isFinite(cobertura) ? new Date(cobertura).toISOString().slice(0, 10) : null;
+    conteos.cobertura_dias = Number.isFinite(cobertura) ? Math.floor((now - cobertura) / DAY_MS) : null;
+    conteos.cobertura_completa = coberturaSuficiente(base, now);
+
     const conIsbn = [];
+    const sinIsbn = [];
     for (const item of items) {
+        if (item.sold_quantity !== undefined && item.sold_quantity !== null) conteos.con_sold_quantity++;
+        if (nuncaVendido(item)) conteos.nunca_vendidos++;
         const isbn = bookIsbn(item.isbn);
-        if (isbn) conIsbn.push({ item, isbn }); else conteos.sin_isbn++;
+        if (isbn) conIsbn.push({ item, isbn }); else sinIsbn.push(item);
     }
 
     // 1) Por ISBN, de a 50.
@@ -96,20 +127,24 @@ export async function evaluar(items, query, { now = Date.now(), concurrency = 4 
         if (!Array.isArray(data?.resultados)) throw new Error('respuesta de ventas sin resultados');
         for (const r of data.resultados) {
             if (r.error) throw new Error(`ISBN rechazado por el Worker (${r.error})`);
-            if (!coberturaSuficiente(r, now)) throw new Error('el histórico de ventas no cubre 730 días');
             porIsbn.set(r.isbn, r);
         }
     });
-    const sinVentaIsbn = [];
+    const paraTitulo = [];
     for (const c of conIsbn) {
         const r = porIsbn.get(c.isbn);
         if (!r) throw new Error('falta el resultado de un ISBN');
-        if (vendidoEn(r, now)) conteos.vendido_por_isbn++; else sinVentaIsbn.push(c.item);
+        if (vendidoEn(r, now)) { conteos.vendido_por_isbn++; continue; }
+        paraTitulo.push(c.item);
+    }
+    // Los que nunca vendieron en toda su vida pueden no tener ISBN: se verifican igual por título.
+    for (const item of sinIsbn) {
+        if (nuncaVendido(item)) paraTitulo.push(item); else conteos.sin_isbn++;
     }
 
     // 2) Por título, para las ventas que quedaron sin ISBN en D1.
     const enLista = [];
-    await mapLimit(sinVentaIsbn, concurrency, async item => {
+    await mapLimit(paraTitulo, concurrency, async item => {
         let data;
         try {
             data = await query({ titulo: String(item.title || '') });
@@ -119,7 +154,9 @@ export async function evaluar(items, query, { now = Date.now(), concurrency = 4 
         }
         if (!Array.isArray(data?.resultados)) throw new Error('respuesta de ventas por título sin resultados');
         if (data.resultados.some(r => vendidoEn(r, now))) { conteos.vendido_por_titulo++; return; }
-        enLista.push(String(item.id));
+        // Sin venta reciente en D1: prueba suficiente si nunca vendió o si D1 cubre los 730 días.
+        if (nuncaVendido(item) || conteos.cobertura_completa) enLista.push(String(item.id));
+        else conteos.no_verificable_por_cobertura++;
     });
     conteos.en_lista = enLista.length;
     return { ids: enLista.sort(), conteos };
@@ -168,7 +205,7 @@ async function main(argv) {
     const data = JSON.parse(readFileSync(DATA_PATH, 'utf8'));
     data.lista = {
         entregada: new Date(now).toISOString().slice(0, 10),
-        criterio: `Activos con stock, publicados hace ${MIN_PUBLICADO_DIAS} días o más y sin ninguna venta en los últimos ${SIN_VENTA_DIAS} días en Mercado Libre (por ISBN y por título). Sin ISBN verificable no entran.`,
+        criterio: `Activos con stock, publicados hace ${MIN_PUBLICADO_DIAS} días o más y sin ninguna venta en los últimos ${SIN_VENTA_DIAS} días en Mercado Libre: nunca vendieron desde que se publicaron, o D1 (ventas desde ${conteos.cobertura_desde ?? 'fecha desconocida'}) lo prueba. Sin venta reciente por ISBN ni por título. Lo que no se puede verificar no entra.`,
         ids,
     };
     writeFileSync(DATA_PATH, `${JSON.stringify(data, null, 2)}\n`);

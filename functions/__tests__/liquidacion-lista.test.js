@@ -3,7 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 
 import {
-    candidatos, vendidoEn, coberturaSuficiente, evaluar, SIN_VENTA_DIAS, MIN_PUBLICADO_DIAS, ISBN_BATCH,
+    candidatos, vendidoEn, coberturaSuficiente, nuncaVendido, evaluar, SIN_VENTA_DIAS, MIN_PUBLICADO_DIAS, ISBN_BATCH,
 } from '../../scripts/liquidacion/armar-lista.mjs';
 import { resumenFinal } from '../../scripts/liquidacion/resumen.mjs';
 
@@ -61,13 +61,22 @@ function fakeWorker({ porIsbn = {}, porTitulo = {}, cobertura = iso(5000), calls
     }, { calls });
 }
 
-test('evaluar: entran los que no vendieron por ISBN ni por título', async () => {
+test('nuncaVendido: solo sold_quantity numérico igual a 0', () => {
+    assert.equal(nuncaVendido({ sold_quantity: 0 }), true);
+    assert.equal(nuncaVendido({ sold_quantity: '0' }), true);
+    assert.equal(nuncaVendido({ sold_quantity: 3 }), false);
+    assert.equal(nuncaVendido({ sold_quantity: null }), false);
+    assert.equal(nuncaVendido({}), false);
+    assert.equal(nuncaVendido({ sold_quantity: '' }), false);
+});
+
+test('evaluar con histórico completo: entran los que no vendieron por ISBN ni por título', async () => {
     const items = [
         book('MLU1', { isbn: ISBN[0] }),                       // sin ventas → entra
         book('MLU2', { isbn: ISBN[1] }),                       // vendió hace 100 días por ISBN
         book('MLU3', { isbn: ISBN[2] }),                       // vendió hace 800 días → entra
         book('MLU4', { isbn: ISBN[3], title: 'Rayuela edición especial' }),   // venta sin ISBN, por título
-        book('MLU5'),                                          // sin ISBN → no se puede verificar
+        book('MLU5'),                                          // sin ISBN y sin dato de que nunca vendió → no se verifica
         book('MLU6', { isbn: ISBN[4], title: 'Of' }),          // título muy corto para verificar
     ];
     const worker = fakeWorker({
@@ -76,9 +85,37 @@ test('evaluar: entran los que no vendieron por ISBN ni por título', async () =>
     });
     const { ids, conteos } = await evaluar(items, worker, { now: NOW });
     assert.deepEqual(ids, ['MLU1', 'MLU3']);
-    assert.deepEqual(conteos, {
-        candidatos: 6, sin_isbn: 1, vendido_por_isbn: 1, titulo_no_verificable: 1, vendido_por_titulo: 1, en_lista: 2,
-    });
+    assert.equal(conteos.cobertura_completa, true);
+    assert.deepEqual(
+        { c: conteos.candidatos, s: conteos.sin_isbn, i: conteos.vendido_por_isbn, n: conteos.titulo_no_verificable, t: conteos.vendido_por_titulo, l: conteos.en_lista },
+        { c: 6, s: 1, i: 1, n: 1, t: 1, l: 2 },
+    );
+});
+
+test('evaluar con histórico corto: solo entran los que nunca vendieron (sold_quantity 0)', async () => {
+    const items = [
+        book('MLU1', { isbn: ISBN[0], sold_quantity: 0 }),     // nunca vendió, D1 sin ventas → entra
+        book('MLU2', { isbn: ISBN[1], sold_quantity: 4 }),     // vendió alguna vez y D1 no alcanza → no entra
+        book('MLU3', { isbn: ISBN[2] }),                       // sin dato → no entra
+        book('MLU4', { isbn: ISBN[3], sold_quantity: 0 }),     // nunca vendió pero D1 muestra venta del ISBN → no entra
+        book('MLU5', { sold_quantity: 0, title: 'Libro sin código de barras' }),   // sin ISBN, nunca vendió → entra
+    ];
+    const worker = fakeWorker({ cobertura: iso(300), porIsbn: { [ISBN[3]]: iso(40) } });
+    const { ids, conteos } = await evaluar(items, worker, { now: NOW });
+    assert.deepEqual(ids, ['MLU1', 'MLU5']);
+    assert.equal(conteos.cobertura_completa, false);
+    assert.equal(conteos.cobertura_dias, 300);
+    assert.equal(conteos.nunca_vendidos, 3);
+    assert.equal(conteos.no_verificable_por_cobertura, 2);
+    assert.equal(conteos.vendido_por_isbn, 1);
+});
+
+test('evaluar: una venta reciente por título saca a un libro aunque sold_quantity sea 0', async () => {
+    const items = [book('MLU1', { isbn: ISBN[0], sold_quantity: 0, title: 'Ficciones de Borges' })];
+    const worker = fakeWorker({ cobertura: iso(300), porTitulo: { 'Ficciones de Borges': iso(20) } });
+    const { ids, conteos } = await evaluar(items, worker, { now: NOW });
+    assert.deepEqual(ids, []);
+    assert.equal(conteos.vendido_por_titulo, 1);
 });
 
 test('evaluar: consulta los ISBN de a 50', async () => {
@@ -88,18 +125,17 @@ test('evaluar: consulta los ISBN de a 50', async () => {
     const isbnCalls = worker.calls.filter(c => c.isbns);
     assert.equal(ISBN_BATCH, 50);
     assert.ok(isbnCalls.every(c => c.isbns.length <= 50));
-    assert.equal(new Set(isbnCalls.flatMap(c => c.isbns)).size, ISBN.length);
+    assert.equal(new Set(isbnCalls.flatMap(c => c.isbns)).size, ISBN.length); // la sonda de cobertura usa uno de estos ISBN
 });
 
-test('evaluar: falla cerrada con histórico corto, error del Worker o ISBN rechazado', async () => {
+test('evaluar: falla cerrada ante errores del Worker o respuestas raras', async () => {
     const items = [book('MLU1', { isbn: ISBN[0] })];
-    await assert.rejects(evaluar(items, fakeWorker({ cobertura: iso(300) }), { now: NOW }), /730 días/);
     const roto = async () => { const e = new Error('el Worker respondió 500'); e.status = 500; throw e; };
     await assert.rejects(evaluar(items, roto, { now: NOW }), /500/);
     const sinResultados = async () => ({});
-    await assert.rejects(evaluar(items, sinResultados, { now: NOW }), /sin resultados/);
+    await assert.rejects(evaluar(items, sinResultados, { now: NOW }), /cobertura/);
     const rechaza = async b => ({ resultados: b.isbns.map(isbn => ({ isbn, error: 'invalid_isbn' })) });
-    await assert.rejects(evaluar(items, rechaza, { now: NOW }), /rechazado/);
+    await assert.rejects(evaluar(items, rechaza, { now: NOW }), /cobertura/);
     // Un error del Worker por título que no es "título corto" tampoco se traga.
     const tituloRoto = async b => { if (b.isbns) return fakeWorker()(b); const e = new Error('x'); e.status = 500; throw e; };
     await assert.rejects(evaluar(items, tituloRoto, { now: NOW }), /x/);
