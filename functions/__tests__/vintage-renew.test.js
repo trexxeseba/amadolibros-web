@@ -181,3 +181,33 @@ test('renew switches the Vintage run to the competitive price once, as a recorde
  const again=await f.renew.command(f.env,BEARER,'renew',{feed_id});
  assert.equal(again.policy_hash,wanted);assert.equal(again.amendments.length,c.amendments.length);
 });
+
+test('keepalive rotates the Vintage token only when less than 3 hours remain and never returns it',async t=>{
+ const f=await fixture(t);
+ await f.db.prepare('CREATE TABLE IF NOT EXISTS ml_oauth_sellers (app_id TEXT NOT NULL,seller_id TEXT NOT NULL,nickname TEXT NOT NULL,access_token TEXT NOT NULL,access_expires_at INTEGER NOT NULL,refresh_token TEXT NOT NULL,authorized_at INTEGER NOT NULL,PRIMARY KEY(app_id,seller_id))').run();
+ await f.db.prepare("INSERT INTO ml_oauth_sellers VALUES('4741021817925208','2341378249','AMADO VINTAGE','old-token',?,'refresh',0)").bind(f.clock.value+4*3600000).run();
+ let rotations=0;
+ const tokens={async getAccessToken(env){rotations++;await env.ORDERS_DB.prepare("UPDATE ml_oauth_sellers SET access_token='new-token',access_expires_at=? WHERE seller_id='2341378249'").bind(f.clock.value+6*3600000).run();return 'new-token';}};
+ const renew=createVintageRenew({bulk:f.bulk,access:f.access,tokens,now:()=>f.clock.value});
+ const fresh=await renew.command(f.env,BEARER,'keepalive');
+ assert.deepEqual(fresh,{refreshed:false,expires_at:f.clock.value+4*3600000});assert.equal(rotations,0);
+ f.clock.value+=2*3600000;
+ const rotated=await renew.command(f.env,BEARER,'keepalive');
+ assert.equal(rotated.refreshed,true);assert.equal(rotations,1);assert.equal(rotated.expires_at,f.clock.value+6*3600000);
+ assert.ok(!JSON.stringify(rotated).includes('token'.replace('token','new-token')));
+ await assert.rejects(()=>renew.command(f.env,'Bearer '+'x'.repeat(40),'keepalive'),/renew_unauthorized/);
+ // La ruta acepta la acción sin argumentos.
+ const route=createRenewRoute({renew});
+ const res=await route({env:f.env,request:new Request('https://www.amadolibros.com/operations/vintage-renew',{method:'POST',headers:{authorization:BEARER,'content-type':'application/json'},body:JSON.stringify({action:'keepalive',args:{}})})});
+ assert.equal(res.status,200);
+});
+
+test('a failed keepalive rotation puts the previous expiry back so readers keep the working token',async t=>{
+ const f=await fixture(t);
+ await f.db.prepare('CREATE TABLE IF NOT EXISTS ml_oauth_sellers (app_id TEXT NOT NULL,seller_id TEXT NOT NULL,nickname TEXT NOT NULL,access_token TEXT NOT NULL,access_expires_at INTEGER NOT NULL,refresh_token TEXT NOT NULL,authorized_at INTEGER NOT NULL,PRIMARY KEY(app_id,seller_id))').run();
+ const expiry=f.clock.value+3600000;
+ await f.db.prepare("INSERT INTO ml_oauth_sellers VALUES('4741021817925208','2341378249','AMADO VINTAGE','old-token',?,'refresh',0)").bind(expiry).run();
+ const renew=createVintageRenew({bulk:f.bulk,access:f.access,tokens:{async getAccessToken(){throw new Error('vintage_auth_upstream');}},now:()=>f.clock.value});
+ await assert.rejects(()=>renew.command(f.env,BEARER,'keepalive'),/vintage_auth_upstream/);
+ assert.equal((await f.db.prepare("SELECT access_expires_at e FROM ml_oauth_sellers").first()).e,expiry);
+});

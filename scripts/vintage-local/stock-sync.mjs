@@ -8,7 +8,7 @@
 //  - nunca se cierra ni se borra una publicación, nunca se toca un ítem cuyo
 //    vendedor o SKU no coincidan, y una lista sospechosamente incompleta
 //    (más de maxMissingPct de faltantes) no pausa nada;
-//  - en modo pause_and_reactivate, además ajusta el precio (sube o baja) al que da la
+//  - en modo pause_and_reactivate (no en stock_only), además ajusta el precio (sube o baja) al que da la
 //    política aprobada con el precio de lista de hoy, nunca por debajo del mínimo, y no
 //    toca un precio que se mueva más del doble o a menos de la mitad (dato sospechoso).
 // Lee el estado real en /items/bulk antes de cada PUT y registra lo aplicado en
@@ -27,7 +27,9 @@ import {vintageMinimumFor} from '../../worker-sync/vintage-pricing.js';
 // 'correct': pasada con tiempo limitado que mira al ganador de la ficha de cada libro ya
 // publicado (el más viejo sin mirar primero) y le pone el precio competitivo. Es el 30 % del
 // día que el autorun le dedica a corregir lo subido; no pausa ni reactiva nada.
-export const MODES=['report','pause_only','pause_and_reactivate','correct'];
+// 'stock_only': pausa y reactiva como pause_and_reactivate pero nunca toca precios. Es el modo de
+// la nube: los precios de Vintage los maneja Precio Ganador (precio-ganador/) y no hay que pisarlos.
+export const MODES=['report','pause_only','pause_and_reactivate','stock_only','correct'];
 export const ITEM_FIELDS='id,seller_id,status,available_quantity,seller_custom_field,price,currency_id';
 export const MAX_PRICE_RATIO=2;
 const SCHEMA=`CREATE TABLE IF NOT EXISTS vintage_stock_sync (isbn TEXT PRIMARY KEY,item_id TEXT NOT NULL,desired_status TEXT,applied_status TEXT,missing_since INTEGER NOT NULL DEFAULT 0,feed_id TEXT,attempts INTEGER NOT NULL DEFAULT 0,next_at INTEGER NOT NULL DEFAULT 0,last_error TEXT,updated_at INTEGER NOT NULL DEFAULT 0)`;

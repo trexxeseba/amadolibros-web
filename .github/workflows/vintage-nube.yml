@@ -1,0 +1,111 @@
+name: Vintage publicador (nube)
+
+# Publicador de Amado Vintage (seller 2341378249) sin la PC. Nunca Amado Libros.
+# Código: scripts/vintage-cloud/run.mjs (usa el mismo motor que la PC, scripts/vintage-local/).
+# Detalle y cómo prenderlo: docs/vintage-nube.md.
+#
+# Llaves en scripts/vintage-local/campaign.json:
+#   "ejecutor": "pc" | "nube"         quién publica. Con "nube" la PC queda en espera sola.
+#   "nube": {"modo": "prueba" | "real" | "apagado", "tanda", "tope_diario", "minutos"}
+# Publica de verdad sólo con "ejecutor": "nube" y "modo": "real" a la vez.
+#
+# Cada 2 horas: con las dos llaves, publica una tanda; si no, sólo mantiene vivo el token
+# de Vintage (lo usa Precio Ganador). Nunca toca precios: eso es de Precio Ganador.
+on:
+  schedule:
+    - cron: '37 1-23/2 * * *'
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: 'prueba = números + qué pausaría + 5 altas preparadas sin enviar · numeros = sólo lista y conteo · publicar = real (exige las dos llaves) · keepalive = sólo el token'
+        type: choice
+        options: [prueba, numeros, publicar, keepalive]
+        default: prueba
+      tanda:
+        description: 'Altas máximas en esta corrida (vacío = la de campaign.json)'
+        required: false
+      tope:
+        description: 'Tope de altas del día (vacío = el de campaign.json)'
+        required: false
+
+concurrency:
+  group: vintage-nube
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  correr:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    env:
+      VINTAGE_RENEW_SECRET: ${{ secrets.VINTAGE_RENEW_SECRET }}
+      SBS_EMAIL: ${{ secrets.SBS_EMAIL }}
+      SBS_PASSWORD: ${{ secrets.SBS_PASSWORD }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Tests
+        run: node --experimental-sqlite --test functions/__tests__/vintage-cloud.test.js functions/__tests__/vintage-stock-sync-local.test.js
+
+      - name: Decidir qué hacer
+        id: decidir
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENTO: ${{ github.event_name }}
+          IN_ACCION: ${{ inputs.accion }}
+        shell: bash
+        run: |
+          REAL=$(node -e "const c=require('./scripts/vintage-local/campaign.json');console.log(c.ejecutor==='nube'&&c.nube?.modo==='real'?'si':'no')")
+          if [ "$EVENTO" = "schedule" ]; then
+            if [ "$REAL" = "si" ]; then ACCION=publicar; else ACCION=keepalive; fi
+          else
+            ACCION="$IN_ACCION"
+          fi
+          if [ -z "$VINTAGE_RENEW_SECRET" ]; then
+            echo "Falta el secreto VINTAGE_RENEW_SECRET en GitHub (ver docs/vintage-nube.md)."
+            if [ "$EVENTO" = "schedule" ]; then echo "accion=nada" >> "$GITHUB_OUTPUT"; exit 0; fi
+            exit 1
+          fi
+          # Precio Ganador y el publicador no se cruzan: si está corriendo, esta vuelta sólo cuida el token.
+          if [ "$ACCION" = "publicar" ]; then
+            n=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/precio-ganador.yml/runs?status=in_progress&per_page=5" --jq '.total_count' 2>/dev/null || echo 0)
+            if [ "${n:-0}" -gt 0 ]; then echo "Precio Ganador está corriendo: esta vuelta no publica"; ACCION=keepalive; fi
+          fi
+          echo "Acción: $ACCION (publicación real habilitada: $REAL)"
+          echo "accion=$ACCION" >> "$GITHUB_OUTPUT"
+
+      - name: Correr
+        if: steps.decidir.outputs.accion != 'nada'
+        env:
+          ACCION: ${{ steps.decidir.outputs.accion }}
+          IN_TANDA: ${{ inputs.tanda }}
+          IN_TOPE: ${{ inputs.tope }}
+        shell: bash
+        run: |
+          ARGS=(--accion "$ACCION" --dir "$RUNNER_TEMP/vintage" --salida "$RUNNER_TEMP/reporte")
+          if [[ "$IN_TANDA" =~ ^[0-9]+$ ]]; then ARGS+=(--tanda "$IN_TANDA"); fi
+          if [[ "$IN_TOPE" =~ ^[0-9]+$ ]]; then ARGS+=(--tope "$IN_TOPE"); fi
+          node --experimental-sqlite scripts/vintage-cloud/run.mjs "${ARGS[@]}"
+
+      # Sólo el reporte (conteos y estados). La conexión y la lista quedan en RUNNER_TEMP y se borran.
+      - name: Reporte
+        if: always() && steps.decidir.outputs.accion != 'nada'
+        uses: actions/upload-artifact@v4
+        with:
+          name: vintage-nube-${{ github.run_id }}
+          path: ${{ runner.temp }}/reporte/
+          retention-days: 30
+          if-no-files-found: ignore
+

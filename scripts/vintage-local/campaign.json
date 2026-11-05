@@ -1,4 +1,11 @@
 {
   "target_total": 80000,
-  "mode": "correct_only"
+  "mode": "correct_only",
+  "ejecutor": "pc",
+  "nube": {
+    "modo": "prueba",
+    "tanda": 50,
+    "tope_diario": 300,
+    "minutos": 90
+  }
 }
