@@ -21,7 +21,7 @@ import { bookCoverUrl, CARD_IMAGE_SIZES, responsiveImage } from './_shared/cloud
 import { deriveBookDisplayTitle } from './_shared/book-display-title.js';
 import { promoAwareCacheControl, promoWasHtml, webPromoActive, WEB_PROMO } from './_shared/web-promo.js';
 import { LIQUIDACION, resolveLiquidation, sortLiquidation } from './_shared/liquidacion.js';
-import { liquidationPricingActive, transferDisplayPrice } from './_shared/descuentos.js';
+import { liquidationPricingActive, transferDisplayPrice, LIQUIDACION_PRECIO, TRANSFER_DISCOUNT } from './_shared/descuentos.js';
 import { buildWhatsAppMessage, whatsappHref } from '../shared/whatsapp-messages.js';
 
 export const PAGE_SIZE = 48;
@@ -197,7 +197,7 @@ export async function onRequest(ctx) {
     const promoOn = webPromoActive(new Date(now), ctx.env);
     const liquidationPriced = liquidation.mode === 'lista' && liquidationPricingActive(new Date(now), ctx.env);
     const lead = liquidationPriced
-        ? 'Libros que te esperan en nuestros estantes, en stock y listos para salir hoy, con 25% menos sobre su precio habitual.'
+        ? `Libros que te esperan en nuestros estantes, en stock y listos para salir hoy, con ${Math.round(LIQUIDACION_PRECIO.discount * 100)}% menos sobre su precio habitual, y ${Math.round(TRANSFER_DISCOUNT * 100)}% más pagando por transferencia.`
         : promoOn
         ? `Libros que te esperan en nuestros estantes, listos para salir hoy. Con la ${escapeHtml(WEB_PROMO.name)}, ${WEB_PROMO.percent}% menos hasta el ${escapeHtml(WEB_PROMO.endLabel)}, y 12% más pagando por transferencia.`
         : 'Libros que te esperan en nuestros estantes, en stock y listos para salir hoy. Pagando por transferencia tenés 12% menos.';

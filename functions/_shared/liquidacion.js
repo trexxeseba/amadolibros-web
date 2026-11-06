@@ -22,7 +22,7 @@
  * El feed de Merchant usa solo el modo lista: sin lista, no etiqueta nada.
  *
  * Precio: desde el 10/11/2026 00:00 (descuentos.js) applyLiquidationPrices
- * pone el precio de liquidación (25 % sobre el habitual, piso $1.200) al leer
+ * pone el precio de liquidación (descuento base de descuentos.js sobre el habitual, piso $1.200) al leer
  * el catálogo, igual que la promo web. Ficha, listados, feed, carrito y cobro
  * leen ese mismo precio. Los libros que quedarían bajo el piso no reciben
  * descuento y salen de la vitrina y del feed (header x-liquidacion-excluidos,
@@ -224,7 +224,11 @@ export function applyLiquidationPrices(items, { now = Date.now(), env = {}, data
         const habitual = Number(item.original_price) > 0 ? Number(item.original_price) : Number(item.price);
         const result = liquidationPrice(habitual);
         if (!result.applied) return { ...item, liquidation_skip: result.reason };
-        return { ...item, price: result.price, original_price: habitual, liquidation: true };
+        // Si ya rige otra promo con mejor precio (p. ej. Amado Week), gana la mejor: no se acumulan
+        // ni se pisan, y el precio nunca sube.
+        const current = Number(item.price);
+        const price = Number.isFinite(current) && current > 0 ? Math.min(current, result.price) : result.price;
+        return { ...item, price, original_price: habitual, liquidation: true };
     });
 }
 
