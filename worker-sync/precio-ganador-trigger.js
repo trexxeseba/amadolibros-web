@@ -8,8 +8,14 @@
  * Libros corre en los tres horarios; Vintage dos veces, a las 09:00 y a las 21:00 (Seba, 05/11/2026:
  * con tres corridas iba y venía, una bajaba unas 1.500 y la siguiente las volvía a subir).
  *
- *  - Si en las últimas 2 horas ya hubo una corrida exitosa o en curso, no dispara
- *    (así el cron de GitHub, que queda de respaldo, no duplica).
+ *  - No dispara sólo si ya hay una corrida de ESTA franja: creada en los últimos
+ *    10 minutos (el cron de GitHub, si llegó puntual). Una corrida atrasada de la
+ *    franja anterior no cuenta: el 05/11 la de las 18:00 UTC arrancó a las 23:13 y
+ *    el Worker se salteó la de las 00:00 UTC creyendo que ya había corrido, y ese
+ *    día no salió el mail de resumen. Del lado de GitHub, el job `franja` del
+ *    workflow se encarga de que una programada tardía no duplique.
+ *  - A las 00:00 UTC (21:00 de Montevideo) pide además el mail de resumen del día
+ *    (input correo=true): el workflow sólo lo mandaba con su propio cron de GitHub.
  *  - Reintenta una vez si el disparo falla. Si no pudo, manda un mail de alerta
  *    por Resend (mismo proveedor que el resto del Worker).
  *  - GITHUB_TOKEN: token fino de GitHub, sólo este repo, permiso Actions
@@ -19,10 +25,12 @@
 export const CRONS_PRECIO_GANADOR = ['0 12 * * *', '0 18 * * *', '0 0 * * *'];
 // Qué cuentas corren en cada horario: Vintage dos veces por día, 09:00 y 21:00 de Montevideo.
 export const CRONS_VINTAGE = ['0 12 * * *', '0 0 * * *'];
+// Horario con el mail de resumen del día (21:00 de Montevideo).
+export const CRON_RESUMEN = '0 0 * * *';
 export const cuentaDelHorario = cron => CRONS_VINTAGE.includes(cron) ? 'ambas' : 'libros';
 const REPO_DEFAULT = 'trexxeseba/amadolibros-web';
 const WORKFLOW = 'precio-ganador.yml';
-const VENTANA_MS = 2 * 3600 * 1000;
+const VENTANA_MS = 10 * 60 * 1000;
 
 export async function dispararPrecioGanador(env, { cron = '0 0 * * *', fetcher = (...a) => fetch(...a), now = Date.now, sleep = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
   const repo = String(env?.GITHUB_REPO || REPO_DEFAULT);
@@ -31,7 +39,7 @@ export async function dispararPrecioGanador(env, { cron = '0 0 * * *', fetcher =
   const headers = { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'amadolibros-sync', 'X-GitHub-Api-Version': '2022-11-28' };
   const api = `https://api.github.com/repos/${repo}`;
 
-  // ¿Ya corrió en esta franja?
+  // ¿Ya hay una corrida de esta franja?
   try {
     const res = await fetcher(`${api}/actions/workflows/${WORKFLOW}/runs?branch=main&per_page=10`, { headers, signal: AbortSignal.timeout(20000) });
     if (res.ok) {
@@ -46,7 +54,7 @@ export async function dispararPrecioGanador(env, { cron = '0 0 * * *', fetcher =
     try {
       const res = await fetcher(`${api}/actions/workflows/${WORKFLOW}/dispatches`, {
         method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(20000),
-        body: JSON.stringify({ ref: 'main', inputs: { accion: 'correr', cuenta: cuentaDelHorario(cron) } }),
+        body: JSON.stringify({ ref: 'main', inputs: { accion: 'correr', cuenta: cuentaDelHorario(cron), ...(cron === CRON_RESUMEN ? { correo: 'true' } : {}) } }),
       });
       if (res.status === 204) return { state: 'disparado', intento };
       ultimo = `github_http_${res.status}`;
