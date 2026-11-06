@@ -209,9 +209,9 @@ async function main() {
     .concat(filas.map(f => [f.item.id, String(f.item.title ?? '').replace(/\t/g, ' ').slice(0, 90), f.item.price, f.item.catalog_listing ? 'si' : 'no', f.comp?.estado ?? '', (f.comp?.motivos ?? []).join(','), f.item.dias_demanda ?? '', f.d.accion].join('\t'))).join('\n') + '\n');
   // Filas de las marcadas y de las del estado, para la auditoría independiente.
   await writeFile(join(dirSalida, `${cuenta.clave}-filas.json`), JSON.stringify(filas.filter(f => f.comp?.marcada || f.comp?.compite || f.previo).map(f => ({
-    id: f.item.id, titulo: String(f.item.title ?? '').slice(0, 60), precio: f.item.price, moneda: f.item.currency_id, variaciones: f.item.variaciones, marcada: Boolean(f.comp?.marcada), compite: Boolean(f.comp?.compite),
+    id: f.item.id, titulo: String(f.item.title ?? '').slice(0, 60), precio: f.item.price, moneda: f.item.currency_id, variaciones: f.item.variaciones, precio_dinamico: Boolean(f.item.precio_dinamico), marcada: Boolean(f.comp?.marcada), compite: Boolean(f.comp?.compite),
     ganador: f.comp?.ganador ?? null, bloqueo: f.comp?.bloqueo ?? null, entrega_ganador: f.comp?.entrega_ganador ?? null, techo: f.comp?.techo ?? null, techo_de: f.comp?.techo_de ?? null, piso: f.piso ?? null,
-    en_estado_antes: Boolean(f.previo), precio_original: f.previo?.precio_original ?? null, promo: f.promo ?? null, accion: f.d.accion, motivo: f.d.motivo ?? null, precio_nuevo: f.d.precio ?? null, stock_nuevo: f.d.stock ?? null, aplicado: f.aplicado ?? null,
+    en_estado_antes: Boolean(f.previo), precio_original: f.previo?.precio_original ?? null, promo: f.promo ?? null, accion: f.d.accion, motivo: f.d.motivo ?? null, detalle: /^error/.test(f.d.accion) ? (f.d.detalle ?? null) : null, precio_nuevo: f.d.precio ?? null, stock_nuevo: f.d.stock ?? null, aplicado: f.aplicado ?? null,
   })), null, 2));
   if (real) {
     guardarEstado();
