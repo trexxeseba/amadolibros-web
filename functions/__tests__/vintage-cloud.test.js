@@ -263,3 +263,12 @@ test('publishing next to the classifiers creates each ISBN at most once and stop
  assert.equal(new Set([...created.values()].map(v=>v.id)).size,4);
  assert.ok(result.classified.validated>=4);
 });
+
+test('a fresh create paused only for picture download is accepted when deferring pictures, never otherwise',async()=>{
+ const {checkCreated}=await import('../../scripts/vintage-local/engine.mjs');
+ const item={seller_id:2341378249,seller_custom_field:'AMADO-AR-9789502323060',attributes:[],price:1990,currency_id:'UYU',available_quantity:1,status:'paused',sub_status:['picture_download_pending'],sale_terms:[{id:'MANUFACTURING_TIME',value_name:'18 días'}]};
+ assert.throws(()=>checkCreated(item,'9789502323060',1990),/created_item_check_failed/);
+ assert.doesNotThrow(()=>checkCreated(item,'9789502323060',1990,{picturesPending:true}));
+ assert.throws(()=>checkCreated({...item,price:2000},'9789502323060',1990,{picturesPending:true}),/created_item_check_failed/);
+ assert.throws(()=>checkCreated({...item,sub_status:['out_of_stock']},'9789502323060',1990,{picturesPending:true}),/created_item_check_failed/);
+});

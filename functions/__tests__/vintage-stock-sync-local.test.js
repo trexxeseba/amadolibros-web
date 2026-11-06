@@ -129,3 +129,9 @@ test('a run where nothing changed leaves updated_at alone, so the cloud saves no
  await f.run(new Set(ISBNS.slice(1)),{mode:'report'});
  assert.equal((await db.prepare('SELECT COUNT(*) n FROM vintage_stock_sync WHERE updated_at>?').bind(before).first()).n,1);
 });
+test('books to pause go first, ahead of the active ones still to check',async t=>{
+ const f=await fixture(t);
+ const gone=new Set(ISBNS.slice(0,9));// falta sólo el último
+ const s=await f.run(gone,{mode:'stock_only',batch:1});
+ assert.equal(s.paused,1);assert.deepEqual(f.puts.map(p=>p.id),['MLU909']);
+});

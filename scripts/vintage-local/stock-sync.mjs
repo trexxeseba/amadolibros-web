@@ -82,7 +82,8 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
   const summary={state:'synced',mode,feed_id:c.feed_id,source_date:input.source_date,published:rows.length,in_stock:rows.length-missing,missing,suspicious_feed:suspicious,paused:0,activated:0,unchanged:0,skipped:0,errors:0};
   if(mode==='report')return finish({...summary,state:'report'});
   const wanted=mode==='pause_only'?['paused']:['paused','active'];
-  const due=(await stmt(`SELECT * FROM vintage_stock_sync WHERE desired_status IN (${wanted.map(()=>'?').join(',')}) AND (applied_status IS NULL OR applied_status<>desired_status) AND next_at<=? ORDER BY updated_at,isbn LIMIT ?`,...wanted,now(),batch).all()).results;
+  // Primero las pausas: un libro que SBS ya no tiene no puede esperar detrás de miles de lecturas.
+  const due=(await stmt(`SELECT * FROM vintage_stock_sync WHERE desired_status IN (${wanted.map(()=>'?').join(',')}) AND (applied_status IS NULL OR applied_status<>desired_status) AND next_at<=? ORDER BY CASE desired_status WHEN 'paused' THEN 0 ELSE 1 END,updated_at,isbn LIMIT ?`,...wanted,now(),batch).all()).results;
   const applied=(row,status)=>stmt('UPDATE vintage_stock_sync SET applied_status=?,attempts=0,next_at=0,last_error=NULL,updated_at=? WHERE isbn=?',status,now(),row.isbn).run();
   const failed=(row,code,backoffMs)=>stmt('UPDATE vintage_stock_sync SET attempts=attempts+1,next_at=?,last_error=?,updated_at=? WHERE isbn=?',now()+Math.min(LONG_MS,backoffMs*2**Math.min(8,row.attempts)),code,now(),row.isbn).run();
   const deferAll=async(group,error)=>{for(const row of group)await failed(row,safeCode(error),Math.max(TRANSIENT_MS,(error.retryAfter||0)*1000));summary.errors+=group.length;};

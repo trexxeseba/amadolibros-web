@@ -87,7 +87,12 @@ export function payloadPolicyMismatch(payload,policy){
  if(payload.catalog_listing===true)return policy?.catalogListing==='required_only'&&/^MLU\d+$/.test(payload.catalog_product_id??'')?null:'catalog_payload_not_approved';
  return payload.catalog_listing===false&&payload.catalog_product_id===undefined?null:'payload_policy_mismatch';
 }
-export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>globalThis.fetch(...args),tokenProvider=getAccessToken,tokenInvalidator=invalidateAccessToken,now=Date.now,timeouts={}}={}){
+// trustPreparedMs (sólo el publicador de Vintage en la nube; 0 = como siempre): una publicación
+// preparada hace menos de ese tiempo ya pasó listing_prices y /items/validate en prepare(), así que
+// create() no los repite, y un token cuya cuenta se verificó hace menos de 10 minutos no vuelve a
+// pedir /users/me. El POST /items sigue validando del lado de Mercado Libre.
+export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>globalThis.fetch(...args),tokenProvider=getAccessToken,tokenInvalidator=invalidateAccessToken,now=Date.now,timeouts={},trustPreparedMs=0}={}){
+ const verifiedTokens=new Map();
  if(!['440298103','2341378249'].includes(sellerId))throw new PublicationError('unsupported_seller',403);
  if(sellerId!==SELLER_ID&&tokenProvider===getAccessToken)throw new PublicationError('seller_token_provider_required',503);
  const requestTimeout=timeouts.request??12000,createTimeout=timeouts.create??30000;
@@ -304,7 +309,8 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
    sale_terms:policy.availabilityDays?[{id:'MANUFACTURING_TIME',value_name:`${policy.availabilityDays} días`}]:[]};
   if(seller.tags?.includes('user_product_seller'))payload.family_name=title;else payload.title=title;
   await verifyFees(env,payload,policy);
-  return resolveShipping(env,payload,trace);
+  const ready=await resolveShipping(env,payload,trace);
+  return trustPreparedMs>0?{...ready,prepared_at:now()}:ready;
  }
  // Exactly prepare() on one supplier row, reporting which shipping variant
  // /items/validate accepted or every attempt when none did. Nothing is stored.
@@ -321,13 +327,17 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
  async function create(env,payload,policy){
   // Revalidate the prepared payload and fees immediately before the single create.
   // Validation warnings kept for review never travel to Mercado Libre.
-  const {diagnostic,...body}=payload;
+  const {diagnostic,prepared_at,...body}=payload;
   if(sellerId==='2341378249')requireVintagePrice(body,vintageMinimumFor(policy));
   const mismatch=payloadPolicyMismatch(body,policy);if(mismatch)throw new PublicationError(mismatch,422);
-  await verifyFees(env,body,policy);await validateItem(env,body);
+  const fresh=trustPreparedMs>0&&Number.isFinite(prepared_at)&&now()-prepared_at>=0&&now()-prepared_at<trustPreparedMs;
+  if(!fresh){await verifyFees(env,body,policy);await validateItem(env,body);}
   const pinnedToken=await token(env);
-  const identity=await call(env,'/users/me',{pinnedToken});
-  if(String(identity.id)!==sellerId||identity.site_id!=='MLU')throw new PublicationError('seller_mismatch',403);
+  if(!(trustPreparedMs>0&&now()-(verifiedTokens.get(pinnedToken)??-Infinity)<600000)){
+   const identity=await call(env,'/users/me',{pinnedToken});
+   if(String(identity.id)!==sellerId||identity.site_id!=='MLU')throw new PublicationError('seller_mismatch',403);
+   if(trustPreparedMs>0)verifiedTokens.set(pinnedToken,now());
+  }
   const result=await call(env,'/items',{method:'POST',body,pinnedToken});
   if(!/^MLU\d+$/.test(result?.id??'')||String(result.seller_id)!==sellerId)throw new MercadoLibreError('create_outcome_unknown',502);
   return result;

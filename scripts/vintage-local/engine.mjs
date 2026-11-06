@@ -37,12 +37,16 @@ function identifiers(item){
 // Precio Ganador o la sincronización pueden haberlo cambiado después). Se exige lo que
 // identifica al alta como nuestra (vendedor, ISBN, moneda, piso, 18 días) y no el precio
 // exacto, la cantidad 1 ni que siga activa.
-export function checkCreated(item,isbn,price){
+// picturesPending (la nube): un alta recién creada que Mercado Libre tiene pausada sólo porque
+// todavía descarga las fotos se acepta sin esperar; lo demás se exige igual. Mercado Libre la
+// activa sola al terminar la descarga.
+export function checkCreated(item,isbn,price,{picturesPending=false}={}){
  const term=(item?.sale_terms??[]).find(x=>x.id==='MANUFACTURING_TIME');
  // Vendido antes de confirmarlo: sin stock pero con ventas sigue siendo nuestro alta.
  const sold=Number(item?.sold_quantity)>0&&item?.available_quantity===0&&['active','paused','closed'].includes(item?.status);
  const known=price!==null;
- const stateOk=known?sold||item?.available_quantity===1&&item?.status==='active':sold||['active','paused'].includes(item?.status)&&Number(item?.available_quantity)>=1;
+ const waitingPictures=picturesPending&&item?.status==='paused'&&(item?.sub_status??[]).includes('picture_download_pending')&&item?.available_quantity===1;
+ const stateOk=known?sold||waitingPictures||item?.available_quantity===1&&item?.status==='active':sold||['active','paused'].includes(item?.status)&&Number(item?.available_quantity)>=1;
  if(String(item?.seller_id)!==SELLER||!identifiers(item).includes(isbn)||known&&item.price!==price||!(item.price>=VINTAGE_COMPETITIVE_MINIMUM_UYU)||item.currency_id!=='UYU'||!stateOk||Number(term?.value_struct?.number??parseInt(term?.value_name,10))!==18)throw new MercadoLibreError('created_item_check_failed',409);
 }
 // Sube el objetivo (sin el piloto) a `total`; nunca lo baja ni pasa MAX_TARGET_TOTAL.
@@ -62,7 +66,7 @@ export async function inspectWorkbook(file){
  const bytes=await fs.readFile(file),input=readFullStock(bytes);
  return {...input,source_sha256:await sha256('vintage-bulk-positive-v1:'+await sha256(bytes))};
 }
-export async function run({excel,connection,directory,target=1000,raiseTargetTo=0,intervalMs=2000,requestTimeoutMs=60000,statusEvery=1,keepIndexDays=0,classifiers=0,classifyOnly=false,maxValidated=300,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
+export async function run({excel,connection,directory,target=1000,raiseTargetTo=0,intervalMs=2000,requestTimeoutMs=60000,statusEvery=1,keepIndexDays=0,classifiers=0,classifyOnly=false,maxValidated=300,trustPreparedMs=0,deferPictures=false,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
  if(!Number.isInteger(target)||target<5||target>MAX_TARGET_TOTAL||!Number.isInteger(validateOnly)||validateOnly<0||validateOnly>5)throw new Error('invalid_local_limits');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
  if(await policyHash(policy)!==c.policy_hash)throw new Error('connection_policy_changed');
@@ -81,7 +85,7 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
   }catch{}
   return response;
  };
- api=apiFactory({sellerId:SELLER,timeouts:{request:requestTimeoutMs,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>watched(url,options)});
+ api=apiFactory({sellerId:SELLER,timeouts:{request:requestTimeoutMs,create:60000},trustPreparedMs,tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>watched(url,options)});
  const inFlight=new Set();
  class LocalStore extends VintageBulkStore{
   async reserve(seller,isbn,runId,now,cap,lease){
@@ -123,7 +127,7 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
      // reason only. Wait a bounded time for that exact state; any other mismatch fails at once.
      for(let attempt=0;;attempt++){
       const item=await api.call(env,'/items/'+itemId);
-      try{checkCreated(item,isbn,price);break;}
+      try{checkCreated(item,isbn,price,{picturesPending:deferPictures});break;}
       catch(error){
        if(item?.status!=='paused'||!(item.sub_status??[]).includes('picture_download_pending'))throw error;
        // Pictures still downloading after the wait: defer this book (the service retries it without a new POST
