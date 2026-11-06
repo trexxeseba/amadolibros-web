@@ -1,4 +1,4 @@
-# Auditoría Precio Ganador · Amado Vintage · 2026-11-05T18:43:10.187Z
+# Auditoría Precio Ganador · Amado Vintage · 2026-11-06T00:52:28.435Z
 
 Discrepancias: **0**
 
@@ -6,18 +6,18 @@ Discrepancias: **0**
 
 | Publicación | Precio | Estado ML | Para ganar | Competidor más barato | Sugerencias de ML | Conclusión | OK |
 |---|---:|---|---:|---:|---|---|---|
-| MLU1523106360 Aprender A Dibujar Con Tu Ojo Dominante - Betty Edwards | 2329 | winning | 2329 | 2419 | Envíos Full, Envíos en el día | Gana: el competidor más barato está en 2419 | sí |
-| MLU1523502038 El Asesino Vive En El 21 - Steeman, S.a | 2240 | winning | 2240 | 3080 | Envíos Full, Envíos en el día | Gana: el competidor más barato está en 3080 | sí |
-| MLU703121409 Busqueda En La Luna, De Anson. Montgomery. Editorial Artemis | 1600 | competing | 1182 | 960 | Envíos Full, Envíos en el día | Pierde: para ganar, 1182. Ganador MLU694864473 a 960 | sí |
-| MLU1523488994 Libro Los Asesinatos De La Mansión Decagonal 2 - Manga | 1600 | listed | 1600 | 470 | Envíos Full, Envíos en el día | Estado listed (no compite) | sí |
-| MLU1524483990 Catcher In The Rye, The, De Salinger, J. D. -. Editorial Hac | 1600 | sharing_first_place | 1591 | 1608 | Envíos Full, Envíos en el día | Comparte el primer lugar (1 más) | sí |
-| MLU1521619542 Adivinanzas Que Danzan - Florencia Esses - Albatros | 1600 | listed | 1600 | 400.4 | Envíos Full, Envíos en el día | Estado listed (no compite) | sí |
-| MLU1522466976 Libro Algo Mas Que Locos Experimentos En La Escuela - Fernan | 2138 | winning | 2138 | 2160 | Envíos Full, Envíos en el día | Gana: el competidor más barato está en 2160 | sí |
-| MLU1521565674 Academia Arcana Libro 1, De Kova, Elise. Editorial Umbriel A | 2840 | winning | 2840 | 3168 | Envíos Full, Envíos en el día | Gana: el competidor más barato está en 3168 | sí |
-| MLU1524359634 Captain Underpants And The Tyrannical Retaliation Of The Tur | 2210 | competing | 1565 | 1581 | Envíos Full, Envíos en el día | Pierde: para ganar, 1565. Ganador MLU667969801 a 1581 | sí |
-| MLU702347429 La Crianza Imperfecta, De Paola Roig. Editorial Bruguera, Ta | 2830 | competing | 1482 | 1497 | Envíos Full, Envíos en el día | Pierde: para ganar, 1482. Ganador MLU1069584958 a 1497 | sí |
+| MLU702836059 Actividades Integradas Para Construir Conocimientos Numérico | 1910 | winning | 1910 | ninguno | Envíos Full, Envíos en el día | Gana: no hay otros vendedores | sí |
+| MLU703082423 Los Buscadores Del Tuyu - Torre De Papel Amarilla | 1530 | winning | 1530 | 1790 | Envíos Full, Envíos en el día | Gana: el competidor más barato está en 1790 | sí |
+| MLU702336313 Calendario De Adviento Para Booklovers: 25 Regalos Para Aman | 3499 | competing | 2208 | 2231 | Envíos Full, Envíos en el día | Pierde: para ganar, 2208. Ganador MLU1343296350 a 2231 | sí |
+| MLU703063349 Libro Beowulf Nuevo V | 1600 | winning | 1600 | ninguno | Envíos Full, Envíos en el día | Gana: no hay otros vendedores | sí |
+| MLU703107729 Libro Bunny, De Awad, Mona. Editorial Stefano, Tapa Blanda ( | 2214 | sharing_first_place | 2192 | 2215 | Envíos Full, Envíos en el día | Comparte el primer lugar (1 más) | sí |
+| MLU703049395 Belcebu En Llamas - Carlos Gardini | 1900 | listed | 1900 | 750 | Envíos Full, Envíos en el día | Estado listed (no compite) | sí |
+| MLU1522946342 * Animales Desaparecidos * Lampara Magica Con Transparencias | 1891 | sharing_first_place | 1872 | 1892 | Envíos Full, Envíos en el día | Comparte el primer lugar (1 más) | sí |
+| MLU1522603448 La Amarga Medicina De La Libertad - Anthony De Jasay, De De  | 2050 | competing | 1190 | 1203 | Envíos Full, Envíos en el día | Pierde: para ganar, 1190. Ganador MLU667955773 a 1203 | sí |
+| MLU1521258778 Libro Abitar El Herror, De Raúl Nieto Guridi, Vol. 1. Editor | 2590 | competing | 1461 | 1476 | Envíos Full, Envíos en el día | Pierde: para ganar, 1461. Ganador MLU1467470394 a 1476 | sí |
+| MLU1524200590 Biscuit And The Big Parade! - My First I Can Read - Alyssa S | 1600 | winning | 1600 | ninguno | Envíos Full, Envíos en el día | Gana: no hay otros vendedores | sí |
 
-## Publicaciones que el sistema bajó (3122)
+## Publicaciones que el sistema bajó (3124)
 
 | Publicación | Original | Registrado | En ML hoy | OK |
 |---|---:|---:|---:|---|
@@ -55,7 +55,7 @@ Discrepancias: **0**
 | MLU702862029 Agenda 1 A1 - Cahier D'activites + A/cd | 2290 | 2199 | 2199 | sí |
 | MLU702861985 The Ageless Brain - Dale Bredesen | 2730 | 2476 | 2476 | sí |
 | MLU702861481 Affare Fatto! 2 - Manuale Ed Eserciziario, De Bert | 4070 | 3829 | 3829 | sí |
-| MLU702861329 Aerolitos Completos, De Carlos Edmundo De Ory. Edi | 2690 | 2322 | 2322 | sí |
+| MLU702861329 Aerolitos Completos, De Carlos Edmundo De Ory. Edi | 2690 | 2346 | 2346 | sí |
 | MLU702861273 Adventures With Linus And Friends! - Peanut Graphi | 1900 | 1754 | 1754 | sí |
 | MLU702861221 The Adventures Of Sherlock Holmes | 2140 | 1772 | 1772 | sí |
 | MLU702861081 Libro Aduki : Un Extraño Planeta - Ivanke Y Mey -  | 1593 | 1559 | 1559 | sí |
@@ -65,15 +65,15 @@ Discrepancias: **0**
 | MLU702855097 Mafalda 2025 Anillada Columna Verde, De Quino. N/a | 1670 | 1544 | 1544 | sí |
 | MLU702854867 Libro Age Of Assassins - The Wounded Kingdom 1 - R | 2420 | 2222 | 2222 | sí |
 | MLU702854857 The Agathas - Agathas Mystery 1 - Glasgow - Lawson | 1760 | 1637 | 1637 | sí |
-| MLU702854813 Runas Agata Negra Natural Stone Lo Scarabeo | 2930 | 2899 | 2899 | sí |
+| MLU702854813 Runas Agata Negra Natural Stone Lo Scarabeo | 2930 | 2811 | 2811 | sí |
 | MLU702854305 Ady And Me - Pink Rox | 1600 | 1553 | 1553 | sí |
 | MLU702854041 Adosphere 3 - Livre De L´eleve | 2960 | 2807 | 2807 | sí |
 | MLU702854027 Adosphere 2 - Livre De L´eleve | 2930 | 2593 | 2593 | sí |
 | MLU702853967 Adonde Quiera Que Voy: Memorias De Un Pesado Del R | 1610 | 1524 | 1524 | sí |
 | MLU702853615 Adolescencias Vulneradas Experiencias Subjetivante | 3010 | 2652 | 2652 | sí |
 | MLU1522305556 Libro Al Borde De La Caída - Rebecca Serle - Titan | 1840 | 1633 | 1633 | sí |
-| MLU1522304912 Ajuste Por Inflación - Mantovan | 2215 | 2189 | 2189 | sí |
-| MLU1522304902 Ajustados - Carlos Heller / Diego Rubinzal | 1564 | 1469 | 1469 | sí |
+| MLU1522304912 Ajuste Por Inflación - Mantovan | 2215 | 2116 | 2116 | sí |
+| MLU1522304902 Ajustados - Carlos Heller / Diego Rubinzal | 1564 | 1485 | 1485 | sí |
 | MLU1522304578 Libro Ahora Siempre, De Aa. Vv.. Editorial Malisia | 2300 | 2160 | 2160 | sí |
 | MLU1522304314 Aguardiente, De Lindgren, Torgny. Editorial Sexto  | 1700 | 1519 | 1519 | sí |
 | MLU1522291552 Ahora Si Puedo Estudiar - 2/ed. - Duran De Perlo - | 1810 | 1732 | 1732 | sí |
@@ -96,11 +96,11 @@ Discrepancias: **0**
 | MLU1522938586 Fieltromanía. Amigos De La Granja / Pd. (con 20 Fi | 1980 | 1885 | 1885 | sí |
 | MLU1522938560 Amigos, De Daniela Sosa. Editorial Catapulta, Tapa | 1920 | 1638 | 1638 | sí |
 | MLU1522925754 Amor Al Segundo Intento, De Bolinches, Antoni. Edi | 2620 | 2286 | 2286 | sí |
-| MLU1522925736 Amor - Isabel Allende - Sudamericana - Libro | 2193 | 2086 | 2086 | sí |
+| MLU1522925736 Amor - Isabel Allende - Sudamericana - Libro | 2193 | 2108 | 2108 | sí |
 | MLU1522925678 Amistades Que Sanan - El Poder De Las Relaciones | 1740 | 1663 | 1663 | sí |
 | MLU1522925670 La Amistad En Las Infancias - Levin, Esteban | 1980 | 1881 | 1881 | sí |
 | MLU1522925640 Amigos Para Descubrir 2 - Camino A Betania, De Equ | 1640 | 1611 | 1611 | sí |
-| MLU1522912764 El Amor Brujo - Roberto Arlt - Barenhaus - Libro | 1841 | 1744 | 1744 | sí |
+| MLU1522912764 El Amor Brujo - Roberto Arlt - Barenhaus - Libro | 1841 | 1762 | 1762 | sí |
 | MLU1522912744 Among The Burning Flowers - The Roots Of Chaos | 2340 | 2189 | 2189 | sí |
 | MLU1522912640 Amigos Para La Misión 5 | 1595 | 1569 | 1569 | sí |
 | MLU1522912636 Amigos Para Descubrir 1 | 1650 | 1596 | 1596 | sí |
@@ -119,7 +119,7 @@ Discrepancias: **0**
 | MLU1522603376 Libro Amar Y Ser Amado - Jim Towey - Debolsillo | 2395 | 2369 | 2369 | sí |
 | MLU1522602390 Alza La Voz | 2200 | 2089 | 2089 | sí |
 | MLU1522602050 Alter Ego 5: Cahier De Perfectionnement, De Berthe | 2550 | 2350 | 2350 | sí |
-| MLU1522601580 Alrededor De La Luna, De Julio Verne. Editorial Te | 1600 | 1508 | 1508 | sí |
+| MLU1522601580 Alrededor De La Luna, De Julio Verne. Editorial Te | 1600 | 1524 | 1524 | sí |
 | MLU1522600702 El Almanaque De Mi Padre, De Jiro Taniguchi. Serie | 1890 | 1579 | 1579 | sí |
 | MLU1522470346 All Are Welcome, De Penfold, Alexandra. Editorial  | 1600 | 1475 | 1475 | sí |
 | MLU1522470286 All American C1/c2 - Student's Book, De Yu, Sarah. | 3260 | 3218 | 3218 | sí |
@@ -133,21 +133,21 @@ Discrepancias: **0**
 | MLU1522465578 Alex Et Zoe 1+ Et Compagnie - Livre De Eleve + Cd | 3480 | 3425 | 3425 | sí |
 | MLU1522464546 Libro La Aldea Escondida - Susanna Harutyunyan, De | 2890 | 2719 | 2719 | sí |
 | MLU1522463946 Alberdi, De María Victoria Baratta. Editorial Crít | 3010 | 2722 | 2722 | sí |
-| MLU1522463598 Alas Para Una Vida - Antonia Valverde Jimenez | 1920 | 1744 | 1744 | sí |
+| MLU1522463598 Alas Para Una Vida - Antonia Valverde Jimenez | 1920 | 1762 | 1762 | sí |
 | MLU1522463488 Las Alas De La Mariposa - Almada | 1600 | 1504 | 1504 | sí |
 | MLU1522463428 Alas De Estrellas - Disney, De Disney - Allison Sa | 2514 | 2380 | 2380 | sí |
 | MLU1522462982 Al Pie De La Torre Eiffel - Oardo Bazan Emilia - # | 2140 | 2039 | 2039 | sí |
 | MLU1522457192 Libro All About The Gruffalo - Donaldson / Scheffl | 1600 | 1553 | 1553 | sí |
-| MLU1522456660 Alimentacion Del Nio Pequeo - Isidro - Plataforma  | 2750 | 2498 | 2498 | sí |
-| MLU1522455702 Alicia En El Pais De Las Maravillas - Los Libros D | 1563 | 1529 | 1529 | sí |
+| MLU1522456660 Alimentacion Del Nio Pequeo - Isidro - Plataforma  | 2750 | 2524 | 2524 | sí |
+| MLU1522455702 Alicia En El Pais De Las Maravillas - Los Libros D | 1563 | 1469 | 1469 | sí |
 | MLU1522454050 El Algoritmo Del Amor . Un Viaje A Las Entrañas De | 2660 | 2459 | 2459 | sí |
 | MLU1522453928 Algo Parecido A La Felicidad - Federico Lorenz | 2380 | 2157 | 2157 | sí |
 | MLU1522453376 La Alfombra Roja - Marta Lynch, De Lynch Marta. Ed | 1840 | 1711 | 1711 | sí |
 | MLU1522452708 Alex Et Zoe Plus 3 - Eleve + A/cd, De No Aplica. E | 3480 | 3425 | 3425 | sí |
-| MLU1522452200 Alejandro Sokol - El Cazador - Isaac Castro | 1773 | 1675 | 1675 | sí |
+| MLU1522452200 Alejandro Sokol - El Cazador - Isaac Castro | 1773 | 1692 | 1692 | sí |
 | MLU1522451068 Albert Speer, Un Día, De Juan Rivera Arroyo., Vol. | 2880 | 2791 | 2791 | sí |
 | MLU1522450064 Las Guardianas De La Tinta - Al Rescate Del Conde  | 1790 | 1707 | 1707 | sí |
-| MLU1522449894 Al Otro Lado Del Fuego, De Barzana, Claudia. Edito | 1734 | 1699 | 1699 | sí |
+| MLU1522449894 Al Otro Lado Del Fuego, De Barzana, Claudia. Edito | 1734 | 1636 | 1636 | sí |
 | MLU702971391 American Royals 1 - Ember Kel Ediciones | 1920 | 1839 | 1839 | sí |
 | MLU702971277 American Look And See 3 - Student's Book With Onli | 2200 | 1872 | 1872 | sí |
 | MLU702971233 American Look And See 1 - Student's Book With Onli | 2200 | 1872 | 1872 | sí |
@@ -175,7 +175,7 @@ Discrepancias: **0**
 | MLU702955927 American Life 1 (2nd.ed.) - Workbook + Audio Cd, D | 2030 | 1721 | 1721 | sí |
 | MLU702955245 American Download A2 - Student's Book, De Hammond, | 3060 | 2716 | 2716 | sí |
 | MLU702954967 América - Kafka, Franz | 2160 | 1799 | 1799 | sí |
-| MLU702954921 Libro La Amenaza, De Abrasha Rotenberg. Editorial  | 1579 | 1488 | 1488 | sí |
+| MLU702954921 Libro La Amenaza, De Abrasha Rotenberg. Editorial  | 1579 | 1504 | 1504 | sí |
 | MLU702954337 Amazing English 1 - Student's Book With Writing Bo | 3070 | 2806 | 2806 | sí |
 | MLU702954139 Amar Sin Perder La Cabeza: Una Guía Para Transform | 2010 | 1856 | 1856 | sí |
 | MLU702954119 Amar Sin Palabras - Gestos En El Juego Del Amor -  | 2190 | 1940 | 1940 | sí |
@@ -198,7 +198,7 @@ Discrepancias: **0**
 | MLU702948097 Alter Ego + 4 - Livre De L'eleve + Cd-rom, De Anti | 4320 | 4082 | 4082 | sí |
 | MLU702947467 Alosaurio: Lagarto Extraño - Dino Historias | 2060 | 1699 | 1699 | sí |
 | MLU702946897 Libro Almanaque Historico Argentino 1943 -1956 Aug | 2220 | 1919 | 1919 | sí |
-| MLU702946869 Almanaque Del Bicentenario - Guillermo Maximo Cao | 1898 | 1869 | 1869 | sí |
+| MLU702946869 Almanaque Del Bicentenario - Guillermo Maximo Cao | 1898 | 1802 | 1802 | sí |
 | MLU702946749 El Alma Perdida - Olga Tokarczuk - Joanna Concejo | 2130 | 1919 | 1919 | sí |
 | MLU702946323 Alma And How She Got Her Name, De Juana Martinez-n | 2250 | 2092 | 2092 | sí |
 | MLU702946279 Allegro 2. Libro + Cd Audio - Edilingua - | 3600 | 3258 | 3258 | sí |
@@ -209,13 +209,13 @@ Discrepancias: **0**
 | MLU702945565 All Around 1 New Edition - Student's Book - Richmo | 2270 | 2173 | 2173 | sí |
 | MLU702945459 All About Romance - Daniel Tawse, De Tawse, Daniel | 1630 | 1608 | 1608 | sí |
 | MLU702945317 Alina Y La Sirena, De Hollie Hughes Y Sarah Massin | 2230 | 1949 | 1949 | sí |
-| MLU702945143 Alimentación Y Barbarie - Gerardo Cabail | 1774 | 1675 | 1675 | sí |
+| MLU702945143 Alimentación Y Barbarie - Gerardo Cabail | 1774 | 1692 | 1692 | sí |
 | MLU702944943 Libro Alimentacion Depurativa Palmetti Ed Antropos | 3600 | 3319 | 3319 | sí |
 | MLU702943101 Alias Anna: A True Story Of Outwitting The Nazis,  | 1630 | 1608 | 1608 | sí |
 | MLU702942797 Alguien Me Espera En Casa - Paula Giglio, De Gigli | 1600 | 1509 | 1509 | sí |
 | MLU702940911 Ales Junto A La Hoguera, De Jon Fosse. Editorial R | 1949 | 1871 | 1871 | sí |
-| MLU702939365 Albucius - Quignard Pascal | 1800 | 1704 | 1704 | sí |
-| MLU702939217 Alberdi: La Noble Igualdad - Lichtmajer, Juan Pabl | 2217 | 2189 | 2189 | sí |
+| MLU702939365 Albucius - Quignard Pascal | 1800 | 1722 | 1722 | sí |
+| MLU702939217 Alberdi: La Noble Igualdad - Lichtmajer, Juan Pabl | 2217 | 2116 | 2116 | sí |
 | MLU702938221 Al Ritmo De Las Estaciones - Claudia Bielinsky | 2060 | 1960 | 1960 | sí |
 | MLU702938207 Al Resguardo De Tu Luz, De Ariel Antognini. Editor | 2120 | 1949 | 1949 | sí |
 | MLU702937923 Al Margen, De Barrett, Rafael. Editorial Malpaso Y | 2710 | 2405 | 2405 | sí |
@@ -239,7 +239,7 @@ Discrepancias: **0**
 | MLU1523497798 Libro El Arte De Habitar La Frontera, De Escandell | 2340 | 2309 | 2309 | sí |
 | MLU1523497616 Arte Con Rotuladores | 2670 | 2389 | 2389 | sí |
 | MLU1523484724 El Arte De Emocionarte - Nuñez Pereira / Valcarcel | 2080 | 1835 | 1835 | sí |
-| MLU1523484626 Libro Arte De Amar [ Ovidio ] Original, De Ovídio. | 2290 | 2136 | 2136 | sí |
+| MLU1523484626 Libro Arte De Amar [ Ovidio ] Original, De Ovídio. | 2290 | 2158 | 2158 | sí |
 | MLU1523484600 Arte Con Papel: Marmolado, Reciclado, Découpage, F | 1600 | 1524 | 1524 | sí |
 | MLU1523484596 El Arte Como Modelo Para Otra Cosa, De Regnault Fr | 1660 | 1527 | 1527 | sí |
 | MLU1523471686 El Arte De Disolver La Angustia: Un Camino Para En | 2170 | 1993 | 1993 | sí |
@@ -253,8 +253,8 @@ Discrepancias: **0**
 | MLU1523291502 Art Lesson,the - Penguin Usa Kel Ediciones, De Dep | 1600 | 1534 | 1534 | sí |
 | MLU1523291442 Arsene Lupin - La Mujer De Las Dos Sonrisas - M. L | 1990 | 1629 | 1629 | sí |
 | MLU1523291436 Arsene Lupin - La Condesa De Cagliostro - Maurice  | 2050 | 1653 | 1653 | sí |
-| MLU1523291170 Libro Arqueria - Estanislao Osores Soler, De Osore | 2600 | 2339 | 2339 | sí |
-| MLU1523291126 Around The World In Eighty Days | 1762 | 1665 | 1665 | sí |
+| MLU1523291170 Libro Arqueria - Estanislao Osores Soler, De Osore | 2600 | 2264 | 2264 | sí |
+| MLU1523291126 Around The World In Eighty Days | 1762 | 1683 | 1683 | sí |
 | MLU1523290918 El Arma En El Hombre - Castellanos Moya Horacio | 2030 | 1977 | 1977 | sí |
 | MLU1523290912 Aristotle And Dante Discover The Secrets Of The Un | 2090 | 1950 | 1950 | sí |
 | MLU1523290828 Argentina: 40 Años De Democracia, De Llenderrozas, | 1900 | 1707 | 1707 | sí |
@@ -270,9 +270,9 @@ Discrepancias: **0**
 | MLU1523278772 Arsene Lupin Y La Aguja Hueca - Maurice Leblanc | 1960 | 1801 | 1801 | sí |
 | MLU1523278762 Arsene Lupin Y El Tapon De Cristal - Maurice Lebla | 2030 | 1752 | 1752 | sí |
 | MLU1523278508 Arquitectura De Las Transferencias: Arte, Polãâtic | 5190 | 5079 | 5079 | sí |
-| MLU1523278504 Arquitectura Biomórfica | 2380 | 2214 | 2214 | sí |
+| MLU1523278504 Arquitectura Biomórfica | 2380 | 2237 | 2237 | sí |
 | MLU1523278318 Aroma, Paladar Y Salud: Orientaciones, Recetas Y M | 2710 | 2537 | 2537 | sí |
-| MLU1523278162 Ariol, Un Burrito Como Tu Y Como Yo - Emmanuel Gui | 2030 | 1881 | 1881 | sí |
+| MLU1523278162 Ariol, Un Burrito Como Tu Y Como Yo - Emmanuel Gui | 2030 | 1900 | 1900 | sí |
 | MLU1523277968 Argentina - Odio Y Espanto Condensados: La Memoria | 1890 | 1821 | 1821 | sí |
 | MLU1523277962 Argelia 60 - Pierre Bourdieu - Siglo Xxi - Libro | 1569 | 1539 | 1539 | sí |
 | MLU1523277436 Arcádia, De Bayamack-tam, Emmanuelle. Armaenia Edi | 3250 | 3148 | 3148 | sí |
@@ -282,20 +282,20 @@ Discrepancias: **0**
 | MLU1523265340 Libro The Armadillo Who Came For Dinner - Steve Sm | 1600 | 1527 | 1527 | sí |
 | MLU1523264944 La Ardilla Y El Muñeco De Nieve - Cuentos Del Bosq | 1850 | 1623 | 1623 | sí |
 | MLU1523264710 El Archivo De Sherlock Holmes - Arthur Conan Doyle | 1764 | 1729 | 1729 | sí |
-| MLU1523264422 Los Arboles Mueren De Pie, La Barca Sin Pescador,  | 1969 | 1939 | 1939 | sí |
+| MLU1523264422 Los Arboles Mueren De Pie, La Barca Sin Pescador,  | 1969 | 1871 | 1871 | sí |
 | MLU1523107224 Los Aprendices De Paris, De Serra Bradford, Matias | 2880 | 2534 | 2534 | sí |
 | MLU1523107166 Aprender Matematica 5 - Serie Aprender Az, De Vari | 1970 | 1821 | 1821 | sí |
 | MLU1523107144 Aprender Emociones Inteligencia Y Creatividad | 2200 | 1989 | 1989 | sí |
 | MLU1523105794 Libro Aprende A Fotografiar Productos Como Un Prof | 2730 | 2429 | 2429 | sí |
-| MLU1523105420 Libro Aprende A Dibujar Caras, De Niels Roman. Edi | 1650 | 1508 | 1508 | sí |
+| MLU1523105420 Libro Aprende A Dibujar Caras, De Niels Roman. Edi | 1650 | 1524 | 1524 | sí |
 | MLU1523105318 Torresani Aprendamos A Comer Frente Al Cambio Horm | 1880 | 1640 | 1640 | sí |
 | MLU1523105042 Apples Never Fall - Tie-in - Liane Moriarty, De Mo | 1790 | 1689 | 1689 | sí |
-| MLU1523104982 Appleblossom The Possum, De Goldberg Sloan, Holly. | 2320 | 1999 | 1999 | sí |
-| MLU1523104572 Apolineo Y Dionisiaco, De Sin . Editorial Sexto Pi | 2730 | 2557 | 2557 | sí |
+| MLU1523104982 Appleblossom The Possum, De Goldberg Sloan, Holly. | 2320 | 1930 | 1930 | sí |
+| MLU1523104572 Apolineo Y Dionisiaco, De Sin . Editorial Sexto Pi | 2730 | 2583 | 2583 | sí |
 | MLU1523104052 Libro Apariciones - Ariel Dorfman - Fce | 1600 | 1569 | 1569 | sí |
 | MLU1523104002 Apagon, De Carlos De Armas / Martin Tejada. Editor | 1600 | 1519 | 1519 | sí |
 | MLU1523103540 Libro The Anxious Generation - Jonathan Haidt, De  | 2070 | 1898 | 1898 | sí |
-| MLU1523103320 Antropologia Cultural, De Melgarejo, Mariana. Edit | 1900 | 1869 | 1869 | sí |
+| MLU1523103320 Antropologia Cultural, De Melgarejo, Mariana. Edit | 1900 | 1802 | 1802 | sí |
 | MLU1523101492 Antigua Roma, De Charles Kovacs., Vol. No Aplica.  | 2870 | 2549 | 2549 | sí |
 | MLU1523100768 Antes, Cuando No Habia Colegio, De Bouchard, Andre | 1640 | 1539 | 1539 | sí |
 | MLU1523100172 Antes De Encontrarte: Un Amor Suspendido En El Tie | 1850 | 1675 | 1675 | sí |
@@ -346,7 +346,7 @@ Discrepancias: **0**
 | MLU1522953282 Libro El Amor Es Para Perdedores - Wibke Brueggema | 1663 | 1629 | 1629 | sí |
 | MLU1522949622 Los Años Rotos - Dacia Maraini, De Vv. Aa.. Editor | 1840 | 1663 | 1663 | sí |
 | MLU1522949346 La Anomalia - Herve Le Tellier, De Le Tellier, Her | 2360 | 2041 | 2041 | sí |
-| MLU1522949338 La Anomalia - Herve Le Tellier | 2758 | 2646 | 2646 | sí |
+| MLU1522949338 La Anomalia - Herve Le Tellier | 2758 | 2673 | 2673 | sí |
 | MLU1522949074 El Año Del Desierto - Pedro Mairal, De Mairal, Ped | 2960 | 2614 | 2614 | sí |
 | MLU1522948428 Anne Frank - Little People Big Dreams, De Sanchez  | 1810 | 1721 | 1721 | sí |
 | MLU1522948388 Libro Annabelle And Flower - Em Lynas, De Lynas, E | 1600 | 1527 | 1527 | sí |
@@ -357,21 +357,21 @@ Discrepancias: **0**
 | MLU1522943442 Guia De Turismo - Los Angeles - San Francisco Esca | 1800 | 1627 | 1627 | sí |
 | MLU1522942412 Ancient Greece - My Little Museum - British Museum | 1760 | 1689 | 1689 | sí |
 | MLU1522942078 Anatomía De Un Escándalo - Vaughan, Sarah | 2170 | 1919 | 1919 | sí |
-| MLU1522941632 Libro Analisis E Interpretacion De Estados Contabl | 2320 | 2289 | 2289 | sí |
-| MLU1522941622 Analisis De Sistemas Mundos | 2120 | 2018 | 2018 | sí |
+| MLU1522941632 Libro Analisis E Interpretacion De Estados Contabl | 2320 | 2214 | 2214 | sí |
+| MLU1522941622 Analisis De Sistemas Mundos | 2120 | 2039 | 2039 | sí |
 | MLU1522941228 Ana La De Alamos Ventosos - Lucy Maud Montgomery,  | 2180 | 1977 | 1977 | sí |
 | MLU1522940848 Amores Invencibles: Historias Apasionadasde Inmigr | 2520 | 2138 | 2138 | sí |
 | MLU1522940324 Libro El Amor Es Mi Color Favorito, De Laden, Nina | 2220 | 2029 | 2029 | sí |
-| MLU1522938770 Amor De Invierno - Jazmín Riera | 2470 | 2159 | 2159 | sí |
+| MLU1522938770 Amor De Invierno - Jazmín Riera | 2470 | 2086 | 2086 | sí |
 | MLU1522938100 Antes Que Anochezca, De Arenas, Reinaldo., Vol. 1. | 3090 | 2742 | 2742 | sí |
 | MLU1522937614 Ante La Depresiãâ³n, De Calle, Ramiro. Editorial M | 2080 | 1999 | 1999 | sí |
-| MLU1522937524 Antartida - Tomas Balmaceda / Agustina Larrea | 2480 | 2329 | 2329 | sí |
+| MLU1522937524 Antartida - Tomas Balmaceda / Agustina Larrea | 2480 | 2253 | 2253 | sí |
 | MLU1522937158 La Ansiedad Del Esquimal: Una Guía Práctica Para E | 2130 | 1999 | 1999 | sí |
 | MLU1522936410 Los Años De Espera, De Fumiko Enchi. Editorial Cha | 1910 | 1881 | 1881 | sí |
 | MLU1522936384 Los Años De Allende, De Carlos Reyes. Editorial Fc | 2190 | 1898 | 1898 | sí |
 | MLU1522935936 Sergio Pujol El Año De Artaud Editorial Booket Tap | 2410 | 2201 | 2201 | sí |
 | MLU1522935890 Anno Domini Y Otras Parabolas - George Steiner | 1940 | 1725 | 1725 | sí |
-| MLU1522935470 Anne, La De Alamos Ventosos - Lucy M. Montgomery | 1647 | 1557 | 1557 | sí |
+| MLU1522935470 Anne, La De Alamos Ventosos - Lucy M. Montgomery | 1647 | 1574 | 1574 | sí |
 | MLU1522934240 Libro Los Animales - Por Que? Preguntas Y Respuest | 2220 | 1849 | 1849 | sí |
 | MLU1522934224 Paso A Paso - Datos Asombrosos: Los Animales, De S | 1950 | 1695 | 1695 | sí |
 | MLU1522933488 Libro Animales Escondidos - Lola Casas, Gusti | 2049 | 2019 | 2019 | sí |
@@ -390,7 +390,7 @@ Discrepancias: **0**
 | MLU1522927806 Libro Los Amores De Nishino - Hiromi Kawakami, De  | 2270 | 2061 | 2061 | sí |
 | MLU1522927546 Pack Para Colorear Con Números - 1 Libro Y 5 Lápic | 1600 | 1504 | 1504 | sí |
 | MLU1522927292 El Amor Es O Se Hace? - Luciana Peker, De Peker, L | 1670 | 1609 | 1609 | sí |
-| MLU1522914770 Amor Y Pedagogia - Clasicos Hispanicos | 2088 | 1988 | 1988 | sí |
+| MLU1522914770 Amor Y Pedagogia - Clasicos Hispanicos | 2088 | 2009 | 2009 | sí |
 | MLU1522914768 El Amor Y Otros Choques De Tren | 2100 | 1840 | 1840 | sí |
 | MLU1522914758 Libro Amor Y La Lectura, El - Silvia Tarrago, De S | 1600 | 1524 | 1524 | sí |
 | MLU1522914578 El Amor No Tiene Planos (las Reformas Del Amor #1) | 2060 | 1711 | 1711 | sí |
@@ -403,7 +403,7 @@ Discrepancias: **0**
 | MLU703023713 Armando A Macri. Memorias Del Interventor, De Pola | 2140 | 1811 | 1811 | sí |
 | MLU703023501 Libro Argentina Hiperacelerada - Federico Domingue | 2138 | 2109 | 2109 | sí |
 | MLU703023427 Argentina En Crisis, De Jorge Mayer. Editorial Eud | 1569 | 1494 | 1494 | sí |
-| MLU703023395 La Argentina Como Potencia Media - Roccatagliata,  | 1600 | 1508 | 1508 | sí |
+| MLU703023395 La Argentina Como Potencia Media - Roccatagliata,  | 1600 | 1524 | 1524 | sí |
 | MLU703023381 (argentina) - Eduardo Gil | 2350 | 2101 | 2101 | sí |
 | MLU703022771 Los Arboles Mueren De Pie - Alejandro Casona - Lib | 1600 | 1535 | 1535 | sí |
 | MLU703018967 Araoz Y La Verdad - Eduardo Sacheri - Libro Alfagu | 2580 | 2399 | 2399 | sí |
@@ -417,10 +417,10 @@ Discrepancias: **0**
 | MLU703010293 Libro Apuesto Por Nosotros, De Lynn Painter. Edito | 2420 | 2089 | 2089 | sí |
 | MLU703008891 Aprendiz De Principe, De Martin, Arianne. Editoria | 2540 | 2296 | 2296 | sí |
 | MLU703008607 Aprender Y Enseñar En Contextos Complejos Maria De | 2600 | 2276 | 2276 | sí |
-| MLU703008169 Aprender A Ser 5 | 1969 | 1871 | 1871 | sí |
+| MLU703008169 Aprender A Ser 5 | 1969 | 1890 | 1890 | sí |
 | MLU703007131 Aprende A Dibujar Personajes | 1600 | 1504 | 1504 | sí |
 | MLU703007083 Libro Aprende A Dibujar Manos, De Niels Roman, Vol | 1650 | 1619 | 1619 | sí |
-| MLU703006711 Aprendamos Lengua Y Literatura 3 - Myriam Delgado | 2732 | 2699 | 2699 | sí |
+| MLU703006711 Aprendamos Lengua Y Literatura 3 - Myriam Delgado | 2732 | 2615 | 2615 | sí |
 | MLU703004777 Antropologia De La Muerte - Louis Vincent Thomas - | 2700 | 2329 | 2329 | sí |
 | MLU703004425 Antonia Va Al Rio (tapa Dura) - Dipacho, De Dipach | 1600 | 1504 | 1504 | sí |
 | MLU703003385 Antoine De Saint-exupery (puzzle Book) Biografias  | 2110 | 1817 | 1817 | sí |
@@ -429,24 +429,24 @@ Discrepancias: **0**
 | MLU702997963 Libro Apuntes Para La Militancia - John William Co | 1553 | 1519 | 1519 | sí |
 | MLU702997275 Aprovecha El Poder De La Tension - Samuel Chand -  | 1950 | 1811 | 1811 | sí |
 | MLU702996511 Aprendo Colores | 1553 | 1439 | 1439 | sí |
-| MLU702996209 El Aprendizaje De Idiomas : Como Habla La Mente | 1686 | 1596 | 1596 | sí |
-| MLU702996099 El Aprendizaje Autorregulado, María Zulma Lanz (co | 1600 | 1569 | 1569 | sí |
+| MLU702996209 El Aprendizaje De Idiomas : Como Habla La Mente | 1686 | 1613 | 1613 | sí |
+| MLU702996099 El Aprendizaje Autorregulado, María Zulma Lanz (co | 1600 | 1508 | 1508 | sí |
 | MLU702995587 Aprender Con Ste A M H | 2720 | 2393 | 2393 | sí |
 | MLU702995501 Aprender Coaching, De Piqueras Gomez De Albacete,  | 1760 | 1633 | 1633 | sí |
 | MLU702993087 Aplausos, De Nicolás Teté. Editorial Blatt & Rios, | 1620 | 1494 | 1494 | sí |
-| MLU702992187 Anuario De Las Niñas Rebeldes 2020 | 2310 | 2204 | 2204 | sí |
+| MLU702992187 Anuario De Las Niñas Rebeldes 2020 | 2310 | 2227 | 2227 | sí |
 | MLU702992069 Antroposofia Y Filosofia De La Libertad - Sergei P | 2970 | 2639 | 2639 | sí |
 | MLU702992063 Libro Antropologia Jurídica, De Morita Carrasco. E | 1860 | 1579 | 1579 | sí |
 | MLU702990969 Antologia De Poemas - Ilustrada, De Storni, Alfons | 1610 | 1558 | 1558 | sí |
-| MLU702989599 Anti-recetario - Reflexiones Y Talleres Para El Au | 1715 | 1625 | 1625 | sí |
+| MLU702989599 Anti-recetario - Reflexiones Y Talleres Para El Au | 1715 | 1643 | 1643 | sí |
 | MLU702986381 Libro Las Arañas De Marte, De Espinosa, Gustavo, V | 1910 | 1885 | 1885 | sí |
 | MLU702985411 Libro Aquella Chica Pelirroja De Jean Amy | 2098 | 2069 | 2069 | sí |
-| MLU702985131 Apuntes Sobre La Autoridad - Silvia Di Segni - ! | 2040 | 1939 | 1939 | sí |
+| MLU702985131 Apuntes Sobre La Autoridad - Silvia Di Segni - ! | 2040 | 1960 | 1960 | sí |
 | MLU702984675 Los Apuntes De Malte Laurids Brigge, De Rilke, Rai | 2380 | 2035 | 2035 | sí |
 | MLU702982795 Aprender Matematica 6 - Serie Aprender Az, De Vari | 1970 | 1821 | 1821 | sí |
 | MLU702981947 Aprender A Estudiar - Ana Villacorta | 2650 | 2554 | 2554 | sí |
 | MLU702980087 Aplicaciones De Los Seguros De Personas A La Gesti | 2230 | 1849 | 1849 | sí |
-| MLU702979059 Libro Antroposofía Un Camino De Conocimiento - Ant | 2810 | 2430 | 2430 | sí |
+| MLU702979059 Libro Antroposofía Un Camino De Conocimiento - Ant | 2810 | 2455 | 2455 | sí |
 | MLU702978933 Antropología Del Deporte | 2140 | 1831 | 1831 | sí |
 | MLU702978317 Libro Antologia Poetica - Mario Benedetti - Alfagu | 2340 | 2019 | 2019 | sí |
 | MLU702978017 Antología Del Culo - Melo, Adrian | 1710 | 1531 | 1531 | sí |
@@ -454,7 +454,7 @@ Discrepancias: **0**
 | MLU1523666118 Baby Love - Jacqueline Wilson, De Wilson, Jacqueli | 1680 | 1608 | 1608 | sí |
 | MLU1523665854 Babayaga - Albumes - Dautremer, De Le Thanh, Tai M | 3130 | 3039 | 3039 | sí |
 | MLU1523664896 Awesome Egyptians - Horrible Histories: Newspaper  | 1600 | 1542 | 1542 | sí |
-| MLU1523664760 Avión Que Va Avión Que Llega | 1940 | 1909 | 1909 | sí |
+| MLU1523664760 Avión Que Va Avión Que Llega | 1940 | 1841 | 1841 | sí |
 | MLU1523664702 Aves Abejas Y Flores, De De Winton, Harriet. Edito | 3120 | 2732 | 2732 | sí |
 | MLU1523663692 Las Aventuras De Sherlock Holmes | 2250 | 1909 | 1909 | sí |
 | MLU1523662854 Literatura 6 La Aventura Del Lector, De Delgado, M | 1950 | 1851 | 1851 | sí |
@@ -472,7 +472,7 @@ Discrepancias: **0**
 | MLU1523658276 Alenadre Atención Bioquímica Reingeniería De La Pr | 1890 | 1556 | 1556 | sí |
 | MLU1523658040 Ataque Al Castillo Amurallado -lampara Magica | 2080 | 1791 | 1791 | sí |
 | MLU1523657990 Libro - Atalanta, De Saint, Jennifer., Vol. 1. Edi | 2760 | 2418 | 2418 | sí |
-| MLU1523656930 Astrofisica Para Ansiosos - Troisi Licia (papel) | 2380 | 2224 | 2224 | sí |
+| MLU1523656930 Astrofisica Para Ansiosos - Troisi Licia (papel) | 2380 | 2247 | 2247 | sí |
 | MLU1523656642 Asquerosologia De La Cabeza A Los Pies | 1670 | 1569 | 1569 | sí |
 | MLU1523656512 Libro Aspekte Neu (b2. 1) Lehrbuch + Arbeitsbuch + | 4220 | 3981 | 3981 | sí |
 | MLU1523656382 Aspekte Junior B1+ - Lehrbuch + Dvd | 2830 | 2712 | 2712 | sí |
@@ -482,18 +482,18 @@ Discrepancias: **0**
 | MLU1523654852 Libro Wild Cars 2. Ases En Lo Alto - George R. R.  | 2240 | 1989 | 1989 | sí |
 | MLU1523654340 Arturo - Gianni Rodari Y Andrea Antinori | 1850 | 1821 | 1821 | sí |
 | MLU1523654328 Artists - My First Artists - Sanchez Vegara, De Sa | 1730 | 1637 | 1637 | sí |
-| MLU1523653950 Arte, Diseño Y Comunicacion En El Jardin. Ideas Pa | 1725 | 1636 | 1636 | sí |
+| MLU1523653950 Arte, Diseño Y Comunicacion En El Jardin. Ideas Pa | 1725 | 1653 | 1653 | sí |
 | MLU1523653868 Libro Arte Y Ciencia Del Arte - Antroposofica - R. | 2420 | 2230 | 2230 | sí |
-| MLU1523653606 Arte Mapuche - Libros Patagonicos | 1990 | 1646 | 1646 | sí |
+| MLU1523653606 Arte Mapuche - Libros Patagonicos | 1990 | 1663 | 1663 | sí |
 | MLU1523653546 El Arte Está En Casa De Mariela Ivanier - Planeta | 3210 | 2899 | 2899 | sí |
-| MLU1523653506 El Arte En La Trama De La Escuela Infantil - Exper | 1820 | 1723 | 1723 | sí |
+| MLU1523653506 El Arte En La Trama De La Escuela Infantil - Exper | 1820 | 1742 | 1742 | sí |
 | MLU1523510494 Aventuras De Sherlock Holmes - Conan Doyle - Libro | 2180 | 1919 | 1919 | sí |
 | MLU1523510362 Las Aventuras De Pinocho, De Collodi, Carlo. Edito | 2070 | 1762 | 1762 | sí |
 | MLU1523510186 Las Aventuras De Huckelberry Finn, De Mark Twain.  | 1600 | 1519 | 1519 | sí |
 | MLU1523509944 Aventuras De Arthur Gordon Pym Y Otros Cuentos Aso | 1900 | 1743 | 1743 | sí |
 | MLU1523509856 Aventuras Con Dragones Caballeros Y Princesas - La | 1750 | 1455 | 1455 | sí |
 | MLU1523509836 Libro Aventuras A Medianoche - Hana Tooke - Puck | 2590 | 2344 | 2344 | sí |
-| MLU1523509766 Aventura Y Revolución Mundial - Jose Carlos Mariat | 1725 | 1636 | 1636 | sí |
+| MLU1523509766 Aventura Y Revolución Mundial - Jose Carlos Mariat | 1725 | 1653 | 1653 | sí |
 | MLU1523508158 El Auto Rojo | 1600 | 1519 | 1519 | sí |
 | MLU1523507548 Libro Aumentar Las Ventas, De Álvarez, Marcos. Edi | 1770 | 1739 | 1739 | sí |
 | MLU1523507500 Aullidos En El Viento Historias De Galgos Isabel D | 2170 | 2073 | 2073 | sí |
@@ -502,12 +502,12 @@ Discrepancias: **0**
 | MLU1523506322 Atrapaviajes - Aguado, Soledad | 1706 | 1679 | 1679 | sí |
 | MLU1523506080 Libro Atomic Human The - Understanding Ourselves I | 2050 | 1978 | 1978 | sí |
 | MLU1523505974 The Atlas Six - The Atlas 1 - Olivie Blake, De Bla | 1870 | 1810 | 1810 | sí |
-| MLU1523505652 Libro Atlas Del Eclipse - Reinaldo Laddaga | 2480 | 2264 | 2264 | sí |
-| MLU1523504878 Atardecer - Voces Del Pasado 2 - Moruena Estringan | 1660 | 1559 | 1559 | sí |
+| MLU1523505652 Libro Atlas Del Eclipse - Reinaldo Laddaga | 2480 | 2286 | 2286 | sí |
+| MLU1523504878 Atardecer - Voces Del Pasado 2 - Moruena Estringan | 1660 | 1574 | 1574 | sí |
 | MLU1523504758 Atalaya: Con Fotografías De Paz Juristo, De Del Ca | 1770 | 1679 | 1679 | sí |
 | MLU1523504404 El Asunto - Una Novela De Jack Reacher - Lee Child | 2118 | 2039 | 2039 | sí |
 | MLU1523503238 Aspekte Neu (c1) - Arbeitsbuch + Audio: Mittelstuf | 3510 | 3306 | 3306 | sí |
-| MLU1523503076 Aspectos De Derecho Aeronáutico - Capaldo, Griseld | 1715 | 1689 | 1689 | sí |
+| MLU1523503076 Aspectos De Derecho Aeronáutico - Capaldo, Griseld | 1715 | 1625 | 1625 | sí |
 | MLU1523502802 Ask Me Crazy Challenge - 8/9 Años - Mercedes P. Za | 1553 | 1504 | 1504 | sí |
 | MLU1523502796 Chaos Walking 2: The Ask And The Answer **new Edit | 1770 | 1514 | 1514 | sí |
 | MLU1523502116 Asfalto, De Pellegrini Renato. N/a, Vol. Volumen U | 1600 | 1519 | 1519 | sí |
@@ -522,7 +522,7 @@ Discrepancias: **0**
 | MLU1523497248 Libro Las Aventuras De Max Y Su Ojo Submarino: 0 - | 1999 | 1920 | 1920 | sí |
 | MLU1523497194 Aventuras De La Cultura Argentina En El Siglo Xx:  | 2330 | 2105 | 2105 | sí |
 | MLU1523496982 Las Aventuras De Batman Vol. 3, De Timm. Serie Bat | 1850 | 1711 | 1711 | sí |
-| MLU1523496534 La Aventura De Los Bustos De Eva - Carlos Gamerro | 2740 | 2380 | 2380 | sí |
+| MLU1523496534 La Aventura De Los Bustos De Eva - Carlos Gamerro | 2740 | 2405 | 2405 | sí |
 | MLU1523495918 The Autumn Of The Patriarch, De García Márquez, Ga | 1600 | 1524 | 1524 | sí |
 | MLU1523495712 El Autor Como Productor | 1600 | 1485 | 1485 | sí |
 | MLU1523495562 Autolesiones Y Situaciones De Suicidio En Adolesce | 2010 | 1841 | 1841 | sí |
@@ -545,11 +545,11 @@ Discrepancias: **0**
 | MLU1523488200 Libro As A Man Thinketh - James Allen - Signal | 1850 | 1618 | 1618 | sí |
 | MLU1523487780 Artes Visuales 1 - El Lenguaje Plastico-visual, De | 2710 | 2489 | 2489 | sí |
 | MLU1523487692 Arte, Amor Y Todo Lo Demas, De Aldous L. Huxley. D | 2450 | 2079 | 2079 | sí |
-| MLU1523487508 Renoir: Renoir, De Sin Autor. Editorial Lexus, Tap | 1553 | 1519 | 1519 | sí |
+| MLU1523487508 Renoir: Renoir, De Sin Autor. Editorial Lexus, Tap | 1553 | 1460 | 1460 | sí |
 | MLU1523487426 El Arte Nórdico De La Geometría - Eija Koski | 2600 | 2459 | 2459 | sí |
 | MLU1523486362 Libro 150 Enigmas De Baker Street Vol 1 - Desmarai | 2550 | 2395 | 2395 | sí |
 | MLU1523484406 Libro Ya Leo A: Tom Sawyer - Mark Twain | 1730 | 1699 | 1699 | sí |
-| MLU1523484098 Libro Las Abeja Maya De La Aventuras, De Bonsels,  | 1840 | 1557 | 1557 | sí |
+| MLU1523484098 Libro Las Abeja Maya De La Aventuras, De Bonsels,  | 1840 | 1574 | 1574 | sí |
 | MLU1523483572 Aventura En Nueva Atlantis - Huellas (+11 Años) | 1800 | 1599 | 1599 | sí |
 | MLU1523483466 La Aventura Del Lector 5 - Myriam Delgado - Comuni | 1821 | 1789 | 1789 | sí |
 | MLU1523483422 Aventura De Juanita, La-mendez, Mario-edelvives | 1600 | 1515 | 1515 | sí |
@@ -559,7 +559,7 @@ Discrepancias: **0**
 | MLU1523481618 Auntie Poldi And The Sicilian Lions - Mario Giorda | 2070 | 1978 | 1978 | sí |
 | MLU1523481304 Audrey Hepburn - Little People, Big Dreams, De San | 1820 | 1673 | 1673 | sí |
 | MLU1523481276 Audaz , Productivo Y Feliz - Robin Sharma | 2039 | 2009 | 2009 | sí |
-| MLU1523480240 Atrapafaltas 2 Es 2011, De Pamela Archanco., Vol.  | 2240 | 1919 | 1919 | sí |
+| MLU1523480240 Atrapafaltas 2 Es 2011, De Pamela Archanco., Vol.  | 2240 | 1852 | 1852 | sí |
 | MLU1523479996 El Atletismo En La Escuela, De Castro, Adela De. E | 2370 | 2029 | 2029 | sí |
 | MLU1523479994 La Paradoja Del Atlas: El Destino Es Una Elección, | 1870 | 1810 | 1810 | sí |
 | MLU1523479290 Libro Atlas De Botánica Argentina, De Varios Autor | 3220 | 3129 | 3129 | sí |
@@ -576,9 +576,9 @@ Discrepancias: **0**
 | MLU1523476444 Asi Hablo Zaratustra - Friedrich Nietzsche, De Nie | 2150 | 1881 | 1881 | sí |
 | MLU1523476218 Libro Ashes Of Man - The Sun Eater 5 - Christopher | 2170 | 2021 | 2021 | sí |
 | MLU1523475450 Libro El Asalto Silencioso : Cómo Las Corporacione | 3530 | 3256 | 3256 | sí |
-| MLU1523474920 Artforum - 2da Edicion - Aira Cesar | 1762 | 1665 | 1665 | sí |
+| MLU1523474920 Artforum - 2da Edicion - Aira Cesar | 1762 | 1683 | 1683 | sí |
 | MLU1523474328 El Arte Escénico | 2530 | 2358 | 2358 | sí |
-| MLU1523474324 El Arte Escenico | 1695 | 1586 | 1586 | sí |
+| MLU1523474324 El Arte Escenico | 1695 | 1603 | 1603 | sí |
 | MLU1523473790 El Arte De Ser Luminosa - Harriet Reuter Hapgood | 1821 | 1789 | 1789 | sí |
 | MLU1523459144 Arte De La Manifestacion Para Brujas, El, De Sarah | 2540 | 2312 | 2312 | sí |
 | MLU703071037 Libro The Bear Who Had Nothing To Wear - Willis -  | 1600 | 1527 | 1527 | sí |
@@ -598,7 +598,7 @@ Discrepancias: **0**
 | MLU703060693 A Bear , A Fish , And A Fishy Wish - Daniel Bernst | 2470 | 2157 | 2157 | sí |
 | MLU703060689 A Bear, A Bee, And A Honey Tree, De Bernstrom, Dan | 2480 | 2157 | 2157 | sí |
 | MLU703060611 Be Kind, Be Brave, Be You - Peanuts, De Schulz, Ch | 1600 | 1535 | 1535 | sí |
-| MLU703059951 La Batalla Trans - Raul Solis, De Solis, Raul. Edi | 2350 | 2194 | 2194 | sí |
+| MLU703059951 La Batalla Trans - Raul Solis, De Solis, Raul. Edi | 2350 | 2217 | 2217 | sí |
 | MLU703059833 Bataille . Una Introduccion, De Mattoni Silvio. Ed | 1574 | 1494 | 1494 | sí |
 | MLU703059805 Libro Basura - Sylvia Aguilar Zéleny - Tránsito | 1890 | 1623 | 1623 | sí |
 | MLU703059413 Barman Cientifico Tratado De Alcohologia - Ciencia | 1600 | 1500 | 1500 | sí |
@@ -606,7 +606,7 @@ Discrepancias: **0**
 | MLU703058949 Bane - Shen, L.j. | 2820 | 2435 | 2435 | sí |
 | MLU703058643 Libro La Ballena Que Se Creia Un Pececito, De Chia | 1920 | 1789 | 1789 | sí |
 | MLU703058331 La Balada De Constanza Y Valentino, De Matías Brag | 1600 | 1583 | 1583 | sí |
-| MLU703057747 El Baile De Las Locas - Victoria Mas | 2386 | 2282 | 2282 | sí |
+| MLU703057747 El Baile De Las Locas - Victoria Mas | 2386 | 2306 | 2306 | sí |
 | MLU703057737 Libro Las Bailarinas - Rachel Kapelke Dale - Umbri | 2530 | 2159 | 2159 | sí |
 | MLU703057675 Bailando Juntos La Cara Oculta Del Buen Amor - Joa | 2860 | 2519 | 2519 | sí |
 | MLU703057589 Reacher - Bad Luck And Trouble (movie Tie-in), De  | 1820 | 1689 | 1689 | sí |
@@ -622,7 +622,7 @@ Discrepancias: **0**
 | MLU703046927 Batman El Libro Oficial Para Colorear De Insight E | 1650 | 1615 | 1615 | sí |
 | MLU703046691 Libro Batalla De Baile - Los Juguetes De Arantx | 1559 | 1529 | 1529 | sí |
 | MLU703046453 Bases Y Puntos De Partida Para La Organizacion Pol | 2990 | 2649 | 2649 | sí |
-| MLU703046443 Bases Y Puntos De Partida - Alberdi Juan Bautista | 1745 | 1655 | 1655 | sí |
+| MLU703046443 Bases Y Puntos De Partida - Alberdi Juan Bautista | 1745 | 1673 | 1673 | sí |
 | MLU703046343 Libro Barrios Al Sur. Café De Las Ciudades | 2090 | 1975 | 1975 | sí |
 | MLU703046339 Barrio, El - Gonçalo M. Tavares | 1890 | 1739 | 1739 | sí |
 | MLU703046193 Barcos Barcos Barcos | 1600 | 1519 | 1519 | sí |
@@ -638,7 +638,7 @@ Discrepancias: **0**
 | MLU703044755 Bajo El Agua | 1600 | 1551 | 1551 | sí |
 | MLU703043785 Baby's London - Ingela P. Arrhenius, De Arrhenius, | 1600 | 1553 | 1553 | sí |
 | MLU703043259 Azul - Nicolas Schuff / Martina Trach, De Schuff,n | 1600 | 1519 | 1519 | sí |
-| MLU703042821 Áyax. Las Traquinias. Antígona. Edipo Rey | 1880 | 1799 | 1799 | sí |
+| MLU703042821 Áyax. Las Traquinias. Antígona. Edipo Rey | 1880 | 1734 | 1734 | sí |
 | MLU703042533 Awful Auntie - Harper Collins Uk Kel Ediciones | 1670 | 1570 | 1570 | sí |
 | MLU703042227 Averno Verano, De Espinosa, Barbara. Editorial Alt | 2290 | 2045 | 2045 | sí |
 | MLU703041843 Libro Infantil Aventuras En La Granja - Cuentos En | 1900 | 1713 | 1713 | sí |
@@ -648,11 +648,11 @@ Discrepancias: **0**
 | MLU703034571 Be Kind - Zietlow Miller, De Zietlow Miller, Pat.  | 1600 | 1553 | 1553 | sí |
 | MLU703034497 Batu 8 - Tute - Sudamericana - Libro | 1637 | 1609 | 1609 | sí |
 | MLU703033775 Basta, De William Sanches. Editorial Del Fondo Edi | 2160 | 1949 | 1949 | sí |
-| MLU703033583 Las Bases De La Costura: Los Bolsillos - Yoshiko M | 2990 | 2694 | 2694 | sí |
+| MLU703033583 Las Bases De La Costura: Los Bolsillos - Yoshiko M | 2990 | 2722 | 2722 | sí |
 | MLU703033489 Libro Barro De Medellin - Ala Delta Verde (+10 Año | 1600 | 1455 | 1455 | sí |
-| MLU703033413 Barridos Por El Viento - Hosne | 1790 | 1498 | 1498 | sí |
+| MLU703033413 Barridos Por El Viento - Hosne | 1790 | 1514 | 1514 | sí |
 | MLU703033325 Libro Barnaby Unboxed - The Fan Brothers - Eric Fa | 1950 | 1721 | 1721 | sí |
-| MLU703033251 Barco De Papel Jorge Lujan/ Julia Friese | 2080 | 1979 | 1979 | sí |
+| MLU703033251 Barco De Papel Jorge Lujan/ Julia Friese | 2080 | 1999 | 1999 | sí |
 | MLU703033107 Barbara Throws A Wobbler - Nadia Shireen, De Shire | 1600 | 1527 | 1527 | sí |
 | MLU703033099 Barbara Brandi - Brandli Barbara, De Brandli Barba | 2020 | 1909 | 1909 | sí |
 | MLU703033021 Banquete - Platon - Colihue Clasica | 2125 | 2099 | 2099 | sí |
@@ -662,7 +662,7 @@ Discrepancias: **0**
 | MLU703030957 Bach Por Bach - Obras Completas . Escritos Florale | 1910 | 1589 | 1589 | sí |
 | MLU703030781 Babuino, De Naja Marie Aidt. Editorial Sexto Piso, | 2640 | 2549 | 2549 | sí |
 | MLU703030349 Azucar En La Sangre - Michael Mosley | 2020 | 1762 | 1762 | sí |
-| MLU703030121 Ayurveda Sanación Holística 3 Ed. Dr. Fabián Ciarl | 1569 | 1479 | 1479 | sí |
+| MLU703030121 Ayurveda Sanación Holística 3 Ed. Dr. Fabián Ciarl | 1569 | 1494 | 1494 | sí |
 | MLU703030059 Ayuno Intermitente - Bracht, Dr. Petra | 2700 | 2579 | 2579 | sí |
 | MLU703029449 Aves Introduccion A La Musica De Concierto (con Cd | 2750 | 2719 | 2719 | sí |
 | MLU703028907 Libro Infantil Aventuras Divertidas - Cuentos En 2 | 1754 | 1719 | 1719 | sí |
@@ -673,7 +673,7 @@ Discrepancias: **0**
 | MLU1524220600 Bright Ideas 1 - Sb + App Access (letra Imprenta M | 2880 | 2519 | 2519 | sí |
 | MLU1524220532 The Bridge Kingdom - The Bridge Kingdom 1 - Daniel | 2220 | 2092 | 2092 | sí |
 | MLU1524220514 Libro Bridesmaid By Chance - Bridesmaid For Hire 3 | 1760 | 1689 | 1689 | sí |
-| MLU1524220150 Breve Historia De Alemania, De Schulze, Hagen. Ali | 2600 | 2519 | 2519 | sí |
+| MLU1524220150 Breve Historia De Alemania, De Schulze, Hagen. Ali | 2600 | 2439 | 2439 | sí |
 | MLU1524220096 The Brethen - Pearson Readers 5 | 1840 | 1736 | 1736 | sí |
 | MLU1524220080 La Brecha - Valdivieso, Mercedes | 1600 | 1494 | 1494 | sí |
 | MLU1524220058 A Breath Of Snow And Ashes - Outlander 6, De Gabal | 2410 | 2326 | 2326 | sí |
@@ -730,13 +730,13 @@ Discrepancias: **0**
 | MLU1524206956 Brave Every Day, De Ludwig, Trudy. Editorial Knopf | 2280 | 2157 | 2157 | sí |
 | MLU1524206946 Libro Brave Bears Don't Get Scared - Suzy Senior,  | 1600 | 1527 | 1527 | sí |
 | MLU1524206936 Brave - Pk 4 Ame, De Crook, Marie. Editorial Pears | 1600 | 1539 | 1539 | sí |
-| MLU1524206878 Brasil Una Excepcion 1964-2019 | 2300 | 2194 | 2194 | sí |
+| MLU1524206878 Brasil Una Excepcion 1964-2019 | 2300 | 2217 | 2217 | sí |
 | MLU1524206528 The Boy Who Loves To Lick The Wind - Fiona Carswel | 2120 | 1978 | 1978 | sí |
 | MLU1524206520 The Boy Who Lived With Dragons - Andy Shepherd, De | 1600 | 1527 | 1527 | sí |
 | MLU1524206140 El Botiquín De La Bruja, De Keylah Missen. Editori | 2440 | 2233 | 2233 | sí |
 | MLU1524205996 El Bosque | 2080 | 2041 | 2041 | sí |
 | MLU1524205994 El Bosque - Nelly Leyshon - Sexto Piso | 1980 | 1744 | 1744 | sí |
-| MLU1524205976 El Bosque Encantado - Atrapacuentos | 1761 | 1665 | 1665 | sí |
+| MLU1524205976 El Bosque Encantado - Atrapacuentos | 1761 | 1683 | 1683 | sí |
 | MLU1524205952 Libro El Bosque De Los Susurros - Greg, Howard | 2140 | 2109 | 2109 | sí |
 | MLU1524205860 El Bosco Y Los Monstruos De La Melancolia, De Peãâ | 2590 | 2423 | 2423 | sí |
 | MLU1524205842 The Borrowers | 1600 | 1524 | 1524 | sí |
@@ -745,7 +745,7 @@ Discrepancias: **0**
 | MLU1524205360 Here We Are: Book Of Animals, De Jeffers, Oliver.  | 1720 | 1607 | 1607 | sí |
 | MLU1524205226 Boneless Mercies - Solo Los Tontos Persiguen La Gl | 2090 | 1791 | 1791 | sí |
 | MLU1524205098 Libro Bombs On Aunt Dainty - Judith Kerr, De Kerr, | 1610 | 1586 | 1586 | sí |
-| MLU1524205092 Libro Imágenes Para Escuchar: Los Bomberos - Auzou | 1672 | 1577 | 1577 | sí |
+| MLU1524205092 Libro Imágenes Para Escuchar: Los Bomberos - Auzou | 1672 | 1593 | 1593 | sí |
 | MLU1524204948 Bold And Brave Women From Shakespeare - Becca Stad | 1600 | 1553 | 1553 | sí |
 | MLU1524204864 Bofetada Al Gusto - Alberto Giudici | 2780 | 2489 | 2489 | sí |
 | MLU1524204858 Boedo Y Florida Col. Controversias, De Vários. Edi | 2140 | 1885 | 1885 | sí |
@@ -758,9 +758,9 @@ Discrepancias: **0**
 | MLU1524202936 Book : Bloody Rose (the Band) - Eames, Nicholas | 2580 | 2222 | 2222 | sí |
 | MLU1524202902 Blood Rose Rebellion, De Eves, Rosalyn. Editorial  | 1740 | 1657 | 1657 | sí |
 | MLU1524202650 Blockchain: La Revolución Industrial De Internet.  | 2420 | 2045 | 2045 | sí |
-| MLU1524202646 Blockchain, Bitcoin Y Criptomonedas, De Accid. Edi | 3060 | 2839 | 2839 | sí |
+| MLU1524202646 Blockchain, Bitcoin Y Criptomonedas, De Accid. Edi | 3060 | 2754 | 2754 | sí |
 | MLU1524202442 Blob Fish - Olaf Falafel, De Falafel, Olaf. Editor | 1600 | 1553 | 1553 | sí |
-| MLU1524201940 Blancos, Los Judios Y Nosotros - Bouteldja, Houria | 1950 | 1919 | 1919 | sí |
+| MLU1524201940 Blancos, Los Judios Y Nosotros - Bouteldja, Houria | 1950 | 1852 | 1852 | sí |
 | MLU1524201676 Blancanieves Mis Cuentos Animados - Marta Brie - A | 2110 | 1869 | 1869 | sí |
 | MLU1524201524 All Souls 4: The Black Bird Oracle - Ballantine -  | 2580 | 2403 | 2403 | sí |
 | MLU1524201500 Black Sun, De Roanhorse, Rebecca. Editorial Atria, | 2560 | 2238 | 2238 | sí |
@@ -780,7 +780,7 @@ Discrepancias: **0**
 | MLU1524194822 Bright Ideas 1 - Activity Book With Online Practic | 2440 | 2079 | 2079 | sí |
 | MLU1524194814 Bright Ideas 1 - Class Book + App Access | 2880 | 2551 | 2551 | sí |
 | MLU1524194730 Briar Club The-quinn, Kate-harper Collins | 1750 | 1721 | 1721 | sí |
-| MLU1524194712 Brevísimo Curso De Derecho Para No Abogados - G. A | 1871 | 1773 | 1773 | sí |
+| MLU1524194712 Brevísimo Curso De Derecho Para No Abogados - G. A | 1871 | 1791 | 1791 | sí |
 | MLU1524194516 Breve Historia De Los Documentos, De Cruz Mundet,  | 2430 | 2296 | 2296 | sí |
 | MLU1524194402 Breve Historia De Europa, Jean Carpentier, Ed. Ali | 2990 | 2841 | 2841 | sí |
 | MLU1524194320 Breathless, De Niven, Jennifer. Editorial Ember, T | 1630 | 1592 | 1592 | sí |
@@ -810,7 +810,7 @@ Discrepancias: **0**
 | MLU1524192106 Libro Boing! A Bouncy Book Of Bugs - James Carter  | 2110 | 1978 | 1978 | sí |
 | MLU1524192060 The Body - Level 5 - Pearson | 1780 | 1720 | 1720 | sí |
 | MLU1524191954 La Boda, De Dorothy West. Editorial Siruela, Tapa  | 3350 | 3068 | 3068 | sí |
-| MLU1524191932 Bocetos De Natacion - Leanne Shapton | 2880 | 2528 | 2528 | sí |
+| MLU1524191932 Bocetos De Natacion - Leanne Shapton | 2880 | 2554 | 2554 | sí |
 | MLU1524190522 Blue Hour, The - Doubleday - Hawkins, Paula, De Ha | 2460 | 2433 | 2433 | sí |
 | MLU1524190388 Libro Blue Dot 3 - Workbook, De Annette Flavel, Vo | 2730 | 2398 | 2398 | sí |
 | MLU1524190264 Blossom To Apple - Where Food Comes From, De Ridle | 1600 | 1527 | 1527 | sí |
@@ -825,7 +825,7 @@ Discrepancias: **0**
 | MLU1524188362 Bitna Bajo El Cielo De Seul - Jean-marie Gustave L | 2120 | 2009 | 2009 | sí |
 | MLU1524188286 Libro Bitácora De Inspiración, De Carla Bonomini,  | 2108 | 2029 | 2029 | sí |
 | MLU1524187774 Bird's Eye Spy - A Search-and-find Nature Game - R | 1600 | 1553 | 1553 | sí |
-| MLU1524187756 Bird Of Happiness And Other Wise Tales,the- Domino | 1554 | 1519 | 1519 | sí |
+| MLU1524187756 Bird Of Happiness And Other Wise Tales,the- Domino | 1554 | 1460 | 1460 | sí |
 | MLU1524187674 Biónico - Mike Lightwood | 1810 | 1712 | 1712 | sí |
 | MLU1524187474 Biologia 3 Caba. Activados. Flujo De Informacion,  | 2750 | 2383 | 2383 | sí |
 | MLU1524187438 Biologia 2 Es - Fundamentales: Cambios Y Diversida | 2620 | 2383 | 2383 | sí |
@@ -846,7 +846,7 @@ Discrepancias: **0**
 | MLU1524179906 Libro Boquitas Pintadas - Manuel Puig - Seix Barra | 2860 | 2486 | 2486 | sí |
 | MLU1524179626 Bonícula. La Novela Gráfica, De Howe, James Y Andr | 1850 | 1679 | 1679 | sí |
 | MLU1524179544 Bone Music - David Almond, De Almond, David. Edito | 1600 | 1527 | 1527 | sí |
-| MLU1524179532 Bone - Los Scouts De Bone - Jeff Smith - Tom Snieg | 2540 | 2371 | 2371 | sí |
+| MLU1524179532 Bone - Los Scouts De Bone - Jeff Smith - Tom Snieg | 2540 | 2395 | 2395 | sí |
 | MLU1524179518 Libro Bonded In Death - J.d. Robb, De Robb, J. D.. | 2200 | 1978 | 1978 | sí |
 | MLU1524179400 Bombardeo (antologia), De López, Julián; Varios Es | 2530 | 2237 | 2237 | sí |
 | MLU1524179252 El Bogavante Cumple 100 Años, De Badstuber Martina | 2390 | 2039 | 2039 | sí |
@@ -864,7 +864,7 @@ Discrepancias: **0**
 | MLU1524176416 Blanco, De Han Kang. Única, Vol. Único. Editorial  | 2180 | 2019 | 2019 | sí |
 | MLU1524176200 Blanca, La Niña Que Queria Volar, De Benjamin Vicu | 2720 | 2366 | 2366 | sí |
 | MLU1524176110 Blackpink, De Besley, Adrian. Serie No Ficción Edi | 2270 | 2009 | 2009 | sí |
-| MLU1524176016 Black Flag - Assasin's Creed 6 - Oliver Bowden, De | 1771 | 1739 | 1739 | sí |
+| MLU1524176016 Black Flag - Assasin's Creed 6 - Oliver Bowden, De | 1771 | 1675 | 1675 | sí |
 | MLU1524175764 Black Cake - Charmaine Wilkerson, De Wilkerson, Ch | 1820 | 1689 | 1689 | sí |
 | MLU1524175698 Black Beauty - Anna Sewell, De Sewell, Anna. Del F | 1870 | 1516 | 1516 | sí |
 | MLU1524174772 Biologia Ii Los Caminos De La Evolucion Colihue -  | 1960 | 1653 | 1653 | sí |
@@ -874,16 +874,16 @@ Discrepancias: **0**
 | MLU1524174238 Billy And The Pirates - Nadia Shireen | 1600 | 1527 | 1527 | sí |
 | MLU1524174230 Billy And The Giant Adventure - Jamie Oliver - Mon | 1600 | 1527 | 1527 | sí |
 | MLU1524174042 The Big Story - Dominoes Starter + Mp3 Audio | 1610 | 1504 | 1504 | sí |
-| MLU703078377 Libro Bilis De Pablo Laborde | 1553 | 1460 | 1460 | sí |
+| MLU703078377 Libro Bilis De Pablo Laborde | 1553 | 1475 | 1475 | sí |
 | MLU703078273 Big Surprise 2 - Activity Book - Oxford | 1949 | 1919 | 1919 | sí |
 | MLU703077813 Libro De Ejercicios Big English 4, De Herrera, Mar | 2700 | 2499 | 2499 | sí |
 | MLU703077549 Big Bad Wolf Investigates Fairy Tales - Cawthorne  | 1600 | 1553 | 1553 | sí |
 | MLU703077247 ¡ Bienvenidos Al Law Fare ! - Zaffaroni, Caamaño Y | 2060 | 1990 | 1990 | sí |
 | MLU703076837 Bienaventuranzas Para Agnosticos, De Torralba, Fra | 2980 | 2749 | 2749 | sí |
-| MLU703075809 Nodos - Biciencia 4 Caba, De Vários Autores. Edito | 1553 | 1519 | 1519 | sí |
+| MLU703075809 Nodos - Biciencia 4 Caba, De Vários Autores. Edito | 1553 | 1460 | 1460 | sí |
 | MLU703074309 Beyond What Is Given - Flight And Glory 3 - Rebecc | 1780 | 1754 | 1754 | sí |
 | MLU703074225 Libro Beyond Anxiety -, De Beck, Martha. Editorial | 2420 | 2380 | 2380 | sí |
-| MLU703073851 Bestiario (j. Cortázar) - Julio Cortázar | 2072 | 1969 | 1969 | sí |
+| MLU703073851 Bestiario (j. Cortázar) - Julio Cortázar | 2072 | 1989 | 1989 | sí |
 | MLU703073719 La Beseria De Feliz | 1980 | 1722 | 1722 | sí |
 | MLU703073553 Berliner - El Vengador De Treblinka - Gustavo Sier | 1810 | 1739 | 1739 | sí |
 | MLU703073531 Bergson . Una Introduccion, De Vassallo Angel. Edi | 1660 | 1593 | 1593 | sí |
@@ -928,13 +928,13 @@ Discrepancias: **0**
 | MLU703062185 The Art Of War, De Sun Tzu. Editorial Gardners En  | 3120 | 2841 | 2841 | sí |
 | MLU703054461 Big Nate: The Boy With The Biggest Head In The Wor | 1600 | 1553 | 1553 | sí |
 | MLU703054447 Big Nate Strikes Again, De Peirce, Lincoln. Editor | 1600 | 1553 | 1553 | sí |
-| MLU703053991 Big Data A Escala Humana | 2680 | 2478 | 2478 | sí |
+| MLU703053991 Big Data A Escala Humana | 2680 | 2504 | 2504 | sí |
 | MLU703053821 Big - Vashti Harrison, De Harrison, Vashti. Editor | 1630 | 1608 | 1608 | sí |
 | MLU703053429 Bienvenidos A Sodoma - Ricardo Lorenzo, De Lorenzo | 1670 | 1574 | 1574 | sí |
 | MLU703053213 Bienestar Para Docentes - Cristina Mendez: Herrami | 2860 | 2629 | 2629 | sí |
 | MLU703053039 The Bicycle - Patrcia Mccormick | 1600 | 1553 | 1553 | sí |
 | MLU703052993 Biciencias Para Explorar 3  - Az Editora, De No Ap | 1830 | 1679 | 1679 | sí |
-| MLU703052665 Biciencias 5 Bonaerense - Va Con Vos - Santillana | 2427 | 2399 | 2399 | sí |
+| MLU703052665 Biciencias 5 Bonaerense - Va Con Vos - Santillana | 2427 | 2322 | 2322 | sí |
 | MLU703052101 Bichos - Rosenberg, Zaidenwerg, De Rosenberg, Zaid | 1600 | 1567 | 1567 | sí |
 | MLU703051929 Bibliotecarias A Caballo, De Pasamar, Concha., Vol | 2890 | 2633 | 2633 | sí |
 | MLU703050715 Beyond A2 + - Workbook - Macmillan | 1600 | 1525 | 1525 | sí |
@@ -973,7 +973,7 @@ Discrepancias: **0**
 | MLU703036869 La Belle Au Bois Dormant, De Sage, Alison. Editori | 2800 | 2516 | 2516 | sí |
 | MLU703036851 Belladonna - Belladonna 1 - Adalyn Grace, De Grace | 1790 | 1657 | 1657 | sí |
 | MLU703036843 Bella Y Oscura - Rosa Montero | 2500 | 2339 | 2339 | sí |
-| MLU703036757 La Bella Y La Bestia Versión Integra | 1600 | 1519 | 1519 | sí |
+| MLU703036757 La Bella Y La Bestia Versión Integra | 1600 | 1460 | 1460 | sí |
 | MLU703036637 Being Miss Nobody - Usborne Kel Ediciones, De Wint | 1780 | 1644 | 1644 | sí |
 | MLU703036581 Libro Before - After 5 - Todd Anna, De Todd, Anna. | 2440 | 2164 | 2164 | sí |
 | MLU703036473 Beehive 1 - Mayúscula - Student Book + Workbook, D | 2240 | 2031 | 2031 | sí |
@@ -1008,7 +1008,7 @@ Discrepancias: **0**
 | MLU703128113 Libro Can You Spot? With The Very Hungry Caterpill | 1600 | 1527 | 1527 | sí |
 | MLU703127799 Campeona Mundial De Mantenerse Despierta, La - Jim | 2260 | 2157 | 2157 | sí |
 | MLU703127271 Milei Y Giacomini - Camino Del Libertario + Papel  | 3000 | 2652 | 2652 | sí |
-| MLU703126891 Libro El Camino De La Alimentación - Estefanía Fer | 1725 | 1636 | 1636 | sí |
+| MLU703126891 Libro El Camino De La Alimentación - Estefanía Fer | 1725 | 1653 | 1653 | sí |
 | MLU703126575 Cambridge Yle Practice Tests Starters - Student's  | 2660 | 2627 | 2627 | sí |
 | MLU703126151 Libro Cambridge Igcse And O Level Economics 3rd.ed | 5010 | 4715 | 4715 | sí |
 | MLU703125875 Cambridge Fce Practice Tests 2 - Student's Book (e | 2790 | 2627 | 2627 | sí |
@@ -1018,15 +1018,15 @@ Discrepancias: **0**
 | MLU703124481 Key For Schools Practice Tests No Key (2015 Exam), | 2740 | 2425 | 2425 | sí |
 | MLU703124325 Cambridge Lower Secondary English 9 - Student's Ke | 2940 | 2703 | 2703 | sí |
 | MLU703124309 Cambridge Lower Secondary English 8 - Student's Ke | 2920 | 2703 | 2703 | sí |
-| MLU703124203 Camaleon Ve Los Colores - Con Ventanitas Circulare | 1771 | 1739 | 1739 | sí |
+| MLU703124203 Camaleon Ve Los Colores - Con Ventanitas Circulare | 1771 | 1675 | 1675 | sí |
 | MLU703124191 El Camaleon Malcarado - Xan Lopez Dominguez | 1600 | 1569 | 1569 | sí |
 | MLU703124093 Libro Calypso - Cosey - Tapa Dura - Dolmen | 2970 | 2939 | 2939 | sí |
-| MLU703123933 Outlet : Calor Y Frio | 2220 | 1949 | 1949 | sí |
+| MLU703123933 Outlet : Calor Y Frio | 2220 | 1881 | 1881 | sí |
 | MLU703123461 Calidad En La Educacion Infantil, De Zabala, Migue | 3610 | 3279 | 3279 | sí |
 | MLU703123143 Caleb's Crossing, De Brooks, Geraldine. Editorial  | 2290 | 2093 | 2093 | sí |
 | MLU703123049 Libro Cakes In Space, De Reeve, Philip. Editorial  | 1710 | 1592 | 1592 | sí |
 | MLU703122885 Caín, De Jose Saramago. Editorial Alfaguara, Tapa  | 2240 | 2073 | 2073 | sí |
-| MLU703122201 Libro La Cachetada, De Agostini, Micaela. Editoria | 1860 | 1567 | 1567 | sí |
+| MLU703122201 Libro La Cachetada, De Agostini, Micaela. Editoria | 1860 | 1584 | 1584 | sí |
 | MLU703122197 Libro Cacería De Niños - Taeko Kno | 1871 | 1839 | 1839 | sí |
 | MLU703122025 Cabellos Revueltos, De Akiko Yosano. Editorial El  | 1608 | 1579 | 1579 | sí |
 | MLU703121723 By Force Alone - Lavie Thidar, De Thidar, Lavie. E | 1730 | 1637 | 1637 | sí |
@@ -1045,13 +1045,13 @@ Discrepancias: **0**
 | MLU703119633 Libro Bts : Icons Of The K-pop De Adrian Besley | 2530 | 2329 | 2329 | sí |
 | MLU703116723 Libro Canto Ceremonial Contra Un Oso Hormiguero, D | 1600 | 1558 | 1558 | sí |
 | MLU703116547 Fantasma De Canterville - Oscar Wilde - En Ingles  | 1600 | 1494 | 1494 | sí |
-| MLU703116175 Candombe. Fiebre De Carnaval | 1811 | 1714 | 1714 | sí |
+| MLU703116175 Candombe. Fiebre De Carnaval | 1811 | 1732 | 1732 | sí |
 | MLU703116147 Candido - Zadig - Cartas Filosoficas, De Voltaire. | 2220 | 1993 | 1993 | sí |
-| MLU703115457 Canción De La Desconfianza - Damian Selci - Eterna | 1569 | 1479 | 1479 | sí |
-| MLU703115047 Can I Play? + Audio Cd-rom - Helbling Young Reader | 1600 | 1549 | 1549 | sí |
+| MLU703115457 Canción De La Desconfianza - Damian Selci - Eterna | 1569 | 1494 | 1494 | sí |
+| MLU703115047 Can I Play? + Audio Cd-rom - Helbling Young Reader | 1600 | 1488 | 1488 | sí |
 | MLU703114977 Campo Santo, De María Martoccia. Editorial Beatriz | 1715 | 1689 | 1689 | sí |
 | MLU703114837 Campañas Militares Argentinas - Tomo V, De Ruiz Mo | 2090 | 1709 | 1709 | sí |
-| MLU703114575 Camino Total, El - Salvador Felix Benesdra | 2640 | 2253 | 2253 | sí |
+| MLU703114575 Camino Total, El - Salvador Felix Benesdra | 2640 | 2277 | 2277 | sí |
 | MLU703114091 El Camino De Los Muertos - Brooks, Kevin, De Brook | 1860 | 1679 | 1679 | sí |
 | MLU703114075 Camino De Lecturas 3 - Az Editora, De No Aplica. E | 1810 | 1679 | 1679 | sí |
 | MLU703114069 Camino De Lecturas 2 - Az Editora, De No Aplica. E | 1810 | 1679 | 1679 | sí |
@@ -1083,7 +1083,7 @@ Discrepancias: **0**
 | MLU703109223 Taxus. La Cabra | 1940 | 1841 | 1841 | sí |
 | MLU703109155 Cabezas En La Ventana - Antología De Terror Latino | 2600 | 2346 | 2346 | sí |
 | MLU703109099 The Cabbage Juice Crime - Beastie Bros 1 | 1600 | 1542 | 1542 | sí |
-| MLU703108993 Caballito, De Feito, Luciana. 1, Vol. 1. Editorial | 2380 | 2047 | 2047 | sí |
+| MLU703108993 Caballito, De Feito, Luciana. 1, Vol. 1. Editorial | 2380 | 2069 | 2069 | sí |
 | MLU703108989 Los Caballeros De Mitre: Crónicas De Andares Lejan | 2090 | 1772 | 1772 | sí |
 | MLU703108957 Libro El Caballero Encantado, De Perez Galdos, Ben | 3570 | 3299 | 3299 | sí |
 | MLU703108821 Bye-bye, Big Bad Bullybug!, De Ed Emberley. Editor | 2280 | 2092 | 2092 | sí |
@@ -1112,7 +1112,7 @@ Discrepancias: **0**
 | MLU703101969 Camping Catastrofe, De Peters, Rik. Editorial S/d, | 1730 | 1679 | 1679 | sí |
 | MLU703101851 Libro La Campaña - Carlos Fuentes | 2880 | 2509 | 2509 | sí |
 | MLU703101599 Libro El Camino Sufi Del Amor, De Chittick, Willia | 2580 | 2438 | 2438 | sí |
-| MLU703101563 El Camino Mas Largo | 1780 | 1548 | 1548 | sí |
+| MLU703101563 El Camino Mas Largo | 1780 | 1564 | 1564 | sí |
 | MLU703101253 Camino Del Artista Para Padres, El, De Julia Camer | 1870 | 1839 | 1839 | sí |
 | MLU703100961 El Camino De La Inteligencia, De Krishnamurti, Jid | 2240 | 2049 | 2049 | sí |
 | MLU703100781 Cambridge Yle Tests Movers - Student's Book (exam  | 2800 | 2627 | 2627 | sí |
@@ -1121,7 +1121,7 @@ Discrepancias: **0**
 | MLU703100689 Cambridge Primary English 6 (2nd.edition) - Learne | 2850 | 2493 | 2493 | sí |
 | MLU703100083 Cambridge English Qualifications -a1 Movers Practi | 1960 | 1853 | 1853 | sí |
 | MLU703099513 Cambio Ha Cambiado, El -tiempo Para Un Reinicio Es | 1720 | 1593 | 1593 | sí |
-| MLU703099289 Cambio De Época, De Svampa. Editorial Siglo Xxi, T | 1663 | 1629 | 1629 | sí |
+| MLU703099289 Cambio De Época, De Svampa. Editorial Siglo Xxi, T | 1663 | 1567 | 1567 | sí |
 | MLU703099227 El Cambio Correcto En El Final | 1870 | 1732 | 1732 | sí |
 | MLU703098725 Cambridge Igcse Art And Design - Student's Book, D | 4120 | 3923 | 3923 | sí |
 | MLU703098501 Cambridge Igcse & O Level Complete Chemistry: Work | 1980 | 1698 | 1698 | sí |
@@ -1136,7 +1136,7 @@ Discrepancias: **0**
 | MLU703097087 Libro Cajas Chinas - Mara Maro, De Maro, Mara. Edi | 2640 | 2346 | 2346 | sí |
 | MLU703096267 Cacao - 70 Aniversario | 1553 | 1519 | 1519 | sí |
 | MLU703096235 La Cabina De Teléfono En El Jardín, De Heather Smi | 2860 | 2772 | 2772 | sí |
-| MLU703096215 Libro Cabezon Andres D' Alessandro - Biografia Ofi | 2790 | 2459 | 2459 | sí |
+| MLU703096215 Libro Cabezon Andres D' Alessandro - Biografia Ofi | 2790 | 2380 | 2380 | sí |
 | MLU703096067 El Caballo Y Muchacho, De C. S. Lewis. Editorial Z | 1564 | 1485 | 1485 | sí |
 | MLU703096065 El Caballo Y El Gaucho - Katchadjian, Pablo | 1900 | 1869 | 1869 | sí |
 | MLU703095777 Buzz 4 - Student's Book With Pack, De Casey, Helen | 2800 | 2523 | 2523 | sí |
@@ -1155,7 +1155,7 @@ Discrepancias: **0**
 | MLU703094127 Libro ¡buenas Noches! Con Mis 3 Títeres De Dedos:  | 2140 | 1904 | 1904 | sí |
 | MLU703093963 Buen Dinero - Ahorro E Inversión. Bienestar Financ | 1910 | 1663 | 1663 | sí |
 | MLU703091025 Caótico Y Hermoso, De Evelyn Cerutti. Editorial Ti | 2420 | 2185 | 2185 | sí |
-| MLU703090983 Libro De The Loud House Caos De Colores - Nickelod | 1553 | 1469 | 1469 | sí |
+| MLU703090983 Libro De The Loud House Caos De Colores - Nickelod | 1553 | 1485 | 1485 | sí |
 | MLU703090457 Los Cañones De Los Médici, De Martin Woodhouse Y R | 1600 | 1504 | 1504 | sí |
 | MLU703090005 Canciones De Cuna Para Animales - Lila Prap - Long | 1600 | 1544 | 1544 | sí |
 | MLU703089575 Cancion De Cuna Para Una, De Eleonora Bellini. Edi | 1930 | 1623 | 1623 | sí |
@@ -1164,7 +1164,7 @@ Discrepancias: **0**
 | MLU703089159 Campus Sur B1 - Libro Del Alumno + Audio | 3040 | 2730 | 2730 | sí |
 | MLU703089109 El Campo Popular - Pedro Peretti, De Peretti, Pedr | 1662 | 1584 | 1584 | sí |
 | MLU703089077 Campo De Mayo - Félix Bruzzone | 2008 | 1979 | 1979 | sí |
-| MLU703089029 Campito El - Incardona Juan Diego | 1791 | 1694 | 1694 | sí |
+| MLU703089029 Campito El - Incardona Juan Diego | 1791 | 1712 | 1712 | sí |
 | MLU703088647 El Camino Invisible - Lucia Di Peppe: Un Viaje Por | 1821 | 1742 | 1742 | sí |
 | MLU703088487 Libro Camino Del Deportista, El, De Sebastián Blas | 2020 | 1981 | 1981 | sí |
 | MLU703088475 Libro El Camino Del Bienestar | 1600 | 1532 | 1532 | sí |
@@ -1185,9 +1185,9 @@ Discrepancias: **0**
 | MLU703085963 Cambridge Igcse And 0 Level Geography Study And Re | 2520 | 2435 | 2435 | sí |
 | MLU703085927 Cambridge English Qualifications Pre A1 Starters - | 1940 | 1919 | 1919 | sí |
 | MLU703085679 Cambridge Lower Secondary English 7 - Student's Ke | 2900 | 2703 | 2703 | sí |
-| MLU703085371 Calor Y Movimiento /r/ Rius De Riepen | 1600 | 1508 | 1508 | sí |
+| MLU703085371 Calor Y Movimiento /r/ Rius De Riepen | 1600 | 1524 | 1524 | sí |
 | MLU703085325 ¡calma, León! Verónica Halac / Silvana Aquino - So | 1770 | 1582 | 1582 | sí |
-| MLU703085133 Calle De Direccion Unica - Walter Benjamin | 2370 | 2289 | 2289 | sí |
+| MLU703085133 Calle De Direccion Unica - Walter Benjamin | 2370 | 2214 | 2214 | sí |
 | MLU703084937 Libro Call Me Gray - Andrew Larsen, De Larsen, And | 2620 | 2444 | 2444 | sí |
 | MLU703084867 California (español) 2da.edicion, De Vv. Aa.. Lone | 4440 | 4138 | 4138 | sí |
 | MLU703084837 Libro Mafalda 2026, Calendario De Pared, De Quino. | 1650 | 1629 | 1629 | sí |
@@ -1213,10 +1213,10 @@ Discrepancias: **0**
 | MLU703080961 Bruna, De Russo, Beatriz. Editorial Lince, Tapa Bl | 1950 | 1875 | 1875 | sí |
 | MLU1524703270 Libro Cerebro Y Silencio, De Le Van Quyen, Michel. | 2850 | 2574 | 2574 | sí |
 | MLU1524699342 Mis Cuentos Animados Varios Modelos Auzou | 2100 | 1772 | 1772 | sí |
-| MLU1524699076 Celestina, La - Clasicos Hispanicos, De De Rojas F | 2415 | 2389 | 2389 | sí |
+| MLU1524699076 Celestina, La - Clasicos Hispanicos, De De Rojas F | 2415 | 2312 | 2312 | sí |
 | MLU1524698690 Cecilia - Anabella Messina - Editorial Planeta - E | 2108 | 2029 | 2029 | sí |
 | MLU1524697852 Caudillos, Los. El General Fray Felix Aldao. El Ch | 1600 | 1583 | 1583 | sí |
-| MLU1524696642 Catálogo Aó. Episodios Textiles De Las Artes Visua | 2375 | 2273 | 2273 | sí |
+| MLU1524696642 Catálogo Aó. Episodios Textiles De Las Artes Visua | 2375 | 2296 | 2296 | sí |
 | MLU1524695904 Castillos De Arena, De Veronica Sordelli. Editoria | 2220 | 1949 | 1949 | sí |
 | MLU1524695432 La Historieta Argentina - Castelli Y Monteagudo F. | 2290 | 1939 | 1939 | sí |
 | MLU1524694884 El Caso Mike - Gustavo Dessal - Interzona - Libro | 2420 | 2041 | 2041 | sí |
@@ -1263,9 +1263,9 @@ Discrepancias: **0**
 | MLU1524484936 Sklar - Los Catorce Cuadernos + Nunca Llegamos A L | 2368 | 2339 | 2339 | sí |
 | MLU1524484898 Católicos Militantes Sujeto, Comunidad E Instituci | 1980 | 1689 | 1689 | sí |
 | MLU1524483630 Cat Kid: Comic Club Collaborations: Comic Club Col | 2200 | 1873 | 1873 | sí |
-| MLU1524482730 Castigar Al Projimo - Roberto Gargarella - Siglo X | 1950 | 1852 | 1852 | sí |
+| MLU1524482730 Castigar Al Projimo - Roberto Gargarella - Siglo X | 1950 | 1871 | 1871 | sí |
 | MLU1524482158 El Caso Siderman De Alberto Zuppi - Planeta - Tapa | 2650 | 2508 | 2508 | sí |
-| MLU1524481792 Libro Misterios Clodett 2. Caso Del Crush Secreto  | 1657 | 1567 | 1567 | sí |
+| MLU1524481792 Libro Misterios Clodett 2. Caso Del Crush Secreto  | 1657 | 1584 | 1584 | sí |
 | MLU1524481268 Casi Me Olvido De Ti, De Terry Mcmillan. Editorial | 2080 | 1837 | 1837 | sí |
 | MLU1524481200 Casher Comida Sana Para El Cuerpo Y El Espiritu, D | 2240 | 2141 | 2141 | sí |
 | MLU1524480756 Libro Casas Encantadas - Ambrose Bierce | 2260 | 2118 | 2118 | sí |
@@ -1275,7 +1275,7 @@ Discrepancias: **0**
 | MLU1524476256 Libro Cartas A Su Madre, De Baudelaire, Charles, V | 2400 | 2039 | 2039 | sí |
 | MLU1524476232 Cartas A Milena, De Kafka, Franz. Editorial Losada | 1640 | 1524 | 1524 | sí |
 | MLU1524476220 Libro Cartas A Mi Mama, De Cardenas, Teresa. Edito | 1553 | 1475 | 1475 | sí |
-| MLU1524476064 Cartas Dinosaurios 4d 24 Cartas | 1553 | 1519 | 1519 | sí |
+| MLU1524476064 Cartas Dinosaurios 4d 24 Cartas | 1553 | 1460 | 1460 | sí |
 | MLU1524475692 Carta Al Padre Franz Kafka - Libro | 1553 | 1519 | 1519 | sí |
 | MLU1524475686 10 Años Carta Abierta. Ciccus | 1620 | 1583 | 1583 | sí |
 | MLU1524475042 Carpeta De Matematica 5 - Serie Nexos - Tinta Fres | 2000 | 1711 | 1711 | sí |
@@ -1285,20 +1285,20 @@ Discrepancias: **0**
 | MLU1524371730 Captain Corelli's Mandolin, De De Bernieres, L. Ed | 1950 | 1816 | 1816 | sí |
 | MLU1524371624 Cappy And The Whale - Kateryna Babkina, De Babkina | 2140 | 1978 | 1978 | sí |
 | MLU1524371508 Capitãâ¡n Verdeman, De Bethel-colombo. Editorial J | 2170 | 1881 | 1881 | sí |
-| MLU1524371142 El Capital Vol. 1 - Karl Marx | 2160 | 1782 | 1782 | sí |
+| MLU1524371142 El Capital Vol. 1 - Karl Marx | 2160 | 1801 | 1801 | sí |
 | MLU1524371004 Libro El Capital En La Era Del Antropoceno - Kohei | 2780 | 2480 | 2480 | sí |
 | MLU1524370936 El Capital De Marx, De Ben Fine Y Alfredo Saad-fil | 2060 | 1900 | 1900 | sí |
-| MLU1524359772 La Caquita. Una Aventura De Juan El Elefante - Coh | 1800 | 1769 | 1769 | sí |
+| MLU1524359772 La Caquita. Una Aventura De Juan El Elefante - Coh | 1800 | 1704 | 1704 | sí |
 | MLU1524359694 Capturas De Un Corazón Roto, De Tiffany Calligaris | 2190 | 2019 | 2019 | sí |
-| MLU1524354922 El Casamiento De La Princesa, De Eduardo M. Dayan. | 1553 | 1504 | 1504 | sí |
+| MLU1524354922 El Casamiento De La Princesa, De Eduardo M. Dayan. | 1553 | 1439 | 1439 | sí |
 | MLU1524354822 La Casa - Roca, Paco | 1608 | 1579 | 1579 | sí |
-| MLU1524353800 La Casa De Los Gatos, De Gilles Eduard. Editorial  | 2530 | 2449 | 2449 | sí |
-| MLU1524352552 Casa De Ceniza, La - Abelardo Castillo | 1959 | 1929 | 1929 | sí |
+| MLU1524353800 La Casa De Los Gatos, De Gilles Eduard. Editorial  | 2530 | 2371 | 2371 | sí |
+| MLU1524352552 Casa De Ceniza, La - Abelardo Castillo | 1959 | 1861 | 1861 | sí |
 | MLU1524352268 Cartografias Del Conflicto Ambiental En La Arg, De | 2340 | 2019 | 2019 | sí |
 | MLU1524351800 Cartas Para Julia - Loqueleo Azul - Santillana | 1666 | 1639 | 1639 | sí |
 | MLU1524350820 Libro Cartas Al Padre Flye, De Agee, James. Editor | 2390 | 2219 | 2219 | sí |
 | MLU1524350078 Carta De Una Desconocida, De Stefan Zweig. Confabu | 1740 | 1709 | 1709 | sí |
-| MLU1524348558 Carlos Pãâ©rez Siquier, De Pérez Siquier, Carlos.  | 2000 | 1889 | 1889 | sí |
+| MLU1524348558 Carlos Pãâ©rez Siquier, De Pérez Siquier, Carlos.  | 2000 | 1822 | 1822 | sí |
 | MLU1524348040 Career Of Evil (a Cormoran Strike Novel), De Galbr | 2910 | 2621 | 2621 | sí |
 | MLU1524347454 Caras (t.d), De Jose Jorge Letria. Editorial La Fr | 2070 | 1930 | 1930 | sí |
 | MLU1524346898 Caramelo Va De Paseo (tapa Blanda): Coleccion Tal  | 1600 | 1535 | 1535 | sí |
@@ -1325,9 +1325,9 @@ Discrepancias: **0**
 | MLU1524968118 A Charlie Brown Christmas (peanuts), De Gallo, Tin | 1600 | 1535 | 1535 | sí |
 | MLU1524967212 The Chanel Style Principles - Hannah Rogers, De Ro | 2380 | 2141 | 2141 | sí |
 | MLU1524955428 Libro Charlie Method The - Campus Diaries 3 - Pb,  | 1870 | 1689 | 1689 | sí |
-| MLU1524954500 Libro Chancho Va 2do, De Vv. Aa.. Editorial Mandio | 2860 | 2743 | 2743 | sí |
+| MLU1524954500 Libro Chancho Va 2do, De Vv. Aa.. Editorial Mandio | 2860 | 2772 | 2772 | sí |
 | MLU1524953804 Cesarea - Caballo De Troya 5 | 2250 | 1880 | 1880 | sí |
-| MLU1524945068 Chejov En La Nieve - Rojas Ayrala, Ricardo | 1969 | 1871 | 1871 | sí |
+| MLU1524945068 Chejov En La Nieve - Rojas Ayrala, Ricardo | 1969 | 1890 | 1890 | sí |
 | MLU1524944930 Checkpoint Maths 1 - Book | 3050 | 2710 | 2710 | sí |
 | MLU1524944906 Checkmate, De Blackman, Malorie. Editorial Penguin | 1810 | 1534 | 1534 | sí |
 | MLU1524942560 Charlie & The Aztecs - Story Sparks 8 | 1600 | 1577 | 1577 | sí |
@@ -1346,7 +1346,7 @@ Discrepancias: **0**
 | MLU703174863 Cherish - Crave 6 - Tracy Wolff, De Vv. Aa.. Edito | 1950 | 1689 | 1689 | sí |
 | MLU703173899 Checkpoint English 1 - Student's Book (new Edition | 2980 | 2710 | 2710 | sí |
 | MLU703172983 Chasing Sunsets, De Kingsbury, Karen. Editorial Si | 2320 | 1999 | 1999 | sí |
-| MLU703150297 Ceremonias Mínimas - Minnicelli, Mercedes | 1657 | 1567 | 1567 | sí |
+| MLU703150297 Ceremonias Mínimas - Minnicelli, Mercedes | 1657 | 1584 | 1584 | sí |
 | MLU703258895 Las Chicas De Alambre - Loqueleo Roja | 1741 | 1709 | 1709 | sí |
 | MLU703258761 Chica, 1983, De Ullman, Linn., Vol. 1. Editorial G | 2630 | 2326 | 2326 | sí |
 | MLU703258681 Libro La Chica Que Queria Volar, De Karen Zarate,  | 1650 | 1516 | 1516 | sí |
@@ -1369,7 +1369,7 @@ Discrepancias: **0**
 | MLU1525873258 La Ciencia Es Eso Que Nos Pasa Mientras Estamos Oc | 2180 | 1781 | 1781 | sí |
 | MLU1525873010 La Ciencia De La Seducción - Libro - Martín Riezni | 2009 | 1979 | 1979 | sí |
 | MLU1525871882 El Cielo Es Azul, La Tierra Blanca - Hiromi Kawaka | 2009 | 1979 | 1979 | sí |
-| MLU1525865994 Libro Chicos Y El Lenguaje Plástico-visual, Los, D | 1969 | 1871 | 1871 | sí |
+| MLU1525865994 Libro Chicos Y El Lenguaje Plástico-visual, Los, D | 1969 | 1890 | 1890 | sí |
 | MLU1525863490 Sociales 1 Serie Llaves Más + Versión Digital - Ma | 3430 | 3139 | 3139 | sí |
 | MLU1525863372 Ciencias Naturales:lineas De Accion Didactica Y Pe | 2029 | 1999 | 1999 | sí |
 | MLU1525862020 Ciencias Naturales 4 - Bonaerense - Insignia, De N | 2440 | 2083 | 2083 | sí |
@@ -1381,7 +1381,7 @@ Discrepancias: **0**
 | MLU1525836446 Naturales 4 Insignia Caba, De Equipo Editorial. Ed | 2460 | 2083 | 2083 | sí |
 | MLU1525835764 Ciencia Y Superhéroes - Paula Bombara Y Andrés Val | 1682 | 1649 | 1649 | sí |
 | MLU1525834918 Libro La Ciencia Del Estrés, Viviendo Bajo Presión | 2435 | 2356 | 2356 | sí |
-| MLU1525834716 Libro La Ciencia De La Lectura - Abusamra, Valeria | 1871 | 1839 | 1839 | sí |
+| MLU1525834716 Libro La Ciencia De La Lectura - Abusamra, Valeria | 1871 | 1773 | 1773 | sí |
 | MLU1525824358 Ciencias Naturales 5 - Nacion - Sobre Ruedas - Ede | 2250 | 1851 | 1851 | sí |
 | MLU1525824350 Ciencias Naturales 5 Bonaerense - Serie Sobre Rued | 2170 | 1772 | 1772 | sí |
 | MLU1525824304 Ciencias Naturales 5 - Espacio Abierto - Aique, De | 1553 | 1475 | 1475 | sí |
@@ -1390,9 +1390,9 @@ Discrepancias: **0**
 | MLU1525823114 Ciencias De La Tierra - Maipue 2º Edicion - Analia | 2530 | 2151 | 2151 | sí |
 | MLU1525820822 Libro Cielo Drive, De Sebastián De Caro. Editorial | 1979 | 1949 | 1949 | sí |
 | MLU1525814934 Los Chicos De Mayo - Planeta Azul | 1553 | 1519 | 1519 | sí |
-| MLU1525814062 Biomecanica Y Modelizacion En Mecanobiologia - Arm | 2183 | 2149 | 2149 | sí |
+| MLU1525814062 Biomecanica Y Modelizacion En Mecanobiologia - Arm | 2183 | 2077 | 2077 | sí |
 | MLU703312875 El Cuerpo Humano Mi Pequeña Enciclopedia - Charbin | 1600 | 1524 | 1524 | sí |
-| MLU703302637 Ciencias Sociales En La Escuela | 1969 | 1939 | 1939 | sí |
+| MLU703302637 Ciencias Sociales En La Escuela | 1969 | 1871 | 1871 | sí |
 | MLU703302041 Ciencias Sociales 5 - Bonaerense - Aprender A Apre | 2050 | 1679 | 1679 | sí |
 | MLU703298717 Cine De Vanguardia. Instrucciones De Uso, De Nicol | 1940 | 1861 | 1861 | sí |
 | MLU703296967 Libro Julio Verne 5. Cinco Semanas En Globo - Moli | 2643 | 2587 | 2587 | sí |
@@ -1433,7 +1433,6 @@ Discrepancias: **0**
 | MLU1522731284 American Look 2 - Reading Anthology | 1553 | 1504 | 1504 | sí |
 | MLU1522640042 American Folk Tales + Audio Cd - Green Apple 1, De | 1680 | 1494 | 1494 | sí |
 | MLU1522603836 El Ambiente De La Lectura - Aidan Chambers - Fce - | 1652 | 1603 | 1603 | sí |
-| MLU1522601122 El Almuerzo Sobre La Hierba De Manet - Warburg Aby | 1600 | 1553 | 1553 | sí |
 | MLU1522600950 Almas Perdidas - Federico Villa | 1583 | 1534 | 1534 | sí |
 | MLU1522469542 Alien At School - R&t 3 (b1.2), De Brown, Michelle | 1710 | 1613 | 1613 | sí |
 | MLU1522466976 Libro Algo Mas Que Locos Experimentos En La Escuel | 2193 | 2138 | 2138 | sí |
@@ -1603,7 +1602,7 @@ Discrepancias: **0**
 | MLU702860871 Libro Adolf Tankobon 3 - Osamu Tezuka - Planeta Co | 1491 | 1445 | 1445 | sí |
 | MLU702854891 The Age Of Innocence + Young Adult Hub Readers Sta | 1600 | 1485 | 1485 | sí |
 | MLU702854885 The Age Of Innocence - Penguin English Library - E | 1600 | 1368 | 1368 | sí |
-| MLU702854759 Afuera - Mari Kanstad Johnsen | 1530 | 1485 | 1485 | sí |
+| MLU702854759 Afuera - Mari Kanstad Johnsen | 1530 | 1430 | 1430 | sí |
 | MLU702854443 Las Afinidades Electivas, De Goethe, Johann Wolfga | 2180 | 2049 | 2049 | sí |
 | MLU702854371 Aesop's Fables - Hub I Love Reading! Series Stage  | 1600 | 1401 | 1401 | sí |
 | MLU702854365 Aesop's Fables - Audio - Black Cat | 1600 | 1274 | 1274 | sí |
@@ -1619,7 +1618,7 @@ Discrepancias: **0**
 | MLU1522291856 Ajin - Semi-humano 13 - Gamon Sakurai | 1600 | 1251 | 1251 | sí |
 | MLU1522291724 Airport - Sticker Search - Margot Channing | 1600 | 1351 | 1351 | sí |
 | MLU1522291676 Aire Y Agua: El Osito Y Sus Amigos Te Explican La  | 1600 | 1283 | 1283 | sí |
-| MLU1522291316 Libro Águila O Sol - Octavio Paz [ Original | 1510 | 1465 | 1465 | sí |
+| MLU1522291316 Libro Águila O Sol - Octavio Paz [ Original | 1510 | 1410 | 1410 | sí |
 | MLU1522291298 Aguas Profundas, De William Hope Hodgson. Editoria | 1600 | 1298 | 1298 | sí |
 | MLU1522279540 Al Abordaje! - Angels Navarro, De Ángels Navarro.  | 1760 | 1405 | 1405 | sí |
 | MLU1522279420 Akame Ga Kill 15 - Takahiro & Tetsuya Tashiro | 1600 | 1251 | 1251 | sí |
@@ -1637,7 +1636,7 @@ Discrepancias: **0**
 | MLU1522265716 Agustin En El Bosque De Los Aullidos - Enigmáticos | 1395 | 1356 | 1356 | sí |
 | MLU1522265662 Arsenio Lupin. La Aguja Hueca - Leblanc, Maurice | 1610 | 1346 | 1346 | sí |
 | MLU1522951710 El Amor Al Nombre. Ensayo Sobre El Lirismo Y La Li | 1640 | 1345 | 1345 | sí |
-| MLU1522938578 Libro Amigos Alegres - Zona Color /682: Libro Amig | 1530 | 1485 | 1485 | sí |
+| MLU1522938578 Libro Amigos Alegres - Zona Color /682: Libro Amig | 1530 | 1430 | 1430 | sí |
 | MLU1522925682 Amnesia (en Ingles) - Peter Carey, De Carey, Peter | 1820 | 1495 | 1495 | sí |
 | MLU1522925648 Amigos Para La Mision 6 | 1563 | 1514 | 1514 | sí |
 | MLU1522925642 Libro Amigos Para Descubrir Sala De 5 - Nueva Edic | 1600 | 1254 | 1254 | sí |
@@ -1659,7 +1658,7 @@ Discrepancias: **0**
 | MLU1522604370 American Crime Stories (3th.edition) + Mp3 Pack -  | 1534 | 1485 | 1485 | sí |
 | MLU1522604150 Libro América, De Wainer Ariel, Vol. Volumen Único | 1603 | 1554 | 1554 | sí |
 | MLU1522604008 Libro Amelia Bedelia - Level 2 I Can Read, De Pari | 1600 | 1303 | 1303 | sí |
-| MLU1522603852 El Ambiente Social Y Natural En El Jardín De Infan | 1530 | 1410 | 1410 | sí |
+| MLU1522603852 El Ambiente Social Y Natural En El Jardín De Infan | 1530 | 1425 | 1425 | sí |
 | MLU1522603618 The Amazing Spider-man 12 Rescate Del Rey, De Nick | 1600 | 1473 | 1473 | sí |
 | MLU1522603586 The Amazing Spider-man #11, De Spencer. Serie The  | 1600 | 1395 | 1395 | sí |
 | MLU1522603580 Amazing Power Of Activism - Very Short Introd For  | 1600 | 1469 | 1469 | sí |
@@ -1677,7 +1676,7 @@ Discrepancias: **0**
 | MLU1522467718 Ali Baba And The Forty Thieves - White Catherine E | 1600 | 1292 | 1292 | sí |
 | MLU1522467626 Algunos Miedos - Serie Amarilla (+6 Años) | 1315 | 1277 | 1277 | sí |
 | MLU1522466028 Alfabetizacion En Medios Digitales De Comunicacion | 1600 | 1441 | 1441 | sí |
-| MLU1522466012 Alfabetización De Niños: Construcción E Intercambi | 1445 | 1342 | 1342 | sí |
+| MLU1522466012 Alfabetización De Niños: Construcción E Intercambi | 1445 | 1356 | 1356 | sí |
 | MLU1522465066 Alejandrito Y La Maquina De Hablar - Carlos Pinto | 1600 | 1488 | 1488 | sí |
 | MLU1522464712 La Alegria De Encontrarnos Con Jesus - Guia Del Ca | 1384 | 1336 | 1336 | sí |
 | MLU1522463314 Aladino Y La Pava Magica - Versionaditos, De Romer | 1287 | 1247 | 1247 | sí |
@@ -1717,7 +1716,7 @@ Discrepancias: **0**
 | MLU702965495 Alrededor De La Luna - Sonsoles, De Verne, Julio.  | 1600 | 1425 | 1425 | sí |
 | MLU702964767 Libro Almas Nocturnas De Lucila Varise | 1530 | 1485 | 1485 | sí |
 | MLU702964189 El Alma De Napoleon, De Bloy, Léon., Vol. Volumen  | 1870 | 1752 | 1752 | sí |
-| MLU702963547 All Star Batman - Universo Dc Renacimiento - (vari | 1600 | 1274 | 1274 | sí |
+| MLU702963547 All Star Batman - Universo Dc Renacimiento - (vari | 1600 | 1287 | 1287 | sí |
 | MLU702958521 American Look And See 1 - Activity Book, De Reed,  | 1600 | 1448 | 1448 | sí |
 | MLU702958319 American Look 4 - Workbook, De Sved, Rob. Editoria | 1790 | 1494 | 1494 | sí |
 | MLU702955667 American Headway 2 (3th.edition) - Workbook + I Ch | 2494 | 2435 | 2435 | sí |
@@ -1738,7 +1737,7 @@ Discrepancias: **0**
 | MLU702947869 Alrededor De Una Jaula. Tentativas Sobre Cage - G. | 1600 | 1342 | 1342 | sí |
 | MLU702946099 All You Need Is Kill Vol 2 | 1600 | 1251 | 1251 | sí |
 | MLU702944881 Libro Aligera Tu Vida Y Alcanza El Exito - Tobias  | 1325 | 1287 | 1287 | sí |
-| MLU702944561 Alicia Moreau De Justo - Personajes Del Mundo | 1425 | 1386 | 1386 | sí |
+| MLU702944561 Alicia Moreau De Justo - Personajes Del Mundo | 1425 | 1312 | 1312 | sí |
 | MLU702944205 Alicia En El Pais De Las Maravillas - Sonsoles - 2 | 1600 | 1425 | 1425 | sí |
 | MLU702943901 Alicia En El País De Las Maravillas (versión De Be | 1600 | 1441 | 1441 | sí |
 | MLU702942979 Ali Baba And The Forty Thieves - Macmillan Explore | 1600 | 1201 | 1201 | sí |
@@ -1747,7 +1746,7 @@ Discrepancias: **0**
 | MLU702939679 El Alcalde De Zalamea - Caderon De La Barca - Lope | 1600 | 1316 | 1316 | sí |
 | MLU702939373 Album De Boda - Varios Autores Antologia, De Vario | 1690 | 1307 | 1307 | sí |
 | MLU702939245 Albert Einstein - Trailblazers - Paul Virr, De Vir | 1600 | 1432 | 1432 | sí |
-| MLU702938487 Aladino Y La Lámpara Maravillosa, De () Martínez M | 1600 | 1342 | 1342 | sí |
+| MLU702938487 Aladino Y La Lámpara Maravillosa, De () Martínez M | 1600 | 1356 | 1356 | sí |
 | MLU702938333 Ala En Paris, De Gabriel Albiac. Editorial Conflue | 2150 | 2049 | 2049 | sí |
 | MLU702931721 Alicia En El Pais De Las Maravillas - L. Carroll - | 1600 | 1320 | 1320 | sí |
 | MLU702930767 Alice´s Adventures In Wonderland, De Lewis, Carrol | 1530 | 1485 | 1485 | sí |
@@ -1763,14 +1762,14 @@ Discrepancias: **0**
 | MLU1523498100 El Arte De La Guerra - Sun Tzu - Zona De Letras -  | 1600 | 1473 | 1473 | sí |
 | MLU1523497844 El Arte De Ho'oponopono - Luc Bodin / Maria Hurtad | 1600 | 1425 | 1425 | sí |
 | MLU1523497632 Arte De Agradar - Paradis De Moncrif F, De Paradis | 1600 | 1356 | 1356 | sí |
-| MLU1523472032 El Arte De La Guerra - Sun Tzu Punto De Encuentro | 1600 | 1243 | 1243 | sí |
+| MLU1523472032 El Arte De La Guerra - Sun Tzu Punto De Encuentro | 1600 | 1257 | 1257 | sí |
 | MLU1523471620 Arte De Amar - Colihue Clasica | 1500 | 1455 | 1455 | sí |
 | MLU1523471530 Arte, De Berton. Editorial Nuevo Nueve Editores, S | 1600 | 1437 | 1437 | sí |
 | MLU1523459108 El Arte De La Guerra . Los Trece Articulos | 1600 | 1381 | 1381 | sí |
-| MLU1523459102 El Arte De La Guerra Mini - Sun Tzu - Libro | 1600 | 1292 | 1292 | sí |
+| MLU1523459102 El Arte De La Guerra Mini - Sun Tzu - Libro | 1600 | 1306 | 1306 | sí |
 | MLU1523459070 El Arte De La Guerra, De Sun Tzu. 1020805072, Vol. | 1600 | 1349 | 1349 | sí |
 | MLU1523291286 Arrecife - Juan Villoro | 2420 | 2148 | 2148 | sí |
-| MLU1523291278 Arquitectura Verdadera, De Charles Mackintosh. Edi | 1600 | 1395 | 1395 | sí |
+| MLU1523291278 Arquitectura Verdadera, De Charles Mackintosh. Edi | 1600 | 1425 | 1425 | sí |
 | MLU1523290958 El Armario De Isabella - Visto Con Stickers, De No | 1600 | 1251 | 1251 | sí |
 | MLU1523290938 Armados De Valor - Valientes Y Cobardes - Oche Cal | 1600 | 1228 | 1228 | sí |
 | MLU1523290812 Argentina Y La Copa Davis - Estevez - Barenhaus | 1559 | 1514 | 1514 | sí |
@@ -1822,7 +1821,7 @@ Discrepancias: **0**
 | MLU1523099046 Años Dorados De La Cultura Argentina - Lida Mirand | 1530 | 1485 | 1485 | sí |
 | MLU1523098626 Libro Año En Que Estuvimos En Ninguna Parte,el, De | 1481 | 1435 | 1435 | sí |
 | MLU1523097814 Anna Encuentra Una Amiga - Kate Egan, De Egan, Kat | 1600 | 1310 | 1310 | sí |
-| MLU1523097732 Aniversario, El - Anton Pavlovich Chejov | 1445 | 1331 | 1331 | sí |
+| MLU1523097732 Aniversario, El - Anton Pavlovich Chejov | 1445 | 1346 | 1346 | sí |
 | MLU1523097712 Anita Y La Luna - Los Cuentos Del Chiribitil | 1600 | 1378 | 1378 | sí |
 | MLU1523097354 Edu Cards - Animals Of The World - Flashcards With | 1530 | 1494 | 1494 | sí |
 | MLU1523096692 Libro Animales Y Numeros (td), De Jarzabek, Ela. E | 1600 | 1346 | 1346 | sí |
@@ -1830,12 +1829,11 @@ Discrepancias: **0**
 | MLU1523096246 Mundos De Ilusion Animales Marinos, De Varios Auto | 1600 | 1376 | 1376 | sí |
 | MLU1523095292 Animales De La Selva, De Brijbasi Equipo Editorial | 1600 | 1385 | 1385 | sí |
 | MLU1523095150 Animales De La Granja 3d | 1600 | 1247 | 1247 | sí |
-| MLU1523007144 Libro Animales - Hebe Uhart | 1530 | 1410 | 1410 | sí |
+| MLU1523007144 Libro Animales - Hebe Uhart | 1530 | 1425 | 1425 | sí |
 | MLU1523007118 Animalanzas - Hora Libre | 1600 | 1219 | 1219 | sí |
 | MLU1523007098 Animal Tales + Cd, De Zig Zag. Editorial Vicens Vi | 1750 | 1584 | 1584 | sí |
 | MLU1523006994 Animal Farm -black Cat Reading & Training - Free A | 1710 | 1613 | 1613 | sí |
 | MLU1523006440 Angurrias - No Es Ningun Gallina Y Otras Avivadas  | 1600 | 1378 | 1378 | sí |
-| MLU1523005054 Anda A Lavar Los Platos - Alejandra Lunik | 1504 | 1455 | 1455 | sí |
 | MLU1523004966 And Another Thing | 1722 | 1673 | 1673 | sí |
 | MLU1523003844 Ana Y Las Olas - Huellas (+11 Años | 1530 | 1485 | 1485 | sí |
 | MLU1522963802 Antes De La Boda, De Mallery, Susan. Editorial Har | 1600 | 1554 | 1554 | sí |
@@ -1850,12 +1848,12 @@ Discrepancias: **0**
 | MLU1522959266 Animales Del Mar, De Susaeta Ediciones., Vol. 1. E | 1600 | 1500 | 1500 | sí |
 | MLU1522959226 Animales Del Bosque, De Varios Autores. 9878202822 | 1600 | 1473 | 1473 | sí |
 | MLU1522958834 Animales De La Sabana, De Zamboni, Pablo. Editoria | 1600 | 1405 | 1405 | sí |
-| MLU1522958236 Libro Animales Asombrosos - Aprendo Con Stickers,  | 1530 | 1410 | 1410 | sí |
+| MLU1522958236 Libro Animales Asombrosos - Aprendo Con Stickers,  | 1530 | 1425 | 1425 | sí |
 | MLU1522957742 Asombrosos Animales (libro Con Stickers Gigantes), | 1600 | 1215 | 1215 | sí |
 | MLU1522957296 Animal Becedario - Tapa Dura: Aventuras Para Descu | 1600 | 1437 | 1437 | sí |
 | MLU1522957054 Ani Y La Anciana, De Miska Miles. Editorial Fondo  | 1662 | 1613 | 1613 | sí |
-| MLU1522957020 Anhelos Que Guian | 1530 | 1410 | 1410 | sí |
-| MLU1522956550 Angélica Y Sus Hermanas - Historias Entre Tumbas ( | 1365 | 1254 | 1254 | sí |
+| MLU1522957020 Anhelos Que Guian | 1530 | 1425 | 1425 | sí |
+| MLU1522956550 Angélica Y Sus Hermanas - Historias Entre Tumbas ( | 1365 | 1267 | 1267 | sí |
 | MLU1522956224 Angela Della Morte 1 - Salvador Sanz | 1613 | 1548 | 1548 | sí |
 | MLU1522955812 Andrea Y El Cuarto Rey Mago - Alfredo Gomez Cerda | 1413 | 1366 | 1366 | sí |
 | MLU1522955748 Andean Beliefs And Sacred Mountains - M. C. Ceruti | 1534 | 1485 | 1485 | sí |
@@ -1881,7 +1879,7 @@ Discrepancias: **0**
 | MLU1522946636 Libro Animales Extinguidos Del 1 Al 10, De Carla B | 1600 | 1412 | 1412 | sí |
 | MLU1522945640 Animales De La Granja - Vamos De Paseo - Yoyo, De  | 1600 | 1374 | 1374 | sí |
 | MLU1522944920 Libro Animales - Paleta Mágica De Colores | 1600 | 1219 | 1219 | sí |
-| MLU1522944910 Mandalas Para Pintar Animales. Mis Mas Bellos Mand | 1530 | 1485 | 1485 | sí |
+| MLU1522944910 Mandalas Para Pintar Animales. Mis Mas Bellos Mand | 1530 | 1430 | 1430 | sí |
 | MLU1522944648 Animales | 1600 | 1289 | 1289 | sí |
 | MLU1522944136 Animal Athletes - Penguin Kids 4 | 1600 | 1482 | 1482 | sí |
 | MLU1522943498 Angelina Purpurina Levanta El Vuelo | 1600 | 1316 | 1316 | sí |
@@ -1914,7 +1912,7 @@ Discrepancias: **0**
 | MLU1522927930 Amote, De Patricia Iglesias Torres., Vol. 1. Edito | 1376 | 1336 | 1336 | sí |
 | MLU1522927766 Amordiscos | 1600 | 1464 | 1464 | sí |
 | MLU1522915020 Ampliaciones En Infraestructuras De Transporte, De | 1445 | 1405 | 1405 | sí |
-| MLU1522914956 Amoris Laetitia, De Francisco. Editorial Claretian | 1530 | 1485 | 1485 | sí |
+| MLU1522914956 Amoris Laetitia, De Francisco. Editorial Claretian | 1530 | 1430 | 1430 | sí |
 | MLU1522914760 Libro El Amor Y La Peste .una Historia De Amor Y D | 1510 | 1465 | 1465 | sí |
 | MLU1522914276 El Amor Efimero - Col.amores - Album Ilustrado, De | 1600 | 1244 | 1244 | sí |
 | MLU703024253 Arsenio Lupin: Caballero Y Ladrón - Maurice Leblan | 1600 | 1465 | 1465 | sí |
@@ -1961,13 +1959,13 @@ Discrepancias: **0**
 | MLU702990261 Antiguas Leyendas De Heroes Y Princesas | 1374 | 1326 | 1326 | sí |
 | MLU702990247 Antiguamente El Viento Pablo Albo Editorial La Fra | 2040 | 1772 | 1772 | sí |
 | MLU702989631 Libro Las Anticipaciones - Poesia Completa - Pedro | 1530 | 1485 | 1485 | sí |
-| MLU702982561 Aprender Ciencias Sociales 6 Nacion | 1530 | 1410 | 1410 | sí |
+| MLU702982561 Aprender Ciencias Sociales 6 Nacion | 1530 | 1425 | 1425 | sí |
 | MLU702980927 Aprenda Tacticas De Ajedrez, De Nunn John. Editori | 2300 | 1970 | 1970 | sí |
 | MLU702979949 El (ed.arg.) Apestoso Hombre Queso Y Otros Cuentos | 1930 | 1881 | 1881 | sí |
 | MLU702979127 La Escuela De Catequesis 6 Anunciamos Tu Reino, Se | 1452 | 1405 | 1405 | sí |
 | MLU702978617 Antonio Berni - Arte Para Chicos | 1919 | 1871 | 1871 | sí |
-| MLU702978345 Alfonsina Storni - Antología Poética - Libro | 1530 | 1410 | 1410 | sí |
-| MLU702977527 El Antisemitismo Explicado A Los Jovenes - Wievior | 1600 | 1254 | 1254 | sí |
+| MLU702978345 Alfonsina Storni - Antología Poética - Libro | 1530 | 1425 | 1425 | sí |
+| MLU702977527 El Antisemitismo Explicado A Los Jovenes - Wievior | 1600 | 1267 | 1267 | sí |
 | MLU702976943 Antigona - Electra - Sofocles | 1600 | 1341 | 1341 | sí |
 | MLU1523666228 Mochila Gold 4 Sbk Y Cd Rom N_e Pk, De Pinkley, Di | 1600 | 1316 | 1316 | sí |
 | MLU1523666114 Indestructibles: Baby Faces, De Amy Pixton. Editor | 1600 | 1255 | 1255 | sí |
@@ -2044,7 +2042,7 @@ Discrepancias: **0**
 | MLU1523499688 El Arte De Razonar Fernando Pessoa | 1600 | 1424 | 1424 | sí |
 | MLU1523499586 Libro El Arte De La Vida Japonesa - Jo Peters - Am | 3320 | 3177 | 3177 | sí |
 | MLU1523497384 Aventuras De Sherlock Holmes, Las, De Doyle, Arthu | 1600 | 1215 | 1215 | sí |
-| MLU1523497298 Las Aventuras De Pinocho - Literatubers | 1468 | 1351 | 1351 | sí |
+| MLU1523497298 Las Aventuras De Pinocho - Literatubers | 1468 | 1366 | 1366 | sí |
 | MLU1523497218 Las Aventuras De Marco Coco - Sopa De Libros | 1600 | 1237 | 1237 | sí |
 | MLU1523497166 Las Aventuras De Huckleberry Finn | 1600 | 1469 | 1469 | sí |
 | MLU1523496840 Alicia En El Pais De Las Maravillas Con Estuche -  | 2222 | 2168 | 2168 | sí |
@@ -2078,7 +2076,7 @@ Discrepancias: **0**
 | MLU1523483312 Avengers Sin Rendicion Vol. 2 - Marvel Legacy | 1600 | 1378 | 1378 | sí |
 | MLU1523483284 Avengers 03 El Desafio De Los Ghost Riders - Jason | 1600 | 1314 | 1314 | sí |
 | MLU1523483194 Avatar. The Last Airbender: La Promesa 01: Similar | 1600 | 1228 | 1228 | sí |
-| MLU1523482634 Autoridad Pedagógica Cuestión. Beatriz Greco Homos | 1530 | 1485 | 1485 | sí |
+| MLU1523482634 Autoridad Pedagógica Cuestión. Beatriz Greco Homos | 1530 | 1410 | 1410 | sí |
 | MLU1523482090 Sobre Ruedas - El Auto De Carreras - Yoyo - Libro: | 1600 | 1457 | 1457 | sí |
 | MLU1523481428 Libro - Libro Aula De Talentos - Gabriel Korenfeld | 1432 | 1386 | 1386 | sí |
 | MLU1523481134 El Atuendo De Los Libros, De Jhumpa Lahiri. Editor | 1600 | 1445 | 1445 | sí |
@@ -2095,12 +2093,12 @@ Discrepancias: **0**
 | MLU1523475200 El Semáforo Loco | 1600 | 1254 | 1254 | sí |
 | MLU1523474922 Arthur High King Of Britain - Michael Morpurgo, De | 1600 | 1484 | 1484 | sí |
 | MLU1523474796 Artemius Creep 2: El Cazamonstruos - Luca Blengino | 1600 | 1405 | 1405 | sí |
-| MLU1523474038 El Arte Del Relato - Los Mejores Goles Por Victor  | 1446 | 1331 | 1331 | sí |
+| MLU1523474038 El Arte Del Relato - Los Mejores Goles Por Victor  | 1446 | 1346 | 1346 | sí |
 | MLU1523473476 El Arte De La Paz, De Ueshiba, Morihei. Editorial  | 1620 | 1485 | 1485 | sí |
 | MLU1523459130 El Arte De La Guerra - Maquiavelo Nicolas | 1574 | 1524 | 1524 | sí |
 | MLU703070939 Bear & Bird Adventure & Other S, De Jarvis. Editor | 1600 | 1255 | 1255 | sí |
 | MLU703070903 Be Near Me, De O'hagan, Andrew. Editorial Faber &  | 1600 | 1454 | 1454 | sí |
-| MLU703070347 Batman. Detective Comics. La Ascencion De Los Homb | 1750 | 1465 | 1465 | sí |
+| MLU703070347 Batman. Detective Comics. La Ascencion De Los Homb | 1750 | 1410 | 1410 | sí |
 | MLU703070341 Batman Detective Comics Vol 2: El Sindicato De Las | 1660 | 1475 | 1475 | sí |
 | MLU703070169 La Batalla De La Luna Rosada - Bernal Pinilla, Lui | 1415 | 1376 | 1376 | sí |
 | MLU703069647 Baron Von Munchausen - Junge Hub-lekturen Stufe 1 | 1600 | 1395 | 1395 | sí |
@@ -2137,7 +2135,7 @@ Discrepancias: **0**
 | MLU703059255 Tarot Barbieri - 78 Cartas + Guia De Uso | 2110 | 1871 | 1871 | sí |
 | MLU703059161 Barajar Y Dar De Nuevo (2ª Edicion), De Jauretche, | 1600 | 1306 | 1306 | sí |
 | MLU703058737 Bamba Adonde Vas? - Para Los Mas Chiquitos, De Mai | 1600 | 1251 | 1251 | sí |
-| MLU703058695 Baltasar Contra El Olvido, De Koch, Mauricio. Edit | 1530 | 1485 | 1485 | sí |
+| MLU703058695 Baltasar Contra El Olvido, De Koch, Mauricio. Edit | 1530 | 1430 | 1430 | sí |
 | MLU703058689 Balneario - Jose Fliman, De Fliman, Jose. Editoria | 1600 | 1441 | 1441 | sí |
 | MLU703058681 Balloon Stickers Foodie Cuties, De Collingwood, So | 1600 | 1487 | 1487 | sí |
 | MLU703058671 Ballet School - Sticker Search | 1600 | 1351 | 1351 | sí |
@@ -2186,7 +2184,7 @@ Discrepancias: **0**
 | MLU703043629 Babuchas De Abu Kassem, Las, De Cinetto, Liliana., | 1600 | 1378 | 1378 | sí |
 | MLU703043451 Baba Yaga - Ort Stage 7 Traditional Tales Kel Edic | 1600 | 1341 | 1341 | sí |
 | MLU703043355 B. Traven Y George Kaplan - Frederic Sonntag | 1600 | 1314 | 1314 | sí |
-| MLU703043215 Los Aztecas | 1600 | 1204 | 1204 | sí |
+| MLU703043215 Los Aztecas | 1600 | 1217 | 1217 | sí |
 | MLU703042769 Ayakashi Triangle, De Kentaro Yabuki. Ayakashi Tri | 1600 | 1219 | 1219 | sí |
 | MLU703041999 Aventure En Savoie - Lectures Hub Juniors 1 (a1),  | 1600 | 1352 | 1352 | sí |
 | MLU703034675 Bear & Bird Picnic & Other Stor, De Jarvis. Editor | 1600 | 1255 | 1255 | sí |
@@ -2209,14 +2207,14 @@ Discrepancias: **0**
 | MLU703031503 The Bad Guys In The Big Bad Wolf (the Bad Guys 9). | 1600 | 1303 | 1303 | sí |
 | MLU703031415 The Bad Guys 4 | 1600 | 1303 | 1303 | sí |
 | MLU703031017 Bad Case Of Stripes,a - Scholastic Kel Ediciones,  | 1600 | 1445 | 1445 | sí |
-| MLU703030993 Las Bacterias Sean Unidas - Una Introduccion A La  | 1600 | 1227 | 1227 | sí |
+| MLU703030993 Las Bacterias Sean Unidas - Una Introduccion A La  | 1600 | 1257 | 1257 | sí |
 | MLU703030919 Baby, Let's Eat - Indestructibles, De Pixton, Amy. | 1600 | 1255 | 1255 | sí |
 | MLU703030899 The Baby Sister, De Depaola, Tomie. Editorial Peng | 1600 | 1384 | 1384 | sí |
 | MLU703030883 Baby Proof, De Giffin, Emily. Editorial Palgrave-m | 2281 | 2227 | 2227 | sí |
 | MLU703030463 B Is For Burglar - Sue Grafton, De Grafton, Sue. E | 1720 | 1495 | 1495 | sí |
 | MLU703030315 The Aztec Adventure - Timekeepers - Sj King | 1600 | 1319 | 1319 | sí |
 | MLU703029343 Aventureros Y Enamorados 2/ed. - Azulejos Naranja | 1530 | 1485 | 1485 | sí |
-| MLU703028685 Las Aventuras De Tom Sawyer - La Puerta Secreta | 1435 | 1331 | 1331 | sí |
+| MLU703028685 Las Aventuras De Tom Sawyer - La Puerta Secreta | 1435 | 1346 | 1346 | sí |
 | MLU1524220376 Libro Breve Historia Del Conflicto Entre Israel Y  | 1650 | 1488 | 1488 | sí |
 | MLU1524220176 Breve Historia De La Civilización - Relatos, Viaje | 1530 | 1485 | 1485 | sí |
 | MLU1524220144 Breve Elogio De La Brevedad, De Gutierrez-rubi, An | 1600 | 1202 | 1202 | sí |
@@ -2288,11 +2286,11 @@ Discrepancias: **0**
 | MLU1524193758 The Boy Who Knew Nothing - James Thorp, De Thorp,  | 1600 | 1385 | 1385 | sí |
 | MLU1524193476 Libro Boulevard - Caracoche, Marcelo, De Caracoche | 1530 | 1485 | 1485 | sí |
 | MLU1524193412 Botchan + Audio Cd - Young Adult Hub Readers Light | 1600 | 1485 | 1485 | sí |
-| MLU1524193388 Botanica Poetica - Juan Lima | 1530 | 1410 | 1410 | sí |
+| MLU1524193388 Botanica Poetica - Juan Lima | 1530 | 1425 | 1425 | sí |
 | MLU1524193372 Bot On The Moon - Big Cat 2b / Red B - Phonics, De | 1600 | 1287 | 1287 | sí |
 | MLU1524193042 Boris: Puede Volar Un Humano? - Serie Azul | 1600 | 1473 | 1473 | sí |
 | MLU1524192956 Borges Y El Derecho, De Leonardo Pitlevnik. Editor | 1569 | 1524 | 1524 | sí |
-| MLU1524192224 Bolivia El Despertar De Un Pueblo Explotado Lucian | 1325 | 1214 | 1214 | sí |
+| MLU1524192224 Bolivia El Despertar De Un Pueblo Explotado Lucian | 1325 | 1227 | 1227 | sí |
 | MLU1524191992 Bodas De Sangre - Coleccion Literaria | 1530 | 1485 | 1485 | sí |
 | MLU1524191794 Bobby Fischer . Coleccion Grandes Maestros, De Gud | 1980 | 1851 | 1851 | sí |
 | MLU1524191760 Bob And The Pink Wig - Big Cat 2a / Red A - Phonic | 1600 | 1287 | 1287 | sí |
@@ -2318,7 +2316,7 @@ Discrepancias: **0**
 | MLU1524181394 Bravissimo! 1 A1 - Libro Dello Studente, De Birell | 3660 | 3395 | 3395 | sí |
 | MLU1524180856 The Boy Who Could Fly - Sally Gardner, De Gardner, | 1600 | 1405 | 1405 | sí |
 | MLU1524180408 Outlet : Bosques Que Sanan . Los Baños De Bosque | 2620 | 2316 | 2316 | sí |
-| MLU1524180030 Borges En 90 Minutos De Paul Strathern, De Paul St | 1600 | 1435 | 1435 | sí |
+| MLU1524180030 Borges En 90 Minutos De Paul Strathern, De Paul St | 1600 | 1381 | 1381 | sí |
 | MLU1524179830 Book Of Opposites - Here We Are - Oliver Jeffers,  | 1790 | 1421 | 1421 | sí |
 | MLU1524179786 The Book Of Laughter And Forgetting - Milan Kunder | 2212 | 2158 | 2158 | sí |
 | MLU1524179780 The Book Of Laughter And Forgetting, De Milan Kund | 1618 | 1574 | 1574 | sí |
@@ -2346,7 +2344,7 @@ Discrepancias: **0**
 | MLU703073519 The Berenstain Bears' Seashore Treasure | 1600 | 1231 | 1231 | sí |
 | MLU703073487 Benteveo Palabras - Animales - Sara Ines Gomez Car | 1530 | 1485 | 1485 | sí |
 | MLU703073375 Ben´s Big Swim - Oxford | 1475 | 1435 | 1435 | sí |
-| MLU703073293 La Belleza Tiene Su Ciencia - Servera F. Ciencia Q | 1452 | 1331 | 1331 | sí |
+| MLU703073293 La Belleza Tiene Su Ciencia - Servera F. Ciencia Q | 1452 | 1346 | 1346 | sí |
 | MLU703073111 La Bella Helena - Ezequiel Bajder | 1600 | 1346 | 1346 | sí |
 | MLU703073087 La Bella Despierta En Las Redes - Silvestre - Vers | 1600 | 1346 | 1346 | sí |
 | MLU703073061 Belgrano - Personajes Del Mundo | 1403 | 1356 | 1356 | sí |
@@ -2364,7 +2362,7 @@ Discrepancias: **0**
 | MLU703063407 Berniberni- Artescuela, De Noemí Hendel , Silvia M | 1600 | 1219 | 1219 | sí |
 | MLU703063357 Libro Berenstain Bears And The Trouble With Friend | 1600 | 1303 | 1303 | sí |
 | MLU703063341 Beowulf + Audio Cd | 1770 | 1663 | 1663 | sí |
-| MLU703063307 Benteveo Palabras 1: En Imprenta Mayúscula Kel Edi | 1530 | 1410 | 1410 | sí |
+| MLU703063307 Benteveo Palabras 1: En Imprenta Mayúscula Kel Edi | 1530 | 1425 | 1425 | sí |
 | MLU703063285 Benito, El Inspector De Zocalos - Mancilla Prieto  | 1600 | 1270 | 1270 | sí |
 | MLU703063143 Ben And Bobo - Band 2b - Big Cat Kel Ediciones, De | 1600 | 1287 | 1287 | sí |
 | MLU703063053 Belleza De Aprender (contiene Dvd) (cartone) - Kri | 1600 | 1445 | 1445 | sí |
@@ -2399,7 +2397,7 @@ Discrepancias: **0**
 | MLU703048607 Actos Patrios. Nuevas Sugerencias Y Propuestas 25/ | 1530 | 1485 | 1485 | sí |
 | MLU703041233 El Big Bang, De Gangui, Alejandro. Editorial Eudeb | 2378 | 2326 | 2326 | sí |
 | MLU703041007 Biff, Chip And Kipper Companion 2 Year - Oxford Re | 1484 | 1435 | 1435 | sí |
-| MLU703040371 Libro Bicis En La Via - Patricia Iglesias Torres | 1600 | 1214 | 1214 | sí |
+| MLU703040371 Libro Bicis En La Via - Patricia Iglesias Torres | 1600 | 1227 | 1227 | sí |
 | MLU703039715 Biciencias 2 El Arbol Verde Limon Kapelusz | 1530 | 1485 | 1485 | sí |
 | MLU703039461 La Bicicleta Voladora - Serie Naranja Crecer Crean | 1600 | 1267 | 1267 | sí |
 | MLU703039175 Libro La Biblioteca Y La Formacion De Niños Lector | 1600 | 1485 | 1485 | sí |
@@ -2529,7 +2527,7 @@ Discrepancias: **0**
 | MLU703109833 Caidos Del Mapa 3 - Nueva Tapa - Maria Ines Falcon | 1549 | 1504 | 1504 | sí |
 | MLU703109655 Libro Los Aristogatitos - El Café De Las Huellitas | 1530 | 1485 | 1485 | sí |
 | MLU703109283 Cachito Y Chorlito - Chanti | 1600 | 1310 | 1310 | sí |
-| MLU703109085 Cabaña Del Bosque La - Maestro Lopez | 1600 | 1214 | 1214 | sí |
+| MLU703109085 Cabaña Del Bosque La - Maestro Lopez | 1600 | 1227 | 1227 | sí |
 | MLU703109035 El Caballo Que No Sabía Relinchar - G. Gambaro - L | 1530 | 1485 | 1485 | sí |
 | MLU703108789 By A Thread - Lucy Score, De Score, Lucy. Editoria | 1880 | 1673 | 1673 | sí |
 | MLU703108787 Buzz Boy And Fly Guy - Fly Guy 9 - Tedd Arnold, De | 1600 | 1448 | 1448 | sí |
@@ -2541,7 +2539,7 @@ Discrepancias: **0**
 | MLU703107307 Buenos Aires Y Un Viaje Por La Argentina (para Col | 1482 | 1435 | 1435 | sí |
 | MLU703107095 Libro Infantil Buenas Noches Blue - Aprende Con Bl | 1600 | 1288 | 1288 | sí |
 | MLU703106729 Bucaneros - J.j. Rovella - J. Suppa - Comiks Debri | 1600 | 1247 | 1247 | sí |
-| MLU703106609 Bruna La Valiente - Almohadon, De Almohadon. Edito | 1316 | 1277 | 1277 | sí |
+| MLU703106609 Bruna La Valiente - Almohadon, De Almohadon. Edito | 1316 | 1234 | 1234 | sí |
 | MLU703106595 Bruna Se Viste De Furia Libro Infantil 3 A 7 Años  | 1750 | 1405 | 1405 | sí |
 | MLU703104341 Libro Caperucita Roja, De Filipek, Nina. Editorial | 1600 | 1494 | 1494 | sí |
 | MLU703104323 Caperucita Roja - Liliana Cinetto / Mariano Diaz P | 1600 | 1378 | 1378 | sí |
@@ -2553,7 +2551,7 @@ Discrepancias: **0**
 | MLU703104081 Capacitación Laboral - Abraham Pain | 1600 | 1389 | 1389 | sí |
 | MLU703104007 Caosmosis, De Gilles/ Guattari Felix Deleuze. Edit | 1520 | 1475 | 1475 | sí |
 | MLU703103881 El Canto Del Sol | 1600 | 1294 | 1294 | sí |
-| MLU703103635 The Canterville Ghost + Audio Cd - Green Apple + A | 1670 | 1390 | 1390 | sí |
+| MLU703103635 The Canterville Ghost + Audio Cd - Green Apple + A | 1670 | 1405 | 1405 | sí |
 | MLU703103629 Libro Mr (e) Canterville Ghost Etools, De Macmilla | 1600 | 1409 | 1409 | sí |
 | MLU703103467 Canta, Musa Los Mas Fascinantes Episodios De La Gu | 1530 | 1485 | 1485 | sí |
 | MLU703103217 El Candor Del Padre Brown - G. K. Chesterton - Gra | 1600 | 1370 | 1370 | sí |
@@ -2593,7 +2591,7 @@ Discrepancias: **0**
 | MLU703093729 Bruna Vive En La Luna - Andreas Fabiana Braverman | 1600 | 1378 | 1378 | sí |
 | MLU703091129 Caperucita En Manhattan, Carmen Martin Gaite, Ed.  | 2190 | 1881 | 1881 | sí |
 | MLU703091037 Cap Sur 3 A2.1 - Cahier D'exercises, De Varios Aut | 1790 | 1433 | 1433 | sí |
-| MLU703090619 The Canterville Ghost + Audio Cd-rom - Earlyreads  | 1600 | 1214 | 1214 | sí |
+| MLU703090619 The Canterville Ghost + Audio Cd-rom - Earlyreads  | 1600 | 1227 | 1227 | sí |
 | MLU703089891 La Canciãâ³n Donde Ella Vive, De Ruiz García, Dani | 2210 | 1999 | 1999 | sí |
 | MLU703089773 Cancion De Viejo - Padeletti, De Padeletti, Hugo.  | 1530 | 1485 | 1485 | sí |
 | MLU703089743 Reino De Sirenas - La Cancion De Shyanna - Janet G | 1600 | 1314 | 1314 | sí |
@@ -2617,7 +2615,7 @@ Discrepancias: **0**
 | MLU703083345 El Caballo Patagónico Y Sus Jinetes, De Hechenleit | 1600 | 1428 | 1428 | sí |
 | MLU703083335 El Caballo De Chuang Tzu - Andruetto - Istvanch | 1600 | 1346 | 1346 | sí |
 | MLU703083293 Libro Caballero Que Cayo Al Mar, El - Lewis, H.c. | 1530 | 1485 | 1485 | sí |
-| MLU703082947 Penguin Kids 3 Butterflies And Frogs Reader Clil,  | 1600 | 1455 | 1455 | sí |
+| MLU703082947 Penguin Kids 3 Butterflies And Frogs Reader Clil,  | 1600 | 1482 | 1482 | sí |
 | MLU703082937 Butterflies - Macmillan Factual Readers 1+, De Fel | 1600 | 1235 | 1235 | sí |
 | MLU703082855 Busqueda Del Tesoro, La | 1530 | 1485 | 1485 | sí |
 | MLU703082569 Busco Los Colores - Luna Llena | 1600 | 1394 | 1394 | sí |
@@ -2662,7 +2660,7 @@ Discrepancias: **0**
 | MLU1524518830 Casas Y Cosas Nueva Edicion, De Diana Briones - No | 1600 | 1346 | 1346 | sí |
 | MLU1524518540 La Casa Vacía, Algernon Blackwood, Ed. Siruela | 3250 | 2999 | 2999 | sí |
 | MLU1524518506 La Casa Perfecta, De Dede. Editorial Comunicarte E | 1600 | 1409 | 1409 | sí |
-| MLU1524515978 Cartas Y Sentencias - La Filosofia De Epicuro, De  | 1600 | 1485 | 1485 | sí |
+| MLU1524515978 Cartas Y Sentencias - La Filosofia De Epicuro, De  | 1600 | 1430 | 1430 | sí |
 | MLU1524513928 Carta De Jamaica - Simon Bolivar | 1553 | 1504 | 1504 | sí |
 | MLU1524513648 Carroceria: Elementos Fijos (5ta.edicion), De Ague | 2370 | 2316 | 2316 | sí |
 | MLU1524513308 La Carrera De Almendra, De Eddie Fitté. Editorial  | 1600 | 1374 | 1374 | sí |
@@ -2705,7 +2703,7 @@ Discrepancias: **0**
 | MLU1524484968 Cats - Band 1b - Big Cat Kel Ediciones, De Llewell | 1600 | 1287 | 1287 | sí |
 | MLU1524483574 Cat And Dog - Big Cat 0 / Lilac, De Rayner, Shoo.  | 1600 | 1267 | 1267 | sí |
 | MLU1524482388 Casos Materiales Del Derecho Del Trabajo Y De La S | 1325 | 1287 | 1287 | sí |
-| MLU1524482208 La Casona De Los Experimentos - Alandar Morada | 1482 | 1362 | 1362 | sí |
+| MLU1524482208 La Casona De Los Experimentos - Alandar Morada | 1482 | 1376 | 1376 | sí |
 | MLU1524482002 El Caso Dora - Freud, Sigmund | 1530 | 1485 | 1485 | sí |
 | MLU1524481990 El Caso Del Robo Al Correo Jorge Grubissich Amauta | 1600 | 1441 | 1441 | sí |
 | MLU1524481782 El Caso Del Colegio De La Abadia - La Maquina De H | 1600 | 1386 | 1386 | sí |
@@ -2719,7 +2717,7 @@ Discrepancias: **0**
 | MLU1524474810 Carolina Cacerola - Martin Cristal / O'kif | 1600 | 1409 | 1409 | sí |
 | MLU1524474706 Magic Tree House #33 Carnival At Candlelight, De M | 1600 | 1303 | 1303 | sí |
 | MLU1524474262 Carmen En Fuga Menor - Carole Frechette - Cántaro, | 1530 | 1485 | 1485 | sí |
-| MLU1524473502 Carboncito, El Gato - Hora De Lectura - Vera Salin | 1530 | 1485 | 1485 | sí |
+| MLU1524473502 Carboncito, El Gato - Hora De Lectura - Vera Salin | 1530 | 1430 | 1430 | sí |
 | MLU1524472582 Caracol Col Col - Upalala - Alvarez Rivera - Fitti | 1600 | 1453 | 1453 | sí |
 | MLU1524372646 Libro Capybara ! - Squish N Squeeze, De Fewery, Al | 1600 | 1487 | 1487 | sí |
 | MLU1524371452 Libro Libro Lego Harry Potter. Capitán Del Equipo  | 1600 | 1485 | 1485 | sí |
@@ -2787,7 +2785,7 @@ Discrepancias: **0**
 | MLU1524955408 Charlie Hernandez Y La Liga De Las Sombras | 1375 | 1336 | 1336 | sí |
 | MLU1524955378 Charlie And The Notting Hill Carnival - Hello Kids | 1600 | 1336 | 1336 | sí |
 | MLU1524955356 Charlie And The Chocolate Factory - Dahl, Roald | 1600 | 1435 | 1435 | sí |
-| MLU1524954578 Chanyelin - Murail Marie Aude | 1393 | 1274 | 1274 | sí |
+| MLU1524954578 Chanyelin - Murail Marie Aude | 1393 | 1287 | 1287 | sí |
 | MLU1524954574 Chanson Pour Faire Danser En Rond Les Petits Enfan | 1600 | 1451 | 1451 | sí |
 | MLU1524954034 Chaman, De Carina Altonaga. Trouz, Vol. 1. Editori | 1600 | 1276 | 1276 | sí |
 | MLU1524944882 Libro Che, El. Revolucion Latinoamericana Y Social | 1600 | 1247 | 1247 | sí |
@@ -2810,7 +2808,7 @@ Discrepancias: **0**
 | MLU703171525 Charlie And The Great Fire Of London - Hello Kids  | 1600 | 1336 | 1336 | sí |
 | MLU703151247 Los Amigos De Elmer - David Mckee | 1530 | 1469 | 1469 | sí |
 | MLU703259173 Chicas Manga - Fkg | 1600 | 1314 | 1314 | sí |
-| MLU703258633 Libro La Chica Que Dibujaba Círculos Amarillos [ O | 1600 | 1410 | 1410 | sí |
+| MLU703258633 Libro La Chica Que Dibujaba Círculos Amarillos [ O | 1600 | 1425 | 1425 | sí |
 | MLU703258411 Chica Del Milagro, La - Cecilia Fanti | 1540 | 1494 | 1494 | sí |
 | MLU703257569 Cherry Magic: ¡30 Años De Virginidad Te Convierten | 1600 | 1316 | 1316 | sí |
 | MLU703245999 Las Chicas Bergman, De Gurubi Ágnes. Serie N/a, Vo | 1637 | 1593 | 1593 | sí |
@@ -2879,7 +2877,7 @@ Discrepancias: **0**
 | MLU1525816588 La Chocolateria De La Bruja - Versionaditos | 1600 | 1287 | 1287 | sí |
 | MLU1525816494 Chobits 08 (ultimo Tomo) - Clamp | 1600 | 1235 | 1235 | sí |
 | MLU1525815054 Children Of Dune - Dune 3 - Deluxe Edicion - Frank | 5360 | 5224 | 5224 | sí |
-| MLU1525815028 Chicos Y Las Pantallas Los - Morduchowicz Roxana | 1534 | 1485 | 1485 | sí |
+| MLU1525815028 Chicos Y Las Pantallas Los - Morduchowicz Roxana | 1534 | 1410 | 1410 | sí |
 | MLU703311429 Disney Cinderella - Kathryn, Rachel | 1600 | 1422 | 1422 | sí |
 | MLU703310245 Los Cinco Van De Camping, De Blyton Enid. Editoria | 1600 | 1504 | 1504 | sí |
 | MLU703309695 Los Cinco Se Ven En Apuros, De Blyton Enid. Editor | 1600 | 1504 | 1504 | sí |
@@ -2944,7 +2942,7 @@ Discrepancias: **0**
 | MLU1526370896 La Ciudad De Los Ricos Y La Ciudad De Los Pobres,  | 1600 | 1504 | 1504 | sí |
 | MLU1526370808 Ciudad De La Luna Eterna, La - Sanz, Esther | 2623 | 2564 | 2564 | sí |
 | MLU1526359720 Ciudad Vista:mercancias Y Cultura Urbana | 1623 | 1574 | 1574 | sí |
-| MLU1526357944 La Ciudad De Los Puentes Obsoletos | 1533 | 1410 | 1410 | sí |
+| MLU1526357944 La Ciudad De Los Puentes Obsoletos | 1533 | 1425 | 1425 | sí |
 | MLU1526357832 Ciudad De Impermanencia - Mackintosh - Letras Plat | 2050 | 1926 | 1926 | sí |
 | MLU1526349352 Class Two At The Zoo - Wordsmith Y1 Kel Ediciones | 1600 | 1295 | 1295 | sí |
 | MLU1526349324 Class Three All At Sea - Julia Jarman, De Jarman,  | 1600 | 1432 | 1432 | sí |
@@ -2955,7 +2953,7 @@ Discrepancias: **0**
 | MLU1526332686 Atelier Of Witch Hat 6 - Kamone Shirahama | 1600 | 1237 | 1237 | sí |
 | MLU1526227946 La Ciudad A Lo Lejos De Jean Luc Nancy Editorial M | 1600 | 1257 | 1257 | sí |
 | MLU1526227876 Libro City Of Heavenly Fire - Cassandra Clare, De  | 1830 | 1732 | 1732 | sí |
-| MLU1526227862 City Of Girls, De Gilbert, Elizabeth. Editorial Vi | 1940 | 1880 | 1880 | sí |
+| MLU1526227862 City Of Girls, De Gilbert, Elizabeth. Editorial Vi | 1940 | 1812 | 1812 | sí |
 | MLU1526227816 Libro City Of Blades - Divine Cities Trilogy 2 - R | 2290 | 2073 | 2073 | sí |
 | MLU703313981 City Of Last Chances - Adrian Tchaikovsky, De Tcha | 1860 | 1704 | 1704 | sí |
 | MLU703313963 Mortal Instruments,the 3: City Of Glass Kel Edicio | 1720 | 1659 | 1659 | sí |
@@ -2964,222 +2962,226 @@ Discrepancias: **0**
 | MLU703288295 City Of Lost Souls - Cassandra Clare, De Clare, Ca | 1760 | 1663 | 1663 | sí |
 | MLU703288207 City Of Dragons - The Rain Wild Chronicles 3 - Rob | 1740 | 1704 | 1704 | sí |
 | MLU703288179 City And Its Uncertain Walls, The - Harvill Secker | 3720 | 3519 | 3519 | sí |
-| MLU1521251744 A Las Estrellas Lo Inmenso | 1670 | 1557 | 1557 | sí |
-| MLU702854493 Aforismos Visiones Y Sueãâos, De Kafka, Franz. El  | 2130 | 1852 | 1852 | sí |
-| MLU1522304732 Ajedrez Elemental Para Principiantes Por Grandes M | 1810 | 1656 | 1656 | sí |
-| MLU1522304728 El Ajedrez De La Vida - Jordi Agusti, De Jordi Agu | 3960 | 3596 | 3596 | sí |
-| MLU1522304504 Ahora Que La Vida - Serrano Morón,ismael | 2200 | 2077 | 2077 | sí |
-| MLU1522266756 Libro Akron House Mystery - Green Apple A2, De Cle | 1700 | 1561 | 1561 | sí |
-| MLU1522951708 Amor A La Vida Tapa Dura Cartone, De London, Jack. | 2130 | 2008 | 2008 | sí |
-| MLU1522951634 Amistad Para Adultos | 1600 | 1537 | 1537 | sí |
-| MLU1522912560 Libro Amigos, De Merixell Duran. Editorial Combel, | 1740 | 1537 | 1537 | sí |
-| MLU1522607898 Amici Di Italia 3 - Libro Dello Studente, De No Ap | 2370 | 2140 | 2140 | sí |
-| MLU1522603822 Ambaraba 5 - Libro Estudiantil, De Codato, Chiara. | 2220 | 2089 | 2089 | sí |
-| MLU1522603766 Ambaraba 3 - Libro Dello Studente, De Casati, Fabi | 2290 | 2089 | 2089 | sí |
-| MLU1522466576 Algas, Verduras Del Mar | 2610 | 2439 | 2439 | sí |
-| MLU1522463652 Alaska Adventure A2, De Gina,d.b. Editorial Vicens | 1700 | 1596 | 1596 | sí |
-| MLU1522455220 Alice's Adventures In Wonderland - Vicens Vives | 1770 | 1596 | 1596 | sí |
-| MLU1522453960 Libro Algo Por Lo Que Vivir - Richard Roper | 2450 | 2106 | 2106 | sí |
-| MLU1522452212 Alejandro, Genio Ardiente, De Torrione, Margarita. | 2290 | 2165 | 2165 | sí |
-| MLU1522450450 Alana, La Bailarina Del Agua, De Cardoso, Alice. E | 1810 | 1665 | 1665 | sí |
-| MLU702964307 Alma En Forma Cuerpo En Forma - Brant Secunda Y Al | 1800 | 1684 | 1684 | sí |
-| MLU702964249 El Alma Del Samurái, De Cleary, Thomas. Editorial  | 1700 | 1537 | 1537 | sí |
-| MLU702950397 Amenaza Entre Las Sombras, De Howard, Linda. Edito | 2080 | 1665 | 1665 | sí |
-| MLU702950059 Ambaraba 3 - Quaderni Di Lavoro | 2160 | 2086 | 2086 | sí |
-| MLU702944765 Alien Alert In Seattle - R&t 1 (a2), De Clemen, Gi | 1740 | 1596 | 1596 | sí |
-| MLU702943881 Alicia En El Pais De Las Maravillas - Aula De Lite | 1880 | 1812 | 1812 | sí |
-| MLU702930265 Alguien Te Quiere, Sr. Cascarón | 2110 | 1872 | 1872 | sí |
-| MLU702929491 Algo Elemental Eliot Weinberger Atalanta | 3100 | 2674 | 2674 | sí |
-| MLU1523291308 Arriviamo 1 (liv Pre A1) Corso Bambini - Libro Stu | 2320 | 2187 | 2187 | sí |
-| MLU1523265276 Una Preciosa Vaquilla (ariol 4) | 1593 | 1264 | 1264 | sí |
-| MLU1523104704 Libro Apologia De Los Templarios, De Plane J.m.. E | 2100 | 1979 | 1979 | sí |
-| MLU1523100952 Anti Rallo, De Bagus, Philipp. Union Editorial, Ta | 1600 | 1488 | 1488 | sí |
-| MLU1523100708 Antes Y Después De Auschwitz - Ferrando Garcia, Mo | 3340 | 2949 | 2949 | sí |
-| MLU1523096668 Animales Y Más Que Animales, De Saki. Editorial Cl | 1600 | 1519 | 1519 | sí |
-| MLU1523005058 Anda Conejito ! - David Ezra Stein | 2010 | 1753 | 1753 | sí |
-| MLU1523004442 Anatomia De La Paz - The Arbinger Institute | 2680 | 2372 | 2372 | sí |
-| MLU1522964380 Antes Y Despues Del Cubismo - Jimenez Blanco Maria | 1620 | 1488 | 1488 | sí |
-| MLU1522955096 Anatomia Del Crimen - Sanchez Soler Marian - #w | 2560 | 2420 | 2420 | sí |
+| MLU1521251744 A Las Estrellas Lo Inmenso | 1670 | 1574 | 1574 | sí |
+| MLU702854493 Aforismos Visiones Y Sueãâos, De Kafka, Franz. El  | 2130 | 1871 | 1871 | sí |
+| MLU1522304732 Ajedrez Elemental Para Principiantes Por Grandes M | 1810 | 1673 | 1673 | sí |
+| MLU1522304728 El Ajedrez De La Vida - Jordi Agusti, De Jordi Agu | 3960 | 3633 | 3633 | sí |
+| MLU1522304504 Ahora Que La Vida - Serrano Morón,ismael | 2200 | 2098 | 2098 | sí |
+| MLU1522266756 Libro Akron House Mystery - Green Apple A2, De Cle | 1700 | 1578 | 1578 | sí |
+| MLU1522951708 Amor A La Vida Tapa Dura Cartone, De London, Jack. | 2130 | 2029 | 2029 | sí |
+| MLU1522951634 Amistad Para Adultos | 1600 | 1554 | 1554 | sí |
+| MLU1522912560 Libro Amigos, De Merixell Duran. Editorial Combel, | 1740 | 1554 | 1554 | sí |
+| MLU1522607898 Amici Di Italia 3 - Libro Dello Studente, De No Ap | 2370 | 2163 | 2163 | sí |
+| MLU1522603822 Ambaraba 5 - Libro Estudiantil, De Codato, Chiara. | 2220 | 2111 | 2111 | sí |
+| MLU1522603766 Ambaraba 3 - Libro Dello Studente, De Casati, Fabi | 2290 | 2111 | 2111 | sí |
+| MLU1522466576 Algas, Verduras Del Mar | 2610 | 2465 | 2465 | sí |
+| MLU1522463652 Alaska Adventure A2, De Gina,d.b. Editorial Vicens | 1700 | 1613 | 1613 | sí |
+| MLU1522455220 Alice's Adventures In Wonderland - Vicens Vives | 1770 | 1613 | 1613 | sí |
+| MLU1522453960 Libro Algo Por Lo Que Vivir - Richard Roper | 2450 | 2128 | 2128 | sí |
+| MLU1522452212 Alejandro, Genio Ardiente, De Torrione, Margarita. | 2290 | 2187 | 2187 | sí |
+| MLU1522450450 Alana, La Bailarina Del Agua, De Cardoso, Alice. E | 1810 | 1683 | 1683 | sí |
+| MLU702964307 Alma En Forma Cuerpo En Forma - Brant Secunda Y Al | 1800 | 1616 | 1616 | sí |
+| MLU702964249 El Alma Del Samurái, De Cleary, Thomas. Editorial  | 1700 | 1554 | 1554 | sí |
+| MLU702950397 Amenaza Entre Las Sombras, De Howard, Linda. Edito | 2080 | 1683 | 1683 | sí |
+| MLU702950059 Ambaraba 3 - Quaderni Di Lavoro | 2160 | 2108 | 2108 | sí |
+| MLU702944765 Alien Alert In Seattle - R&t 1 (a2), De Clemen, Gi | 1740 | 1613 | 1613 | sí |
+| MLU702943881 Alicia En El Pais De Las Maravillas - Aula De Lite | 1880 | 1743 | 1743 | sí |
+| MLU702930265 Alguien Te Quiere, Sr. Cascarón | 2110 | 1890 | 1890 | sí |
+| MLU702929491 Algo Elemental Eliot Weinberger Atalanta | 3100 | 2702 | 2702 | sí |
+| MLU1523291308 Arriviamo 1 (liv Pre A1) Corso Bambini - Libro Stu | 2320 | 2210 | 2210 | sí |
+| MLU1523265276 Una Preciosa Vaquilla (ariol 4) | 1593 | 1277 | 1277 | sí |
+| MLU1523104704 Libro Apologia De Los Templarios, De Plane J.m.. E | 2100 | 1910 | 1910 | sí |
+| MLU1523100952 Anti Rallo, De Bagus, Philipp. Union Editorial, Ta | 1600 | 1430 | 1430 | sí |
+| MLU1523100708 Antes Y Después De Auschwitz - Ferrando Garcia, Mo | 3340 | 2979 | 2979 | sí |
+| MLU1523096668 Animales Y Más Que Animales, De Saki. Editorial Cl | 1600 | 1536 | 1536 | sí |
+| MLU1523005058 Anda Conejito ! - David Ezra Stein | 2010 | 1772 | 1772 | sí |
+| MLU1523004442 Anatomia De La Paz - The Arbinger Institute | 2680 | 2395 | 2395 | sí |
+| MLU1522964380 Antes Y Despues Del Cubismo - Jimenez Blanco Maria | 1620 | 1504 | 1504 | sí |
+| MLU1522955096 Anatomia Del Crimen - Sanchez Soler Marian - #w | 2560 | 2445 | 2445 | sí |
 | MLU1522954762 Analisis Transaccional - Conocete A Ti Mismo A Tra | 2920 | 2508 | 2508 | sí |
-| MLU1522947194 Animales Y Formas - Mis Adhesivos 3 - Ate Boisnard | 1600 | 1488 | 1488 | sí |
-| MLU1522944168 Libro El Animal De La Felicidad, De Jelbert, Will. | 1940 | 1845 | 1845 | sí |
-| MLU1522933622 Animales In Harena - Muñoz-santos, Maria Engracia | 2850 | 2586 | 2586 | sí |
-| MLU1522931562 Libro Animalario - Angels | 2650 | 2309 | 2309 | sí |
-| MLU703023893 Around The World In Eighty Days + Cd Reading And T | 1740 | 1518 | 1518 | sí |
-| MLU703023887 Around The World In Eighty Days - R&t 2 (b1.1), De | 1740 | 1596 | 1596 | sí |
+| MLU1522947194 Animales Y Formas - Mis Adhesivos 3 - Ate Boisnard | 1600 | 1504 | 1504 | sí |
+| MLU1522944168 Libro El Animal De La Felicidad, De Jelbert, Will. | 1940 | 1864 | 1864 | sí |
+| MLU1522933622 Animales In Harena - Muñoz-santos, Maria Engracia | 2850 | 2613 | 2613 | sí |
+| MLU1522931562 Libro Animalario - Angels | 2650 | 2333 | 2333 | sí |
+| MLU703023893 Around The World In Eighty Days + Cd Reading And T | 1740 | 1460 | 1460 | sí |
+| MLU703023887 Around The World In Eighty Days - R&t 2 (b1.1), De | 1740 | 1613 | 1613 | sí |
 | MLU703022789 Libro Arboles Son Hermosos, Los - Janice May Udary | 1890 | 1776 | 1776 | sí |
-| MLU702996053 Aprendiz De Maga - El Trebol Azul - Serie Magenta, | 1346 | 1292 | 1292 | sí |
-| MLU702986263 Libro Ãârabe Para Viajar, De Anaya Touring. Editor | 1720 | 1606 | 1606 | sí |
-| MLU702981407 Aprender A Improvisar Al Piano - Mejorar Tu Creati | 1980 | 1792 | 1792 | sí |
-| MLU702980555 Apparition Et Autres Contes, De Maupassant, Guy De | 1800 | 1546 | 1546 | sí |
-| MLU1523665654 Azicar Y Sal, De Autor. Editorial Oqo, Editora En  | 1900 | 1641 | 1641 | sí |
-| MLU1523662916 La Aventura Diferente - Cintia Fritz | 1762 | 1694 | 1694 | sí |
-| MLU1523657598 Astronomia Popular | 1630 | 1518 | 1518 | sí |
-| MLU1523654324 Los Artistas Y La Politica - Woolf Virginia | 1850 | 1460 | 1460 | sí |
+| MLU702996053 Aprendiz De Maga - El Trebol Azul - Serie Magenta, | 1346 | 1306 | 1306 | sí |
+| MLU702986263 Libro Ãârabe Para Viajar, De Anaya Touring. Editor | 1720 | 1547 | 1547 | sí |
+| MLU702981407 Aprender A Improvisar Al Piano - Mejorar Tu Creati | 1980 | 1811 | 1811 | sí |
+| MLU702980555 Apparition Et Autres Contes, De Maupassant, Guy De | 1800 | 1563 | 1563 | sí |
+| MLU1523665654 Azicar Y Sal, De Autor. Editorial Oqo, Editora En  | 1900 | 1659 | 1659 | sí |
+| MLU1523662916 La Aventura Diferente - Cintia Fritz | 1762 | 1712 | 1712 | sí |
+| MLU1523657598 Astronomia Popular | 1630 | 1534 | 1534 | sí |
+| MLU1523654324 Los Artistas Y La Politica - Woolf Virginia | 1850 | 1475 | 1475 | sí |
 | MLU1523504794 Formidable Niño Rata: El Ataque Del Trol Fantasma  | 2420 | 2032 | 2032 | sí |
-| MLU1523504000 Astrología Y Astronomía En Renacimiento, Vernet, A | 1960 | 1811 | 1811 | sí |
-| MLU1523501908 Asesinato En El Savoy - Sjowall Maj | 1880 | 1646 | 1646 | sí |
-| MLU1523501826 Asesinato Del Sabado Por La Mañana, El - Batya Gur | 3210 | 3084 | 3084 | sí |
-| MLU1523489894 Asómate A La Selva | 2730 | 2445 | 2445 | sí |
-| MLU1523489434 Así Habla La Tierra, De Pigem Jordi. Editorial Kai | 1940 | 1782 | 1782 | sí |
-| MLU1523489060 Libro El Asesino De Policías - Serie Martin Beck I | 2000 | 1646 | 1646 | sí |
-| MLU1523483358 La Aventura De Cantar, De Sanuy Montse. Única, Vol | 3800 | 3390 | 3390 | sí |
+| MLU1523504000 Astrología Y Astronomía En Renacimiento, Vernet, A | 1960 | 1831 | 1831 | sí |
+| MLU1523501908 Asesinato En El Savoy - Sjowall Maj | 1880 | 1663 | 1663 | sí |
+| MLU1523501826 Asesinato Del Sabado Por La Mañana, El - Batya Gur | 3210 | 3116 | 3116 | sí |
+| MLU1523489894 Asómate A La Selva | 2730 | 2470 | 2470 | sí |
+| MLU1523489434 Así Habla La Tierra, De Pigem Jordi. Editorial Kai | 1940 | 1801 | 1801 | sí |
+| MLU1523489060 Libro El Asesino De Policías - Serie Martin Beck I | 2000 | 1663 | 1663 | sí |
+| MLU1523483358 La Aventura De Cantar, De Sanuy Montse. Única, Vol | 3800 | 3425 | 3425 | sí |
 | MLU1523482468 Automasajes Y Ejercicios Terapeuticos Chinos, De D | 1610 | 1547 | 1547 | sí |
-| MLU1523478524 Libro At Home - Baby Montessori - Agnese Baruzzi,  | 1600 | 1532 | 1532 | sí |
+| MLU1523478524 Libro At Home - Baby Montessori - Agnese Baruzzi,  | 1600 | 1548 | 1548 | sí |
 | MLU1523475648 Asertividad, La - Para Gente Extraordinaria | 2450 | 2322 | 2322 | sí |
-| MLU703058435 La Balada De Tom El Negro - Lavalle, Victor | 2500 | 2167 | 2167 | sí |
-| MLU703058121 Bajo Presion, De Honore, Carl. Editorial Rba Libro | 2740 | 2410 | 2410 | sí |
-| MLU703057795 El Baile De Los Fantasmas Y Otros Cuentos Escalofr | 1610 | 1498 | 1498 | sí |
-| MLU703056037 Ayuno Inteligente Arnold Ehret | 1870 | 1753 | 1753 | sí |
-| MLU703056013 Ayudese Con El Ocultismo. Arte Y Practica - Ophiel | 2030 | 1909 | 1909 | sí |
-| MLU703045187 Balada De La Carcel De Reading, La - Español/ingle | 1880 | 1763 | 1763 | sí |
-| MLU703044817 Bajo El Mismo Cielo - Teckentrup, Britta | 2750 | 2400 | 2400 | sí |
-| MLU703033113 Barbarroja Y La Burla De Alessandria, De Fo, Dario | 2010 | 1939 | 1939 | sí |
+| MLU703058435 La Balada De Tom El Negro - Lavalle, Victor | 2500 | 2189 | 2189 | sí |
+| MLU703058121 Bajo Presion, De Honore, Carl. Editorial Rba Libro | 2740 | 2435 | 2435 | sí |
+| MLU703057795 El Baile De Los Fantasmas Y Otros Cuentos Escalofr | 1610 | 1514 | 1514 | sí |
+| MLU703056037 Ayuno Inteligente Arnold Ehret | 1870 | 1772 | 1772 | sí |
+| MLU703056013 Ayudese Con El Ocultismo. Arte Y Practica - Ophiel | 2030 | 1930 | 1930 | sí |
+| MLU703045187 Balada De La Carcel De Reading, La - Español/ingle | 1880 | 1782 | 1782 | sí |
+| MLU703044817 Bajo El Mismo Cielo - Teckentrup, Britta | 2750 | 2425 | 2425 | sí |
+| MLU703033113 Barbarroja Y La Burla De Alessandria, De Fo, Dario | 2010 | 1960 | 1960 | sí |
 | MLU703031987 Bajo La Mole . Fragmentos De Civilizacion - Gramsc | 2230 | 1841 | 1841 | sí |
-| MLU703031843 Bajo Cero - Koepp, David | 2400 | 2077 | 2077 | sí |
-| MLU703030361 Azãâºcar Y Salud, De Vasey, Christopher. Editorial | 1810 | 1665 | 1665 | sí |
-| MLU703030015 Ayudas Naturales Para Dormir Bien - Laurel Vukovic | 2090 | 1890 | 1890 | sí |
-| MLU1524219012 The Bottle Imp + Audio Cd-rom - Green Apple A2 | 1690 | 1561 | 1561 | sí |
-| MLU1524218408 Borges El Laberinto Infinito - Nicolas Castell / O | 2440 | 2106 | 2106 | sí |
-| MLU1524216450 Blue Period 03 - Tsubasa Yamaguchi | 1600 | 1273 | 1273 | sí |
-| MLU1524212812 Biografía Difusa De Sombra Castañeda, De Marcio Ve | 1830 | 1488 | 1488 | sí |
+| MLU703031843 Bajo Cero - Koepp, David | 2400 | 2098 | 2098 | sí |
+| MLU703030361 Azãâºcar Y Salud, De Vasey, Christopher. Editorial | 1810 | 1683 | 1683 | sí |
+| MLU703030015 Ayudas Naturales Para Dormir Bien - Laurel Vukovic | 2090 | 1910 | 1910 | sí |
+| MLU1524219012 The Bottle Imp + Audio Cd-rom - Green Apple A2 | 1690 | 1578 | 1578 | sí |
+| MLU1524218408 Borges El Laberinto Infinito - Nicolas Castell / O | 2440 | 2128 | 2128 | sí |
+| MLU1524216450 Blue Period 03 - Tsubasa Yamaguchi | 1600 | 1287 | 1287 | sí |
+| MLU1524212812 Biografía Difusa De Sombra Castañeda, De Marcio Ve | 1830 | 1504 | 1504 | sí |
 | MLU1524207328 Breve Historia De La Medicina | 2210 | 2063 | 2063 | sí |
-| MLU1524207028 Libro Bravo - Mis Deditos ! - Mory | 2920 | 2674 | 2674 | sí |
-| MLU1524205868 The Boscombe Valley Mystery + Audio Cd + Webactivi | 1700 | 1596 | 1596 | sí |
-| MLU1524200312 Bioneuroemocion. Un Metodo Para El Bienestar Emoci | 2380 | 2067 | 2067 | sí |
-| MLU1524193986 Libro Brainstorm Me Va A Explotar El Cerebro, De G | 1600 | 1537 | 1537 | sí |
-| MLU1524192204 Bolero En La Villa De Los Viejos - Kongoli, Fatos, | 1770 | 1488 | 1488 | sí |
-| MLU1524181990 Bridget Jones:the Edge Of Reason Pb -fielding,hele | 1870 | 1675 | 1675 | sí |
-| MLU1524181742 Breve Historia De Todas Las Cosas | 2650 | 2312 | 2312 | sí |
-| MLU1524179372 Libro Las Bolsitas De La Seãâora T, De Merlán Bajo | 2590 | 2204 | 2204 | sí |
+| MLU1524207028 Libro Bravo - Mis Deditos ! - Mory | 2920 | 2702 | 2702 | sí |
+| MLU1524205868 The Boscombe Valley Mystery + Audio Cd + Webactivi | 1700 | 1613 | 1613 | sí |
+| MLU1524200312 Bioneuroemocion. Un Metodo Para El Bienestar Emoci | 2380 | 2088 | 2088 | sí |
+| MLU1524193986 Libro Brainstorm Me Va A Explotar El Cerebro, De G | 1600 | 1479 | 1479 | sí |
+| MLU1524192204 Bolero En La Villa De Los Viejos - Kongoli, Fatos, | 1770 | 1504 | 1504 | sí |
+| MLU1524181990 Bridget Jones:the Edge Of Reason Pb -fielding,hele | 1870 | 1692 | 1692 | sí |
+| MLU1524181742 Breve Historia De Todas Las Cosas | 2650 | 2336 | 2336 | sí |
+| MLU1524179372 Libro Las Bolsitas De La Seãâora T, De Merlán Bajo | 2590 | 2227 | 2227 | sí |
 | MLU1524176452 El Blanco Si Es Visible: Budo Y Bushido. Cuentos D | 2160 | 2038 | 2038 | sí |
-| MLU703075003 Libro La Biblia Del Mueble Clásico - Lexus Editore | 2890 | 2704 | 2704 | sí |
-| MLU703073757 Los Besos Perdidos, De Cano, Carles. Menudos Álbum | 2060 | 1851 | 1851 | sí |
-| MLU703073319 Bellissimo 2 - Libro Dello Studente + Eserciziario | 3640 | 3272 | 3272 | sí |
-| MLU703073215 Oferta. La Bella Y La Bestia | 2120 | 1773 | 1773 | sí |
-| MLU703072827 Libro Become A Monster At Mathematics (mad For Mat | 1640 | 1584 | 1584 | sí |
-| MLU703066735 Bienestar Emocional Y Mindfulness En La Educacion  | 3530 | 3105 | 3105 | sí |
-| MLU703063347 Beowulf Y Otros Poemas Anglosajones (siglos Vii-x) | 2180 | 2057 | 2057 | sí |
-| MLU703062393 Beatlestones - Delmas, Yves | 2680 | 2478 | 2478 | sí |
-| MLU703051893 Libro La Biblioteca Secreta Haruki Murakami Zorro  | 2180 | 1930 | 1930 | sí |
-| MLU703050481 Bestias - Carol Oates,joyce | 2590 | 2351 | 2351 | sí |
-| MLU703049703 Belleza Negra - Cucaña - Anna Sewell | 1990 | 1733 | 1733 | sí |
-| MLU703049389 Bel Ami - Maupassant, Guy De | 2460 | 2332 | 2332 | sí |
-| MLU703049365 Begone The Raggedy Witches - Wild Magic Trilogy 1, | 1600 | 1438 | 1438 | sí |
-| MLU703049061 Beauty And The Beats + Audio Cd - Green Apple Star | 1720 | 1562 | 1562 | sí |
-| MLU703038969 Biblioteca De Autãâ³grafos Espaãâ±oles, Iv. (siglo | 3690 | 3410 | 3410 | sí |
-| MLU703037175 Berg - Quin, Ann | 2520 | 2390 | 2390 | sí |
-| MLU703129067 Candidiasis , Tu Amiga Del Alma | 2050 | 1861 | 1861 | sí |
-| MLU703128713 Canción Segunda, De Morábito, Fabio., Vol. 1. Edit | 2300 | 2175 | 2175 | sí |
-| MLU703127601 Caminos Sobre La Mar Antologia Machado: Antología  | 1690 | 1625 | 1625 | sí |
-| MLU703122101 Los Cabezones De Las Galaxias, De Enrique V. Vegas | 2390 | 2263 | 2263 | sí |
-| MLU703121191 Bushido - Taira Shigesuke | 1600 | 1551 | 1551 | sí |
-| MLU703120645 El Bunyip - Jenny Wagner - Ron Brooks, De Wagner,  | 1910 | 1816 | 1816 | sí |
-| MLU703120381 Bugs - Mad For Science - Tecnoscienza - Agnese Bar | 2100 | 1939 | 1939 | sí |
-| MLU703120269 ¡buenos Días, Mariposa!, De Clima, Gabriele., Vol. | 1860 | 1567 | 1567 | sí |
-| MLU703109755 La Caãâda De Yellow Back Radio, De Reed, Ishmael., | 2510 | 2408 | 2408 | sí |
-| MLU703109461 La Cadena Áurea De Orfeo Joscelyn Godwin Siruela | 1990 | 1871 | 1871 | sí |
-| MLU703106849 Buen Dia Buenas Noches | 2000 | 1724 | 1724 | sí |
-| MLU703106739 Libro Buda Viviente, Cristo Viviente - Thich Nhat  | 2000 | 1586 | 1586 | sí |
-| MLU703099231 El Cambio Cuántico: Cómo El Nuevo Paradigma Cientí | 2270 | 1969 | 1969 | sí |
-| MLU703097073 La Caja Sorpresa, De Spiegelman, Art. Editorial La | 1600 | 1504 | 1504 | sí |
-| MLU703096837 Con Un Pie En El Micro - Caidos Del Mapa 2 - N/ed. | 1494 | 1430 | 1430 | sí |
-| MLU703095981 Libro El Caballero Que Tenía El Corazón Pesaroso ( | 2060 | 1832 | 1832 | sí |
-| MLU703094217 Libro Buenas Noches Dragoncitos, De Tyson, Leigh A | 1800 | 1518 | 1518 | sí |
-| MLU703093703 La Brújula Emocional: Cómo Pensar Mejor En Tus Sen | 1700 | 1567 | 1567 | sí |
-| MLU703090601 The Canterbury Tales + Audio Cd + Web Activities - | 1750 | 1596 | 1596 | sí |
-| MLU703089683 Canción De Navidad, De Charles Dickens. Serie 8490 | 1600 | 1485 | 1485 | sí |
-| MLU703087969 Camina Como Un Buda, De Rinzler, Lodro. Editorial  | 2110 | 1832 | 1832 | sí |
+| MLU703075003 Libro La Biblia Del Mueble Clásico - Lexus Editore | 2890 | 2732 | 2732 | sí |
+| MLU703073757 Los Besos Perdidos, De Cano, Carles. Menudos Álbum | 2060 | 1871 | 1871 | sí |
+| MLU703073319 Bellissimo 2 - Libro Dello Studente + Eserciziario | 3640 | 3306 | 3306 | sí |
+| MLU703073215 Oferta. La Bella Y La Bestia | 2120 | 1791 | 1791 | sí |
+| MLU703072827 Libro Become A Monster At Mathematics (mad For Mat | 1640 | 1600 | 1600 | sí |
+| MLU703066735 Bienestar Emocional Y Mindfulness En La Educacion  | 3530 | 3138 | 3138 | sí |
+| MLU703063347 Beowulf Y Otros Poemas Anglosajones (siglos Vii-x) | 2180 | 2079 | 2079 | sí |
+| MLU703062393 Beatlestones - Delmas, Yves | 2680 | 2504 | 2504 | sí |
+| MLU703051893 Libro La Biblioteca Secreta Haruki Murakami Zorro  | 2180 | 1950 | 1950 | sí |
+| MLU703050481 Bestias - Carol Oates,joyce | 2590 | 2376 | 2376 | sí |
+| MLU703049703 Belleza Negra - Cucaña - Anna Sewell | 1990 | 1752 | 1752 | sí |
+| MLU703049389 Bel Ami - Maupassant, Guy De | 2460 | 2356 | 2356 | sí |
+| MLU703049365 Begone The Raggedy Witches - Wild Magic Trilogy 1, | 1600 | 1454 | 1454 | sí |
+| MLU703049061 Beauty And The Beats + Audio Cd - Green Apple Star | 1720 | 1578 | 1578 | sí |
+| MLU703038969 Biblioteca De Autãâ³grafos Espaãâ±oles, Iv. (siglo | 3690 | 3446 | 3446 | sí |
+| MLU703037175 Berg - Quin, Ann | 2520 | 2415 | 2415 | sí |
+| MLU703129067 Candidiasis , Tu Amiga Del Alma | 2050 | 1881 | 1881 | sí |
+| MLU703128713 Canción Segunda, De Morábito, Fabio., Vol. 1. Edit | 2300 | 2197 | 2197 | sí |
+| MLU703127601 Caminos Sobre La Mar Antologia Machado: Antología  | 1690 | 1643 | 1643 | sí |
+| MLU703122101 Los Cabezones De Las Galaxias, De Enrique V. Vegas | 2390 | 2286 | 2286 | sí |
+| MLU703121191 Bushido - Taira Shigesuke | 1600 | 1568 | 1568 | sí |
+| MLU703120645 El Bunyip - Jenny Wagner - Ron Brooks, De Wagner,  | 1910 | 1835 | 1835 | sí |
+| MLU703120381 Bugs - Mad For Science - Tecnoscienza - Agnese Bar | 2100 | 1959 | 1959 | sí |
+| MLU703120269 ¡buenos Días, Mariposa!, De Clima, Gabriele., Vol. | 1860 | 1584 | 1584 | sí |
+| MLU703109755 La Caãâda De Yellow Back Radio, De Reed, Ishmael., | 2510 | 2433 | 2433 | sí |
+| MLU703109461 La Cadena Áurea De Orfeo Joscelyn Godwin Siruela | 1990 | 1890 | 1890 | sí |
+| MLU703106849 Buen Dia Buenas Noches | 2000 | 1742 | 1742 | sí |
+| MLU703106739 Libro Buda Viviente, Cristo Viviente - Thich Nhat  | 2000 | 1603 | 1603 | sí |
+| MLU703099231 El Cambio Cuántico: Cómo El Nuevo Paradigma Cientí | 2270 | 1989 | 1989 | sí |
+| MLU703097073 La Caja Sorpresa, De Spiegelman, Art. Editorial La | 1600 | 1520 | 1520 | sí |
+| MLU703096837 Con Un Pie En El Micro - Caidos Del Mapa 2 - N/ed. | 1494 | 1445 | 1445 | sí |
+| MLU703095981 Libro El Caballero Que Tenía El Corazón Pesaroso ( | 2060 | 1851 | 1851 | sí |
+| MLU703094217 Libro Buenas Noches Dragoncitos, De Tyson, Leigh A | 1800 | 1534 | 1534 | sí |
+| MLU703093703 La Brújula Emocional: Cómo Pensar Mejor En Tus Sen | 1700 | 1584 | 1584 | sí |
+| MLU703090601 The Canterbury Tales + Audio Cd + Web Activities - | 1750 | 1613 | 1613 | sí |
+| MLU703089683 Canción De Navidad, De Charles Dickens. Serie 8490 | 1600 | 1500 | 1500 | sí |
+| MLU703087969 Camina Como Un Buda, De Rinzler, Lodro. Editorial  | 2110 | 1851 | 1851 | sí |
 | MLU703087941 Camile Claudel, De Anne Delbée. Editorial Circe, E | 2370 | 2085 | 2085 | sí |
-| MLU703084385 Caja. La Fabulosa Historia De Mateo Y Su Amigo De  | 2350 | 2102 | 2102 | sí |
-| MLU703084269 Cairo, De Faravelli, Stefano. Editorial Confluenci | 2500 | 2238 | 2238 | sí |
+| MLU703084385 Caja. La Fabulosa Historia De Mateo Y Su Amigo De  | 2350 | 2124 | 2124 | sí |
+| MLU703084269 Cairo, De Faravelli, Stefano. Editorial Confluenci | 2500 | 2262 | 2262 | sí |
 | MLU703082479 Libro Buscando Problemas, De Mosley, Walter. Edito | 2520 | 2440 | 2440 | sí |
-| MLU703080891 Brujilda, De Azpiri, Diana., Vol. 1. Editorial Rec | 1760 | 1645 | 1645 | sí |
-| MLU1524702980 Cerdito Y Su Barriga Hambrienta, De Mildeberg, Pir | 1890 | 1724 | 1724 | sí |
-| MLU1524517992 La Casa Del Almendro, De Mcveigh, Laura. N/a, Vol. | 2450 | 2106 | 2106 | sí |
-| MLU1524515262 Cartas De Una Pionera, De Stewart, Elinore Pruitt. | 2560 | 2187 | 2187 | sí |
-| MLU1524485572 Los Caracteres - Jean De La Bruyere, De De La Bruy | 2470 | 2106 | 2106 | sí |
-| MLU1524472634 Caracteres Chinos. Un Aprendizaje Fácil Basado | 6240 | 5869 | 5869 | sí |
-| MLU1524352194 El Cartelero - Cucaña - Bruno Tognolini, De Tognol | 1600 | 1488 | 1488 | sí |
-| MLU1524349808 Elementos Amovibles - Carroceria - Aa.vv | 2920 | 2831 | 2831 | sí |
-| MLU1524334740 Las Caras Del Ser, De Avi Hay. Editorial Ediciones | 2810 | 2410 | 2410 | sí |
-| MLU1524333920 El Caracol Que Detestaba La Lluvia, De Duval, Élis | 2040 | 1694 | 1694 | sí |
-| MLU1524331820 El Caperucito Rojo, De Traini, Agostino. Editorial | 1690 | 1625 | 1625 | sí |
-| MLU1524968116 Charlie And The Pirate Treasure + Audio Cd - Hello | 1600 | 1505 | 1505 | sí |
-| MLU1524941632 Chamanes A Través De Los Tiempos/ Crónicas Y Testi | 2580 | 2380 | 2380 | sí |
-| MLU1524705670 Libro Chamanismo Cuã¡ntico - Gonzã¡lez-rubio Monto | 1650 | 1517 | 1517 | sí |
+| MLU703080891 Brujilda, De Azpiri, Diana., Vol. 1. Editorial Rec | 1760 | 1663 | 1663 | sí |
+| MLU1524702980 Cerdito Y Su Barriga Hambrienta, De Mildeberg, Pir | 1890 | 1742 | 1742 | sí |
+| MLU1524517992 La Casa Del Almendro, De Mcveigh, Laura. N/a, Vol. | 2450 | 2128 | 2128 | sí |
+| MLU1524515262 Cartas De Una Pionera, De Stewart, Elinore Pruitt. | 2560 | 2210 | 2210 | sí |
+| MLU1524485572 Los Caracteres - Jean De La Bruyere, De De La Bruy | 2470 | 2128 | 2128 | sí |
+| MLU1524472634 Caracteres Chinos. Un Aprendizaje Fácil Basado | 6240 | 5930 | 5930 | sí |
+| MLU1524352194 El Cartelero - Cucaña - Bruno Tognolini, De Tognol | 1600 | 1504 | 1504 | sí |
+| MLU1524349808 Elementos Amovibles - Carroceria - Aa.vv | 2920 | 2861 | 2861 | sí |
+| MLU1524334740 Las Caras Del Ser, De Avi Hay. Editorial Ediciones | 2810 | 2435 | 2435 | sí |
+| MLU1524333920 El Caracol Que Detestaba La Lluvia, De Duval, Élis | 2040 | 1712 | 1712 | sí |
+| MLU1524968116 Charlie And The Pirate Treasure + Audio Cd - Hello | 1600 | 1521 | 1521 | sí |
+| MLU1524941632 Chamanes A Través De Los Tiempos/ Crónicas Y Testi | 2580 | 2405 | 2405 | sí |
+| MLU1524705670 Libro Chamanismo Cuã¡ntico - Gonzã¡lez-rubio Monto | 1650 | 1534 | 1534 | sí |
 | MLU1525871660 Cielo De Agua, De Aramís Quintero., Vol. N/a. Edit | 1790 | 1596 | 1596 | sí |
-| MLU1525871224 Ciberseguridad ¿por Qué Es Importante Para Todos? | 2490 | 2204 | 2204 | sí |
-| MLU1525869212 Christopher Nolan, De Abad, José. Editorial Catedr | 2320 | 2166 | 2166 | sí |
-| MLU1525868954 Libro A Christmas Carol - Adam Mckeown, De Dickens | 2660 | 2332 | 2332 | sí |
-| MLU1525866024 Children In History - Nicola Edwards - Alejandra R | 2460 | 2098 | 2098 | sí |
-| MLU1525865918 Los Chicos De Promise, De Brooks, Nick. Editorial  | 2220 | 1836 | 1836 | sí |
-| MLU1525865660 Libro El Chico Que Se Comio El Universo De Trent D | 2740 | 2342 | 2342 | sí |
-| MLU1525861512 Libro Ciencias Morales - Martín Kohan | 2400 | 2047 | 2047 | sí |
+| MLU1525871224 Ciberseguridad ¿por Qué Es Importante Para Todos? | 2490 | 2227 | 2227 | sí |
+| MLU1525869212 Christopher Nolan, De Abad, José. Editorial Catedr | 2320 | 2187 | 2187 | sí |
+| MLU1525868954 Libro A Christmas Carol - Adam Mckeown, De Dickens | 2660 | 2356 | 2356 | sí |
+| MLU1525866024 Children In History - Nicola Edwards - Alejandra R | 2460 | 2120 | 2120 | sí |
+| MLU1525865918 Los Chicos De Promise, De Brooks, Nick. Editorial  | 2220 | 1855 | 1855 | sí |
+| MLU1525865660 Libro El Chico Que Se Comio El Universo De Trent D | 2740 | 2367 | 2367 | sí |
+| MLU1525861512 Libro Ciencias Morales - Martín Kohan | 2400 | 2069 | 2069 | sí |
 | MLU1525858590 La Cicatriz, De Ilan Brenman. Editorial Algar, Tap | 2400 | 2000 | 2000 | sí |
-| MLU1525854546 Libro Chistosos Y Poderosos De Martin Taskar | 1413 | 1352 | 1352 | sí |
-| MLU1525853448 Children Of The World, De Edwards, Nicola. Editori | 2470 | 2051 | 2051 | sí |
-| MLU1525835040 La Ciencia Esta En El Huevo - 10 Experimentos Faci | 1700 | 1586 | 1586 | sí |
-| MLU1525834972 La Ciencia Del Pensamiento Positivo: ¡aprende Los  | 2190 | 1881 | 1881 | sí |
-| MLU1525834956 Ciencia Del Foro Ó Reglas Para Formar Un Abogado,  | 1700 | 1577 | 1577 | sí |
-| MLU1525833004 Cicatrices -, De Juan José Saer. Editorial Seix Ba | 2570 | 2188 | 2188 | sí |
-| MLU1525827678 Libro Los Chicos De Mi Juventud - Jo Ann Beard - M | 2370 | 1988 | 1988 | sí |
-| MLU1525827396 El Chico Perdido: El Chico Perdido, De Ruth, Greg. | 2040 | 1708 | 1708 | sí |
+| MLU1525854546 Libro Chistosos Y Poderosos De Martin Taskar | 1413 | 1366 | 1366 | sí |
+| MLU1525853448 Children Of The World, De Edwards, Nicola. Editori | 2470 | 2072 | 2072 | sí |
+| MLU1525835040 La Ciencia Esta En El Huevo - 10 Experimentos Faci | 1700 | 1603 | 1603 | sí |
+| MLU1525834972 La Ciencia Del Pensamiento Positivo: ¡aprende Los  | 2190 | 1900 | 1900 | sí |
+| MLU1525834956 Ciencia Del Foro Ó Reglas Para Formar Un Abogado,  | 1700 | 1593 | 1593 | sí |
+| MLU1525833004 Cicatrices -, De Juan José Saer. Editorial Seix Ba | 2570 | 2211 | 2211 | sí |
+| MLU1525827678 Libro Los Chicos De Mi Juventud - Jo Ann Beard - M | 2370 | 2009 | 2009 | sí |
+| MLU1525827396 El Chico Perdido: El Chico Perdido, De Ruth, Greg. | 2040 | 1726 | 1726 | sí |
 | MLU1525825644 500 Ensaladas - Susannah Blake | 2200 | 2077 | 2077 | sí |
-| MLU1525818986 Chronique D'une Mort Annoncee, De García Márquez,  | 1600 | 1488 | 1488 | sí |
-| MLU1525817678 Christine, De King, Stephen. Editorial Scribner En | 2790 | 2427 | 2427 | sí |
-| MLU1525815062 Children Of Dune - Dune 3 - Frank Herbert | 3670 | 3300 | 3300 | sí |
-| MLU703313467 Circus Ana Juan Edelvives | 2420 | 2067 | 2067 | sí |
-| MLU703312177 El Cine, De Artaud, Antonin. Serie El Libro De Bol | 1830 | 1684 | 1684 | sí |
-| MLU703304127 Los Cinco En La Caravana | 1620 | 1518 | 1518 | sí |
-| MLU703290415 Cildo Meireles, De Damian Ortega. Editorial Alias, | 2130 | 1784 | 1784 | sí |
-| MLU703289851 Libro Cienmillones De Cai Marta Altamarea | 2320 | 2194 | 2194 | sí |
-| MLU703286299 Libro El Cine En Vivo Y Sus Técnicas Francis Ford  | 2790 | 2420 | 2420 | sí |
-| MLU703277545 Las Ciento Cuarenta Y Cuatro Paginas - Alfonso Bar | 2190 | 2038 | 2038 | sí |
-| MLU703275437 Cities Of The Plain, De Cormac Mccarthy. Editorial | 2130 | 1785 | 1785 | sí |
-| MLU703273279 Libro El Cine De Lucrecia Martel, De V.v A.a. Edit | 1990 | 1607 | 1607 | sí |
-| MLU703265891 Libro Cinco Ciudades, De Tapinar, Ahmet Hamdi. Edi | 1830 | 1665 | 1665 | sí |
-| MLU1526370792 La Ciudad De Cristal | 2190 | 1861 | 1861 | sí |
-| MLU1526344730 Ciudad Consciente, La - Jordi Doce | 2320 | 1979 | 1979 | sí |
-| MLU1526227806 City Of The Beasts - Allende Isabel | 1870 | 1753 | 1753 | sí |
-| MLU703300893 City Of Illusion, De Ying, Victoria. Editorial Vik | 2250 | 1859 | 1859 | sí |
+| MLU1525818986 Chronique D'une Mort Annoncee, De García Márquez,  | 1600 | 1504 | 1504 | sí |
+| MLU1525817678 Christine, De King, Stephen. Editorial Scribner En | 2790 | 2452 | 2452 | sí |
+| MLU1525815062 Children Of Dune - Dune 3 - Frank Herbert | 3670 | 3334 | 3334 | sí |
+| MLU703313467 Circus Ana Juan Edelvives | 2420 | 2088 | 2088 | sí |
+| MLU703312177 El Cine, De Artaud, Antonin. Serie El Libro De Bol | 1830 | 1702 | 1702 | sí |
+| MLU703304127 Los Cinco En La Caravana | 1620 | 1534 | 1534 | sí |
+| MLU703290415 Cildo Meireles, De Damian Ortega. Editorial Alias, | 2130 | 1803 | 1803 | sí |
+| MLU703289851 Libro Cienmillones De Cai Marta Altamarea | 2320 | 2217 | 2217 | sí |
+| MLU703286299 Libro El Cine En Vivo Y Sus Técnicas Francis Ford  | 2790 | 2445 | 2445 | sí |
+| MLU703277545 Las Ciento Cuarenta Y Cuatro Paginas - Alfonso Bar | 2190 | 2059 | 2059 | sí |
+| MLU703275437 Cities Of The Plain, De Cormac Mccarthy. Editorial | 2130 | 1804 | 1804 | sí |
+| MLU703273279 Libro El Cine De Lucrecia Martel, De V.v A.a. Edit | 1990 | 1624 | 1624 | sí |
+| MLU703265891 Libro Cinco Ciudades, De Tapinar, Ahmet Hamdi. Edi | 1830 | 1683 | 1683 | sí |
+| MLU1526370792 La Ciudad De Cristal | 2190 | 1881 | 1881 | sí |
+| MLU1526344730 Ciudad Consciente, La - Jordi Doce | 2320 | 1999 | 1999 | sí |
+| MLU1526227806 City Of The Beasts - Allende Isabel | 1870 | 1772 | 1772 | sí |
+| MLU703300893 City Of Illusion, De Ying, Victoria. Editorial Vik | 2250 | 1879 | 1879 | sí |
+| MLU1522291156 10 Minutos, 10 Meses, 10 Años De - Sin Fondo Edito | 2480 | 2400 | 2400 | sí |
+| MLU1524216172 Blue Lock 20 - Ivrea, De Muneyuki Kaneshiro - Yusu | 1600 | 1206 | 1206 | sí |
+| MLU703095901 Cabalgar El Tigre Orientaciones Existenciales Para | 2603 | 2518 | 2518 | sí |
+| MLU703264259 Ciencias Sociales 5 Nacion Serie Sobre Ruedas | 2260 | 1864 | 1864 | sí |
+| MLU1526346856 Ciudadania Para Armar: Aportes Para La Formacion E | 1603 | 1537 | 1537 | sí |
 
-## Regla recalculada sobre las marcadas de la última corrida (3800)
+## Regla recalculada sobre las marcadas de la última corrida (3633)
 
 | Publicación | Precio | Ganador | Diferencia | Esperado | Hizo | OK |
 |---|---:|---:|---:|---|---|---|
 | MLU1517675678 | 1247 | 702 | 545 | no_tocar | sin_tocar_umbral → 702 | sí |
-| MLU1517675676 | 1044 | 569 | 475 | no_tocar | sin_tocar_umbral → 569 | sí |
-| MLU1517675672 | 1007 | 702 | 305 | saltear | saltear_piso → 694 | sí |
-| MLU1517675664 | 1359 | 664 | 695 | no_tocar | sin_tocar_umbral → 664 | sí |
-| MLU1517675660 | 2543 | 1068 | 1475 | no_tocar | sin_tocar_umbral → 1068 | sí |
-| MLU1517675654 | 1637 | 701 | 936 | no_tocar | sin_tocar_umbral → 701 | sí |
-| MLU1517662678 | 884 | 701 | 183 | saltear | saltear_piso → 693 | sí |
-| MLU1517662676 | 1193 | 813 | 380 | saltear | saltear_piso → 804 | sí |
+| MLU1517675676 | 1044 | 570 | 474 | no_tocar | sin_tocar_umbral → 570 | sí |
+| MLU1517675672 | 1007 | 703 | 304 | saltear | saltear_piso → 695 | sí |
+| MLU1517675664 | 1359 | 665 | 694 | no_tocar | sin_tocar_umbral → 665 | sí |
+| MLU1517675660 | 2543 | 1069 | 1474 | no_tocar | sin_tocar_umbral → 1069 | sí |
+| MLU1517675654 | 1637 | 702 | 935 | no_tocar | sin_tocar_umbral → 702 | sí |
+| MLU1517662678 | 884 | 702 | 182 | saltear | saltear_piso → 694 | sí |
+| MLU1517662676 | 1193 | 814 | 379 | saltear | saltear_piso → 805 | sí |
 | MLU1517662670 | 1916 | 1011 | 905 | no_tocar | sin_tocar_umbral → 1011 | sí |
-| MLU1517662668 | 1206 | 701 | 505 | no_tocar | sin_tocar_umbral → 701 | sí |
+| MLU1517662668 | 1206 | 703 | 503 | no_tocar | sin_tocar_umbral → 703 | sí |
 | MLU1517662662 | 992 | 499 | 493 | no_tocar | sin_tocar_umbral → 499 | sí |
 | MLU1517662658 | 2543 | 2484 | 59 | saltear | saltear_promo | sí |
-| MLU1517662656 | 758 | 729 | 29 | saltear | saltear_piso → 721 | sí |
+| MLU1517662656 | 758 | 730 | 28 | saltear | saltear_piso → 722 | sí |
 | MLU1517662654 | 1155 | 702 | 453 | no_tocar | sin_tocar_umbral → 702 | sí |
 | MLU1517662646 | 2398 | 2346 | 52 | saltear | saltear_promo | sí |
-| MLU1517662642 | 1601 | 771 | 830 | no_tocar | sin_tocar_umbral → 771 | sí |
-| MLU1517649972 | 1620 | 701 | 919 | no_tocar | sin_tocar_umbral → 701 | sí |
+| MLU1517662642 | 1601 | 772 | 829 | no_tocar | sin_tocar_umbral → 772 | sí |
+| MLU1517649972 | 1620 | 702 | 918 | no_tocar | sin_tocar_umbral → 702 | sí |
 | MLU1517649968 | 768 | 538 | 230 | saltear | saltear_piso → 532 | sí |
-| MLU1517649964 | 954 | 681 | 273 | saltear | saltear_piso → 674 | sí |
+| MLU1517649964 | 954 | 682 | 272 | saltear | saltear_piso → 675 | sí |
 | MLU1517649962 | 762 | 730 | 32 | saltear | saltear_piso → 722 | sí |
 | MLU1517649958 | 1371 | 702 | 669 | no_tocar | sin_tocar_umbral → 702 | sí |
 | MLU1517649954 | 1371 | 771 | 600 | no_tocar | sin_tocar_umbral → 771 | sí |
-| MLU1517649952 | 1385 | 701 | 684 | no_tocar | sin_tocar_umbral → 701 | sí |
+| MLU1517649952 | 1385 | 702 | 683 | no_tocar | sin_tocar_umbral → 702 | sí |
 | MLU1517649950 | 1486 | 1445 | 41 | saltear | saltear_promo | sí |
 | MLU1517649948 | 1815 | 1008 | 807 | no_tocar | sin_tocar_umbral → 1008 | sí |
-| MLU1517636990 | 639 | 396 | 243 | saltear | saltear_piso → 392 | sí |
-| MLU1517636984 | 758 | 729 | 29 | saltear | saltear_piso → 721 | sí |
-| MLU1517636982 | 1692 | 702 | 990 | no_tocar | sin_tocar_umbral → 702 | sí |
+| MLU1517636990 | 639 | 398 | 241 | saltear | saltear_piso → 394 | sí |
+| MLU1517636984 | 758 | 730 | 28 | saltear | saltear_piso → 722 | sí |
+| MLU1517636982 | 1692 | 703 | 989 | no_tocar | sin_tocar_umbral → 703 | sí |
 | MLU1517636978 | 1435 | 870 | 565 | no_tocar | sin_tocar_umbral → 870 | sí |
 | MLU1517636974 | 1226 | 814 | 412 | no_tocar | sin_tocar_umbral → 814 | sí |
 | MLU1517636960 | 1553 | 702 | 851 | no_tocar | sin_tocar_umbral → 702 | sí |
-| MLU1517636958 | 1188 | 701 | 487 | no_tocar | sin_tocar_umbral → 701 | sí |
+| MLU1517636958 | 1188 | 703 | 485 | no_tocar | sin_tocar_umbral → 703 | sí |
 | MLU1517636954 | 1170 | 702 | 468 | no_tocar | sin_tocar_umbral → 702 | sí |
 | MLU1517959848 | 3049 | 1097 | 1952 | no_tocar | sin_tocar_umbral → 1097 | sí |
 | MLU1517959842 | 2343 | 910 | 1433 | no_tocar | sin_tocar_umbral → 910 | sí |
@@ -3191,21 +3193,21 @@ Discrepancias: **0**
 | MLU1517959826 | 4035 | 1596 | 2439 | no_tocar | sin_tocar_umbral → 1596 | sí |
 | MLU1517959822 | 3648 | 1628 | 2020 | no_tocar | sin_tocar_umbral → 1628 | sí |
 | MLU1517959816 | 3061 | 1415 | 1646 | no_tocar | sin_tocar_umbral → 1415 | sí |
-| MLU1517959814 | 2844 | 1187 | 1657 | no_tocar | sin_tocar_umbral → 1187 | sí |
+| MLU1517959814 | 2844 | 1188 | 1656 | no_tocar | sin_tocar_umbral → 1188 | sí |
 | MLU1517959812 | 4575 | 1353 | 3222 | no_tocar | sin_tocar_umbral → 1353 | sí |
 | MLU1517959808 | 2880 | 1020 | 1860 | no_tocar | sin_tocar_umbral → 1020 | sí |
 | MLU1517959806 | 3929 | 1498 | 2431 | no_tocar | sin_tocar_umbral → 1498 | sí |
-| MLU1517959804 | 3185 | 1105 | 2080 | no_tocar | sin_tocar_umbral → 1105 | sí |
+| MLU1517959804 | 3185 | 1106 | 2079 | no_tocar | sin_tocar_umbral → 1106 | sí |
 | MLU1517959802 | 3649 | 1630 | 2019 | no_tocar | sin_tocar_umbral → 1630 | sí |
 | MLU1517959798 | 3490 | 1595 | 1895 | no_tocar | sin_tocar_umbral → 1595 | sí |
 | MLU1517959796 | 4032 | 3237 | 795 | no_tocar | sin_tocar_umbral → 3237 | sí |
 | MLU1517959792 | 3869 | 1596 | 2273 | no_tocar | sin_tocar_umbral → 1596 | sí |
-| MLU1517959790 | 2217 | 669 | 1548 | no_tocar | sin_tocar_umbral → 669 | sí |
+| MLU1517959790 | 2217 | 670 | 1547 | no_tocar | sin_tocar_umbral → 670 | sí |
 | MLU1517959768 | 4052 | 2464 | 1588 | no_tocar | sin_tocar_umbral → 2464 | sí |
 | MLU1517959766 | 5003 | 1576 | 3427 | no_tocar | sin_tocar_umbral → 1576 | sí |
 | MLU1517946984 | 4028 | 1595 | 2433 | no_tocar | sin_tocar_umbral → 1595 | sí |
 | MLU1517946980 | 2340 | 1148 | 1192 | no_tocar | sin_tocar_umbral → 1148 | sí |
-| MLU1517946978 | 2116 | 866 | 1250 | no_tocar | sin_tocar_umbral → 866 | sí |
+| MLU1517946978 | 2116 | 867 | 1249 | no_tocar | sin_tocar_umbral → 867 | sí |
 | MLU1517946976 | 3424 | 2375 | 1049 | no_tocar | sin_tocar_umbral → 2375 | sí |
 | MLU1517946968 | 3118 | 2831 | 287 | saltear | saltear_promo | sí |
 | MLU1517946966 | 4352 | 3425 | 927 | no_tocar | sin_tocar_umbral → 3425 | sí |
@@ -3220,25 +3222,25 @@ Discrepancias: **0**
 | MLU1517934534 | 4522 | 2058 | 2464 | no_tocar | sin_tocar_umbral → 2058 | sí |
 | MLU1517934530 | 4522 | 2058 | 2464 | no_tocar | sin_tocar_umbral → 2058 | sí |
 | MLU1517934526 | 6116 | 2964 | 3152 | no_tocar | sin_tocar_umbral → 2964 | sí |
-| MLU1517934524 | 2116 | 866 | 1250 | no_tocar | sin_tocar_umbral → 866 | sí |
+| MLU1517934524 | 2116 | 867 | 1249 | no_tocar | sin_tocar_umbral → 867 | sí |
 | MLU1517934514 | 4474 | 1930 | 2544 | no_tocar | sin_tocar_umbral → 1930 | sí |
-| MLU1517934512 | 1765 | 645 | 1120 | no_tocar | sin_tocar_umbral → 645 | sí |
+| MLU1517934512 | 1765 | 646 | 1119 | no_tocar | sin_tocar_umbral → 646 | sí |
 | MLU1517934508 | 3702 | 1020 | 2682 | no_tocar | sin_tocar_umbral → 1020 | sí |
 | MLU1517934506 | 3994 | 3039 | 955 | no_tocar | sin_tocar_umbral → 3039 | sí |
 | MLU1517934470 | 4766 | 1477 | 3289 | no_tocar | sin_tocar_umbral → 1477 | sí |
 | MLU1517259196 | 3235 | 3170 | 65 | saltear | saltear_ganador_inmediato | sí |
-| MLU702300411 | 2116 | 866 | 1250 | no_tocar | sin_tocar_umbral → 866 | sí |
+| MLU702300411 | 2116 | 867 | 1249 | no_tocar | sin_tocar_umbral → 867 | sí |
 | MLU702300407 | 3400 | 1425 | 1975 | no_tocar | sin_tocar_umbral → 1425 | sí |
 | MLU702300405 | 3118 | 1268 | 1850 | no_tocar | sin_tocar_umbral → 1268 | sí |
 | MLU702300401 | 4575 | 1353 | 3222 | no_tocar | sin_tocar_umbral → 1353 | sí |
 | MLU702300399 | 4942 | 2596 | 2346 | no_tocar | sin_tocar_umbral → 2596 | sí |
-| MLU702300397 | 3153 | 1171 | 1982 | saltear | saltear_ganador_sin_dato | sí |
+| MLU702300397 | 3153 | 1171 | 1982 | no_tocar | sin_tocar_umbral → 1171 | sí |
 | MLU702300395 | 4017 | 3019 | 998 | no_tocar | sin_tocar_umbral → 3019 | sí |
 | MLU702300391 | 2880 | 1020 | 1860 | no_tocar | sin_tocar_umbral → 1020 | sí |
 | MLU702300389 | 3479 | 1645 | 1834 | no_tocar | sin_tocar_umbral → 1645 | sí |
 | MLU702300387 | 4097 | 3078 | 1019 | no_tocar | sin_tocar_umbral → 3078 | sí |
-| MLU702300383 | 2844 | 1187 | 1657 | no_tocar | sin_tocar_umbral → 1187 | sí |
-| MLU702300377 | 2116 | 866 | 1250 | no_tocar | sin_tocar_umbral → 866 | sí |
+| MLU702300383 | 2844 | 1188 | 1656 | no_tocar | sin_tocar_umbral → 1188 | sí |
+| MLU702300377 | 2116 | 867 | 1249 | no_tocar | sin_tocar_umbral → 867 | sí |
 | MLU702300369 | 3188 | 1109 | 2079 | no_tocar | sin_tocar_umbral → 1109 | sí |
 | MLU702300367 | 3479 | 1628 | 1851 | no_tocar | sin_tocar_umbral → 1628 | sí |
 | MLU702300365 | 4014 | 1579 | 2435 | no_tocar | sin_tocar_umbral → 1579 | sí |
@@ -3247,7 +3249,7 @@ Discrepancias: **0**
 | MLU702300357 | 4426 | 1900 | 2526 | no_tocar | sin_tocar_umbral → 1900 | sí |
 | MLU702300317 | 3375 | 1268 | 2107 | no_tocar | sin_tocar_umbral → 1268 | sí |
 | MLU702292543 | 2640 | 1348 | 1292 | no_tocar | sin_tocar_umbral → 1348 | sí |
-| MLU702292533 | 1759 | 1133 | 626 | no_tocar | sin_tocar_umbral → 1133 | sí |
+| MLU702292533 | 1759 | 1134 | 625 | no_tocar | sin_tocar_umbral → 1134 | sí |
 | MLU702292509 | 2890 | 1536 | 1354 | no_tocar | sin_tocar_umbral → 1536 | sí |
 | MLU702292505 | 2555 | 1633 | 922 | no_tocar | sin_tocar_umbral → 1633 | sí |
 | MLU702292503 | 2642 | 1286 | 1356 | no_tocar | sin_tocar_umbral → 1286 | sí |
@@ -3285,12 +3287,12 @@ Discrepancias: **0**
 | MLU702277543 | 4320 | 2366 | 1954 | no_tocar | sin_tocar_umbral → 2366 | sí |
 | MLU702267199 | 2316 | 2266 | 50 | saltear | saltear_promo | sí |
 | MLU702267189 | 2348 | 1504 | 844 | no_tocar | sin_tocar_umbral → 1504 | sí |
-| MLU702267177 | 1759 | 1133 | 626 | no_tocar | sin_tocar_umbral → 1133 | sí |
+| MLU702267177 | 1759 | 1134 | 625 | no_tocar | sin_tocar_umbral → 1134 | sí |
 | MLU702267173 | 3491 | 1484 | 2007 | no_tocar | sin_tocar_umbral → 1484 | sí |
-| MLU702267167 | 2182 | 1084 | 1098 | no_tocar | sin_tocar_umbral → 1084 | sí |
+| MLU702267167 | 2182 | 1084 | 1098 | saltear | saltear_ganador_sin_dato | sí |
 | MLU702267151 | 3162 | 2058 | 1104 | no_tocar | sin_tocar_umbral → 2058 | sí |
 | MLU702267149 | 901 | 671 | 230 | saltear | saltear_piso → 664 | sí |
-| MLU702267141 | 2660 | 1574 | 1086 | saltear | saltear_ganador_sin_dato | sí |
+| MLU702267141 | 2660 | 1574 | 1086 | no_tocar | sin_tocar_umbral → 1574 | sí |
 | MLU702267137 | 2675 | 1395 | 1280 | saltear | saltear_ganador_inmediato | sí |
 | MLU702267131 | 3545 | 1994 | 1551 | no_tocar | sin_tocar_umbral → 1994 | sí |
 | MLU702267117 | 2360 | 1247 | 1113 | no_tocar | sin_tocar_umbral → 1247 | sí |
@@ -3305,7 +3307,7 @@ Discrepancias: **0**
 | MLU702264657 | 4269 | 2655 | 1614 | no_tocar | sin_tocar_umbral → 2655 | sí |
 | MLU702264607 | 5299 | 2613 | 2686 | no_tocar | sin_tocar_umbral → 2613 | sí |
 | MLU702254551 | 3887 | 2017 | 1870 | no_tocar | sin_tocar_umbral → 2017 | sí |
-| MLU702254545 | 1759 | 1133 | 626 | no_tocar | sin_tocar_umbral → 1133 | sí |
+| MLU702254545 | 1759 | 1134 | 625 | no_tocar | sin_tocar_umbral → 1134 | sí |
 | MLU702254523 | 2591 | 1348 | 1243 | no_tocar | sin_tocar_umbral → 1348 | sí |
 | MLU702254521 | 1964 | 1262 | 702 | no_tocar | sin_tocar_umbral → 1262 | sí |
 | MLU702254515 | 3856 | 2583 | 1273 | no_tocar | sin_tocar_umbral → 2583 | sí |
@@ -3360,7 +3362,7 @@ Discrepancias: **0**
 | MLU1518207684 | 3076 | 1609 | 1467 | no_tocar | sin_tocar_umbral → 1609 | sí |
 | MLU1518207680 | 2971 | 1538 | 1433 | no_tocar | sin_tocar_umbral → 1538 | sí |
 | MLU1518207678 | 3917 | 1830 | 2087 | no_tocar | sin_tocar_umbral → 1830 | sí |
-| MLU1518207674 | 3006 | 1609 | 1397 | saltear | saltear_ganador_sin_dato | sí |
+| MLU1518207674 | 3006 | 1609 | 1397 | no_tocar | sin_tocar_umbral → 1609 | sí |
 | MLU1518207668 | 3437 | 1762 | 1675 | no_tocar | sin_tocar_umbral → 1762 | sí |
 | MLU1518205328 | 7036 | 3630 | 3406 | no_tocar | sin_tocar_umbral → 3630 | sí |
 | MLU1518205302 | 2415 | 1078 | 1337 | no_tocar | sin_tocar_umbral → 1078 | sí |
@@ -3393,7 +3395,7 @@ Discrepancias: **0**
 | MLU1518182112 | 3278 | 1830 | 1448 | no_tocar | sin_tocar_umbral → 1830 | sí |
 | MLU1518182110 | 2449 | 1425 | 1024 | no_tocar | sin_tocar_umbral → 1425 | sí |
 | MLU1518182108 | 3126 | 1981 | 1145 | no_tocar | sin_tocar_umbral → 1981 | sí |
-| MLU1518182106 | 2182 | 778 | 1404 | no_tocar | sin_tocar_umbral → 778 | sí |
+| MLU1518182106 | 2182 | 779 | 1403 | no_tocar | sin_tocar_umbral → 779 | sí |
 | MLU1518182102 | 3638 | 1830 | 1808 | no_tocar | sin_tocar_umbral → 1830 | sí |
 | MLU1518182094 | 3573 | 1907 | 1666 | no_tocar | sin_tocar_umbral → 1907 | sí |
 | MLU1518182090 | 2789 | 1544 | 1245 | no_tocar | sin_tocar_umbral → 1544 | sí |
@@ -3407,7 +3409,7 @@ Discrepancias: **0**
 | MLU702349627 | 2369 | 1537 | 832 | no_tocar | sin_tocar_umbral → 1537 | sí |
 | MLU702349621 | 1485 | 1445 | 40 | saltear | saltear_promo | sí |
 | MLU702349617 | 1514 | 1465 | 49 | saltear | saltear_promo | sí |
-| MLU702349615 | 1644 | 1030 | 614 | no_tocar | sin_tocar_umbral → 1030 | sí |
+| MLU702349615 | 1644 | 1031 | 613 | no_tocar | sin_tocar_umbral → 1031 | sí |
 | MLU702349611 | 2652 | 1573 | 1079 | no_tocar | sin_tocar_umbral → 1573 | sí |
 | MLU702349609 | 1484 | 1435 | 49 | saltear | saltear_promo | sí |
 | MLU702349607 | 3282 | 2435 | 847 | no_tocar | sin_tocar_umbral → 2435 | sí |
@@ -3422,22 +3424,22 @@ Discrepancias: **0**
 | MLU702349419 | 1913 | 1091 | 822 | no_tocar | sin_tocar_umbral → 1091 | sí |
 | MLU702349417 | 1836 | 1109 | 727 | no_tocar | sin_tocar_umbral → 1109 | sí |
 | MLU702349411 | 3101 | 1411 | 1690 | no_tocar | sin_tocar_umbral → 1411 | sí |
-| MLU702349407 | 1657 | 841 | 816 | no_tocar | sin_tocar_umbral → 841 | sí |
+| MLU702349407 | 1657 | 842 | 815 | no_tocar | sin_tocar_umbral → 842 | sí |
 | MLU702349405 | 2916 | 1653 | 1263 | no_tocar | sin_tocar_umbral → 1653 | sí |
 | MLU702349401 | 3071 | 2415 | 656 | no_tocar | sin_tocar_umbral → 2415 | sí |
-| MLU702349399 | 1644 | 1030 | 614 | no_tocar | sin_tocar_umbral → 1030 | sí |
+| MLU702349399 | 1644 | 1031 | 613 | no_tocar | sin_tocar_umbral → 1031 | sí |
 | MLU702349393 | 2438 | 1245 | 1193 | no_tocar | sin_tocar_umbral → 1245 | sí |
 | MLU702349079 | 2770 | 1837 | 933 | no_tocar | sin_tocar_umbral → 1837 | sí |
 | MLU702349077 | 2378 | 1245 | 1133 | no_tocar | sin_tocar_umbral → 1245 | sí |
 | MLU702349075 | 3859 | 2039 | 1820 | no_tocar | sin_tocar_umbral → 2039 | sí |
 | MLU702349073 | 4936 | 3526 | 1410 | no_tocar | sin_tocar_umbral → 3526 | sí |
 | MLU702349069 | 4806 | 2559 | 2247 | no_tocar | sin_tocar_umbral → 2559 | sí |
-| MLU702349067 | 2763 | 1601 | 1162 | no_tocar | sin_tocar_umbral → 1601 | sí |
+| MLU702349067 | 2763 | 1692 | 1071 | no_tocar | sin_tocar_umbral → 1692 | sí |
 | MLU702349065 | 1745 | 1169 | 576 | no_tocar | sin_tocar_umbral → 1169 | sí |
 | MLU702349063 | 3023 | 1601 | 1422 | no_tocar | sin_tocar_umbral → 1601 | sí |
 | MLU702348517 | 2079 | 2029 | 50 | saltear | saltear_promo | sí |
 | MLU702348513 | 2558 | 1365 | 1193 | no_tocar | sin_tocar_umbral → 1365 | sí |
-| MLU702348511 | 1442 | 1008 | 434 | no_tocar | sin_tocar_umbral → 1008 | sí |
+| MLU702348511 | 1442 | 1009 | 433 | no_tocar | sin_tocar_umbral → 1009 | sí |
 | MLU702348509 | 1412 | 783 | 629 | no_tocar | sin_tocar_umbral → 783 | sí |
 | MLU702348507 | 2227 | 1184 | 1043 | no_tocar | sin_tocar_umbral → 1184 | sí |
 | MLU702348503 | 2136 | 1036 | 1100 | no_tocar | sin_tocar_umbral → 1036 | sí |
@@ -3448,9 +3450,9 @@ Discrepancias: **0**
 | MLU702348493 | 2202 | 1326 | 876 | no_tocar | sin_tocar_umbral → 1326 | sí |
 | MLU702348491 | 2945 | 1573 | 1372 | no_tocar | sin_tocar_umbral → 1573 | sí |
 | MLU702348489 | 2296 | 2247 | 49 | saltear | saltear_promo | sí |
-| MLU702348487 | 1412 | 701 | 711 | no_tocar | sin_tocar_umbral → 701 | sí |
+| MLU702348487 | 1412 | 702 | 710 | no_tocar | sin_tocar_umbral → 702 | sí |
 | MLU702348485 | 2347 | 1262 | 1085 | no_tocar | sin_tocar_umbral → 1262 | sí |
-| MLU702348483 | 1503 | 702 | 801 | no_tocar | sin_tocar_umbral → 702 | sí |
+| MLU702348483 | 1503 | 703 | 800 | no_tocar | sin_tocar_umbral → 703 | sí |
 | MLU702348481 | 2419 | 1128 | 1291 | no_tocar | sin_tocar_umbral → 1128 | sí |
 | MLU702348281 | 2498 | 1259 | 1239 | no_tocar | sin_tocar_umbral → 1259 | sí |
 | MLU702348279 | 2544 | 2484 | 60 | saltear | saltear_promo | sí |
@@ -3461,8 +3463,8 @@ Discrepancias: **0**
 | MLU702348267 | 1982 | 1100 | 882 | no_tocar | sin_tocar_umbral → 1100 | sí |
 | MLU702348261 | 2534 | 2475 | 59 | saltear | saltear_promo | sí |
 | MLU702348259 | 1800 | 1008 | 792 | no_tocar | sin_tocar_umbral → 1008 | sí |
-| MLU702348257 | 1503 | 771 | 732 | no_tocar | sin_tocar_umbral → 771 | sí |
-| MLU702348255 | 1442 | 701 | 741 | no_tocar | sin_tocar_umbral → 701 | sí |
+| MLU702348257 | 1503 | 772 | 731 | no_tocar | sin_tocar_umbral → 772 | sí |
+| MLU702348255 | 1442 | 702 | 740 | no_tocar | sin_tocar_umbral → 702 | sí |
 | MLU702348251 | 2546 | 1327 | 1219 | no_tocar | sin_tocar_umbral → 1327 | sí |
 | MLU702348249 | 2162 | 1100 | 1062 | no_tocar | sin_tocar_umbral → 1100 | sí |
 | MLU702348247 | 1925 | 1182 | 743 | no_tocar | sin_tocar_umbral → 1182 | sí |
@@ -3472,7 +3474,7 @@ Discrepancias: **0**
 | MLU702348231 | 2222 | 1100 | 1122 | no_tocar | sin_tocar_umbral → 1100 | sí |
 | MLU702348229 | 2438 | 1245 | 1193 | no_tocar | sin_tocar_umbral → 1245 | sí |
 | MLU702348225 | 2136 | 1025 | 1111 | no_tocar | sin_tocar_umbral → 1025 | sí |
-| MLU702348223 | 1503 | 702 | 801 | no_tocar | sin_tocar_umbral → 702 | sí |
+| MLU702348223 | 1503 | 703 | 800 | no_tocar | sin_tocar_umbral → 703 | sí |
 | MLU702348221 | 2318 | 1183 | 1135 | no_tocar | sin_tocar_umbral → 1183 | sí |
 | MLU702348071 | 2316 | 1182 | 1134 | no_tocar | sin_tocar_umbral → 1182 | sí |
 | MLU702348065 | 2325 | 1148 | 1177 | no_tocar | sin_tocar_umbral → 1148 | sí |
@@ -3497,13 +3499,13 @@ Discrepancias: **0**
 | MLU702347431 | 3606 | 2125 | 1481 | no_tocar | sin_tocar_umbral → 2125 | sí |
 | MLU702347429 | 2830 | 1482 | 1348 | no_tocar | sin_tocar_umbral → 1482 | sí |
 | MLU702336829 | 2382 | 1360 | 1022 | no_tocar | sin_tocar_umbral → 1360 | sí |
-| MLU702336827 | 1704 | 968 | 736 | no_tocar | sin_tocar_umbral → 968 | sí |
+| MLU702336827 | 1704 | 969 | 735 | no_tocar | sin_tocar_umbral → 969 | sí |
 | MLU702336825 | 1870 | 1098 | 772 | no_tocar | sin_tocar_umbral → 1098 | sí |
 | MLU702336821 | 3467 | 2000 | 1467 | no_tocar | sin_tocar_umbral → 2000 | sí |
 | MLU702336819 | 2397 | 1178 | 1219 | no_tocar | sin_tocar_umbral → 1178 | sí |
-| MLU702336817 | 1704 | 1030 | 674 | no_tocar | sin_tocar_umbral → 1030 | sí |
+| MLU702336817 | 1704 | 1031 | 673 | no_tocar | sin_tocar_umbral → 1031 | sí |
 | MLU702336809 | 1484 | 1435 | 49 | saltear | saltear_promo | sí |
-| MLU702336805 | 2464 | 1329 | 1135 | no_tocar | sin_tocar_umbral → 1329 | sí |
+| MLU702336805 | 2464 | 1329 | 1135 | saltear | saltear_ganador_sin_dato | sí |
 | MLU702336801 | 2261 | 1583 | 678 | no_tocar | sin_tocar_umbral → 1583 | sí |
 | MLU702336795 | 2583 | 2524 | 59 | saltear | saltear_promo | sí |
 | MLU702336791 | 2770 | 1595 | 1175 | no_tocar | sin_tocar_umbral → 1595 | sí |
@@ -3523,17 +3525,16 @@ Discrepancias: **0**
 | MLU702336321 | 3500 | 1920 | 1580 | no_tocar | sin_tocar_umbral → 1920 | sí |
 | MLU702336317 | 3859 | 2039 | 1820 | no_tocar | sin_tocar_umbral → 2039 | sí |
 | MLU702336313 | 3499 | 2208 | 1291 | no_tocar | sin_tocar_umbral → 2208 | sí |
-| MLU702336311 | 1412 | 645 | 767 | no_tocar | sin_tocar_umbral → 645 | sí |
+| MLU702336311 | 1412 | 646 | 766 | no_tocar | sin_tocar_umbral → 646 | sí |
 | MLU702336309 | 3011 | 1738 | 1273 | no_tocar | sin_tocar_umbral → 1738 | sí |
 | MLU702336307 | 2318 | 1246 | 1072 | no_tocar | sin_tocar_umbral → 1246 | sí |
 | MLU702336305 | 3420 | 1824 | 1596 | no_tocar | sin_tocar_umbral → 1824 | sí |
 | MLU702336303 | 3221 | 1920 | 1301 | no_tocar | sin_tocar_umbral → 1920 | sí |
 | MLU702336301 | 4003 | 1994 | 2009 | no_tocar | sin_tocar_umbral → 1994 | sí |
 | MLU702335783 | 1563 | 702 | 861 | no_tocar | sin_tocar_umbral → 702 | sí |
-| MLU702335779 | 1442 | 1395 | 47 | saltear | saltear_promo | sí |
 | MLU702335777 | 2258 | 1184 | 1074 | no_tocar | sin_tocar_umbral → 1184 | sí |
 | MLU702335775 | 2438 | 1245 | 1193 | no_tocar | sin_tocar_umbral → 1245 | sí |
-| MLU702335765 | 1442 | 701 | 741 | no_tocar | sin_tocar_umbral → 701 | sí |
+| MLU702335765 | 1442 | 702 | 740 | no_tocar | sin_tocar_umbral → 702 | sí |
 | MLU702335761 | 2885 | 1590 | 1295 | no_tocar | sin_tocar_umbral → 1590 | sí |
 | MLU702335759 | 2258 | 1196 | 1062 | no_tocar | sin_tocar_umbral → 1196 | sí |
 | MLU702335757 | 2283 | 1256 | 1027 | no_tocar | sin_tocar_umbral → 1256 | sí |
@@ -3545,23 +3546,23 @@ Discrepancias: **0**
 | MLU702335743 | 2498 | 1184 | 1314 | no_tocar | sin_tocar_umbral → 1184 | sí |
 | MLU702335739 | 2530 | 1184 | 1346 | no_tocar | sin_tocar_umbral → 1184 | sí |
 | MLU702335735 | 2318 | 1366 | 952 | no_tocar | sin_tocar_umbral → 1366 | sí |
-| MLU702335733 | 1683 | 701 | 982 | no_tocar | sin_tocar_umbral → 701 | sí |
-| MLU702335731 | 1503 | 771 | 732 | no_tocar | sin_tocar_umbral → 771 | sí |
+| MLU702335733 | 1683 | 702 | 981 | no_tocar | sin_tocar_umbral → 702 | sí |
+| MLU702335731 | 1503 | 772 | 731 | no_tocar | sin_tocar_umbral → 772 | sí |
 | MLU702335727 | 2261 | 2207 | 54 | saltear | saltear_promo | sí |
 | MLU702335725 | 2347 | 1115 | 1232 | no_tocar | sin_tocar_umbral → 1115 | sí |
 | MLU702335557 | 2318 | 1183 | 1135 | no_tocar | sin_tocar_umbral → 1183 | sí |
 | MLU702335553 | 2589 | 1420 | 1169 | no_tocar | sin_tocar_umbral → 1420 | sí |
-| MLU702335547 | 1769 | 943 | 826 | no_tocar | sin_tocar_umbral → 943 | sí |
+| MLU702335547 | 1769 | 944 | 825 | no_tocar | sin_tocar_umbral → 944 | sí |
 | MLU702335543 | 1743 | 702 | 1041 | no_tocar | sin_tocar_umbral → 702 | sí |
-| MLU702335541 | 1623 | 1008 | 615 | no_tocar | sin_tocar_umbral → 1008 | sí |
-| MLU702335539 | 1442 | 701 | 741 | no_tocar | sin_tocar_umbral → 701 | sí |
+| MLU702335541 | 1623 | 1009 | 614 | no_tocar | sin_tocar_umbral → 1009 | sí |
+| MLU702335539 | 1442 | 702 | 740 | no_tocar | sin_tocar_umbral → 702 | sí |
 | MLU702335537 | 2431 | 1184 | 1247 | no_tocar | sin_tocar_umbral → 1184 | sí |
 | MLU702335535 | 1573 | 1524 | 49 | saltear | saltear_promo | sí |
 | MLU702335533 | 2068 | 1103 | 965 | no_tocar | sin_tocar_umbral → 1103 | sí |
 | MLU702335531 | 2071 | 950 | 1121 | no_tocar | sin_tocar_umbral → 950 | sí |
 | MLU702335529 | 2404 | 1246 | 1158 | no_tocar | sin_tocar_umbral → 1246 | sí |
 | MLU702335527 | 2558 | 1172 | 1386 | no_tocar | sin_tocar_umbral → 1172 | sí |
-| MLU702335525 | 1442 | 1008 | 434 | no_tocar | sin_tocar_umbral → 1008 | sí |
+| MLU702335525 | 1442 | 1009 | 433 | no_tocar | sin_tocar_umbral → 1009 | sí |
 | MLU702335521 | 2558 | 1245 | 1313 | no_tocar | sin_tocar_umbral → 1245 | sí |
 | MLU702335515 | 1563 | 702 | 861 | no_tocar | sin_tocar_umbral → 702 | sí |
 | MLU702335513 | 2267 | 2217 | 50 | saltear | saltear_promo | sí |
@@ -3582,19 +3583,19 @@ Discrepancias: **0**
 | MLU702334781 | 3021 | 1609 | 1412 | no_tocar | sin_tocar_umbral → 1609 | sí |
 | MLU702334779 | 3780 | 1703 | 2077 | no_tocar | sin_tocar_umbral → 1703 | sí |
 | MLU702334773 | 2950 | 1481 | 1469 | no_tocar | sin_tocar_umbral → 1481 | sí |
-| MLU702333611 | 1467 | 446 | 1021 | no_tocar | sin_tocar_umbral → 446 | sí |
+| MLU702333611 | 1467 | 447 | 1020 | no_tocar | sin_tocar_umbral → 447 | sí |
 | MLU702324031 | 2106 | 1013 | 1093 | no_tocar | sin_tocar_umbral → 1013 | sí |
 | MLU702324029 | 1783 | 1742 | 41 | saltear | saltear_promo | sí |
 | MLU702324025 | 2976 | 1682 | 1294 | no_tocar | sin_tocar_umbral → 1682 | sí |
 | MLU702324023 | 2952 | 1654 | 1298 | no_tocar | sin_tocar_umbral → 1654 | sí |
-| MLU702324015 | 1615 | 1030 | 585 | no_tocar | sin_tocar_umbral → 1030 | sí |
-| MLU702324013 | 1412 | 1008 | 404 | no_tocar | sin_tocar_umbral → 1008 | sí |
+| MLU702324015 | 1615 | 1031 | 584 | no_tocar | sin_tocar_umbral → 1031 | sí |
+| MLU702324013 | 1412 | 1010 | 402 | no_tocar | sin_tocar_umbral → 1010 | sí |
 | MLU702324003 | 1644 | 1001 | 643 | no_tocar | sin_tocar_umbral → 1001 | sí |
 | MLU702324001 | 2675 | 1595 | 1080 | no_tocar | sin_tocar_umbral → 1595 | sí |
 | MLU702323997 | 2322 | 1345 | 977 | no_tocar | sin_tocar_umbral → 1345 | sí |
-| MLU702323995 | 1644 | 1030 | 614 | no_tocar | sin_tocar_umbral → 1030 | sí |
+| MLU702323995 | 1644 | 1031 | 613 | no_tocar | sin_tocar_umbral → 1031 | sí |
 | MLU702323993 | 2524 | 1534 | 990 | no_tocar | sin_tocar_umbral → 1534 | sí |
-| MLU702323991 | 1656 | 1030 | 626 | no_tocar | sin_tocar_umbral → 1030 | sí |
+| MLU702323991 | 1656 | 1031 | 625 | no_tocar | sin_tocar_umbral → 1031 | sí |
 | MLU702323989 | 1644 | 1001 | 643 | no_tocar | sin_tocar_umbral → 1001 | sí |
 | MLU702323985 | 2811 | 1586 | 1225 | no_tocar | sin_tocar_umbral → 1586 | sí |
 | MLU702323869 | 3936 | 2136 | 1800 | no_tocar | sin_tocar_umbral → 2136 | sí |
@@ -3620,18 +3621,18 @@ Discrepancias: **0**
 | MLU702323019 | 2318 | 1183 | 1135 | no_tocar | sin_tocar_umbral → 1183 | sí |
 | MLU702323017 | 2528 | 1319 | 1209 | no_tocar | sin_tocar_umbral → 1319 | sí |
 | MLU702323011 | 2390 | 1185 | 1205 | no_tocar | sin_tocar_umbral → 1185 | sí |
-| MLU702323007 | 2378 | 1114 | 1264 | no_tocar | sin_tocar_umbral → 1114 | sí |
+| MLU702323007 | 2378 | 1115 | 1263 | no_tocar | sin_tocar_umbral → 1115 | sí |
 | MLU702323005 | 5322 | 4979 | 343 | saltear | saltear_promo | sí |
 | MLU702323003 | 2865 | 1573 | 1292 | no_tocar | sin_tocar_umbral → 1573 | sí |
 | MLU702323001 | 2198 | 1183 | 1015 | no_tocar | sin_tocar_umbral → 1183 | sí |
 | MLU702322999 | 2421 | 1245 | 1176 | no_tocar | sin_tocar_umbral → 1245 | sí |
 | MLU702322995 | 2940 | 1653 | 1287 | no_tocar | sin_tocar_umbral → 1653 | sí |
 | MLU702322993 | 2444 | 2386 | 58 | saltear | saltear_promo | sí |
-| MLU702322991 | 1442 | 701 | 741 | no_tocar | sin_tocar_umbral → 701 | sí |
+| MLU702322991 | 1442 | 702 | 740 | no_tocar | sin_tocar_umbral → 702 | sí |
 | MLU702322989 | 1880 | 1831 | 49 | saltear | saltear_promo | sí |
 | MLU702322987 | 2283 | 1682 | 601 | no_tocar | sin_tocar_umbral → 1682 | sí |
 | MLU702322823 | 2498 | 1259 | 1239 | no_tocar | sin_tocar_umbral → 1259 | sí |
-| MLU702322821 | 1683 | 701 | 982 | no_tocar | sin_tocar_umbral → 701 | sí |
+| MLU702322821 | 1683 | 702 | 981 | no_tocar | sin_tocar_umbral → 702 | sí |
 | MLU702322819 | 2498 | 1603 | 895 | no_tocar | sin_tocar_umbral → 1603 | sí |
 | MLU702322815 | 2498 | 1313 | 1185 | no_tocar | sin_tocar_umbral → 1313 | sí |
 | MLU702322813 | 2525 | 1573 | 952 | no_tocar | sin_tocar_umbral → 1573 | sí |
@@ -3655,8 +3656,8 @@ Discrepancias: **0**
 | MLU702322563 | 2136 | 1195 | 941 | no_tocar | sin_tocar_umbral → 1195 | sí |
 | MLU702322033 | 2788 | 1553 | 1235 | no_tocar | sin_tocar_umbral → 1553 | sí |
 | MLU702322005 | 3006 | 1978 | 1028 | no_tocar | sin_tocar_umbral → 1978 | sí |
-| MLU702320679 | 1855 | 919 | 936 | no_tocar | sin_tocar_umbral → 919 | sí |
-| MLU702320677 | 1724 | 691 | 1033 | no_tocar | sin_tocar_umbral → 691 | sí |
+| MLU702320679 | 1855 | 920 | 935 | no_tocar | sin_tocar_umbral → 920 | sí |
+| MLU702320677 | 1724 | 692 | 1032 | no_tocar | sin_tocar_umbral → 692 | sí |
 | MLU702320675 | 2190 | 1019 | 1171 | no_tocar | sin_tocar_umbral → 1019 | sí |
 | MLU702311257 | 2502 | 1603 | 899 | no_tocar | sin_tocar_umbral → 1603 | sí |
 | MLU702311255 | 2383 | 1519 | 864 | no_tocar | sin_tocar_umbral → 1519 | sí |
@@ -3692,33 +3693,33 @@ Discrepancias: **0**
 | MLU702310743 | 3314 | 2771 | 543 | no_tocar | sin_tocar_umbral → 2771 | sí |
 | MLU702310741 | 4003 | 2246 | 1757 | no_tocar | sin_tocar_umbral → 2246 | sí |
 | MLU702310739 | 2759 | 1584 | 1175 | no_tocar | sin_tocar_umbral → 1584 | sí |
-| MLU702310219 | 2347 | 1603 | 744 | saltear | saltear_ganador_sin_dato | sí |
+| MLU702310219 | 2347 | 1603 | 744 | no_tocar | sin_tocar_umbral → 1603 | sí |
 | MLU702310215 | 3456 | 1930 | 1526 | no_tocar | sin_tocar_umbral → 1930 | sí |
 | MLU702310213 | 2107 | 1184 | 923 | no_tocar | sin_tocar_umbral → 1184 | sí |
 | MLU702310207 | 2558 | 1259 | 1299 | no_tocar | sin_tocar_umbral → 1259 | sí |
 | MLU702310205 | 2290 | 1692 | 598 | no_tocar | sin_tocar_umbral → 1692 | sí |
-| MLU702310199 | 1503 | 702 | 801 | no_tocar | sin_tocar_umbral → 702 | sí |
+| MLU702310199 | 1503 | 703 | 800 | no_tocar | sin_tocar_umbral → 703 | sí |
 | MLU702310195 | 2325 | 1245 | 1080 | no_tocar | sin_tocar_umbral → 1245 | sí |
 | MLU702310193 | 2378 | 1092 | 1286 | no_tocar | sin_tocar_umbral → 1092 | sí |
 | MLU702310039 | 2558 | 1098 | 1460 | no_tocar | sin_tocar_umbral → 1098 | sí |
 | MLU702310037 | 2290 | 1184 | 1106 | no_tocar | sin_tocar_umbral → 1184 | sí |
 | MLU702310027 | 2347 | 1184 | 1163 | no_tocar | sin_tocar_umbral → 1184 | sí |
 | MLU702310023 | 1743 | 702 | 1041 | no_tocar | sin_tocar_umbral → 702 | sí |
-| MLU702310013 | 1503 | 771 | 732 | saltear | saltear_ganador_sin_dato | sí |
+| MLU702310013 | 1503 | 772 | 731 | no_tocar | sin_tocar_umbral → 772 | sí |
 | MLU702310011 | 1623 | 702 | 921 | no_tocar | sin_tocar_umbral → 702 | sí |
-| MLU702310009 | 1442 | 701 | 741 | no_tocar | sin_tocar_umbral → 701 | sí |
+| MLU702310009 | 1442 | 702 | 740 | no_tocar | sin_tocar_umbral → 702 | sí |
 | MLU702310007 | 2358 | 1185 | 1173 | no_tocar | sin_tocar_umbral → 1185 | sí |
 | MLU702310005 | 2588 | 1184 | 1404 | no_tocar | sin_tocar_umbral → 1184 | sí |
 | MLU702310003 | 2177 | 2128 | 49 | saltear | saltear_promo | sí |
 | MLU702309999 | 2318 | 1183 | 1135 | no_tocar | sin_tocar_umbral → 1183 | sí |
 | MLU702309995 | 3186 | 1733 | 1453 | no_tocar | sin_tocar_umbral → 1733 | sí |
 | MLU702309993 | 2480 | 1245 | 1235 | no_tocar | sin_tocar_umbral → 1245 | sí |
-| MLU702309989 | 1902 | 1022 | 880 | no_tocar | sin_tocar_umbral → 1022 | sí |
+| MLU702309989 | 1902 | 1023 | 879 | no_tocar | sin_tocar_umbral → 1023 | sí |
 | MLU702309983 | 2885 | 1574 | 1311 | no_tocar | sin_tocar_umbral → 1574 | sí |
 | MLU702309979 | 1563 | 702 | 861 | no_tocar | sin_tocar_umbral → 702 | sí |
-| MLU702309977 | 1684 | 1023 | 661 | no_tocar | sin_tocar_umbral → 1023 | sí |
+| MLU702309977 | 1684 | 1024 | 660 | no_tocar | sin_tocar_umbral → 1024 | sí |
 | MLU702309973 | 2513 | 1196 | 1317 | no_tocar | sin_tocar_umbral → 1196 | sí |
-| MLU702309971 | 1442 | 770 | 672 | no_tocar | sin_tocar_umbral → 770 | sí |
+| MLU702309971 | 1442 | 772 | 670 | no_tocar | sin_tocar_umbral → 772 | sí |
 | MLU702309969 | 2524 | 1416 | 1108 | no_tocar | sin_tocar_umbral → 1416 | sí |
 | MLU702309809 | 2648 | 1261 | 1387 | no_tocar | sin_tocar_umbral → 1261 | sí |
 | MLU702309803 | 1775 | 1011 | 764 | no_tocar | sin_tocar_umbral → 1011 | sí |
@@ -3754,13 +3755,13 @@ Discrepancias: **0**
 | MLU1519258596 | 2277 | 1429 | 848 | no_tocar | sin_tocar_umbral → 1429 | sí |
 | MLU1519258594 | 2163 | 1437 | 726 | no_tocar | sin_tocar_umbral → 1437 | sí |
 | MLU1519258586 | 2223 | 1437 | 786 | no_tocar | sin_tocar_umbral → 1437 | sí |
-| MLU1519258530 | 1945 | 1131 | 814 | saltear | saltear_ganador_sin_dato | sí |
-| MLU1519258528 | 2102 | 1067 | 1035 | no_tocar | sin_tocar_umbral → 1067 | sí |
+| MLU1519258530 | 1945 | 1132 | 813 | saltear | saltear_ganador_sin_dato | sí |
+| MLU1519258528 | 2102 | 1068 | 1034 | no_tocar | sin_tocar_umbral → 1068 | sí |
 | MLU1519258526 | 2132 | 1178 | 954 | no_tocar | sin_tocar_umbral → 1178 | sí |
 | MLU1519258516 | 2368 | 1444 | 924 | no_tocar | sin_tocar_umbral → 1444 | sí |
 | MLU1519258506 | 2469 | 1348 | 1121 | no_tocar | sin_tocar_umbral → 1348 | sí |
 | MLU1519258502 | 2192 | 1593 | 599 | no_tocar | sin_tocar_umbral → 1593 | sí |
-| MLU1519258488 | 2748 | 2682 | 66 | saltear | saltear_ganador_sin_dato | sí |
+| MLU1519258488 | 2748 | 2682 | 66 | saltear | saltear_promo | sí |
 | MLU1519258480 | 2138 | 1055 | 1083 | no_tocar | sin_tocar_umbral → 1055 | sí |
 | MLU1519258474 | 2468 | 1623 | 845 | no_tocar | sin_tocar_umbral → 1623 | sí |
 | MLU1519258472 | 3365 | 1415 | 1950 | no_tocar | sin_tocar_umbral → 1415 | sí |
@@ -3771,14 +3772,14 @@ Discrepancias: **0**
 | MLU1519250964 | 2528 | 1435 | 1093 | no_tocar | sin_tocar_umbral → 1435 | sí |
 | MLU1519250960 | 3703 | 2132 | 1571 | no_tocar | sin_tocar_umbral → 2132 | sí |
 | MLU1519250950 | 2593 | 1425 | 1168 | no_tocar | sin_tocar_umbral → 1425 | sí |
-| MLU1519250948 | 4348 | 1661 | 2687 | no_tocar | sin_tocar_umbral → 1661 | sí |
+| MLU1519250948 | 4348 | 1661 | 2687 | saltear | saltear_ganador_sin_dato | sí |
 | MLU1519250940 | 3045 | 1738 | 1307 | no_tocar | sin_tocar_umbral → 1738 | sí |
 | MLU1519250938 | 4191 | 2539 | 1652 | no_tocar | sin_tocar_umbral → 2539 | sí |
 | MLU1519250936 | 2138 | 1183 | 955 | no_tocar | sin_tocar_umbral → 1183 | sí |
 | MLU1519250934 | 3493 | 2054 | 1439 | no_tocar | sin_tocar_umbral → 2054 | sí |
 | MLU1519249972 | 2075 | 1237 | 838 | no_tocar | sin_tocar_umbral → 1237 | sí |
 | MLU1519249970 | 2031 | 1034 | 997 | no_tocar | sin_tocar_umbral → 1034 | sí |
-| MLU1519249968 | 2034 | 1181 | 853 | no_tocar | sin_tocar_umbral → 1181 | sí |
+| MLU1519249968 | 2034 | 1182 | 852 | no_tocar | sin_tocar_umbral → 1182 | sí |
 | MLU1519249966 | 2075 | 1059 | 1016 | no_tocar | sin_tocar_umbral → 1059 | sí |
 | MLU1519249964 | 2135 | 1237 | 898 | no_tocar | sin_tocar_umbral → 1237 | sí |
 | MLU1519226608 | 3574 | 1812 | 1762 | no_tocar | sin_tocar_umbral → 1812 | sí |
@@ -3793,7 +3794,7 @@ Discrepancias: **0**
 | MLU1519226584 | 3041 | 1738 | 1303 | no_tocar | sin_tocar_umbral → 1738 | sí |
 | MLU1519226174 | 3271 | 2343 | 928 | no_tocar | sin_tocar_umbral → 2343 | sí |
 | MLU1519225472 | 2135 | 1029 | 1106 | no_tocar | sin_tocar_umbral → 1029 | sí |
-| MLU1519225470 | 2014 | 891 | 1123 | no_tocar | sin_tocar_umbral → 891 | sí |
+| MLU1519225470 | 2014 | 892 | 1122 | no_tocar | sin_tocar_umbral → 892 | sí |
 | MLU1519225468 | 1869 | 1049 | 820 | no_tocar | sin_tocar_umbral → 1049 | sí |
 | MLU1519213348 | 3060 | 1622 | 1438 | no_tocar | sin_tocar_umbral → 1622 | sí |
 | MLU1519213346 | 3915 | 2213 | 1702 | no_tocar | sin_tocar_umbral → 2213 | sí |
@@ -3812,8 +3813,8 @@ Discrepancias: **0**
 | MLU1519200660 | 2894 | 1422 | 1472 | no_tocar | sin_tocar_umbral → 1422 | sí |
 | MLU1519200658 | 3853 | 2054 | 1799 | no_tocar | sin_tocar_umbral → 2054 | sí |
 | MLU1519200656 | 3793 | 2053 | 1740 | no_tocar | sin_tocar_umbral → 2053 | sí |
-| MLU1519199536 | 2046 | 1103 | 943 | no_tocar | sin_tocar_umbral → 1103 | sí |
-| MLU1519199532 | 2195 | 1237 | 958 | no_tocar | sin_tocar_umbral → 1237 | sí |
+| MLU1519199536 | 2046 | 1103 | 943 | saltear | saltear_ganador_sin_dato | sí |
+| MLU1519199532 | 2195 | 1237 | 958 | saltear | saltear_ganador_sin_dato | sí |
 | MLU1519199530 | 2244 | 1025 | 1219 | no_tocar | sin_tocar_umbral → 1025 | sí |
 | MLU1519199526 | 1683 | 1011 | 672 | no_tocar | sin_tocar_umbral → 1011 | sí |
 | MLU702587245 | 2261 | 1185 | 1076 | no_tocar | sin_tocar_umbral → 1185 | sí |
@@ -3821,11 +3822,11 @@ Discrepancias: **0**
 | MLU702587241 | 3140 | 1465 | 1675 | no_tocar | sin_tocar_umbral → 1465 | sí |
 | MLU702587239 | 2985 | 1160 | 1825 | no_tocar | sin_tocar_umbral → 1160 | sí |
 | MLU702587237 | 2352 | 1279 | 1073 | no_tocar | sin_tocar_umbral → 1279 | sí |
-| MLU702587235 | 1471 | 1148 | 323 | saltear | saltear_piso → 1136 | sí |
+| MLU702587235 | 1471 | 1149 | 322 | saltear | saltear_piso → 1137 | sí |
 | MLU702587231 | 2373 | 1433 | 940 | no_tocar | sin_tocar_umbral → 1433 | sí |
 | MLU702587229 | 2232 | 1265 | 967 | no_tocar | sin_tocar_umbral → 1265 | sí |
 | MLU702587227 | 2336 | 1230 | 1106 | no_tocar | sin_tocar_umbral → 1230 | sí |
-| MLU702587225 | 1412 | 729 | 683 | no_tocar | sin_tocar_umbral → 729 | sí |
+| MLU702587225 | 1412 | 730 | 682 | no_tocar | sin_tocar_umbral → 730 | sí |
 | MLU702587221 | 2132 | 1263 | 869 | no_tocar | sin_tocar_umbral → 1263 | sí |
 | MLU702587219 | 2156 | 1148 | 1008 | no_tocar | sin_tocar_umbral → 1148 | sí |
 | MLU702587217 | 2503 | 1751 | 752 | no_tocar | sin_tocar_umbral → 1751 | sí |
@@ -3850,7 +3851,7 @@ Discrepancias: **0**
 | MLU702587063 | 2372 | 1011 | 1361 | no_tocar | sin_tocar_umbral → 1011 | sí |
 | MLU702587057 | 2354 | 1603 | 751 | no_tocar | sin_tocar_umbral → 1603 | sí |
 | MLU702587055 | 2896 | 1419 | 1477 | no_tocar | sin_tocar_umbral → 1419 | sí |
-| MLU702587051 | 2016 | 1188 | 828 | no_tocar | sin_tocar_umbral → 1188 | sí |
+| MLU702587051 | 2016 | 1189 | 827 | no_tocar | sin_tocar_umbral → 1189 | sí |
 | MLU702587047 | 2187 | 1239 | 948 | no_tocar | sin_tocar_umbral → 1239 | sí |
 | MLU702587045 | 2231 | 1186 | 1045 | no_tocar | sin_tocar_umbral → 1186 | sí |
 | MLU702587043 | 2608 | 1831 | 777 | no_tocar | sin_tocar_umbral → 1831 | sí |
@@ -3859,7 +3860,7 @@ Discrepancias: **0**
 | MLU702587027 | 2598 | 1341 | 1257 | no_tocar | sin_tocar_umbral → 1341 | sí |
 | MLU702587025 | 2081 | 1113 | 968 | no_tocar | sin_tocar_umbral → 1113 | sí |
 | MLU702587019 | 2434 | 1593 | 841 | no_tocar | sin_tocar_umbral → 1593 | sí |
-| MLU702587017 | 1817 | 1147 | 670 | no_tocar | sin_tocar_umbral → 1147 | sí |
+| MLU702587017 | 1817 | 1148 | 669 | no_tocar | sin_tocar_umbral → 1148 | sí |
 | MLU702587013 | 2602 | 1184 | 1418 | no_tocar | sin_tocar_umbral → 1184 | sí |
 | MLU702574441 | 2819 | 1479 | 1340 | no_tocar | sin_tocar_umbral → 1479 | sí |
 | MLU702574439 | 2589 | 1465 | 1124 | no_tocar | sin_tocar_umbral → 1465 | sí |
@@ -3884,28 +3885,28 @@ Discrepancias: **0**
 | MLU702574305 | 2132 | 1178 | 954 | no_tocar | sin_tocar_umbral → 1178 | sí |
 | MLU702574301 | 2296 | 1107 | 1189 | no_tocar | sin_tocar_umbral → 1107 | sí |
 | MLU702574299 | 2020 | 1395 | 625 | no_tocar | sin_tocar_umbral → 1395 | sí |
-| MLU702574295 | 2649 | 1870 | 779 | saltear | saltear_ganador_sin_dato | sí |
+| MLU702574295 | 2649 | 1870 | 779 | no_tocar | sin_tocar_umbral → 1870 | sí |
 | MLU702574293 | 2614 | 1448 | 1166 | no_tocar | sin_tocar_umbral → 1448 | sí |
 | MLU702574289 | 2011 | 1414 | 597 | no_tocar | sin_tocar_umbral → 1414 | sí |
 | MLU702574287 | 2132 | 1263 | 869 | no_tocar | sin_tocar_umbral → 1263 | sí |
 | MLU702574285 | 1956 | 1415 | 541 | no_tocar | sin_tocar_umbral → 1415 | sí |
 | MLU702574281 | 2533 | 1841 | 692 | no_tocar | sin_tocar_umbral → 1841 | sí |
-| MLU702574279 | 1745 | 1181 | 564 | no_tocar | sin_tocar_umbral → 1181 | sí |
+| MLU702574279 | 1745 | 1182 | 563 | no_tocar | sin_tocar_umbral → 1182 | sí |
 | MLU702574277 | 2292 | 1266 | 1026 | no_tocar | sin_tocar_umbral → 1266 | sí |
 | MLU702574233 | 1915 | 1028 | 887 | no_tocar | sin_tocar_umbral → 1028 | sí |
-| MLU702574229 | 1815 | 989 | 826 | no_tocar | sin_tocar_umbral → 989 | sí |
+| MLU702574229 | 1815 | 990 | 825 | no_tocar | sin_tocar_umbral → 990 | sí |
 | MLU702574227 | 2440 | 1108 | 1332 | no_tocar | sin_tocar_umbral → 1108 | sí |
 | MLU702574225 | 2603 | 1258 | 1345 | no_tocar | sin_tocar_umbral → 1258 | sí |
 | MLU702574223 | 2231 | 1107 | 1124 | no_tocar | sin_tocar_umbral → 1107 | sí |
 | MLU702574221 | 2202 | 1345 | 857 | no_tocar | sin_tocar_umbral → 1345 | sí |
 | MLU702574217 | 2805 | 1610 | 1195 | no_tocar | sin_tocar_umbral → 1610 | sí |
 | MLU702574211 | 7039 | 3668 | 3371 | no_tocar | sin_tocar_umbral → 3668 | sí |
-| MLU702574207 | 3102 | 969 | 2133 | saltear | saltear_ganador_inmediato | sí |
+| MLU702574207 | 3102 | 970 | 2132 | saltear | saltear_ganador_inmediato | sí |
 | MLU702574205 | 3386 | 1779 | 1607 | no_tocar | sin_tocar_umbral → 1779 | sí |
 | MLU702574203 | 2592 | 1454 | 1138 | no_tocar | sin_tocar_umbral → 1454 | sí |
 | MLU702574201 | 3171 | 1197 | 1974 | no_tocar | sin_tocar_umbral → 1197 | sí |
-| MLU702574199 | 1819 | 1010 | 809 | no_tocar | sin_tocar_umbral → 1010 | sí |
-| MLU702574195 | 4812 | 2367 | 2445 | no_tocar | sin_tocar_umbral → 2367 | sí |
+| MLU702574199 | 1819 | 1011 | 808 | no_tocar | sin_tocar_umbral → 1011 | sí |
+| MLU702574195 | 4812 | 2367 | 2445 | saltear | saltear_ganador_sin_dato | sí |
 | MLU702574193 | 2368 | 1336 | 1032 | no_tocar | sin_tocar_umbral → 1336 | sí |
 | MLU702574187 | 3369 | 1385 | 1984 | no_tocar | sin_tocar_umbral → 1385 | sí |
 | MLU702561565 | 2292 | 1266 | 1026 | no_tocar | sin_tocar_umbral → 1266 | sí |
@@ -3921,7 +3922,7 @@ Discrepancias: **0**
 | MLU702561471 | 2232 | 1608 | 624 | no_tocar | sin_tocar_umbral → 1608 | sí |
 | MLU702561469 | 2192 | 1513 | 679 | no_tocar | sin_tocar_umbral → 1513 | sí |
 | MLU702561467 | 2819 | 1567 | 1252 | no_tocar | sin_tocar_umbral → 1567 | sí |
-| MLU702561465 | 2368 | 1384 | 984 | no_tocar | sin_tocar_umbral → 1384 | sí |
+| MLU702561465 | 2368 | 1384 | 984 | saltear | saltear_ganador_sin_dato | sí |
 | MLU702561463 | 1801 | 1326 | 475 | no_tocar | sin_tocar_umbral → 1326 | sí |
 | MLU702561461 | 2709 | 1691 | 1018 | no_tocar | sin_tocar_umbral → 1691 | sí |
 | MLU702561459 | 2156 | 1076 | 1080 | no_tocar | sin_tocar_umbral → 1076 | sí |
@@ -3938,7 +3939,6 @@ Discrepancias: **0**
 | MLU702561345 | 2198 | 1356 | 842 | no_tocar | sin_tocar_umbral → 1356 | sí |
 | MLU702561339 | 2192 | 1241 | 951 | no_tocar | sin_tocar_umbral → 1241 | sí |
 | MLU1521327052 | 1600 | 1298 | 302 | saltear | saltear_promo | sí |
-| MLU1521327050 | 2560 | 2504 | 56 | saltear | saltear_promo | sí |
 | MLU1521327034 | 1600 | 1298 | 302 | saltear | saltear_promo | sí |
 | MLU1521326972 | 1637 | 1593 | 44 | saltear | saltear_promo | sí |
 | MLU1521326942 | 4270 | 3227 | 1043 | no_tocar | sin_tocar_umbral → 3227 | sí |
@@ -3963,7 +3963,7 @@ Discrepancias: **0**
 | MLU1521274918 | 1600 | 1244 | 356 | saltear | saltear_promo | sí |
 | MLU1521274892 | 2840 | 2515 | 325 | saltear | saltear_promo | sí |
 | MLU1521274792 | 1530 | 1484 | 46 | saltear | saltear_promo | sí |
-| MLU1521274778 | 1600 | 730 | 870 | no_tocar | sin_tocar_umbral → 730 | sí |
+| MLU1521274778 | 1600 | 731 | 869 | no_tocar | sin_tocar_umbral → 731 | sí |
 | MLU1521274760 | 3390 | 2429 | 961 | no_tocar | sin_tocar_umbral → 2429 | sí |
 | MLU1521274614 | 1810 | 1409 | 401 | no_tocar | sin_tocar_umbral → 1409 | sí |
 | MLU1521274514 | 2150 | 1594 | 556 | no_tocar | sin_tocar_umbral → 1594 | sí |
@@ -4041,7 +4041,7 @@ Discrepancias: **0**
 | MLU1521237584 | 1980 | 1733 | 247 | saltear | saltear_promo | sí |
 | MLU1521237558 | 1600 | 1286 | 314 | saltear | saltear_promo | sí |
 | MLU1521237548 | 1600 | 1385 | 215 | saltear | saltear_promo | sí |
-| MLU1521237512 | 1600 | 751 | 849 | no_tocar | sin_tocar_umbral → 751 | sí |
+| MLU1521237512 | 1600 | 752 | 848 | no_tocar | sin_tocar_umbral → 752 | sí |
 | MLU1521237510 | 1600 | 1515 | 85 | saltear | saltear_promo | sí |
 | MLU1521237486 | 4480 | 3900 | 580 | no_tocar | sin_tocar_umbral → 3900 | sí |
 | MLU1521237476 | 1504 | 1454 | 50 | saltear | saltear_promo | sí |
@@ -4059,12 +4059,12 @@ Discrepancias: **0**
 | MLU1521237210 | 5180 | 3821 | 1359 | no_tocar | sin_tocar_umbral → 3821 | sí |
 | MLU1521237156 | 3160 | 2484 | 676 | no_tocar | sin_tocar_umbral → 2484 | sí |
 | MLU1521237102 | 3250 | 2554 | 696 | no_tocar | sin_tocar_umbral → 2554 | sí |
-| MLU1521237090 | 1600 | 680 | 920 | no_tocar | sin_tocar_umbral → 680 | sí |
-| MLU1521237066 | 2060 | 1107 | 953 | no_tocar | sin_tocar_umbral → 1107 | sí |
+| MLU1521237090 | 1600 | 681 | 919 | no_tocar | sin_tocar_umbral → 681 | sí |
+| MLU1521237066 | 2060 | 1108 | 952 | no_tocar | sin_tocar_umbral → 1108 | sí |
 | MLU1521237056 | 1770 | 1599 | 171 | saltear | saltear_promo | sí |
 | MLU1521237046 | 1860 | 1761 | 99 | saltear | saltear_promo | sí |
-| MLU1521236980 | 1600 | 730 | 870 | no_tocar | sin_tocar_umbral → 730 | sí |
-| MLU1521236970 | 3380 | 1207 | 2173 | no_tocar | sin_tocar_umbral → 1207 | sí |
+| MLU1521236980 | 1600 | 731 | 869 | no_tocar | sin_tocar_umbral → 731 | sí |
+| MLU1521236970 | 3380 | 1208 | 2172 | no_tocar | sin_tocar_umbral → 1208 | sí |
 | MLU1521236950 | 1730 | 1480 | 250 | saltear | saltear_promo | sí |
 | MLU1521236942 | 1940 | 1850 | 90 | saltear | saltear_promo | sí |
 | MLU1521236774 | 2306 | 2257 | 49 | saltear | saltear_promo | sí |
@@ -4108,10 +4108,10 @@ Discrepancias: **0**
 | MLU1521235542 | 3180 | 2188 | 992 | no_tocar | sin_tocar_umbral → 2188 | sí |
 | MLU1521235532 | 1600 | 1276 | 324 | saltear | saltear_promo | sí |
 | MLU1521224454 | 2670 | 2116 | 554 | no_tocar | sin_tocar_umbral → 2116 | sí |
-| MLU1521224444 | 2390 | 1080 | 1310 | no_tocar | sin_tocar_umbral → 1080 | sí |
+| MLU1521224444 | 2390 | 1081 | 1309 | no_tocar | sin_tocar_umbral → 1081 | sí |
 | MLU1521224368 | 1530 | 1484 | 46 | saltear | saltear_promo | sí |
-| MLU1521224352 | 1600 | 856 | 744 | no_tocar | sin_tocar_umbral → 856 | sí |
-| MLU1521224350 | 1600 | 866 | 734 | no_tocar | sin_tocar_umbral → 866 | sí |
+| MLU1521224352 | 1600 | 857 | 743 | no_tocar | sin_tocar_umbral → 857 | sí |
+| MLU1521224350 | 1600 | 867 | 733 | no_tocar | sin_tocar_umbral → 867 | sí |
 | MLU1521224340 | 3200 | 2575 | 625 | no_tocar | sin_tocar_umbral → 2575 | sí |
 | MLU1521224326 | 1600 | 1030 | 570 | no_tocar | sin_tocar_umbral → 1030 | sí |
 | MLU1521224278 | 3410 | 3133 | 277 | saltear | saltear_promo | sí |
@@ -4129,7 +4129,7 @@ Discrepancias: **0**
 | MLU702820133 | 2420 | 1383 | 1037 | no_tocar | sin_tocar_umbral → 1383 | sí |
 | MLU702820117 | 3150 | 1751 | 1399 | no_tocar | sin_tocar_umbral → 1751 | sí |
 | MLU702820109 | 1600 | 1409 | 191 | saltear | saltear_promo | sí |
-| MLU702820005 | 1600 | 741 | 859 | no_tocar | sin_tocar_umbral → 741 | sí |
+| MLU702820005 | 1600 | 742 | 858 | no_tocar | sin_tocar_umbral → 742 | sí |
 | MLU702819975 | 1730 | 1415 | 315 | saltear | saltear_promo | sí |
 | MLU702819927 | 2110 | 1772 | 338 | saltear | saltear_promo | sí |
 | MLU702819907 | 1600 | 1203 | 397 | saltear | saltear_piso → 1190 | sí |
@@ -4150,7 +4150,7 @@ Discrepancias: **0**
 | MLU702819557 | 2340 | 1862 | 478 | no_tocar | sin_tocar_umbral → 1862 | sí |
 | MLU702819513 | 2620 | 2306 | 314 | saltear | saltear_promo | sí |
 | MLU702819503 | 3700 | 3247 | 453 | no_tocar | sin_tocar_umbral → 3247 | sí |
-| MLU702819479 | 1600 | 859 | 741 | no_tocar | sin_tocar_umbral → 859 | sí |
+| MLU702819479 | 1600 | 860 | 740 | no_tocar | sin_tocar_umbral → 860 | sí |
 | MLU702819437 | 1871 | 1821 | 50 | saltear | saltear_promo | sí |
 | MLU702819379 | 2890 | 2485 | 405 | no_tocar | sin_tocar_umbral → 2485 | sí |
 | MLU702819347 | 1600 | 1271 | 329 | saltear | saltear_promo | sí |
@@ -4183,7 +4183,7 @@ Discrepancias: **0**
 | MLU702807435 | 2820 | 2464 | 356 | saltear | saltear_promo | sí |
 | MLU702807425 | 1880 | 1592 | 288 | saltear | saltear_promo | sí |
 | MLU702807387 | 2540 | 1867 | 673 | no_tocar | sin_tocar_umbral → 1867 | sí |
-| MLU702807351 | 1600 | 476 | 1124 | no_tocar | sin_tocar_umbral → 476 | sí |
+| MLU702807351 | 1600 | 477 | 1123 | no_tocar | sin_tocar_umbral → 477 | sí |
 | MLU702807339 | 2300 | 1114 | 1186 | no_tocar | sin_tocar_umbral → 1114 | sí |
 | MLU702807303 | 1600 | 1553 | 47 | saltear | saltear_promo | sí |
 | MLU702807269 | 1578 | 1534 | 44 | saltear | saltear_promo | sí |
@@ -4210,7 +4210,7 @@ Discrepancias: **0**
 | MLU702806937 | 1530 | 1484 | 46 | saltear | saltear_promo | sí |
 | MLU702806867 | 1600 | 1553 | 47 | saltear | saltear_promo | sí |
 | MLU702806863 | 1613 | 1564 | 49 | saltear | saltear_promo | sí |
-| MLU702806843 | 1600 | 866 | 734 | no_tocar | sin_tocar_umbral → 866 | sí |
+| MLU702806843 | 1600 | 867 | 733 | no_tocar | sin_tocar_umbral → 867 | sí |
 | MLU702806841 | 2100 | 1900 | 200 | saltear | saltear_promo | sí |
 | MLU702806815 | 1640 | 1107 | 533 | no_tocar | sin_tocar_umbral → 1107 | sí |
 | MLU702806799 | 1573 | 1534 | 39 | saltear | saltear_promo | sí |
@@ -4250,7 +4250,7 @@ Discrepancias: **0**
 | MLU702793965 | 2020 | 1593 | 427 | no_tocar | sin_tocar_umbral → 1593 | sí |
 | MLU702793927 | 1603 | 1553 | 50 | saltear | saltear_promo | sí |
 | MLU702793849 | 1600 | 1374 | 226 | saltear | saltear_promo | sí |
-| MLU702793845 | 1920 | 1039 | 881 | no_tocar | sin_tocar_umbral → 1039 | sí |
+| MLU702793845 | 1920 | 1040 | 880 | no_tocar | sin_tocar_umbral → 1040 | sí |
 | MLU702793827 | 2430 | 1330 | 1100 | no_tocar | sin_tocar_umbral → 1330 | sí |
 | MLU702793821 | 2410 | 1989 | 421 | no_tocar | sin_tocar_umbral → 1989 | sí |
 | MLU702793763 | 2520 | 1835 | 685 | no_tocar | sin_tocar_umbral → 1835 | sí |
@@ -4279,7 +4279,7 @@ Discrepancias: **0**
 | MLU1521719440 | 2760 | 2167 | 593 | no_tocar | sin_tocar_umbral → 2167 | sí |
 | MLU1521719378 | 4090 | 3195 | 895 | no_tocar | sin_tocar_umbral → 3195 | sí |
 | MLU1521719282 | 1680 | 1178 | 502 | no_tocar | sin_tocar_umbral → 1178 | sí |
-| MLU1521719274 | 1600 | 1206 | 394 | saltear | saltear_piso → 1193 | sí |
+| MLU1521719274 | 1600 | 1207 | 393 | saltear | saltear_piso → 1194 | sí |
 | MLU1521719214 | 8450 | 6577 | 1873 | no_tocar | sin_tocar_umbral → 6577 | sí |
 | MLU1521718742 | 7720 | 3461 | 4259 | no_tocar | sin_tocar_umbral → 3461 | sí |
 | MLU1521718708 | 2720 | 2233 | 487 | no_tocar | sin_tocar_umbral → 2233 | sí |
@@ -4296,15 +4296,15 @@ Discrepancias: **0**
 | MLU1521619808 | 6840 | 3752 | 3088 | no_tocar | sin_tocar_umbral → 3752 | sí |
 | MLU1521619702 | 1600 | 1057 | 543 | no_tocar | sin_tocar_umbral → 1057 | sí |
 | MLU1521619634 | 1600 | 1171 | 429 | no_tocar | sin_tocar_umbral → 1171 | sí |
-| MLU1521614712 | 1620 | 771 | 849 | no_tocar | sin_tocar_umbral → 771 | sí |
+| MLU1521614712 | 1620 | 772 | 848 | no_tocar | sin_tocar_umbral → 772 | sí |
 | MLU1521614680 | 2880 | 1440 | 1440 | no_tocar | sin_tocar_umbral → 1440 | sí |
-| MLU1521614614 | 2370 | 2088 | 282 | saltear | saltear_promo | sí |
+| MLU1521614614 | 2370 | 2088 | 282 | saltear | saltear_ganador_sin_dato | sí |
 | MLU1521614474 | 3260 | 1595 | 1665 | no_tocar | sin_tocar_umbral → 1595 | sí |
 | MLU1521614400 | 2150 | 1511 | 639 | no_tocar | sin_tocar_umbral → 1511 | sí |
 | MLU1521614308 | 2260 | 1989 | 271 | saltear | saltear_promo | sí |
 | MLU1521614232 | 1583 | 1534 | 49 | saltear | saltear_promo | sí |
 | MLU1521614222 | 2580 | 2372 | 208 | saltear | saltear_promo | sí |
-| MLU1521614196 | 4590 | 4029 | 561 | no_tocar | sin_tocar_umbral → 4029 | sí |
+| MLU1521614196 | 4590 | 3999 | 591 | no_tocar | sin_tocar_umbral → 3999 | sí |
 | MLU1521614114 | 1600 | 1538 | 62 | saltear | saltear_promo | sí |
 | MLU1521613974 | 2200 | 1270 | 930 | no_tocar | sin_tocar_umbral → 1270 | sí |
 | MLU1521613968 | 3580 | 1709 | 1871 | no_tocar | sin_tocar_umbral → 1709 | sí |
@@ -4321,7 +4321,7 @@ Discrepancias: **0**
 | MLU1521568282 | 3140 | 2781 | 359 | saltear | saltear_promo | sí |
 | MLU1521568278 | 2250 | 1416 | 834 | no_tocar | sin_tocar_umbral → 1416 | sí |
 | MLU1521568256 | 1600 | 1108 | 492 | no_tocar | sin_tocar_umbral → 1108 | sí |
-| MLU1521568244 | 1620 | 708 | 912 | no_tocar | sin_tocar_umbral → 708 | sí |
+| MLU1521568244 | 1620 | 709 | 911 | no_tocar | sin_tocar_umbral → 709 | sí |
 | MLU1521568230 | 1482 | 1434 | 48 | saltear | saltear_promo | sí |
 | MLU1521568056 | 1600 | 1269 | 331 | saltear | saltear_promo | sí |
 | MLU1521567812 | 1415 | 1375 | 40 | saltear | saltear_promo | sí |
@@ -4335,7 +4335,7 @@ Discrepancias: **0**
 | MLU1521567478 | 2570 | 2088 | 482 | no_tocar | sin_tocar_umbral → 2088 | sí |
 | MLU1521567386 | 2250 | 2025 | 225 | saltear | saltear_promo | sí |
 | MLU1521567362 | 2480 | 2211 | 269 | saltear | saltear_promo | sí |
-| MLU1521567312 | 1530 | 1484 | 46 | saltear | saltear_ganador_sin_dato | sí |
+| MLU1521567312 | 1530 | 1484 | 46 | saltear | saltear_promo | sí |
 | MLU1521567308 | 1530 | 1484 | 46 | saltear | saltear_promo | sí |
 | MLU1521567304 | 1600 | 1076 | 524 | no_tocar | sin_tocar_umbral → 1076 | sí |
 | MLU1521567288 | 1600 | 1235 | 365 | saltear | saltear_promo | sí |
@@ -4423,7 +4423,7 @@ Discrepancias: **0**
 | MLU1521425532 | 1600 | 1075 | 525 | no_tocar | sin_tocar_umbral → 1075 | sí |
 | MLU1521425520 | 2620 | 2435 | 185 | saltear | saltear_promo | sí |
 | MLU1521425284 | 1600 | 1448 | 152 | saltear | saltear_promo | sí |
-| MLU1521425246 | 2530 | 1979 | 551 | no_tocar | sin_tocar_umbral → 1979 | sí |
+| MLU1521425246 | 2530 | 2012 | 518 | no_tocar | sin_tocar_umbral → 2012 | sí |
 | MLU1521425140 | 1890 | 1678 | 212 | saltear | saltear_promo | sí |
 | MLU1521424732 | 2630 | 2336 | 294 | saltear | saltear_promo | sí |
 | MLU1521424646 | 2140 | 2073 | 67 | saltear | saltear_promo | sí |
@@ -4447,7 +4447,7 @@ Discrepancias: **0**
 | MLU1521418458 | 2170 | 1861 | 309 | saltear | saltear_promo | sí |
 | MLU1521418156 | 2400 | 1107 | 1293 | no_tocar | sin_tocar_umbral → 1107 | sí |
 | MLU1521418154 | 2070 | 1940 | 130 | saltear | saltear_promo | sí |
-| MLU1521418152 | 1600 | 1018 | 582 | no_tocar | sin_tocar_umbral → 1018 | sí |
+| MLU1521418152 | 1600 | 1019 | 581 | no_tocar | sin_tocar_umbral → 1019 | sí |
 | MLU1521418098 | 2780 | 2355 | 425 | no_tocar | sin_tocar_umbral → 2355 | sí |
 | MLU1521418030 | 2630 | 2348 | 282 | saltear | saltear_promo | sí |
 | MLU1521417974 | 1600 | 1285 | 315 | saltear | saltear_promo | sí |
@@ -4495,7 +4495,7 @@ Discrepancias: **0**
 | MLU1521282020 | 1600 | 896 | 704 | no_tocar | sin_tocar_umbral → 896 | sí |
 | MLU1521281866 | 1600 | 1269 | 331 | saltear | saltear_promo | sí |
 | MLU1521281840 | 4120 | 3296 | 824 | no_tocar | sin_tocar_umbral → 3296 | sí |
-| MLU1521281384 | 1715 | 1673 | 42 | saltear | saltear_ganador_sin_dato | sí |
+| MLU1521281384 | 1715 | 1673 | 42 | saltear | saltear_promo | sí |
 | MLU1521281214 | 1600 | 1378 | 222 | saltear | saltear_promo | sí |
 | MLU1521281004 | 2590 | 2029 | 561 | no_tocar | sin_tocar_umbral → 2029 | sí |
 | MLU1521280966 | 2010 | 1831 | 179 | saltear | saltear_promo | sí |
@@ -4533,6 +4533,7 @@ Discrepancias: **0**
 | MLU1521261442 | 1880 | 1781 | 99 | saltear | saltear_promo | sí |
 | MLU1521261402 | 1600 | 1409 | 191 | saltear | saltear_promo | sí |
 | MLU1521261204 | 1940 | 1890 | 50 | saltear | saltear_promo | sí |
+| MLU1521260910 | 1950 | 1900 | 50 | saltear | saltear_promo | sí |
 | MLU1521259744 | 1600 | 1484 | 116 | saltear | saltear_promo | sí |
 | MLU1521259684 | 1393 | 1346 | 47 | saltear | saltear_promo | sí |
 | MLU1521259310 | 2190 | 1910 | 280 | saltear | saltear_promo | sí |
@@ -4545,8 +4546,8 @@ Discrepancias: **0**
 | MLU1521258088 | 2250 | 2089 | 161 | saltear | saltear_promo | sí |
 | MLU1521257792 | 1600 | 1180 | 420 | no_tocar | sin_tocar_umbral → 1180 | sí |
 | MLU1521257730 | 3100 | 2167 | 933 | no_tocar | sin_tocar_umbral → 2167 | sí |
-| MLU1521257482 | 1710 | 1023 | 687 | no_tocar | sin_tocar_umbral → 1023 | sí |
-| MLU1521257134 | 2100 | 663 | 1437 | no_tocar | sin_tocar_umbral → 663 | sí |
+| MLU1521257482 | 1710 | 1024 | 686 | no_tocar | sin_tocar_umbral → 1024 | sí |
+| MLU1521257134 | 2100 | 664 | 1436 | no_tocar | sin_tocar_umbral → 664 | sí |
 | MLU1521256812 | 1600 | 1538 | 62 | saltear | saltear_promo | sí |
 | MLU1521256674 | 2360 | 2059 | 301 | saltear | saltear_promo | sí |
 | MLU1521256654 | 4750 | 4122 | 628 | no_tocar | sin_tocar_umbral → 4122 | sí |
@@ -4555,14 +4556,12 @@ Discrepancias: **0**
 | MLU1521256334 | 2260 | 1970 | 290 | saltear | saltear_promo | sí |
 | MLU1521256242 | 2790 | 2286 | 504 | no_tocar | sin_tocar_umbral → 2286 | sí |
 | MLU1521256026 | 1600 | 1468 | 132 | saltear | saltear_promo | sí |
-| MLU1521255720 | 1990 | 1732 | 258 | saltear | saltear_promo | sí |
-| MLU1521252428 | 2140 | 2088 | 52 | saltear | saltear_promo | sí |
+| MLU1521255720 | 1990 | 1702 | 288 | saltear | saltear_promo | sí |
 | MLU1521252344 | 1600 | 1215 | 385 | saltear | saltear_promo | sí |
 | MLU1521252286 | 1600 | 1215 | 385 | saltear | saltear_promo | sí |
 | MLU1521252052 | 1600 | 1104 | 496 | no_tocar | sin_tocar_umbral → 1104 | sí |
-| MLU1521251980 | 1630 | 889 | 741 | no_tocar | sin_tocar_umbral → 889 | sí |
+| MLU1521251980 | 1630 | 890 | 740 | no_tocar | sin_tocar_umbral → 890 | sí |
 | MLU1521251832 | 2900 | 1973 | 927 | no_tocar | sin_tocar_umbral → 1973 | sí |
-| MLU1521251744 | 1670 | 1573 | 97 | bajar | bajar → 1557 | sí |
 | MLU1521251638 | 2200 | 2108 | 92 | saltear | saltear_promo | sí |
 | MLU1521251564 | 1600 | 1437 | 163 | saltear | saltear_promo | sí |
 | MLU1521251550 | 1600 | 1369 | 231 | saltear | saltear_promo | sí |
@@ -4583,10 +4582,10 @@ Discrepancias: **0**
 | MLU1521251088 | 4150 | 2900 | 1250 | no_tocar | sin_tocar_umbral → 2900 | sí |
 | MLU1521251050 | 1600 | 1472 | 128 | saltear | saltear_promo | sí |
 | MLU1521251038 | 1637 | 1593 | 44 | saltear | saltear_promo | sí |
-| MLU1521251034 | 1600 | 761 | 839 | no_tocar | sin_tocar_umbral → 761 | sí |
+| MLU1521251034 | 1600 | 762 | 838 | no_tocar | sin_tocar_umbral → 762 | sí |
 | MLU1521250978 | 1970 | 1414 | 556 | no_tocar | sin_tocar_umbral → 1414 | sí |
 | MLU1521250908 | 2410 | 1969 | 441 | no_tocar | sin_tocar_umbral → 1969 | sí |
-| MLU1521250902 | 2580 | 1870 | 710 | saltear | saltear_ganador_sin_dato | sí |
+| MLU1521250902 | 2580 | 1870 | 710 | no_tocar | sin_tocar_umbral → 1870 | sí |
 | MLU1521239908 | 1741 | 1692 | 49 | saltear | saltear_promo | sí |
 | MLU1521239864 | 3050 | 2109 | 941 | no_tocar | sin_tocar_umbral → 2109 | sí |
 | MLU1521239566 | 1600 | 1186 | 414 | no_tocar | sin_tocar_umbral → 1186 | sí |
@@ -4608,22 +4607,21 @@ Discrepancias: **0**
 | MLU1521238542 | 3430 | 1660 | 1770 | no_tocar | sin_tocar_umbral → 1660 | sí |
 | MLU1521238380 | 2600 | 1286 | 1314 | no_tocar | sin_tocar_umbral → 1286 | sí |
 | MLU1521238366 | 1890 | 1812 | 78 | saltear | saltear_promo | sí |
-| MLU1521238292 | 1870 | 1752 | 118 | saltear | saltear_promo | sí |
+| MLU1521238292 | 1870 | 1779 | 91 | saltear | saltear_promo | sí |
 | MLU1521237660 | 3510 | 2118 | 1392 | no_tocar | sin_tocar_umbral → 2118 | sí |
 | MLU702861901 | 1610 | 1091 | 519 | no_tocar | sin_tocar_umbral → 1091 | sí |
-| MLU702861545 | 1600 | 866 | 734 | no_tocar | sin_tocar_umbral → 866 | sí |
-| MLU702861415 | 2170 | 1167 | 1003 | no_tocar | sin_tocar_umbral → 1167 | sí |
+| MLU702861545 | 1600 | 867 | 733 | no_tocar | sin_tocar_umbral → 867 | sí |
+| MLU702861415 | 2170 | 1168 | 1002 | no_tocar | sin_tocar_umbral → 1168 | sí |
 | MLU702861403 | 2490 | 1583 | 907 | no_tocar | sin_tocar_umbral → 1583 | sí |
 | MLU702861005 | 2290 | 1835 | 455 | no_tocar | sin_tocar_umbral → 1835 | sí |
 | MLU702860655 | 4600 | 2128 | 2472 | no_tocar | sin_tocar_umbral → 2128 | sí |
 | MLU702855049 | 1600 | 1060 | 540 | no_tocar | sin_tocar_umbral → 1060 | sí |
 | MLU702854803 | 2260 | 1831 | 429 | no_tocar | sin_tocar_umbral → 1831 | sí |
 | MLU702854683 | 2760 | 2215 | 545 | no_tocar | sin_tocar_umbral → 2215 | sí |
-| MLU702854493 | 2130 | 1871 | 259 | bajar | bajar → 1852 | sí |
 | MLU702854173 | 4400 | 3477 | 923 | no_tocar | sin_tocar_umbral → 3477 | sí |
-| MLU702854061 | 1660 | 969 | 691 | no_tocar | sin_tocar_umbral → 969 | sí |
+| MLU702854061 | 1660 | 970 | 690 | no_tocar | sin_tocar_umbral → 970 | sí |
 | MLU702853543 | 2060 | 1613 | 447 | no_tocar | sin_tocar_umbral → 1613 | sí |
-| MLU702853473 | 1730 | 1183 | 547 | no_tocar | sin_tocar_umbral → 1183 | sí |
+| MLU702853473 | 1730 | 1184 | 546 | no_tocar | sin_tocar_umbral → 1184 | sí |
 | MLU702853147 | 1600 | 1196 | 404 | no_tocar | sin_tocar_umbral → 1196 | sí |
 | MLU702847315 | 2670 | 1147 | 1523 | no_tocar | sin_tocar_umbral → 1147 | sí |
 | MLU702846865 | 1600 | 1108 | 492 | no_tocar | sin_tocar_umbral → 1108 | sí |
@@ -4632,7 +4630,6 @@ Discrepancias: **0**
 | MLU702846649 | 1405 | 1365 | 40 | saltear | saltear_promo | sí |
 | MLU702846603 | 1820 | 1288 | 532 | no_tocar | sin_tocar_umbral → 1288 | sí |
 | MLU702846599 | 1950 | 1174 | 776 | no_tocar | sin_tocar_umbral → 1174 | sí |
-| MLU702846579 | 1860 | 1811 | 49 | saltear | saltear_promo | sí |
 | MLU702846567 | 2250 | 2047 | 203 | saltear | saltear_promo | sí |
 | MLU702846527 | 1600 | 1253 | 347 | saltear | saltear_promo | sí |
 | MLU702837089 | 1600 | 1282 | 318 | saltear | saltear_promo | sí |
@@ -4645,7 +4642,7 @@ Discrepancias: **0**
 | MLU702836355 | 1790 | 1027 | 763 | no_tocar | sin_tocar_umbral → 1027 | sí |
 | MLU702836345 | 3430 | 2950 | 480 | no_tocar | sin_tocar_umbral → 2950 | sí |
 | MLU702836145 | 1393 | 1346 | 47 | saltear | saltear_promo | sí |
-| MLU702836101 | 2030 | 986 | 1044 | no_tocar | sin_tocar_umbral → 986 | sí |
+| MLU702836101 | 2030 | 987 | 1043 | no_tocar | sin_tocar_umbral → 987 | sí |
 | MLU702836017 | 3140 | 2690 | 450 | no_tocar | sin_tocar_umbral → 2690 | sí |
 | MLU702835947 | 1393 | 1346 | 47 | saltear | saltear_promo | sí |
 | MLU702835769 | 1553 | 1504 | 49 | saltear | saltear_promo | sí |
@@ -4670,11 +4667,8 @@ Discrepancias: **0**
 | MLU1522305544 | 2580 | 1416 | 1164 | no_tocar | sin_tocar_umbral → 1416 | sí |
 | MLU1522304906 | 3420 | 2613 | 807 | no_tocar | sin_tocar_umbral → 2613 | sí |
 | MLU1522304874 | 1600 | 1156 | 444 | no_tocar | sin_tocar_umbral → 1156 | sí |
-| MLU1522304732 | 1810 | 1673 | 137 | bajar | bajar → 1656 | sí |
-| MLU1522304728 | 3960 | 3633 | 327 | bajar | bajar → 3596 | sí |
 | MLU1522304592 | 2040 | 1266 | 774 | no_tocar | sin_tocar_umbral → 1266 | sí |
 | MLU1522304528 | 2760 | 2059 | 701 | no_tocar | sin_tocar_umbral → 2059 | sí |
-| MLU1522304504 | 2200 | 2098 | 102 | bajar | bajar → 2077 | sí |
 | MLU1522304408 | 1600 | 914 | 686 | no_tocar | sin_tocar_umbral → 914 | sí |
 | MLU1522304284 | 1630 | 1098 | 532 | no_tocar | sin_tocar_umbral → 1098 | sí |
 | MLU1522292678 | 3140 | 2593 | 547 | no_tocar | sin_tocar_umbral → 2593 | sí |
@@ -4682,14 +4676,14 @@ Discrepancias: **0**
 | MLU1522291436 | 2790 | 2025 | 765 | no_tocar | sin_tocar_umbral → 2025 | sí |
 | MLU1522291260 | 1600 | 1098 | 502 | no_tocar | sin_tocar_umbral → 1098 | sí |
 | MLU1522291234 | 3180 | 1978 | 1202 | no_tocar | sin_tocar_umbral → 1978 | sí |
-| MLU1522291190 | 1600 | 1050 | 550 | no_tocar | sin_tocar_umbral → 1050 | sí |
+| MLU1522291190 | 1600 | 1051 | 549 | no_tocar | sin_tocar_umbral → 1051 | sí |
+| MLU1522291156 | 2480 | 2425 | 55 | bajar | bajar → 2400 | sí |
 | MLU1522279624 | 2540 | 1870 | 670 | no_tocar | sin_tocar_umbral → 1870 | sí |
 | MLU1522279448 | 2480 | 1993 | 487 | no_tocar | sin_tocar_umbral → 1993 | sí |
 | MLU1522278806 | 2730 | 1966 | 764 | no_tocar | sin_tocar_umbral → 1966 | sí |
 | MLU1522278772 | 2190 | 1732 | 458 | no_tocar | sin_tocar_umbral → 1732 | sí |
 | MLU1522278490 | 2890 | 1763 | 1127 | no_tocar | sin_tocar_umbral → 1763 | sí |
 | MLU1522278286 | 2750 | 1519 | 1231 | no_tocar | sin_tocar_umbral → 1519 | sí |
-| MLU1522266756 | 1700 | 1577 | 123 | bajar | bajar → 1561 | sí |
 | MLU1522266742 | 2470 | 1180 | 1290 | no_tocar | sin_tocar_umbral → 1180 | sí |
 | MLU1522266162 | 2330 | 1336 | 994 | no_tocar | sin_tocar_umbral → 1336 | sí |
 | MLU1522266148 | 2990 | 2395 | 595 | no_tocar | sin_tocar_umbral → 2395 | sí |
@@ -4703,23 +4697,20 @@ Discrepancias: **0**
 | MLU1522951722 | 1600 | 1098 | 502 | no_tocar | sin_tocar_umbral → 1098 | sí |
 | MLU1522951716 | 1740 | 1098 | 642 | no_tocar | sin_tocar_umbral → 1098 | sí |
 | MLU1522951714 | 1660 | 1031 | 629 | no_tocar | sin_tocar_umbral → 1031 | sí |
-| MLU1522951708 | 2130 | 2029 | 101 | bajar | bajar → 2008 | sí |
-| MLU1522951672 | 2020 | 1186 | 834 | no_tocar | sin_tocar_umbral → 1186 | sí |
-| MLU1522951634 | 1600 | 1553 | 47 | bajar | bajar → 1537 | sí |
-| MLU1522938762 | 1600 | 1026 | 574 | no_tocar | sin_tocar_umbral → 1026 | sí |
+| MLU1522951672 | 2020 | 1187 | 833 | no_tocar | sin_tocar_umbral → 1187 | sí |
+| MLU1522938762 | 1600 | 1027 | 573 | no_tocar | sin_tocar_umbral → 1027 | sí |
 | MLU1522938756 | 2970 | 1726 | 1244 | no_tocar | sin_tocar_umbral → 1726 | sí |
 | MLU1522938672 | 2580 | 2012 | 568 | no_tocar | sin_tocar_umbral → 2012 | sí |
 | MLU1522938668 | 2920 | 1278 | 1642 | no_tocar | sin_tocar_umbral → 1278 | sí |
 | MLU1522925742 | 3670 | 1895 | 1775 | no_tocar | sin_tocar_umbral → 1895 | sí |
-| MLU1522925596 | 1600 | 782 | 818 | no_tocar | sin_tocar_umbral → 782 | sí |
+| MLU1522925596 | 1600 | 783 | 817 | no_tocar | sin_tocar_umbral → 783 | sí |
 | MLU1522925542 | 2120 | 1020 | 1100 | no_tocar | sin_tocar_umbral → 1020 | sí |
 | MLU1522912758 | 2790 | 2079 | 711 | no_tocar | sin_tocar_umbral → 2079 | sí |
 | MLU1522912756 | 1710 | 1052 | 658 | no_tocar | sin_tocar_umbral → 1052 | sí |
 | MLU1522912754 | 2350 | 1161 | 1189 | no_tocar | sin_tocar_umbral → 1161 | sí |
 | MLU1522912742 | 2080 | 1080 | 1000 | no_tocar | sin_tocar_umbral → 1080 | sí |
 | MLU1522912672 | 1980 | 1543 | 437 | no_tocar | sin_tocar_umbral → 1543 | sí |
-| MLU1522912628 | 1600 | 1097 | 503 | no_tocar | sin_tocar_umbral → 1097 | sí |
-| MLU1522912560 | 1740 | 1553 | 187 | bajar | bajar → 1537 | sí |
+| MLU1522912628 | 1600 | 1098 | 502 | no_tocar | sin_tocar_umbral → 1098 | sí |
 | MLU1522873524 | 3690 | 3197 | 493 | no_tocar | sin_tocar_umbral → 3197 | sí |
 | MLU1522873504 | 2930 | 2050 | 880 | no_tocar | sin_tocar_umbral → 2050 | sí |
 | MLU1522731796 | 3180 | 2591 | 589 | no_tocar | sin_tocar_umbral → 2591 | sí |
@@ -4735,7 +4726,6 @@ Discrepancias: **0**
 | MLU1522639926 | 4500 | 3928 | 572 | no_tocar | sin_tocar_umbral → 3928 | sí |
 | MLU1522639892 | 4500 | 3928 | 572 | no_tocar | sin_tocar_umbral → 3928 | sí |
 | MLU1522639834 | 3970 | 2678 | 1292 | no_tocar | sin_tocar_umbral → 2678 | sí |
-| MLU1522607898 | 2370 | 2162 | 208 | bajar | bajar → 2140 | sí |
 | MLU1522607868 | 3250 | 2387 | 863 | no_tocar | sin_tocar_umbral → 2387 | sí |
 | MLU1522607856 | 3280 | 2387 | 893 | no_tocar | sin_tocar_umbral → 2387 | sí |
 | MLU1522607838 | 3260 | 2387 | 873 | no_tocar | sin_tocar_umbral → 2387 | sí |
@@ -4759,8 +4749,6 @@ Discrepancias: **0**
 | MLU1522604550 | 4400 | 3928 | 472 | no_tocar | sin_tocar_umbral → 3928 | sí |
 | MLU1522604442 | 2210 | 1762 | 448 | no_tocar | sin_tocar_umbral → 1762 | sí |
 | MLU1522604304 | 2580 | 2088 | 492 | no_tocar | sin_tocar_umbral → 2088 | sí |
-| MLU1522603822 | 2220 | 2111 | 109 | bajar | bajar → 2089 | sí |
-| MLU1522603766 | 2290 | 2111 | 179 | bajar | bajar → 2089 | sí |
 | MLU1522603448 | 2050 | 1190 | 860 | no_tocar | sin_tocar_umbral → 1190 | sí |
 | MLU1522603220 | 2740 | 1541 | 1199 | no_tocar | sin_tocar_umbral → 1541 | sí |
 | MLU1522603144 | 3350 | 2577 | 773 | no_tocar | sin_tocar_umbral → 2577 | sí |
@@ -4770,7 +4758,7 @@ Discrepancias: **0**
 | MLU1522602196 | 2200 | 1692 | 508 | no_tocar | sin_tocar_umbral → 1692 | sí |
 | MLU1522602166 | 1710 | 1119 | 591 | no_tocar | sin_tocar_umbral → 1119 | sí |
 | MLU1522602060 | 5030 | 3547 | 1483 | no_tocar | sin_tocar_umbral → 3547 | sí |
-| MLU1522601016 | 1730 | 1183 | 547 | no_tocar | sin_tocar_umbral → 1183 | sí |
+| MLU1522601016 | 1730 | 1184 | 546 | no_tocar | sin_tocar_umbral → 1184 | sí |
 | MLU1522600760 | 2830 | 2335 | 495 | no_tocar | sin_tocar_umbral → 2335 | sí |
 | MLU1522470016 | 1600 | 1174 | 426 | no_tocar | sin_tocar_umbral → 1174 | sí |
 | MLU1522470010 | 1600 | 1172 | 428 | no_tocar | sin_tocar_umbral → 1172 | sí |
@@ -4784,15 +4772,13 @@ Discrepancias: **0**
 | MLU1522468478 | 3380 | 1798 | 1582 | no_tocar | sin_tocar_umbral → 1798 | sí |
 | MLU1522468252 | 3300 | 1927 | 1373 | no_tocar | sin_tocar_umbral → 1927 | sí |
 | MLU1522467400 | 3110 | 2557 | 553 | no_tocar | sin_tocar_umbral → 2557 | sí |
-| MLU1522466576 | 2610 | 2464 | 146 | bajar | bajar → 2439 | sí |
 | MLU1522466272 | 2410 | 1279 | 1131 | no_tocar | sin_tocar_umbral → 1279 | sí |
-| MLU1522465228 | 3360 | 2681 | 679 | no_tocar | sin_tocar_umbral → 2681 | sí |
+| MLU1522465228 | 3360 | 2681 | 679 | saltear | saltear_ganador_sin_dato | sí |
 | MLU1522465218 | 2530 | 1185 | 1345 | no_tocar | sin_tocar_umbral → 1185 | sí |
 | MLU1522464804 | 4060 | 1999 | 2061 | no_tocar | sin_tocar_umbral → 1999 | sí |
-| MLU1522464772 | 1820 | 947 | 873 | no_tocar | sin_tocar_umbral → 947 | sí |
+| MLU1522464772 | 1820 | 948 | 872 | no_tocar | sin_tocar_umbral → 948 | sí |
 | MLU1522464404 | 1600 | 1148 | 452 | no_tocar | sin_tocar_umbral → 1148 | sí |
 | MLU1522464290 | 2250 | 1134 | 1116 | no_tocar | sin_tocar_umbral → 1134 | sí |
-| MLU1522463652 | 1700 | 1613 | 87 | bajar | bajar → 1596 | sí |
 | MLU1522463576 | 2390 | 1280 | 1110 | no_tocar | sin_tocar_umbral → 1280 | sí |
 | MLU1522463326 | 2250 | 1595 | 655 | no_tocar | sin_tocar_umbral → 1595 | sí |
 | MLU1522463152 | 4520 | 3702 | 818 | no_tocar | sin_tocar_umbral → 3702 | sí |
@@ -4807,21 +4793,18 @@ Discrepancias: **0**
 | MLU1522456602 | 1950 | 1227 | 723 | no_tocar | sin_tocar_umbral → 1227 | sí |
 | MLU1522456426 | 1600 | 1132 | 468 | no_tocar | sin_tocar_umbral → 1132 | sí |
 | MLU1522455594 | 3230 | 2025 | 1205 | no_tocar | sin_tocar_umbral → 2025 | sí |
-| MLU1522455220 | 1770 | 1613 | 157 | bajar | bajar → 1596 | sí |
 | MLU1522455118 | 8810 | 7924 | 886 | no_tocar | sin_tocar_umbral → 7924 | sí |
-| MLU1522453960 | 2450 | 2128 | 322 | bajar | bajar → 2106 | sí |
 | MLU1522453738 | 5860 | 4078 | 1782 | no_tocar | sin_tocar_umbral → 4078 | sí |
 | MLU1522453218 | 1600 | 1124 | 476 | no_tocar | sin_tocar_umbral → 1124 | sí |
 | MLU1522452836 | 3860 | 1851 | 2009 | no_tocar | sin_tocar_umbral → 1851 | sí |
 | MLU1522452264 | 3080 | 2461 | 619 | no_tocar | sin_tocar_umbral → 2461 | sí |
-| MLU1522452212 | 2290 | 2187 | 103 | bajar | bajar → 2165 | sí |
 | MLU1522452182 | 4920 | 3966 | 954 | no_tocar | sin_tocar_umbral → 3966 | sí |
 | MLU1522451194 | 3840 | 3278 | 562 | no_tocar | sin_tocar_umbral → 3278 | sí |
 | MLU1522450592 | 2810 | 2335 | 475 | no_tocar | sin_tocar_umbral → 2335 | sí |
 | MLU1522450490 | 3620 | 1513 | 2107 | no_tocar | sin_tocar_umbral → 1513 | sí |
-| MLU1522450450 | 1810 | 1682 | 128 | bajar | bajar → 1665 | sí |
 | MLU1522450266 | 1600 | 946 | 654 | no_tocar | sin_tocar_umbral → 946 | sí |
-| MLU1522449736 | 1640 | 985 | 655 | no_tocar | sin_tocar_umbral → 985 | sí |
+| MLU1522449736 | 1640 | 986 | 654 | no_tocar | sin_tocar_umbral → 986 | sí |
+| MLU1522449672 | 3620 | 2782 | 838 | no_tocar | sin_tocar_umbral → 2782 | sí |
 | MLU702971415 | 2880 | 2133 | 747 | no_tocar | sin_tocar_umbral → 2133 | sí |
 | MLU702971407 | 3330 | 2387 | 943 | no_tocar | sin_tocar_umbral → 2387 | sí |
 | MLU702971381 | 2940 | 2049 | 891 | no_tocar | sin_tocar_umbral → 2049 | sí |
@@ -4830,7 +4813,7 @@ Discrepancias: **0**
 | MLU702970749 | 2250 | 1843 | 407 | no_tocar | sin_tocar_umbral → 1843 | sí |
 | MLU702970507 | 2950 | 2037 | 913 | no_tocar | sin_tocar_umbral → 2037 | sí |
 | MLU702968923 | 3340 | 2387 | 953 | no_tocar | sin_tocar_umbral → 2387 | sí |
-| MLU702968759 | 2820 | 2087 | 733 | no_tocar | sin_tocar_umbral → 2087 | sí |
+| MLU702968759 | 2820 | 2087 | 733 | saltear | saltear_ganador_sin_dato | sí |
 | MLU702968691 | 2810 | 2051 | 759 | no_tocar | sin_tocar_umbral → 2051 | sí |
 | MLU702968675 | 3070 | 2045 | 1025 | no_tocar | sin_tocar_umbral → 2045 | sí |
 | MLU702968655 | 3070 | 2142 | 928 | no_tocar | sin_tocar_umbral → 2142 | sí |
@@ -4838,17 +4821,15 @@ Discrepancias: **0**
 | MLU702968361 | 4500 | 3928 | 572 | no_tocar | sin_tocar_umbral → 3928 | sí |
 | MLU702967705 | 2680 | 2151 | 529 | no_tocar | sin_tocar_umbral → 2151 | sí |
 | MLU702967293 | 2410 | 1357 | 1053 | no_tocar | sin_tocar_umbral → 1357 | sí |
-| MLU702967083 | 1940 | 1172 | 768 | no_tocar | sin_tocar_umbral → 1172 | sí |
+| MLU702967083 | 1940 | 1173 | 767 | no_tocar | sin_tocar_umbral → 1173 | sí |
 | MLU702966815 | 3040 | 2009 | 1031 | no_tocar | sin_tocar_umbral → 2009 | sí |
 | MLU702966787 | 2500 | 910 | 1590 | no_tocar | sin_tocar_umbral → 910 | sí |
 | MLU702966591 | 2590 | 1970 | 620 | no_tocar | sin_tocar_umbral → 1970 | sí |
 | MLU702966155 | 3340 | 2702 | 638 | no_tocar | sin_tocar_umbral → 2702 | sí |
 | MLU702966135 | 2880 | 2435 | 445 | no_tocar | sin_tocar_umbral → 2435 | sí |
 | MLU702965885 | 3920 | 2556 | 1364 | no_tocar | sin_tocar_umbral → 2556 | sí |
-| MLU702964993 | 1600 | 573 | 1027 | no_tocar | sin_tocar_umbral → 573 | sí |
+| MLU702964993 | 1600 | 574 | 1026 | no_tocar | sin_tocar_umbral → 574 | sí |
 | MLU702964743 | 2490 | 1277 | 1213 | no_tocar | sin_tocar_umbral → 1277 | sí |
-| MLU702964307 | 1800 | 1702 | 98 | bajar | bajar → 1684 | sí |
-| MLU702964249 | 1700 | 1553 | 147 | bajar | bajar → 1537 | sí |
 | MLU702963929 | 2060 | 1574 | 486 | no_tocar | sin_tocar_umbral → 1574 | sí |
 | MLU702958731 | 2890 | 2134 | 756 | no_tocar | sin_tocar_umbral → 2134 | sí |
 | MLU702958727 | 2890 | 2134 | 756 | no_tocar | sin_tocar_umbral → 2134 | sí |
@@ -4867,11 +4848,11 @@ Discrepancias: **0**
 | MLU702955777 | 3110 | 2422 | 688 | no_tocar | sin_tocar_umbral → 2422 | sí |
 | MLU702955627 | 2470 | 1024 | 1446 | no_tocar | sin_tocar_umbral → 1024 | sí |
 | MLU702955473 | 4530 | 3928 | 602 | no_tocar | sin_tocar_umbral → 3928 | sí |
-| MLU702955259 | 3150 | 2689 | 461 | saltear | saltear_ganador_sin_dato | sí |
+| MLU702955259 | 3150 | 2689 | 461 | no_tocar | sin_tocar_umbral → 2689 | sí |
 | MLU702955179 | 3330 | 2532 | 798 | no_tocar | sin_tocar_umbral → 2532 | sí |
 | MLU702954993 | 2070 | 1303 | 767 | no_tocar | sin_tocar_umbral → 1303 | sí |
 | MLU702954855 | 2870 | 1999 | 871 | no_tocar | sin_tocar_umbral → 1999 | sí |
-| MLU702954799 | 1600 | 701 | 899 | no_tocar | sin_tocar_umbral → 701 | sí |
+| MLU702954799 | 1600 | 703 | 897 | no_tocar | sin_tocar_umbral → 703 | sí |
 | MLU702954753 | 2040 | 1618 | 422 | no_tocar | sin_tocar_umbral → 1618 | sí |
 | MLU702954577 | 2150 | 1732 | 418 | no_tocar | sin_tocar_umbral → 1732 | sí |
 | MLU702954439 | 2550 | 2128 | 422 | no_tocar | sin_tocar_umbral → 2128 | sí |
@@ -4882,13 +4863,11 @@ Discrepancias: **0**
 | MLU702951531 | 2460 | 1193 | 1267 | no_tocar | sin_tocar_umbral → 1193 | sí |
 | MLU702950999 | 2050 | 1565 | 485 | no_tocar | sin_tocar_umbral → 1565 | sí |
 | MLU702950535 | 2490 | 1581 | 909 | no_tocar | sin_tocar_umbral → 1581 | sí |
-| MLU702950397 | 2080 | 1682 | 398 | bajar | bajar → 1665 | sí |
 | MLU702950221 | 4300 | 1676 | 2624 | no_tocar | sin_tocar_umbral → 1676 | sí |
-| MLU702950059 | 2160 | 2108 | 52 | bajar | bajar → 2086 | sí |
 | MLU702949899 | 2360 | 1841 | 519 | no_tocar | sin_tocar_umbral → 1841 | sí |
-| MLU702949651 | 1680 | 1203 | 477 | no_tocar | sin_tocar_umbral → 1203 | sí |
+| MLU702949651 | 1680 | 1204 | 476 | no_tocar | sin_tocar_umbral → 1204 | sí |
 | MLU702949565 | 2850 | 1943 | 907 | no_tocar | sin_tocar_umbral → 1943 | sí |
-| MLU702949543 | 1720 | 1183 | 537 | no_tocar | sin_tocar_umbral → 1183 | sí |
+| MLU702949543 | 1720 | 1184 | 536 | no_tocar | sin_tocar_umbral → 1184 | sí |
 | MLU702949513 | 2560 | 1946 | 614 | no_tocar | sin_tocar_umbral → 1946 | sí |
 | MLU702949499 | 4380 | 3742 | 638 | no_tocar | sin_tocar_umbral → 3742 | sí |
 | MLU702949471 | 3690 | 3177 | 513 | no_tocar | sin_tocar_umbral → 3177 | sí |
@@ -4899,20 +4878,18 @@ Discrepancias: **0**
 | MLU702947691 | 3450 | 2830 | 620 | no_tocar | sin_tocar_umbral → 2830 | sí |
 | MLU702947617 | 2480 | 1820 | 660 | no_tocar | sin_tocar_umbral → 1820 | sí |
 | MLU702947613 | 2520 | 2057 | 463 | no_tocar | sin_tocar_umbral → 2057 | sí |
-| MLU702947303 | 1600 | 573 | 1027 | no_tocar | sin_tocar_umbral → 573 | sí |
+| MLU702947303 | 1600 | 574 | 1026 | no_tocar | sin_tocar_umbral → 574 | sí |
 | MLU702946911 | 2260 | 1185 | 1075 | no_tocar | sin_tocar_umbral → 1185 | sí |
 | MLU702946661 | 2830 | 2316 | 514 | no_tocar | sin_tocar_umbral → 2316 | sí |
 | MLU702946343 | 2750 | 2065 | 685 | no_tocar | sin_tocar_umbral → 2065 | sí |
 | MLU702945969 | 2020 | 1588 | 432 | no_tocar | sin_tocar_umbral → 1588 | sí |
 | MLU702944923 | 5020 | 3996 | 1024 | no_tocar | sin_tocar_umbral → 3996 | sí |
-| MLU702944765 | 1740 | 1613 | 127 | bajar | bajar → 1596 | sí |
-| MLU702944371 | 1600 | 1152 | 448 | no_tocar | sin_tocar_umbral → 1152 | sí |
+| MLU702944371 | 1600 | 1152 | 448 | saltear | saltear_ganador_sin_dato | sí |
 | MLU702944087 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
-| MLU702943881 | 1880 | 1831 | 49 | bajar | bajar → 1812 | sí |
 | MLU702943877 | 5410 | 2449 | 2961 | no_tocar | sin_tocar_umbral → 2449 | sí |
 | MLU702943737 | 1600 | 1067 | 533 | no_tocar | sin_tocar_umbral → 1067 | sí |
 | MLU702943549 | 5370 | 2879 | 2491 | no_tocar | sin_tocar_umbral → 2879 | sí |
-| MLU702943511 | 1600 | 1206 | 394 | saltear | saltear_piso → 1193 | sí |
+| MLU702943511 | 1600 | 1207 | 393 | saltear | saltear_piso → 1194 | sí |
 | MLU702942577 | 2850 | 1672 | 1178 | no_tocar | sin_tocar_umbral → 1672 | sí |
 | MLU702942239 | 2710 | 1920 | 790 | no_tocar | sin_tocar_umbral → 1920 | sí |
 | MLU702941653 | 3710 | 3138 | 572 | no_tocar | sin_tocar_umbral → 3138 | sí |
@@ -4924,7 +4901,7 @@ Discrepancias: **0**
 | MLU702938869 | 2780 | 1999 | 781 | no_tocar | sin_tocar_umbral → 1999 | sí |
 | MLU702938613 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
 | MLU702938505 | 3840 | 1860 | 1980 | no_tocar | sin_tocar_umbral → 1860 | sí |
-| MLU702938137 | 1710 | 926 | 784 | no_tocar | sin_tocar_umbral → 926 | sí |
+| MLU702938137 | 1710 | 927 | 783 | no_tocar | sin_tocar_umbral → 927 | sí |
 | MLU702937905 | 3580 | 3128 | 452 | no_tocar | sin_tocar_umbral → 3128 | sí |
 | MLU702937803 | 1600 | 1150 | 450 | no_tocar | sin_tocar_umbral → 1150 | sí |
 | MLU702933831 | 3300 | 2771 | 529 | no_tocar | sin_tocar_umbral → 2771 | sí |
@@ -4936,10 +4913,8 @@ Discrepancias: **0**
 | MLU702932055 | 2610 | 2177 | 433 | no_tocar | sin_tocar_umbral → 2177 | sí |
 | MLU702931465 | 1600 | 1025 | 575 | no_tocar | sin_tocar_umbral → 1025 | sí |
 | MLU702930289 | 2270 | 1484 | 786 | no_tocar | sin_tocar_umbral → 1484 | sí |
-| MLU702930265 | 2110 | 1891 | 219 | bajar | bajar → 1872 | sí |
 | MLU702930175 | 3120 | 2557 | 563 | no_tocar | sin_tocar_umbral → 2557 | sí |
-| MLU702929963 | 3140 | 2474 | 666 | no_tocar | sin_tocar_umbral → 2474 | sí |
-| MLU702929491 | 3100 | 2702 | 398 | bajar | bajar → 2674 | sí |
+| MLU702929963 | 3140 | 2557 | 583 | no_tocar | sin_tocar_umbral → 2557 | sí |
 | MLU702929469 | 1870 | 1258 | 612 | no_tocar | sin_tocar_umbral → 1258 | sí |
 | MLU702928439 | 1600 | 1159 | 441 | no_tocar | sin_tocar_umbral → 1159 | sí |
 | MLU702927909 | 1600 | 1178 | 422 | no_tocar | sin_tocar_umbral → 1178 | sí |
@@ -4958,6 +4933,7 @@ Discrepancias: **0**
 | MLU702924915 | 6700 | 4679 | 2021 | no_tocar | sin_tocar_umbral → 4679 | sí |
 | MLU1523498108 | 4010 | 1584 | 2426 | no_tocar | sin_tocar_umbral → 1584 | sí |
 | MLU1523497976 | 1960 | 1113 | 847 | no_tocar | sin_tocar_umbral → 1113 | sí |
+| MLU1523497756 | 2950 | 1157 | 1793 | no_tocar | sin_tocar_umbral → 1157 | sí |
 | MLU1523497526 | 4820 | 2807 | 2013 | no_tocar | sin_tocar_umbral → 2807 | sí |
 | MLU1523497520 | 1920 | 1191 | 729 | no_tocar | sin_tocar_umbral → 1191 | sí |
 | MLU1523485130 | 2880 | 2326 | 554 | no_tocar | sin_tocar_umbral → 2326 | sí |
@@ -4965,16 +4941,15 @@ Discrepancias: **0**
 | MLU1523484760 | 3270 | 2557 | 713 | no_tocar | sin_tocar_umbral → 2557 | sí |
 | MLU1523484642 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
 | MLU1523471984 | 2730 | 2306 | 424 | no_tocar | sin_tocar_umbral → 2306 | sí |
-| MLU1523471720 | 1600 | 1113 | 487 | no_tocar | sin_tocar_umbral → 1113 | sí |
+| MLU1523471720 | 1600 | 1114 | 486 | no_tocar | sin_tocar_umbral → 1114 | sí |
 | MLU1523459016 | 1840 | 1107 | 733 | no_tocar | sin_tocar_umbral → 1107 | sí |
 | MLU1523291532 | 3010 | 2104 | 906 | no_tocar | sin_tocar_umbral → 2104 | sí |
 | MLU1523291508 | 2280 | 1440 | 840 | no_tocar | sin_tocar_umbral → 1440 | sí |
 | MLU1523291474 | 4390 | 3564 | 826 | no_tocar | sin_tocar_umbral → 3564 | sí |
-| MLU1523291308 | 2320 | 2210 | 110 | bajar | bajar → 2187 | sí |
 | MLU1523291212 | 8010 | 4603 | 3407 | no_tocar | sin_tocar_umbral → 4603 | sí |
 | MLU1523291166 | 5770 | 2799 | 2971 | no_tocar | sin_tocar_umbral → 2799 | sí |
-| MLU1523291156 | 1600 | 1129 | 471 | no_tocar | sin_tocar_umbral → 1129 | sí |
-| MLU1523291104 | 1810 | 1152 | 658 | no_tocar | sin_tocar_umbral → 1152 | sí |
+| MLU1523291156 | 1600 | 1130 | 470 | no_tocar | sin_tocar_umbral → 1130 | sí |
+| MLU1523291104 | 1810 | 1153 | 657 | no_tocar | sin_tocar_umbral → 1153 | sí |
 | MLU1523290886 | 2120 | 1348 | 772 | no_tocar | sin_tocar_umbral → 1348 | sí |
 | MLU1523290872 | 1880 | 1276 | 604 | no_tocar | sin_tocar_umbral → 1276 | sí |
 | MLU1523290758 | 2830 | 1989 | 841 | no_tocar | sin_tocar_umbral → 1989 | sí |
@@ -4990,7 +4965,7 @@ Discrepancias: **0**
 | MLU1523278458 | 2870 | 2227 | 643 | no_tocar | sin_tocar_umbral → 2227 | sí |
 | MLU1523278262 | 1940 | 1504 | 436 | no_tocar | sin_tocar_umbral → 1504 | sí |
 | MLU1523278194 | 3250 | 2210 | 1040 | no_tocar | sin_tocar_umbral → 2210 | sí |
-| MLU1523278154 | 1600 | 1050 | 550 | no_tocar | sin_tocar_umbral → 1050 | sí |
+| MLU1523278154 | 1600 | 1051 | 549 | no_tocar | sin_tocar_umbral → 1051 | sí |
 | MLU1523278086 | 2960 | 2401 | 559 | no_tocar | sin_tocar_umbral → 2401 | sí |
 | MLU1523277852 | 2980 | 2371 | 609 | no_tocar | sin_tocar_umbral → 2371 | sí |
 | MLU1523277728 | 1600 | 1013 | 587 | no_tocar | sin_tocar_umbral → 1013 | sí |
@@ -5007,8 +4982,7 @@ Discrepancias: **0**
 | MLU1523265462 | 3140 | 1943 | 1197 | no_tocar | sin_tocar_umbral → 1943 | sí |
 | MLU1523265350 | 4390 | 3496 | 894 | no_tocar | sin_tocar_umbral → 3496 | sí |
 | MLU1523265336 | 2800 | 2365 | 435 | no_tocar | sin_tocar_umbral → 2365 | sí |
-| MLU1523265330 | 1600 | 1142 | 458 | no_tocar | sin_tocar_umbral → 1142 | sí |
-| MLU1523265276 | 1593 | 1277 | 316 | bajar | bajar → 1264 | sí |
+| MLU1523265330 | 1600 | 1142 | 458 | saltear | saltear_ganador_sin_dato | sí |
 | MLU1523265254 | 1600 | 1175 | 425 | no_tocar | sin_tocar_umbral → 1175 | sí |
 | MLU1523265162 | 3020 | 2088 | 932 | no_tocar | sin_tocar_umbral → 2088 | sí |
 | MLU1523265110 | 2180 | 1679 | 501 | no_tocar | sin_tocar_umbral → 1679 | sí |
@@ -5019,7 +4993,6 @@ Discrepancias: **0**
 | MLU1523106690 | 2380 | 1426 | 954 | no_tocar | sin_tocar_umbral → 1426 | sí |
 | MLU1523105642 | 3080 | 2108 | 972 | no_tocar | sin_tocar_umbral → 2108 | sí |
 | MLU1523105198 | 2820 | 1268 | 1552 | no_tocar | sin_tocar_umbral → 1268 | sí |
-| MLU1523104704 | 2100 | 1999 | 101 | bajar | bajar → 1979 | sí |
 | MLU1523104428 | 2670 | 2118 | 552 | no_tocar | sin_tocar_umbral → 2118 | sí |
 | MLU1523104104 | 2140 | 1702 | 438 | no_tocar | sin_tocar_umbral → 1702 | sí |
 | MLU1523103412 | 2300 | 1742 | 558 | no_tocar | sin_tocar_umbral → 1742 | sí |
@@ -5037,8 +5010,6 @@ Discrepancias: **0**
 | MLU1523101668 | 5840 | 3242 | 2598 | no_tocar | sin_tocar_umbral → 3242 | sí |
 | MLU1523101354 | 2410 | 1962 | 448 | no_tocar | sin_tocar_umbral → 1962 | sí |
 | MLU1523101218 | 2510 | 1036 | 1474 | no_tocar | sin_tocar_umbral → 1036 | sí |
-| MLU1523100952 | 1600 | 1504 | 96 | bajar | bajar → 1488 | sí |
-| MLU1523100708 | 3340 | 2979 | 361 | bajar | bajar → 2949 | sí |
 | MLU1523100518 | 2070 | 1247 | 823 | no_tocar | sin_tocar_umbral → 1247 | sí |
 | MLU1523100170 | 3050 | 2356 | 694 | no_tocar | sin_tocar_umbral → 2356 | sí |
 | MLU1523099762 | 1990 | 1164 | 826 | no_tocar | sin_tocar_umbral → 1164 | sí |
@@ -5046,7 +5017,6 @@ Discrepancias: **0**
 | MLU1523098608 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
 | MLU1523098578 | 1790 | 1158 | 632 | no_tocar | sin_tocar_umbral → 1158 | sí |
 | MLU1523097124 | 1600 | 1064 | 536 | no_tocar | sin_tocar_umbral → 1064 | sí |
-| MLU1523096668 | 1600 | 1535 | 65 | bajar | bajar → 1519 | sí |
 | MLU1523096236 | 2130 | 1336 | 794 | no_tocar | sin_tocar_umbral → 1336 | sí |
 | MLU1523095634 | 4680 | 1668 | 3012 | no_tocar | sin_tocar_umbral → 1668 | sí |
 | MLU1523095478 | 2890 | 2367 | 523 | no_tocar | sin_tocar_umbral → 2367 | sí |
@@ -5058,21 +5028,18 @@ Discrepancias: **0**
 | MLU1523094692 | 3070 | 2435 | 635 | no_tocar | sin_tocar_umbral → 2435 | sí |
 | MLU1523094526 | 1600 | 1185 | 415 | no_tocar | sin_tocar_umbral → 1185 | sí |
 | MLU1523007106 | 2370 | 1107 | 1263 | no_tocar | sin_tocar_umbral → 1107 | sí |
-| MLU1523006582 | 1600 | 567 | 1033 | no_tocar | sin_tocar_umbral → 567 | sí |
+| MLU1523006582 | 1600 | 568 | 1032 | no_tocar | sin_tocar_umbral → 568 | sí |
 | MLU1523006524 | 1600 | 1128 | 472 | no_tocar | sin_tocar_umbral → 1128 | sí |
 | MLU1523005576 | 1720 | 1148 | 572 | no_tocar | sin_tocar_umbral → 1148 | sí |
 | MLU1523005454 | 1600 | 1064 | 536 | no_tocar | sin_tocar_umbral → 1064 | sí |
-| MLU1523005396 | 1600 | 627 | 973 | no_tocar | sin_tocar_umbral → 627 | sí |
+| MLU1523005396 | 1600 | 628 | 972 | no_tocar | sin_tocar_umbral → 628 | sí |
 | MLU1523005086 | 2690 | 1198 | 1492 | no_tocar | sin_tocar_umbral → 1198 | sí |
-| MLU1523005058 | 2010 | 1771 | 239 | bajar | bajar → 1753 | sí |
 | MLU1523004754 | 2120 | 1188 | 932 | no_tocar | sin_tocar_umbral → 1188 | sí |
 | MLU1523004702 | 3280 | 2576 | 704 | no_tocar | sin_tocar_umbral → 2576 | sí |
-| MLU1523004442 | 2680 | 2396 | 284 | bajar | bajar → 2372 | sí |
 | MLU1523004074 | 2470 | 1631 | 839 | no_tocar | sin_tocar_umbral → 1631 | sí |
 | MLU1523003772 | 1990 | 1065 | 925 | no_tocar | sin_tocar_umbral → 1065 | sí |
 | MLU1523003756 | 2500 | 2009 | 491 | no_tocar | sin_tocar_umbral → 2009 | sí |
 | MLU1523003562 | 2750 | 1522 | 1228 | no_tocar | sin_tocar_umbral → 1522 | sí |
-| MLU1522964380 | 1620 | 1504 | 116 | bajar | bajar → 1488 | sí |
 | MLU1522963164 | 1950 | 1544 | 406 | no_tocar | sin_tocar_umbral → 1544 | sí |
 | MLU1522963046 | 3950 | 3227 | 723 | no_tocar | sin_tocar_umbral → 3227 | sí |
 | MLU1522962622 | 4300 | 2391 | 1909 | no_tocar | sin_tocar_umbral → 2391 | sí |
@@ -5082,14 +5049,14 @@ Discrepancias: **0**
 | MLU1522960286 | 2990 | 1499 | 1491 | no_tocar | sin_tocar_umbral → 1499 | sí |
 | MLU1522959716 | 2910 | 1178 | 1732 | no_tocar | sin_tocar_umbral → 1178 | sí |
 | MLU1522959374 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
-| MLU1522959278 | 1850 | 751 | 1099 | no_tocar | sin_tocar_umbral → 751 | sí |
-| MLU1522958946 | 1600 | 830 | 770 | no_tocar | sin_tocar_umbral → 830 | sí |
+| MLU1522959278 | 1850 | 752 | 1098 | no_tocar | sin_tocar_umbral → 752 | sí |
+| MLU1522958946 | 1600 | 831 | 769 | no_tocar | sin_tocar_umbral → 831 | sí |
 | MLU1522958854 | 1600 | 1130 | 470 | no_tocar | sin_tocar_umbral → 1130 | sí |
 | MLU1522958596 | 1600 | 1038 | 562 | no_tocar | sin_tocar_umbral → 1038 | sí |
 | MLU1522958398 | 3640 | 1709 | 1931 | no_tocar | sin_tocar_umbral → 1709 | sí |
 | MLU1522958396 | 2250 | 1107 | 1143 | no_tocar | sin_tocar_umbral → 1107 | sí |
 | MLU1522958234 | 1600 | 1130 | 470 | no_tocar | sin_tocar_umbral → 1130 | sí |
-| MLU1522958166 | 1600 | 729 | 871 | no_tocar | sin_tocar_umbral → 729 | sí |
+| MLU1522958166 | 1600 | 730 | 870 | no_tocar | sin_tocar_umbral → 730 | sí |
 | MLU1522958122 | 1600 | 1180 | 420 | no_tocar | sin_tocar_umbral → 1180 | sí |
 | MLU1522958056 | 1960 | 1011 | 949 | no_tocar | sin_tocar_umbral → 1011 | sí |
 | MLU1522957768 | 2470 | 2050 | 420 | no_tocar | sin_tocar_umbral → 2050 | sí |
@@ -5108,10 +5075,8 @@ Discrepancias: **0**
 | MLU1522955332 | 3730 | 2672 | 1058 | no_tocar | sin_tocar_umbral → 2672 | sí |
 | MLU1522955308 | 2250 | 1652 | 598 | no_tocar | sin_tocar_umbral → 1652 | sí |
 | MLU1522955170 | 3850 | 1857 | 1993 | no_tocar | sin_tocar_umbral → 1857 | sí |
-| MLU1522955096 | 2560 | 2445 | 115 | bajar | bajar → 2420 | sí |
 | MLU1522955002 | 3290 | 2575 | 715 | no_tocar | sin_tocar_umbral → 2575 | sí |
 | MLU1522954984 | 2950 | 2355 | 595 | no_tocar | sin_tocar_umbral → 2355 | sí |
-| MLU1522954762 | 2920 | 2534 | 386 | bajar | bajar → 2508 | sí |
 | MLU1522954232 | 2090 | 1258 | 832 | no_tocar | sin_tocar_umbral → 1258 | sí |
 | MLU1522954166 | 2810 | 1772 | 1038 | no_tocar | sin_tocar_umbral → 1772 | sí |
 | MLU1522954156 | 3270 | 1878 | 1392 | no_tocar | sin_tocar_umbral → 1878 | sí |
@@ -5124,31 +5089,29 @@ Discrepancias: **0**
 | MLU1522953288 | 2830 | 2092 | 738 | no_tocar | sin_tocar_umbral → 2092 | sí |
 | MLU1522953224 | 1790 | 1024 | 766 | no_tocar | sin_tocar_umbral → 1024 | sí |
 | MLU1522953130 | 3180 | 1775 | 1405 | no_tocar | sin_tocar_umbral → 1775 | sí |
-| MLU1522951208 | 1700 | 539 | 1161 | no_tocar | sin_tocar_umbral → 539 | sí |
+| MLU1522951208 | 1700 | 540 | 1160 | no_tocar | sin_tocar_umbral → 540 | sí |
 | MLU1522950822 | 3910 | 1994 | 1916 | no_tocar | sin_tocar_umbral → 1994 | sí |
 | MLU1522950562 | 1600 | 1167 | 433 | no_tocar | sin_tocar_umbral → 1167 | sí |
-| MLU1522950542 | 1600 | 543 | 1057 | no_tocar | sin_tocar_umbral → 543 | sí |
+| MLU1522950542 | 1600 | 544 | 1056 | no_tocar | sin_tocar_umbral → 544 | sí |
 | MLU1522950408 | 3030 | 2512 | 518 | no_tocar | sin_tocar_umbral → 2512 | sí |
 | MLU1522950182 | 2280 | 1330 | 950 | no_tocar | sin_tocar_umbral → 1330 | sí |
 | MLU1522948538 | 1640 | 1085 | 555 | no_tocar | sin_tocar_umbral → 1085 | sí |
 | MLU1522948374 | 3160 | 2591 | 569 | no_tocar | sin_tocar_umbral → 2591 | sí |
 | MLU1522948362 | 1600 | 1011 | 589 | no_tocar | sin_tocar_umbral → 1011 | sí |
-| MLU1522947610 | 1600 | 627 | 973 | no_tocar | sin_tocar_umbral → 627 | sí |
-| MLU1522947198 | 1600 | 1071 | 529 | no_tocar | sin_tocar_umbral → 1071 | sí |
-| MLU1522947194 | 1600 | 1504 | 96 | bajar | bajar → 1488 | sí |
+| MLU1522947610 | 1600 | 628 | 972 | no_tocar | sin_tocar_umbral → 628 | sí |
+| MLU1522947198 | 1600 | 1073 | 527 | no_tocar | sin_tocar_umbral → 1073 | sí |
 | MLU1522946944 | 2380 | 1266 | 1114 | no_tocar | sin_tocar_umbral → 1266 | sí |
 | MLU1522946754 | 1600 | 1130 | 470 | no_tocar | sin_tocar_umbral → 1130 | sí |
-| MLU1522946402 | 1600 | 701 | 899 | no_tocar | sin_tocar_umbral → 701 | sí |
+| MLU1522946402 | 1600 | 703 | 897 | no_tocar | sin_tocar_umbral → 703 | sí |
 | MLU1522945772 | 1600 | 1183 | 417 | no_tocar | sin_tocar_umbral → 1183 | sí |
-| MLU1522945602 | 1850 | 919 | 931 | no_tocar | sin_tocar_umbral → 919 | sí |
+| MLU1522945602 | 1850 | 920 | 930 | no_tocar | sin_tocar_umbral → 920 | sí |
 | MLU1522945250 | 3040 | 2405 | 635 | no_tocar | sin_tocar_umbral → 2405 | sí |
 | MLU1522945014 | 2940 | 2306 | 634 | no_tocar | sin_tocar_umbral → 2306 | sí |
 | MLU1522944598 | 1700 | 1198 | 502 | no_tocar | sin_tocar_umbral → 1198 | sí |
-| MLU1522944168 | 1940 | 1864 | 76 | bajar | bajar → 1845 | sí |
 | MLU1522943962 | 3750 | 3306 | 444 | no_tocar | sin_tocar_umbral → 3306 | sí |
 | MLU1522943632 | 2960 | 2484 | 476 | no_tocar | sin_tocar_umbral → 2484 | sí |
 | MLU1522942942 | 2460 | 2029 | 431 | no_tocar | sin_tocar_umbral → 2029 | sí |
-| MLU1522942304 | 3400 | 1058 | 2342 | no_tocar | sin_tocar_umbral → 1058 | sí |
+| MLU1522942304 | 3400 | 1059 | 2341 | no_tocar | sin_tocar_umbral → 1059 | sí |
 | MLU1522942182 | 2820 | 2326 | 494 | no_tocar | sin_tocar_umbral → 2326 | sí |
 | MLU1522942112 | 3300 | 2544 | 756 | no_tocar | sin_tocar_umbral → 2544 | sí |
 | MLU1522942098 | 1990 | 1276 | 714 | no_tocar | sin_tocar_umbral → 1276 | sí |
@@ -5174,14 +5137,12 @@ Discrepancias: **0**
 | MLU1522933866 | 2400 | 1968 | 432 | no_tocar | sin_tocar_umbral → 1968 | sí |
 | MLU1522933650 | 2640 | 1251 | 1389 | no_tocar | sin_tocar_umbral → 1251 | sí |
 | MLU1522933634 | 2820 | 1603 | 1217 | no_tocar | sin_tocar_umbral → 1603 | sí |
-| MLU1522933622 | 2850 | 2613 | 237 | bajar | bajar → 2586 | sí |
 | MLU1522933306 | 1600 | 1003 | 597 | no_tocar | sin_tocar_umbral → 1003 | sí |
 | MLU1522933296 | 1600 | 1171 | 429 | no_tocar | sin_tocar_umbral → 1171 | sí |
 | MLU1522932818 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
 | MLU1522932406 | 1600 | 1157 | 443 | no_tocar | sin_tocar_umbral → 1157 | sí |
 | MLU1522932332 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
 | MLU1522931564 | 2220 | 1763 | 457 | no_tocar | sin_tocar_umbral → 1763 | sí |
-| MLU1522931562 | 2650 | 2333 | 317 | bajar | bajar → 2309 | sí |
 | MLU1522931550 | 1980 | 1019 | 961 | no_tocar | sin_tocar_umbral → 1019 | sí |
 | MLU1522931472 | 2010 | 1474 | 536 | no_tocar | sin_tocar_umbral → 1474 | sí |
 | MLU1522931318 | 2210 | 1798 | 412 | no_tocar | sin_tocar_umbral → 1798 | sí |
@@ -5190,7 +5151,7 @@ Discrepancias: **0**
 | MLU1522930930 | 2940 | 2494 | 446 | no_tocar | sin_tocar_umbral → 2494 | sí |
 | MLU1522930630 | 1600 | 1034 | 566 | no_tocar | sin_tocar_umbral → 1034 | sí |
 | MLU1522930498 | 3520 | 1930 | 1590 | no_tocar | sin_tocar_umbral → 1930 | sí |
-| MLU1522930494 | 1600 | 1183 | 417 | saltear | saltear_ganador_sin_dato | sí |
+| MLU1522930494 | 1600 | 1183 | 417 | no_tocar | sin_tocar_umbral → 1183 | sí |
 | MLU1522930488 | 2480 | 1815 | 665 | no_tocar | sin_tocar_umbral → 1815 | sí |
 | MLU1522930246 | 3460 | 2718 | 742 | no_tocar | sin_tocar_umbral → 2718 | sí |
 | MLU1522930042 | 3650 | 2168 | 1482 | no_tocar | sin_tocar_umbral → 2168 | sí |
@@ -5198,10 +5159,10 @@ Discrepancias: **0**
 | MLU1522929738 | 1600 | 1098 | 502 | no_tocar | sin_tocar_umbral → 1098 | sí |
 | MLU1522929372 | 2950 | 2499 | 451 | no_tocar | sin_tocar_umbral → 2499 | sí |
 | MLU1522929084 | 2770 | 2136 | 634 | no_tocar | sin_tocar_umbral → 2136 | sí |
-| MLU1522928890 | 1710 | 1215 | 495 | no_tocar | sin_tocar_umbral → 1215 | sí |
+| MLU1522928890 | 1710 | 1216 | 494 | no_tocar | sin_tocar_umbral → 1216 | sí |
 | MLU1522928744 | 1600 | 1135 | 465 | no_tocar | sin_tocar_umbral → 1135 | sí |
 | MLU1522928734 | 4350 | 3237 | 1113 | no_tocar | sin_tocar_umbral → 3237 | sí |
-| MLU1522928424 | 1600 | 1111 | 489 | no_tocar | sin_tocar_umbral → 1111 | sí |
+| MLU1522928424 | 1600 | 1112 | 488 | no_tocar | sin_tocar_umbral → 1112 | sí |
 | MLU1522927830 | 2980 | 2138 | 842 | no_tocar | sin_tocar_umbral → 2138 | sí |
 | MLU1522927666 | 2390 | 1851 | 539 | no_tocar | sin_tocar_umbral → 1851 | sí |
 | MLU1522927664 | 3060 | 2591 | 469 | no_tocar | sin_tocar_umbral → 2591 | sí |
@@ -5224,14 +5185,12 @@ Discrepancias: **0**
 | MLU703024137 | 3480 | 2445 | 1035 | no_tocar | sin_tocar_umbral → 2445 | sí |
 | MLU703023955 | 3460 | 1812 | 1648 | no_tocar | sin_tocar_umbral → 1812 | sí |
 | MLU703023897 | 2280 | 1811 | 469 | no_tocar | sin_tocar_umbral → 1811 | sí |
-| MLU703023893 | 1740 | 1534 | 206 | bajar | bajar → 1518 | sí |
-| MLU703023887 | 1740 | 1613 | 127 | bajar | bajar → 1596 | sí |
 | MLU703023849 | 3560 | 3118 | 442 | no_tocar | sin_tocar_umbral → 3118 | sí |
 | MLU703023775 | 4170 | 3519 | 651 | no_tocar | sin_tocar_umbral → 3519 | sí |
 | MLU703023753 | 3690 | 3108 | 582 | no_tocar | sin_tocar_umbral → 3108 | sí |
 | MLU703023747 | 3170 | 1484 | 1686 | no_tocar | sin_tocar_umbral → 1484 | sí |
 | MLU703023621 | 2240 | 1623 | 617 | no_tocar | sin_tocar_umbral → 1623 | sí |
-| MLU703023617 | 1600 | 1147 | 453 | no_tocar | sin_tocar_umbral → 1147 | sí |
+| MLU703023617 | 1600 | 1148 | 452 | no_tocar | sin_tocar_umbral → 1148 | sí |
 | MLU703023611 | 2050 | 1594 | 456 | no_tocar | sin_tocar_umbral → 1594 | sí |
 | MLU703023603 | 1790 | 1262 | 528 | no_tocar | sin_tocar_umbral → 1262 | sí |
 | MLU703023595 | 1880 | 1276 | 604 | no_tocar | sin_tocar_umbral → 1276 | sí |
@@ -5241,7 +5200,6 @@ Discrepancias: **0**
 | MLU703023005 | 2510 | 1511 | 999 | no_tocar | sin_tocar_umbral → 1511 | sí |
 | MLU703022889 | 2550 | 1576 | 974 | no_tocar | sin_tocar_umbral → 1576 | sí |
 | MLU703022857 | 3000 | 1425 | 1575 | no_tocar | sin_tocar_umbral → 1425 | sí |
-| MLU703022789 | 1890 | 1794 | 96 | bajar | bajar → 1776 | sí |
 | MLU703019309 | 3270 | 2058 | 1212 | no_tocar | sin_tocar_umbral → 2058 | sí |
 | MLU703019003 | 1600 | 1078 | 522 | no_tocar | sin_tocar_umbral → 1078 | sí |
 | MLU703018563 | 2340 | 1900 | 440 | no_tocar | sin_tocar_umbral → 1900 | sí |
@@ -5267,7 +5225,7 @@ Discrepancias: **0**
 | MLU703003635 | 2440 | 1065 | 1375 | no_tocar | sin_tocar_umbral → 1065 | sí |
 | MLU703003459 | 2950 | 2078 | 872 | no_tocar | sin_tocar_umbral → 2078 | sí |
 | MLU703003447 | 2430 | 1424 | 1006 | no_tocar | sin_tocar_umbral → 1424 | sí |
-| MLU703003153 | 1600 | 866 | 734 | no_tocar | sin_tocar_umbral → 866 | sí |
+| MLU703003153 | 1600 | 867 | 733 | no_tocar | sin_tocar_umbral → 867 | sí |
 | MLU702999169 | 3380 | 2778 | 602 | no_tocar | sin_tocar_umbral → 2778 | sí |
 | MLU702998339 | 2560 | 1519 | 1041 | no_tocar | sin_tocar_umbral → 1519 | sí |
 | MLU702998331 | 2560 | 1930 | 630 | no_tocar | sin_tocar_umbral → 1930 | sí |
@@ -5276,7 +5234,6 @@ Discrepancias: **0**
 | MLU702997049 | 1600 | 1128 | 472 | no_tocar | sin_tocar_umbral → 1128 | sí |
 | MLU702996223 | 3270 | 1322 | 1948 | no_tocar | sin_tocar_umbral → 1322 | sí |
 | MLU702996083 | 3250 | 1278 | 1972 | no_tocar | sin_tocar_umbral → 1278 | sí |
-| MLU702996053 | 1346 | 1306 | 40 | bajar | bajar → 1292 | sí |
 | MLU702995943 | 4050 | 1821 | 2229 | no_tocar | sin_tocar_umbral → 1821 | sí |
 | MLU702995909 | 2700 | 1733 | 967 | no_tocar | sin_tocar_umbral → 1733 | sí |
 | MLU702995859 | 2720 | 2277 | 443 | no_tocar | sin_tocar_umbral → 2277 | sí |
@@ -5286,7 +5243,7 @@ Discrepancias: **0**
 | MLU702993909 | 2930 | 2434 | 496 | no_tocar | sin_tocar_umbral → 2434 | sí |
 | MLU702993729 | 2520 | 1722 | 798 | no_tocar | sin_tocar_umbral → 1722 | sí |
 | MLU702993189 | 1600 | 995 | 605 | no_tocar | sin_tocar_umbral → 995 | sí |
-| MLU702993053 | 1600 | 1147 | 453 | no_tocar | sin_tocar_umbral → 1147 | sí |
+| MLU702993053 | 1600 | 1148 | 452 | no_tocar | sin_tocar_umbral → 1148 | sí |
 | MLU702992709 | 2470 | 1999 | 471 | no_tocar | sin_tocar_umbral → 1999 | sí |
 | MLU702992323 | 2660 | 2216 | 444 | no_tocar | sin_tocar_umbral → 2216 | sí |
 | MLU702991947 | 3820 | 2159 | 1661 | no_tocar | sin_tocar_umbral → 2159 | sí |
@@ -5298,7 +5255,6 @@ Discrepancias: **0**
 | MLU702990961 | 2330 | 1279 | 1051 | no_tocar | sin_tocar_umbral → 1279 | sí |
 | MLU702990447 | 1910 | 1034 | 876 | no_tocar | sin_tocar_umbral → 1034 | sí |
 | MLU702986579 | 4610 | 2721 | 1889 | no_tocar | sin_tocar_umbral → 2721 | sí |
-| MLU702986263 | 1720 | 1623 | 97 | bajar | bajar → 1606 | sí |
 | MLU702985617 | 1930 | 1504 | 426 | no_tocar | sin_tocar_umbral → 1504 | sí |
 | MLU702985273 | 3040 | 2534 | 506 | no_tocar | sin_tocar_umbral → 2534 | sí |
 | MLU702984975 | 2540 | 1789 | 751 | no_tocar | sin_tocar_umbral → 1789 | sí |
@@ -5311,8 +5267,6 @@ Discrepancias: **0**
 | MLU702982107 | 2360 | 1004 | 1356 | no_tocar | sin_tocar_umbral → 1004 | sí |
 | MLU702981817 | 4200 | 2563 | 1637 | no_tocar | sin_tocar_umbral → 2563 | sí |
 | MLU702981511 | 4400 | 1828 | 2572 | no_tocar | sin_tocar_umbral → 1828 | sí |
-| MLU702981407 | 1980 | 1811 | 169 | bajar | bajar → 1792 | sí |
-| MLU702980555 | 1800 | 1562 | 238 | bajar | bajar → 1546 | sí |
 | MLU702980341 | 2190 | 1409 | 781 | no_tocar | sin_tocar_umbral → 1409 | sí |
 | MLU702979153 | 2320 | 1710 | 610 | no_tocar | sin_tocar_umbral → 1710 | sí |
 | MLU702978827 | 4310 | 3346 | 964 | no_tocar | sin_tocar_umbral → 3346 | sí |
@@ -5327,11 +5281,10 @@ Discrepancias: **0**
 | MLU702976799 | 3020 | 2588 | 432 | no_tocar | sin_tocar_umbral → 2588 | sí |
 | MLU1523666104 | 1600 | 1138 | 462 | no_tocar | sin_tocar_umbral → 1138 | sí |
 | MLU1523665826 | 4610 | 3485 | 1125 | no_tocar | sin_tocar_umbral → 3485 | sí |
-| MLU1523665802 | 4620 | 3484 | 1136 | no_tocar | sin_tocar_umbral → 3484 | sí |
+| MLU1523665802 | 4620 | 3484 | 1136 | saltear | saltear_ganador_sin_dato | sí |
 | MLU1523665772 | 6970 | 5306 | 1664 | no_tocar | sin_tocar_umbral → 5306 | sí |
-| MLU1523665712 | 1600 | 622 | 978 | no_tocar | sin_tocar_umbral → 622 | sí |
+| MLU1523665712 | 1600 | 623 | 977 | no_tocar | sin_tocar_umbral → 623 | sí |
 | MLU1523665698 | 1600 | 1116 | 484 | no_tocar | sin_tocar_umbral → 1116 | sí |
-| MLU1523665654 | 1900 | 1658 | 242 | bajar | bajar → 1641 | sí |
 | MLU1523664956 | 1600 | 1012 | 588 | no_tocar | sin_tocar_umbral → 1012 | sí |
 | MLU1523664952 | 2830 | 2106 | 724 | no_tocar | sin_tocar_umbral → 2106 | sí |
 | MLU1523664834 | 1620 | 1015 | 605 | no_tocar | sin_tocar_umbral → 1015 | sí |
@@ -5344,7 +5297,6 @@ Discrepancias: **0**
 | MLU1523663412 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
 | MLU1523663262 | 2140 | 1633 | 507 | no_tocar | sin_tocar_umbral → 1633 | sí |
 | MLU1523663018 | 3680 | 2778 | 902 | no_tocar | sin_tocar_umbral → 2778 | sí |
-| MLU1523662916 | 1762 | 1712 | 50 | bajar | bajar → 1694 | sí |
 | MLU1523661616 | 3160 | 2052 | 1108 | no_tocar | sin_tocar_umbral → 2052 | sí |
 | MLU1523661346 | 1600 | 1076 | 524 | no_tocar | sin_tocar_umbral → 1076 | sí |
 | MLU1523661236 | 1600 | 1172 | 428 | no_tocar | sin_tocar_umbral → 1172 | sí |
@@ -5354,7 +5306,7 @@ Discrepancias: **0**
 | MLU1523660754 | 2580 | 2147 | 433 | no_tocar | sin_tocar_umbral → 2147 | sí |
 | MLU1523660294 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
 | MLU1523659802 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
-| MLU1523659470 | 2190 | 1188 | 1002 | no_tocar | sin_tocar_umbral → 1188 | sí |
+| MLU1523659470 | 2190 | 1189 | 1001 | no_tocar | sin_tocar_umbral → 1189 | sí |
 | MLU1523659072 | 4000 | 2065 | 1935 | no_tocar | sin_tocar_umbral → 2065 | sí |
 | MLU1523659060 | 3840 | 1553 | 2287 | no_tocar | sin_tocar_umbral → 1553 | sí |
 | MLU1523659054 | 4410 | 2049 | 2361 | no_tocar | sin_tocar_umbral → 2049 | sí |
@@ -5362,7 +5314,6 @@ Discrepancias: **0**
 | MLU1523659002 | 4280 | 1668 | 2612 | no_tocar | sin_tocar_umbral → 1668 | sí |
 | MLU1523658486 | 2790 | 1659 | 1131 | no_tocar | sin_tocar_umbral → 1659 | sí |
 | MLU1523657832 | 1890 | 1428 | 462 | no_tocar | sin_tocar_umbral → 1428 | sí |
-| MLU1523657598 | 1630 | 1534 | 96 | bajar | bajar → 1518 | sí |
 | MLU1523657280 | 2460 | 1060 | 1400 | no_tocar | sin_tocar_umbral → 1060 | sí |
 | MLU1523657272 | 3180 | 2134 | 1046 | no_tocar | sin_tocar_umbral → 2134 | sí |
 | MLU1523657124 | 2090 | 1060 | 1030 | no_tocar | sin_tocar_umbral → 1060 | sí |
@@ -5380,12 +5331,11 @@ Discrepancias: **0**
 | MLU1523655148 | 1600 | 1000 | 600 | no_tocar | sin_tocar_umbral → 1000 | sí |
 | MLU1523655076 | 2560 | 2088 | 472 | no_tocar | sin_tocar_umbral → 2088 | sí |
 | MLU1523654858 | 2670 | 1464 | 1206 | no_tocar | sin_tocar_umbral → 1464 | sí |
-| MLU1523654324 | 1850 | 1475 | 375 | bajar | bajar → 1460 | sí |
 | MLU1523654072 | 2750 | 2025 | 725 | no_tocar | sin_tocar_umbral → 2025 | sí |
 | MLU1523654024 | 2930 | 2183 | 747 | no_tocar | sin_tocar_umbral → 2183 | sí |
-| MLU1523653872 | 7060 | 2809 | 4251 | saltear | saltear_ganador_sin_dato | sí |
+| MLU1523653872 | 7060 | 2809 | 4251 | no_tocar | sin_tocar_umbral → 2809 | sí |
 | MLU1523653722 | 1600 | 1019 | 581 | no_tocar | sin_tocar_umbral → 1019 | sí |
-| MLU1523653716 | 1600 | 1073 | 527 | no_tocar | sin_tocar_umbral → 1073 | sí |
+| MLU1523653716 | 1600 | 1074 | 526 | no_tocar | sin_tocar_umbral → 1074 | sí |
 | MLU1523653626 | 2690 | 1358 | 1332 | no_tocar | sin_tocar_umbral → 1358 | sí |
 | MLU1523653594 | 1600 | 1078 | 522 | no_tocar | sin_tocar_umbral → 1078 | sí |
 | MLU1523653588 | 4530 | 3900 | 630 | no_tocar | sin_tocar_umbral → 3900 | sí |
@@ -5394,7 +5344,7 @@ Discrepancias: **0**
 | MLU1523510482 | 1600 | 1145 | 455 | no_tocar | sin_tocar_umbral → 1145 | sí |
 | MLU1523510468 | 1600 | 1107 | 493 | no_tocar | sin_tocar_umbral → 1107 | sí |
 | MLU1523509994 | 1600 | 1098 | 502 | no_tocar | sin_tocar_umbral → 1098 | sí |
-| MLU1523509696 | 1760 | 861 | 899 | no_tocar | sin_tocar_umbral → 861 | sí |
+| MLU1523509696 | 1760 | 862 | 898 | no_tocar | sin_tocar_umbral → 862 | sí |
 | MLU1523509480 | 3650 | 2722 | 928 | no_tocar | sin_tocar_umbral → 2722 | sí |
 | MLU1523509186 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
 | MLU1523509070 | 4090 | 1979 | 2111 | no_tocar | sin_tocar_umbral → 1979 | sí |
@@ -5413,26 +5363,22 @@ Discrepancias: **0**
 | MLU1523505796 | 4450 | 2065 | 2385 | no_tocar | sin_tocar_umbral → 2065 | sí |
 | MLU1523505644 | 4430 | 2631 | 1799 | no_tocar | sin_tocar_umbral → 2631 | sí |
 | MLU1523505088 | 2310 | 1306 | 1004 | no_tocar | sin_tocar_umbral → 1306 | sí |
-| MLU1523504794 | 2420 | 2053 | 367 | bajar | bajar → 2032 | sí |
 | MLU1523504480 | 2730 | 2276 | 454 | no_tocar | sin_tocar_umbral → 2276 | sí |
 | MLU1523504206 | 3090 | 2527 | 563 | no_tocar | sin_tocar_umbral → 2527 | sí |
-| MLU1523504000 | 1960 | 1830 | 130 | bajar | bajar → 1811 | sí |
 | MLU1523503490 | 2850 | 2353 | 497 | no_tocar | sin_tocar_umbral → 2353 | sí |
 | MLU1523503410 | 3190 | 2677 | 513 | no_tocar | sin_tocar_umbral → 2677 | sí |
 | MLU1523503302 | 2440 | 1855 | 585 | no_tocar | sin_tocar_umbral → 1855 | sí |
 | MLU1523503006 | 2220 | 1680 | 540 | no_tocar | sin_tocar_umbral → 1680 | sí |
 | MLU1523502452 | 2290 | 1392 | 898 | no_tocar | sin_tocar_umbral → 1392 | sí |
 | MLU1523502236 | 1600 | 1139 | 461 | no_tocar | sin_tocar_umbral → 1139 | sí |
-| MLU1523501908 | 1880 | 1663 | 217 | bajar | bajar → 1646 | sí |
-| MLU1523501826 | 3210 | 3116 | 94 | bajar | bajar → 3084 | sí |
 | MLU1523501614 | 2730 | 2069 | 661 | no_tocar | sin_tocar_umbral → 2069 | sí |
-| MLU1523501078 | 1600 | 984 | 616 | no_tocar | sin_tocar_umbral → 984 | sí |
+| MLU1523501078 | 1600 | 985 | 615 | no_tocar | sin_tocar_umbral → 985 | sí |
 | MLU1523501072 | 2940 | 1386 | 1554 | no_tocar | sin_tocar_umbral → 1386 | sí |
 | MLU1523500856 | 5130 | 2936 | 2194 | no_tocar | sin_tocar_umbral → 2936 | sí |
 | MLU1523500754 | 2680 | 1654 | 1026 | no_tocar | sin_tocar_umbral → 1654 | sí |
 | MLU1523499972 | 2880 | 1359 | 1521 | no_tocar | sin_tocar_umbral → 1359 | sí |
-| MLU1523497202 | 1600 | 810 | 790 | no_tocar | sin_tocar_umbral → 810 | sí |
-| MLU1523497152 | 1700 | 782 | 918 | no_tocar | sin_tocar_umbral → 782 | sí |
+| MLU1523497202 | 1600 | 811 | 789 | no_tocar | sin_tocar_umbral → 811 | sí |
+| MLU1523497152 | 1700 | 783 | 917 | no_tocar | sin_tocar_umbral → 783 | sí |
 | MLU1523496996 | 2310 | 1191 | 1119 | no_tocar | sin_tocar_umbral → 1191 | sí |
 | MLU1523496696 | 1910 | 1450 | 460 | no_tocar | sin_tocar_umbral → 1450 | sí |
 | MLU1523495730 | 2410 | 1979 | 431 | no_tocar | sin_tocar_umbral → 1979 | sí |
@@ -5454,16 +5400,13 @@ Discrepancias: **0**
 | MLU1523492704 | 2180 | 1680 | 500 | no_tocar | sin_tocar_umbral → 1680 | sí |
 | MLU1523492178 | 3540 | 1989 | 1551 | no_tocar | sin_tocar_umbral → 1989 | sí |
 | MLU1523492028 | 2100 | 1659 | 441 | no_tocar | sin_tocar_umbral → 1659 | sí |
-| MLU1523491108 | 1600 | 1161 | 439 | no_tocar | sin_tocar_umbral → 1161 | sí |
+| MLU1523491108 | 1600 | 1162 | 438 | no_tocar | sin_tocar_umbral → 1162 | sí |
 | MLU1523490680 | 3320 | 2179 | 1141 | no_tocar | sin_tocar_umbral → 2179 | sí |
 | MLU1523490124 | 3290 | 2583 | 707 | no_tocar | sin_tocar_umbral → 2583 | sí |
 | MLU1523490070 | 2510 | 1989 | 521 | no_tocar | sin_tocar_umbral → 1989 | sí |
-| MLU1523489894 | 2730 | 2470 | 260 | bajar | bajar → 2445 | sí |
 | MLU1523489888 | 2410 | 1138 | 1272 | no_tocar | sin_tocar_umbral → 1138 | sí |
-| MLU1523489434 | 1940 | 1801 | 139 | bajar | bajar → 1782 | sí |
 | MLU1523489350 | 2250 | 1266 | 984 | no_tocar | sin_tocar_umbral → 1266 | sí |
 | MLU1523489116 | 4850 | 1939 | 2911 | no_tocar | sin_tocar_umbral → 1939 | sí |
-| MLU1523489060 | 2000 | 1663 | 337 | bajar | bajar → 1646 | sí |
 | MLU1523488980 | 3260 | 2528 | 732 | no_tocar | sin_tocar_umbral → 2528 | sí |
 | MLU1523488756 | 3520 | 2556 | 964 | no_tocar | sin_tocar_umbral → 2556 | sí |
 | MLU1523488480 | 1600 | 964 | 636 | no_tocar | sin_tocar_umbral → 964 | sí |
@@ -5482,10 +5425,8 @@ Discrepancias: **0**
 | MLU1523484004 | 2460 | 1102 | 1358 | no_tocar | sin_tocar_umbral → 1102 | sí |
 | MLU1523483688 | 1600 | 1035 | 565 | no_tocar | sin_tocar_umbral → 1035 | sí |
 | MLU1523483406 | 2960 | 2521 | 439 | no_tocar | sin_tocar_umbral → 2521 | sí |
-| MLU1523483358 | 3800 | 3425 | 375 | bajar | bajar → 3390 | sí |
 | MLU1523482978 | 1940 | 1113 | 827 | no_tocar | sin_tocar_umbral → 1113 | sí |
 | MLU1523482970 | 3890 | 2079 | 1811 | no_tocar | sin_tocar_umbral → 2079 | sí |
-| MLU1523482468 | 1610 | 1563 | 47 | bajar | bajar → 1547 | sí |
 | MLU1523482374 | 4100 | 2155 | 1945 | no_tocar | sin_tocar_umbral → 2155 | sí |
 | MLU1523482290 | 3850 | 1989 | 1861 | no_tocar | sin_tocar_umbral → 1989 | sí |
 | MLU1523482248 | 2350 | 1658 | 692 | no_tocar | sin_tocar_umbral → 1658 | sí |
@@ -5495,7 +5436,7 @@ Discrepancias: **0**
 | MLU1523480582 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
 | MLU1523480576 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
 | MLU1523480386 | 3270 | 2652 | 618 | no_tocar | sin_tocar_umbral → 2652 | sí |
-| MLU1523480374 | 1770 | 1053 | 717 | no_tocar | sin_tocar_umbral → 1053 | sí |
+| MLU1523480374 | 1770 | 1054 | 716 | no_tocar | sin_tocar_umbral → 1054 | sí |
 | MLU1523480294 | 2450 | 1999 | 451 | no_tocar | sin_tocar_umbral → 1999 | sí |
 | MLU1523480212 | 2440 | 1262 | 1178 | no_tocar | sin_tocar_umbral → 1262 | sí |
 | MLU1523479770 | 3670 | 2066 | 1604 | no_tocar | sin_tocar_umbral → 2066 | sí |
@@ -5505,7 +5446,6 @@ Discrepancias: **0**
 | MLU1523479198 | 2530 | 2080 | 450 | no_tocar | sin_tocar_umbral → 2080 | sí |
 | MLU1523478750 | 2740 | 1763 | 977 | no_tocar | sin_tocar_umbral → 1763 | sí |
 | MLU1523478598 | 1600 | 1078 | 522 | no_tocar | sin_tocar_umbral → 1078 | sí |
-| MLU1523478524 | 1600 | 1548 | 52 | bajar | bajar → 1532 | sí |
 | MLU1523478516 | 3350 | 2900 | 450 | no_tocar | sin_tocar_umbral → 2900 | sí |
 | MLU1523478268 | 2500 | 2098 | 402 | no_tocar | sin_tocar_umbral → 2098 | sí |
 | MLU1523477994 | 1600 | 880 | 720 | no_tocar | sin_tocar_umbral → 880 | sí |
@@ -5520,7 +5460,6 @@ Discrepancias: **0**
 | MLU1523476290 | 3520 | 2702 | 818 | no_tocar | sin_tocar_umbral → 2702 | sí |
 | MLU1523476234 | 4280 | 2359 | 1921 | no_tocar | sin_tocar_umbral → 2359 | sí |
 | MLU1523476232 | 2700 | 1247 | 1453 | no_tocar | sin_tocar_umbral → 1247 | sí |
-| MLU1523475648 | 2450 | 2346 | 104 | bajar | bajar → 2322 | sí |
 | MLU1523475526 | 4250 | 1880 | 2370 | no_tocar | sin_tocar_umbral → 1880 | sí |
 | MLU1523475448 | 2030 | 1474 | 556 | no_tocar | sin_tocar_umbral → 1474 | sí |
 | MLU1523475124 | 2140 | 1624 | 516 | no_tocar | sin_tocar_umbral → 1624 | sí |
@@ -5535,7 +5474,7 @@ Discrepancias: **0**
 | MLU1523473672 | 2240 | 1218 | 1022 | no_tocar | sin_tocar_umbral → 1218 | sí |
 | MLU1523473602 | 3970 | 2227 | 1743 | no_tocar | sin_tocar_umbral → 2227 | sí |
 | MLU703070307 | 2660 | 2088 | 572 | no_tocar | sin_tocar_umbral → 2088 | sí |
-| MLU703069887 | 2810 | 1573 | 1237 | no_tocar | sin_tocar_umbral → 1573 | sí |
+| MLU703069887 | 2810 | 1573 | 1237 | saltear | saltear_ganador_sin_dato | sí |
 | MLU703069801 | 1600 | 1161 | 439 | no_tocar | sin_tocar_umbral → 1161 | sí |
 | MLU703069673 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
 | MLU703069653 | 2730 | 2286 | 444 | no_tocar | sin_tocar_umbral → 2286 | sí |
@@ -5570,17 +5509,14 @@ Discrepancias: **0**
 | MLU703059375 | 2050 | 1623 | 427 | no_tocar | sin_tocar_umbral → 1623 | sí |
 | MLU703059333 | 2810 | 2395 | 415 | no_tocar | sin_tocar_umbral → 2395 | sí |
 | MLU703059165 | 1600 | 1059 | 541 | no_tocar | sin_tocar_umbral → 1059 | sí |
-| MLU703058917 | 2120 | 1088 | 1032 | no_tocar | sin_tocar_umbral → 1088 | sí |
+| MLU703058917 | 2120 | 1089 | 1031 | no_tocar | sin_tocar_umbral → 1089 | sí |
 | MLU703058831 | 2460 | 1920 | 540 | no_tocar | sin_tocar_umbral → 1920 | sí |
 | MLU703058547 | 2620 | 2025 | 595 | no_tocar | sin_tocar_umbral → 2025 | sí |
-| MLU703058435 | 2500 | 2189 | 311 | bajar | bajar → 2167 | sí |
-| MLU703058321 | 1600 | 1178 | 422 | no_tocar | sin_tocar_umbral → 1178 | sí |
-| MLU703058121 | 2740 | 2435 | 305 | bajar | bajar → 2410 | sí |
-| MLU703058053 | 1860 | 947 | 913 | no_tocar | sin_tocar_umbral → 947 | sí |
+| MLU703058321 | 1600 | 1178 | 422 | saltear | saltear_ganador_sin_dato | sí |
+| MLU703058053 | 1860 | 948 | 912 | no_tocar | sin_tocar_umbral → 948 | sí |
 | MLU703058027 | 2530 | 2098 | 432 | no_tocar | sin_tocar_umbral → 2098 | sí |
 | MLU703058005 | 2500 | 2009 | 491 | no_tocar | sin_tocar_umbral → 2009 | sí |
 | MLU703057931 | 3530 | 1820 | 1710 | no_tocar | sin_tocar_umbral → 1820 | sí |
-| MLU703057795 | 1610 | 1514 | 96 | bajar | bajar → 1498 | sí |
 | MLU703057667 | 3470 | 2575 | 895 | no_tocar | sin_tocar_umbral → 2575 | sí |
 | MLU703057603 | 2580 | 2137 | 443 | no_tocar | sin_tocar_umbral → 2137 | sí |
 | MLU703057577 | 1600 | 1078 | 522 | no_tocar | sin_tocar_umbral → 1078 | sí |
@@ -5590,9 +5526,7 @@ Discrepancias: **0**
 | MLU703056731 | 1600 | 1092 | 508 | no_tocar | sin_tocar_umbral → 1092 | sí |
 | MLU703056443 | 2410 | 1504 | 906 | no_tocar | sin_tocar_umbral → 1504 | sí |
 | MLU703056281 | 3600 | 2528 | 1072 | no_tocar | sin_tocar_umbral → 2528 | sí |
-| MLU703056037 | 1870 | 1771 | 99 | bajar | bajar → 1753 | sí |
 | MLU703056023 | 2730 | 2195 | 535 | no_tocar | sin_tocar_umbral → 2195 | sí |
-| MLU703056013 | 2030 | 1929 | 101 | bajar | bajar → 1909 | sí |
 | MLU703055869 | 2630 | 1960 | 670 | no_tocar | sin_tocar_umbral → 1960 | sí |
 | MLU703055609 | 1600 | 971 | 629 | no_tocar | sin_tocar_umbral → 971 | sí |
 | MLU703055511 | 1720 | 1096 | 624 | no_tocar | sin_tocar_umbral → 1096 | sí |
@@ -5617,17 +5551,15 @@ Discrepancias: **0**
 | MLU703045639 | 1970 | 1365 | 605 | no_tocar | sin_tocar_umbral → 1365 | sí |
 | MLU703045603 | 4670 | 3283 | 1387 | no_tocar | sin_tocar_umbral → 3283 | sí |
 | MLU703045599 | 1600 | 1212 | 388 | saltear | saltear_piso → 1199 | sí |
-| MLU703045555 | 1600 | 856 | 744 | no_tocar | sin_tocar_umbral → 856 | sí |
-| MLU703045419 | 1600 | 866 | 734 | no_tocar | sin_tocar_umbral → 866 | sí |
+| MLU703045555 | 1600 | 857 | 743 | no_tocar | sin_tocar_umbral → 857 | sí |
+| MLU703045419 | 1600 | 867 | 733 | no_tocar | sin_tocar_umbral → 867 | sí |
 | MLU703045255 | 4630 | 2229 | 2401 | no_tocar | sin_tocar_umbral → 2229 | sí |
 | MLU703045191 | 2550 | 1999 | 551 | no_tocar | sin_tocar_umbral → 1999 | sí |
-| MLU703045187 | 1880 | 1781 | 99 | bajar | bajar → 1763 | sí |
 | MLU703044941 | 2400 | 1445 | 955 | no_tocar | sin_tocar_umbral → 1445 | sí |
 | MLU703044923 | 2680 | 1742 | 938 | no_tocar | sin_tocar_umbral → 1742 | sí |
-| MLU703044817 | 2750 | 2425 | 325 | bajar | bajar → 2400 | sí |
-| MLU703044803 | 1600 | 607 | 993 | no_tocar | sin_tocar_umbral → 607 | sí |
+| MLU703044803 | 1600 | 608 | 992 | no_tocar | sin_tocar_umbral → 608 | sí |
 | MLU703044569 | 2870 | 1362 | 1508 | no_tocar | sin_tocar_umbral → 1362 | sí |
-| MLU703044553 | 1600 | 1104 | 496 | no_tocar | sin_tocar_umbral → 1104 | sí |
+| MLU703044553 | 1600 | 1105 | 495 | no_tocar | sin_tocar_umbral → 1105 | sí |
 | MLU703044503 | 3120 | 2375 | 745 | no_tocar | sin_tocar_umbral → 2375 | sí |
 | MLU703044467 | 1610 | 1185 | 425 | no_tocar | sin_tocar_umbral → 1185 | sí |
 | MLU703043885 | 2660 | 1643 | 1017 | no_tocar | sin_tocar_umbral → 1643 | sí |
@@ -5645,7 +5577,7 @@ Discrepancias: **0**
 | MLU703042241 | 1960 | 1011 | 949 | no_tocar | sin_tocar_umbral → 1011 | sí |
 | MLU703042235 | 2460 | 1069 | 1391 | no_tocar | sin_tocar_umbral → 1069 | sí |
 | MLU703041823 | 2710 | 1636 | 1074 | no_tocar | sin_tocar_umbral → 1636 | sí |
-| MLU703041799 | 1600 | 701 | 899 | no_tocar | sin_tocar_umbral → 701 | sí |
+| MLU703041799 | 1600 | 703 | 897 | no_tocar | sin_tocar_umbral → 703 | sí |
 | MLU703041597 | 3390 | 1842 | 1548 | no_tocar | sin_tocar_umbral → 1842 | sí |
 | MLU703034507 | 1600 | 1148 | 452 | no_tocar | sin_tocar_umbral → 1148 | sí |
 | MLU703034001 | 1600 | 1156 | 444 | no_tocar | sin_tocar_umbral → 1156 | sí |
@@ -5657,8 +5589,7 @@ Discrepancias: **0**
 | MLU703033729 | 2210 | 1306 | 904 | no_tocar | sin_tocar_umbral → 1306 | sí |
 | MLU703033511 | 1600 | 1180 | 420 | no_tocar | sin_tocar_umbral → 1180 | sí |
 | MLU703033175 | 1820 | 1203 | 617 | no_tocar | sin_tocar_umbral → 1203 | sí |
-| MLU703033113 | 2010 | 1959 | 51 | bajar | bajar → 1939 | sí |
-| MLU703033009 | 1600 | 1018 | 582 | no_tocar | sin_tocar_umbral → 1018 | sí |
+| MLU703033009 | 1600 | 1019 | 581 | no_tocar | sin_tocar_umbral → 1019 | sí |
 | MLU703032815 | 1600 | 1171 | 429 | no_tocar | sin_tocar_umbral → 1171 | sí |
 | MLU703032561 | 1600 | 1133 | 467 | no_tocar | sin_tocar_umbral → 1133 | sí |
 | MLU703032545 | 2320 | 1610 | 710 | no_tocar | sin_tocar_umbral → 1610 | sí |
@@ -5667,23 +5598,19 @@ Discrepancias: **0**
 | MLU703032099 | 2550 | 2049 | 501 | no_tocar | sin_tocar_umbral → 2049 | sí |
 | MLU703032091 | 2550 | 1870 | 680 | no_tocar | sin_tocar_umbral → 1870 | sí |
 | MLU703032031 | 2910 | 1440 | 1470 | no_tocar | sin_tocar_umbral → 1440 | sí |
-| MLU703031987 | 2230 | 1860 | 370 | bajar | bajar → 1841 | sí |
-| MLU703031843 | 2400 | 2098 | 302 | bajar | bajar → 2077 | sí |
 | MLU703031725 | 3730 | 3148 | 582 | no_tocar | sin_tocar_umbral → 3148 | sí |
 | MLU703031713 | 3040 | 2405 | 635 | no_tocar | sin_tocar_umbral → 2405 | sí |
 | MLU703031597 | 4020 | 2475 | 1545 | no_tocar | sin_tocar_umbral → 2475 | sí |
 | MLU703031007 | 2770 | 2366 | 404 | no_tocar | sin_tocar_umbral → 2366 | sí |
 | MLU703030579 | 3070 | 2355 | 715 | no_tocar | sin_tocar_umbral → 2355 | sí |
 | MLU703030389 | 2420 | 1357 | 1063 | no_tocar | sin_tocar_umbral → 1357 | sí |
-| MLU703030361 | 1810 | 1682 | 128 | bajar | bajar → 1665 | sí |
 | MLU703030333 | 2630 | 1959 | 671 | no_tocar | sin_tocar_umbral → 1959 | sí |
 | MLU703030285 | 3600 | 2528 | 1072 | no_tocar | sin_tocar_umbral → 2528 | sí |
 | MLU703030273 | 3610 | 2528 | 1082 | no_tocar | sin_tocar_umbral → 2528 | sí |
 | MLU703030205 | 3270 | 2672 | 598 | no_tocar | sin_tocar_umbral → 2672 | sí |
-| MLU703030015 | 2090 | 1910 | 180 | bajar | bajar → 1890 | sí |
 | MLU703029989 | 4070 | 3612 | 458 | no_tocar | sin_tocar_umbral → 3612 | sí |
 | MLU703029923 | 2660 | 1815 | 845 | no_tocar | sin_tocar_umbral → 1815 | sí |
-| MLU703029619 | 1620 | 1015 | 605 | no_tocar | sin_tocar_umbral → 1015 | sí |
+| MLU703029619 | 1620 | 1016 | 604 | no_tocar | sin_tocar_umbral → 1016 | sí |
 | MLU703029585 | 2260 | 1069 | 1191 | no_tocar | sin_tocar_umbral → 1069 | sí |
 | MLU703029541 | 2090 | 1682 | 408 | no_tocar | sin_tocar_umbral → 1682 | sí |
 | MLU703029189 | 4030 | 2654 | 1376 | no_tocar | sin_tocar_umbral → 2654 | sí |
@@ -5699,12 +5626,10 @@ Discrepancias: **0**
 | MLU1524219800 | 1600 | 1112 | 488 | no_tocar | sin_tocar_umbral → 1112 | sí |
 | MLU1524219440 | 3040 | 2528 | 512 | no_tocar | sin_tocar_umbral → 2528 | sí |
 | MLU1524219158 | 1600 | 1203 | 397 | saltear | saltear_piso → 1190 | sí |
-| MLU1524219012 | 1690 | 1577 | 113 | bajar | bajar → 1561 | sí |
 | MLU1524218922 | 2430 | 2001 | 429 | no_tocar | sin_tocar_umbral → 2001 | sí |
 | MLU1524218810 | 1600 | 1103 | 497 | no_tocar | sin_tocar_umbral → 1103 | sí |
-| MLU1524218780 | 2740 | 1008 | 1732 | no_tocar | sin_tocar_umbral → 1008 | sí |
+| MLU1524218780 | 2740 | 1009 | 1731 | no_tocar | sin_tocar_umbral → 1009 | sí |
 | MLU1524218458 | 1960 | 1113 | 847 | no_tocar | sin_tocar_umbral → 1113 | sí |
-| MLU1524218408 | 2440 | 2128 | 312 | bajar | bajar → 2106 | sí |
 | MLU1524218184 | 5110 | 2399 | 2711 | no_tocar | sin_tocar_umbral → 2399 | sí |
 | MLU1524218002 | 3240 | 2692 | 548 | no_tocar | sin_tocar_umbral → 2692 | sí |
 | MLU1524217914 | 3600 | 2430 | 1170 | no_tocar | sin_tocar_umbral → 2430 | sí |
@@ -5712,7 +5637,7 @@ Discrepancias: **0**
 | MLU1524217762 | 9160 | 4671 | 4489 | no_tocar | sin_tocar_umbral → 4671 | sí |
 | MLU1524217574 | 2900 | 1595 | 1305 | no_tocar | sin_tocar_umbral → 1595 | sí |
 | MLU1524217438 | 3010 | 2178 | 832 | no_tocar | sin_tocar_umbral → 2178 | sí |
-| MLU1524216450 | 1600 | 1286 | 314 | bajar | bajar → 1273 | sí |
+| MLU1524216172 | 1600 | 1219 | 381 | bajar | bajar → 1206 | sí |
 | MLU1524215996 | 2820 | 2336 | 484 | no_tocar | sin_tocar_umbral → 2336 | sí |
 | MLU1524215992 | 1600 | 1203 | 397 | saltear | saltear_piso → 1190 | sí |
 | MLU1524215938 | 4020 | 3461 | 559 | no_tocar | sin_tocar_umbral → 3461 | sí |
@@ -5725,26 +5650,22 @@ Discrepancias: **0**
 | MLU1524213734 | 2100 | 1147 | 953 | no_tocar | sin_tocar_umbral → 1147 | sí |
 | MLU1524213718 | 2790 | 1288 | 1502 | no_tocar | sin_tocar_umbral → 1288 | sí |
 | MLU1524213220 | 6830 | 5306 | 1524 | no_tocar | sin_tocar_umbral → 5306 | sí |
-| MLU1524213158 | 9870 | 8196 | 1674 | no_tocar | sin_tocar_umbral → 8196 | sí |
+| MLU1524213158 | 9870 | 8196 | 1674 | saltear | saltear_ganador_sin_dato | sí |
 | MLU1524213122 | 8040 | 7038 | 1002 | no_tocar | sin_tocar_umbral → 7038 | sí |
 | MLU1524212956 | 2530 | 1993 | 537 | no_tocar | sin_tocar_umbral → 1993 | sí |
 | MLU1524212936 | 3270 | 2750 | 520 | no_tocar | sin_tocar_umbral → 2750 | sí |
 | MLU1524212916 | 3370 | 2405 | 965 | no_tocar | sin_tocar_umbral → 2405 | sí |
 | MLU1524212842 | 2570 | 1994 | 576 | no_tocar | sin_tocar_umbral → 1994 | sí |
-| MLU1524212812 | 1830 | 1504 | 326 | bajar | bajar → 1488 | sí |
 | MLU1524212608 | 3390 | 2628 | 762 | no_tocar | sin_tocar_umbral → 2628 | sí |
 | MLU1524212516 | 3840 | 2772 | 1068 | no_tocar | sin_tocar_umbral → 2772 | sí |
 | MLU1524207774 | 3000 | 2200 | 800 | no_tocar | sin_tocar_umbral → 2200 | sí |
 | MLU1524207576 | 1810 | 1049 | 761 | no_tocar | sin_tocar_umbral → 1049 | sí |
 | MLU1524207486 | 3750 | 2289 | 1461 | no_tocar | sin_tocar_umbral → 2289 | sí |
-| MLU1524207328 | 2210 | 2084 | 126 | bajar | bajar → 2063 | sí |
-| MLU1524207028 | 2920 | 2702 | 218 | bajar | bajar → 2674 | sí |
-| MLU1524206358 | 2960 | 2365 | 595 | no_tocar | sin_tocar_umbral → 2365 | sí |
+| MLU1524206358 | 2960 | 2371 | 589 | no_tocar | sin_tocar_umbral → 2371 | sí |
 | MLU1524206150 | 2280 | 1429 | 851 | no_tocar | sin_tocar_umbral → 1429 | sí |
 | MLU1524206062 | 1880 | 1361 | 519 | no_tocar | sin_tocar_umbral → 1361 | sí |
 | MLU1524205982 | 4300 | 3837 | 463 | no_tocar | sin_tocar_umbral → 3837 | sí |
 | MLU1524205964 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
-| MLU1524205868 | 1700 | 1613 | 87 | bajar | bajar → 1596 | sí |
 | MLU1524205554 | 3080 | 1448 | 1632 | no_tocar | sin_tocar_umbral → 1448 | sí |
 | MLU1524205548 | 3670 | 3247 | 423 | no_tocar | sin_tocar_umbral → 3247 | sí |
 | MLU1524204996 | 2650 | 1763 | 887 | no_tocar | sin_tocar_umbral → 1763 | sí |
@@ -5758,27 +5679,25 @@ Discrepancias: **0**
 | MLU1524202966 | 2780 | 1267 | 1513 | no_tocar | sin_tocar_umbral → 1267 | sí |
 | MLU1524202500 | 1600 | 1167 | 433 | no_tocar | sin_tocar_umbral → 1167 | sí |
 | MLU1524202494 | 1600 | 1193 | 407 | no_tocar | sin_tocar_umbral → 1193 | sí |
-| MLU1524201958 | 5770 | 4761 | 1009 | no_tocar | sin_tocar_umbral → 4761 | sí |
+| MLU1524201958 | 5770 | 4761 | 1009 | saltear | saltear_ganador_sin_dato | sí |
 | MLU1524201856 | 1600 | 1025 | 575 | no_tocar | sin_tocar_umbral → 1025 | sí |
 | MLU1524201834 | 1600 | 1186 | 414 | no_tocar | sin_tocar_umbral → 1186 | sí |
 | MLU1524201784 | 1600 | 1031 | 569 | no_tocar | sin_tocar_umbral → 1031 | sí |
 | MLU1524201216 | 1600 | 1203 | 397 | saltear | saltear_piso → 1190 | sí |
-| MLU1524200312 | 2380 | 2088 | 292 | bajar | bajar → 2067 | sí |
 | MLU1524200208 | 6750 | 3493 | 3257 | no_tocar | sin_tocar_umbral → 3493 | sí |
 | MLU1524199762 | 3350 | 2628 | 722 | no_tocar | sin_tocar_umbral → 2628 | sí |
 | MLU1524199602 | 2450 | 2047 | 403 | no_tocar | sin_tocar_umbral → 2047 | sí |
 | MLU1524199564 | 3380 | 2742 | 638 | no_tocar | sin_tocar_umbral → 2742 | sí |
-| MLU1524199544 | 10600 | 5926 | 4674 | no_tocar | sin_tocar_umbral → 5926 | sí |
+| MLU1524199544 | 10600 | 5926 | 4674 | saltear | saltear_ganador_sin_dato | sí |
 | MLU1524194894 | 2850 | 2445 | 405 | no_tocar | sin_tocar_umbral → 2445 | sí |
 | MLU1524194852 | 6850 | 4880 | 1970 | no_tocar | sin_tocar_umbral → 4880 | sí |
-| MLU1524194628 | 1600 | 1026 | 574 | no_tocar | sin_tocar_umbral → 1026 | sí |
+| MLU1524194628 | 1600 | 1027 | 573 | no_tocar | sin_tocar_umbral → 1027 | sí |
 | MLU1524194564 | 4550 | 2238 | 2312 | no_tocar | sin_tocar_umbral → 2238 | sí |
 | MLU1524194480 | 1870 | 1143 | 727 | no_tocar | sin_tocar_umbral → 1143 | sí |
 | MLU1524194460 | 2520 | 1261 | 1259 | no_tocar | sin_tocar_umbral → 1261 | sí |
 | MLU1524194390 | 3390 | 2559 | 831 | no_tocar | sin_tocar_umbral → 2559 | sí |
 | MLU1524194270 | 3040 | 1930 | 1110 | no_tocar | sin_tocar_umbral → 1930 | sí |
 | MLU1524194050 | 4660 | 1832 | 2828 | no_tocar | sin_tocar_umbral → 1832 | sí |
-| MLU1524193986 | 1600 | 1553 | 47 | bajar | bajar → 1537 | sí |
 | MLU1524193890 | 2730 | 1882 | 848 | no_tocar | sin_tocar_umbral → 1882 | sí |
 | MLU1524193658 | 2400 | 1623 | 777 | no_tocar | sin_tocar_umbral → 1623 | sí |
 | MLU1524193556 | 5390 | 3872 | 1518 | no_tocar | sin_tocar_umbral → 3872 | sí |
@@ -5790,7 +5709,6 @@ Discrepancias: **0**
 | MLU1524192788 | 3590 | 1890 | 1700 | no_tocar | sin_tocar_umbral → 1890 | sí |
 | MLU1524192644 | 4420 | 3712 | 708 | no_tocar | sin_tocar_umbral → 3712 | sí |
 | MLU1524192314 | 2970 | 2336 | 634 | no_tocar | sin_tocar_umbral → 2336 | sí |
-| MLU1524192204 | 1770 | 1504 | 266 | bajar | bajar → 1488 | sí |
 | MLU1524192010 | 1850 | 1011 | 839 | no_tocar | sin_tocar_umbral → 1011 | sí |
 | MLU1524191758 | 3460 | 2454 | 1006 | no_tocar | sin_tocar_umbral → 2454 | sí |
 | MLU1524191052 | 3090 | 2448 | 642 | no_tocar | sin_tocar_umbral → 2448 | sí |
@@ -5813,29 +5731,25 @@ Discrepancias: **0**
 | MLU1524186926 | 2460 | 2019 | 441 | no_tocar | sin_tocar_umbral → 2019 | sí |
 | MLU1524186550 | 3050 | 2391 | 659 | no_tocar | sin_tocar_umbral → 2391 | sí |
 | MLU1524182104 | 6360 | 5583 | 777 | no_tocar | sin_tocar_umbral → 5583 | sí |
-| MLU1524181990 | 1870 | 1692 | 178 | bajar | bajar → 1675 | sí |
-| MLU1524181742 | 2650 | 2336 | 314 | bajar | bajar → 2312 | sí |
 | MLU1524181548 | 3230 | 2435 | 795 | no_tocar | sin_tocar_umbral → 2435 | sí |
 | MLU1524181106 | 2390 | 1477 | 913 | no_tocar | sin_tocar_umbral → 1477 | sí |
 | MLU1524180652 | 1700 | 1239 | 461 | no_tocar | sin_tocar_umbral → 1239 | sí |
 | MLU1524180132 | 3910 | 3227 | 683 | no_tocar | sin_tocar_umbral → 3227 | sí |
 | MLU1524180040 | 2000 | 1323 | 677 | no_tocar | sin_tocar_umbral → 1323 | sí |
-| MLU1524179600 | 2750 | 1185 | 1565 | saltear | saltear_ganador_sin_dato | sí |
+| MLU1524179600 | 2750 | 1185 | 1565 | no_tocar | sin_tocar_umbral → 1185 | sí |
 | MLU1524179492 | 3360 | 1990 | 1370 | no_tocar | sin_tocar_umbral → 1990 | sí |
 | MLU1524179382 | 5020 | 2057 | 2963 | no_tocar | sin_tocar_umbral → 2057 | sí |
-| MLU1524179372 | 2590 | 2227 | 363 | bajar | bajar → 2204 | sí |
 | MLU1524179362 | 2770 | 2343 | 427 | no_tocar | sin_tocar_umbral → 2343 | sí |
 | MLU1524179298 | 1600 | 1108 | 492 | no_tocar | sin_tocar_umbral → 1108 | sí |
 | MLU1524179294 | 2330 | 1900 | 430 | no_tocar | sin_tocar_umbral → 1900 | sí |
 | MLU1524179030 | 2820 | 1359 | 1461 | no_tocar | sin_tocar_umbral → 1359 | sí |
 | MLU1524178992 | 2520 | 2119 | 401 | no_tocar | sin_tocar_umbral → 2119 | sí |
-| MLU1524178930 | 4100 | 3252 | 848 | saltear | saltear_ganador_sin_dato | sí |
+| MLU1524178930 | 4100 | 3252 | 848 | no_tocar | sin_tocar_umbral → 3252 | sí |
 | MLU1524177632 | 1600 | 1203 | 397 | saltear | saltear_piso → 1190 | sí |
 | MLU1524177554 | 4020 | 3461 | 559 | no_tocar | sin_tocar_umbral → 3461 | sí |
 | MLU1524177516 | 4020 | 3435 | 585 | no_tocar | sin_tocar_umbral → 3435 | sí |
 | MLU1524176990 | 1600 | 1167 | 433 | no_tocar | sin_tocar_umbral → 1167 | sí |
 | MLU1524176748 | 2350 | 1317 | 1033 | no_tocar | sin_tocar_umbral → 1317 | sí |
-| MLU1524176452 | 2160 | 2059 | 101 | bajar | bajar → 2038 | sí |
 | MLU1524176428 | 2420 | 1370 | 1050 | no_tocar | sin_tocar_umbral → 1370 | sí |
 | MLU1524175690 | 1600 | 1138 | 462 | no_tocar | sin_tocar_umbral → 1138 | sí |
 | MLU1524175676 | 2640 | 2183 | 457 | no_tocar | sin_tocar_umbral → 2183 | sí |
@@ -5881,10 +5795,9 @@ Discrepancias: **0**
 | MLU703076121 | 3060 | 2521 | 539 | no_tocar | sin_tocar_umbral → 2521 | sí |
 | MLU703076101 | 3460 | 2607 | 853 | no_tocar | sin_tocar_umbral → 2607 | sí |
 | MLU703076005 | 3850 | 2433 | 1417 | no_tocar | sin_tocar_umbral → 2433 | sí |
-| MLU703075703 | 1600 | 1010 | 590 | no_tocar | sin_tocar_umbral → 1010 | sí |
+| MLU703075703 | 1600 | 1011 | 589 | no_tocar | sin_tocar_umbral → 1011 | sí |
 | MLU703075531 | 2880 | 2465 | 415 | no_tocar | sin_tocar_umbral → 2465 | sí |
 | MLU703075241 | 3200 | 2425 | 775 | no_tocar | sin_tocar_umbral → 2425 | sí |
-| MLU703075003 | 2890 | 2732 | 158 | bajar | bajar → 2704 | sí |
 | MLU703074877 | 2410 | 1321 | 1089 | no_tocar | sin_tocar_umbral → 1321 | sí |
 | MLU703074873 | 3200 | 1289 | 1911 | no_tocar | sin_tocar_umbral → 1289 | sí |
 | MLU703074795 | 4640 | 2799 | 1841 | no_tocar | sin_tocar_umbral → 2799 | sí |
@@ -5894,21 +5807,17 @@ Discrepancias: **0**
 | MLU703073977 | 3520 | 1741 | 1779 | no_tocar | sin_tocar_umbral → 1741 | sí |
 | MLU703073785 | 3070 | 2613 | 457 | no_tocar | sin_tocar_umbral → 2613 | sí |
 | MLU703073761 | 3860 | 3306 | 554 | no_tocar | sin_tocar_umbral → 3306 | sí |
-| MLU703073757 | 2060 | 1870 | 190 | bajar | bajar → 1851 | sí |
 | MLU703073755 | 3740 | 2672 | 1068 | no_tocar | sin_tocar_umbral → 2672 | sí |
 | MLU703073751 | 2780 | 2316 | 464 | no_tocar | sin_tocar_umbral → 2316 | sí |
 | MLU703073477 | 2690 | 1631 | 1059 | no_tocar | sin_tocar_umbral → 1631 | sí |
 | MLU703073463 | 3370 | 2227 | 1143 | no_tocar | sin_tocar_umbral → 2227 | sí |
 | MLU703073455 | 1600 | 1060 | 540 | no_tocar | sin_tocar_umbral → 1060 | sí |
 | MLU703073367 | 2540 | 2120 | 420 | no_tocar | sin_tocar_umbral → 2120 | sí |
-| MLU703073319 | 3640 | 3306 | 334 | bajar | bajar → 3272 | sí |
-| MLU703073215 | 2120 | 1791 | 329 | bajar | bajar → 1773 | sí |
 | MLU703073123 | 1600 | 1098 | 502 | no_tocar | sin_tocar_umbral → 1098 | sí |
 | MLU703073101 | 1600 | 1183 | 417 | no_tocar | sin_tocar_umbral → 1183 | sí |
 | MLU703073095 | 1600 | 1078 | 522 | no_tocar | sin_tocar_umbral → 1078 | sí |
 | MLU703072979 | 2450 | 1803 | 647 | no_tocar | sin_tocar_umbral → 1803 | sí |
 | MLU703072871 | 7350 | 5508 | 1842 | no_tocar | sin_tocar_umbral → 5508 | sí |
-| MLU703072827 | 1640 | 1600 | 40 | bajar | bajar → 1584 | sí |
 | MLU703072811 | 2110 | 1198 | 912 | no_tocar | sin_tocar_umbral → 1198 | sí |
 | MLU703072619 | 2460 | 1593 | 867 | no_tocar | sin_tocar_umbral → 1593 | sí |
 | MLU703072605 | 2970 | 2545 | 425 | no_tocar | sin_tocar_umbral → 2545 | sí |
@@ -5918,8 +5827,7 @@ Discrepancias: **0**
 | MLU703067497 | 4520 | 3770 | 750 | no_tocar | sin_tocar_umbral → 3770 | sí |
 | MLU703067491 | 4530 | 3770 | 760 | no_tocar | sin_tocar_umbral → 3770 | sí |
 | MLU703067387 | 2400 | 1959 | 441 | no_tocar | sin_tocar_umbral → 1959 | sí |
-| MLU703067113 | 1600 | 612 | 988 | no_tocar | sin_tocar_umbral → 612 | sí |
-| MLU703066735 | 3530 | 3137 | 393 | bajar | bajar → 3105 | sí |
+| MLU703067113 | 1600 | 613 | 987 | no_tocar | sin_tocar_umbral → 613 | sí |
 | MLU703066363 | 3870 | 2432 | 1438 | no_tocar | sin_tocar_umbral → 2432 | sí |
 | MLU703066335 | 3460 | 2134 | 1326 | no_tocar | sin_tocar_umbral → 2134 | sí |
 | MLU703066291 | 3630 | 2607 | 1023 | no_tocar | sin_tocar_umbral → 2607 | sí |
@@ -5939,7 +5847,7 @@ Discrepancias: **0**
 | MLU703064753 | 3600 | 3039 | 561 | no_tocar | sin_tocar_umbral → 3039 | sí |
 | MLU703064597 | 2610 | 1663 | 947 | no_tocar | sin_tocar_umbral → 1663 | sí |
 | MLU703064363 | 3030 | 2057 | 973 | no_tocar | sin_tocar_umbral → 2057 | sí |
-| MLU703064079 | 1600 | 607 | 993 | no_tocar | sin_tocar_umbral → 607 | sí |
+| MLU703064079 | 1600 | 608 | 992 | no_tocar | sin_tocar_umbral → 608 | sí |
 | MLU703063951 | 2110 | 1633 | 477 | no_tocar | sin_tocar_umbral → 1633 | sí |
 | MLU703063937 | 2630 | 2120 | 510 | no_tocar | sin_tocar_umbral → 2120 | sí |
 | MLU703063925 | 3050 | 2484 | 566 | no_tocar | sin_tocar_umbral → 2484 | sí |
@@ -5947,7 +5855,6 @@ Discrepancias: **0**
 | MLU703063663 | 2810 | 2178 | 632 | no_tocar | sin_tocar_umbral → 2178 | sí |
 | MLU703063647 | 1600 | 926 | 674 | no_tocar | sin_tocar_umbral → 926 | sí |
 | MLU703063365 | 3310 | 2673 | 637 | no_tocar | sin_tocar_umbral → 2673 | sí |
-| MLU703063347 | 2180 | 2078 | 102 | bajar | bajar → 2057 | sí |
 | MLU703063261 | 3060 | 2118 | 942 | no_tocar | sin_tocar_umbral → 2118 | sí |
 | MLU703063223 | 4050 | 3224 | 826 | no_tocar | sin_tocar_umbral → 3224 | sí |
 | MLU703063185 | 1600 | 1108 | 492 | no_tocar | sin_tocar_umbral → 1108 | sí |
@@ -5960,7 +5867,6 @@ Discrepancias: **0**
 | MLU703062811 | 1600 | 1118 | 482 | no_tocar | sin_tocar_umbral → 1118 | sí |
 | MLU703062655 | 1600 | 1100 | 500 | no_tocar | sin_tocar_umbral → 1100 | sí |
 | MLU703062443 | 2750 | 1867 | 883 | no_tocar | sin_tocar_umbral → 1867 | sí |
-| MLU703062393 | 2680 | 2504 | 176 | bajar | bajar → 2478 | sí |
 | MLU703062353 | 3040 | 2593 | 447 | no_tocar | sin_tocar_umbral → 2593 | sí |
 | MLU703062343 | 4220 | 3415 | 805 | no_tocar | sin_tocar_umbral → 3415 | sí |
 | MLU703062119 | 2620 | 1352 | 1268 | no_tocar | sin_tocar_umbral → 1352 | sí |
@@ -5995,26 +5901,23 @@ Discrepancias: **0**
 | MLU703052099 | 1600 | 1157 | 443 | no_tocar | sin_tocar_umbral → 1157 | sí |
 | MLU703051955 | 3040 | 1218 | 1822 | no_tocar | sin_tocar_umbral → 1218 | sí |
 | MLU703051923 | 2410 | 1183 | 1227 | no_tocar | sin_tocar_umbral → 1183 | sí |
-| MLU703051893 | 2180 | 1950 | 230 | bajar | bajar → 1930 | sí |
 | MLU703051773 | 3420 | 2623 | 797 | no_tocar | sin_tocar_umbral → 2623 | sí |
 | MLU703051747 | 2900 | 2430 | 470 | no_tocar | sin_tocar_umbral → 2430 | sí |
 | MLU703051603 | 3540 | 2098 | 1442 | no_tocar | sin_tocar_umbral → 2098 | sí |
 | MLU703051577 | 4860 | 3544 | 1316 | no_tocar | sin_tocar_umbral → 3544 | sí |
-| MLU703051571 | 4840 | 3514 | 1326 | no_tocar | sin_tocar_umbral → 3514 | sí |
+| MLU703051571 | 4840 | 3544 | 1296 | no_tocar | sin_tocar_umbral → 3544 | sí |
 | MLU703051559 | 3720 | 3207 | 513 | no_tocar | sin_tocar_umbral → 3207 | sí |
 | MLU703051395 | 3480 | 2766 | 714 | no_tocar | sin_tocar_umbral → 2766 | sí |
 | MLU703051387 | 3620 | 1551 | 2069 | no_tocar | sin_tocar_umbral → 1551 | sí |
 | MLU703051225 | 4640 | 2374 | 2266 | no_tocar | sin_tocar_umbral → 2374 | sí |
 | MLU703051045 | 7670 | 6177 | 1493 | no_tocar | sin_tocar_umbral → 6177 | sí |
 | MLU703050513 | 3090 | 1528 | 1562 | no_tocar | sin_tocar_umbral → 1528 | sí |
-| MLU703050481 | 2590 | 2375 | 215 | bajar | bajar → 2351 | sí |
 | MLU703050401 | 3930 | 3197 | 733 | no_tocar | sin_tocar_umbral → 3197 | sí |
 | MLU703050245 | 3110 | 2672 | 438 | no_tocar | sin_tocar_umbral → 2672 | sí |
-| MLU703050149 | 1600 | 947 | 653 | no_tocar | sin_tocar_umbral → 947 | sí |
+| MLU703050149 | 1600 | 948 | 652 | no_tocar | sin_tocar_umbral → 948 | sí |
 | MLU703050051 | 1920 | 1361 | 559 | no_tocar | sin_tocar_umbral → 1361 | sí |
 | MLU703050037 | 5650 | 2374 | 3276 | no_tocar | sin_tocar_umbral → 2374 | sí |
-| MLU703049703 | 1990 | 1751 | 239 | bajar | bajar → 1733 | sí |
-| MLU703049645 | 1600 | 573 | 1027 | no_tocar | sin_tocar_umbral → 573 | sí |
+| MLU703049645 | 1600 | 574 | 1026 | no_tocar | sin_tocar_umbral → 574 | sí |
 | MLU703049641 | 2910 | 2338 | 572 | no_tocar | sin_tocar_umbral → 2338 | sí |
 | MLU703049555 | 2570 | 1536 | 1034 | no_tocar | sin_tocar_umbral → 1536 | sí |
 | MLU703049531 | 4310 | 2267 | 2043 | no_tocar | sin_tocar_umbral → 2267 | sí |
@@ -6023,16 +5926,13 @@ Discrepancias: **0**
 | MLU703049483 | 2040 | 1603 | 437 | no_tocar | sin_tocar_umbral → 1603 | sí |
 | MLU703049459 | 2150 | 1702 | 448 | no_tocar | sin_tocar_umbral → 1702 | sí |
 | MLU703049445 | 1940 | 1074 | 866 | no_tocar | sin_tocar_umbral → 1074 | sí |
-| MLU703049389 | 2460 | 2356 | 104 | bajar | bajar → 2332 | sí |
-| MLU703049377 | 4400 | 3318 | 1082 | no_tocar | sin_tocar_umbral → 3318 | sí |
-| MLU703049365 | 1600 | 1453 | 147 | bajar | bajar → 1438 | sí |
+| MLU703049377 | 4400 | 3296 | 1104 | no_tocar | sin_tocar_umbral → 3296 | sí |
 | MLU703049359 | 3370 | 2678 | 692 | no_tocar | sin_tocar_umbral → 2678 | sí |
 | MLU703049315 | 1740 | 1059 | 681 | no_tocar | sin_tocar_umbral → 1059 | sí |
 | MLU703049309 | 2470 | 1959 | 511 | no_tocar | sin_tocar_umbral → 1959 | sí |
 | MLU703049213 | 3260 | 2744 | 516 | no_tocar | sin_tocar_umbral → 2744 | sí |
 | MLU703049143 | 3310 | 2575 | 735 | no_tocar | sin_tocar_umbral → 2575 | sí |
 | MLU703049141 | 2030 | 1143 | 887 | no_tocar | sin_tocar_umbral → 1143 | sí |
-| MLU703049061 | 1720 | 1578 | 142 | bajar | bajar → 1562 | sí |
 | MLU703048951 | 2890 | 2216 | 674 | no_tocar | sin_tocar_umbral → 2216 | sí |
 | MLU703048889 | 1600 | 1197 | 403 | no_tocar | sin_tocar_umbral → 1197 | sí |
 | MLU703048861 | 3700 | 2214 | 1486 | no_tocar | sin_tocar_umbral → 2214 | sí |
@@ -6044,7 +5944,7 @@ Discrepancias: **0**
 | MLU703041461 | 3870 | 3227 | 643 | no_tocar | sin_tocar_umbral → 3227 | sí |
 | MLU703041449 | 4510 | 3745 | 765 | no_tocar | sin_tocar_umbral → 3745 | sí |
 | MLU703041421 | 4590 | 3745 | 845 | no_tocar | sin_tocar_umbral → 3745 | sí |
-| MLU703040937 | 1600 | 612 | 988 | no_tocar | sin_tocar_umbral → 612 | sí |
+| MLU703040937 | 1600 | 613 | 987 | no_tocar | sin_tocar_umbral → 613 | sí |
 | MLU703040527 | 2630 | 1801 | 829 | no_tocar | sin_tocar_umbral → 1801 | sí |
 | MLU703040475 | 3060 | 2462 | 598 | no_tocar | sin_tocar_umbral → 2462 | sí |
 | MLU703040127 | 2510 | 1831 | 679 | no_tocar | sin_tocar_umbral → 1831 | sí |
@@ -6056,7 +5956,6 @@ Discrepancias: **0**
 | MLU703039899 | 2950 | 2183 | 767 | no_tocar | sin_tocar_umbral → 2183 | sí |
 | MLU703039551 | 1640 | 1187 | 453 | no_tocar | sin_tocar_umbral → 1187 | sí |
 | MLU703039231 | 2210 | 1534 | 676 | no_tocar | sin_tocar_umbral → 1534 | sí |
-| MLU703038969 | 3690 | 3445 | 245 | bajar | bajar → 3410 | sí |
 | MLU703037651 | 2600 | 2059 | 541 | no_tocar | sin_tocar_umbral → 2059 | sí |
 | MLU703037515 | 2340 | 1930 | 410 | no_tocar | sin_tocar_umbral → 1930 | sí |
 | MLU703037497 | 4160 | 3319 | 841 | no_tocar | sin_tocar_umbral → 3319 | sí |
@@ -6064,8 +5963,7 @@ Discrepancias: **0**
 | MLU703037399 | 2930 | 2494 | 436 | no_tocar | sin_tocar_umbral → 2494 | sí |
 | MLU703037209 | 2810 | 1994 | 816 | no_tocar | sin_tocar_umbral → 1994 | sí |
 | MLU703037201 | 3230 | 2603 | 627 | no_tocar | sin_tocar_umbral → 2603 | sí |
-| MLU703037175 | 2520 | 2415 | 105 | bajar | bajar → 2390 | sí |
-| MLU703036923 | 2050 | 1147 | 903 | no_tocar | sin_tocar_umbral → 1147 | sí |
+| MLU703036923 | 2050 | 1148 | 902 | no_tocar | sin_tocar_umbral → 1148 | sí |
 | MLU703036859 | 4310 | 2772 | 1538 | no_tocar | sin_tocar_umbral → 2772 | sí |
 | MLU703036855 | 3050 | 2116 | 934 | no_tocar | sin_tocar_umbral → 2116 | sí |
 | MLU703036527 | 7820 | 5612 | 2208 | no_tocar | sin_tocar_umbral → 5612 | sí |
@@ -6085,7 +5983,7 @@ Discrepancias: **0**
 | MLU1524225342 | 2580 | 1732 | 848 | no_tocar | sin_tocar_umbral → 1732 | sí |
 | MLU1524223342 | 2250 | 1279 | 971 | no_tocar | sin_tocar_umbral → 1279 | sí |
 | MLU1524223282 | 14910 | 6879 | 8031 | no_tocar | sin_tocar_umbral → 6879 | sí |
-| MLU1524223072 | 1600 | 1114 | 486 | no_tocar | sin_tocar_umbral → 1114 | sí |
+| MLU1524223072 | 1600 | 1115 | 485 | no_tocar | sin_tocar_umbral → 1115 | sí |
 | MLU1524222912 | 3840 | 1609 | 2231 | no_tocar | sin_tocar_umbral → 1609 | sí |
 | MLU1524222712 | 2440 | 2029 | 411 | no_tocar | sin_tocar_umbral → 2029 | sí |
 | MLU1524222664 | 3090 | 2684 | 406 | no_tocar | sin_tocar_umbral → 2684 | sí |
@@ -6103,8 +6001,6 @@ Discrepancias: **0**
 | MLU703129847 | 2170 | 1096 | 1074 | no_tocar | sin_tocar_umbral → 1096 | sí |
 | MLU703129329 | 2370 | 1442 | 928 | no_tocar | sin_tocar_umbral → 1442 | sí |
 | MLU703129253 | 2760 | 1946 | 814 | no_tocar | sin_tocar_umbral → 1946 | sí |
-| MLU703129067 | 2050 | 1880 | 170 | bajar | bajar → 1861 | sí |
-| MLU703128713 | 2300 | 2197 | 103 | bajar | bajar → 2175 | sí |
 | MLU703128703 | 1600 | 1104 | 496 | no_tocar | sin_tocar_umbral → 1104 | sí |
 | MLU703128631 | 3500 | 2593 | 907 | no_tocar | sin_tocar_umbral → 2593 | sí |
 | MLU703128483 | 2270 | 1185 | 1085 | no_tocar | sin_tocar_umbral → 1185 | sí |
@@ -6113,7 +6009,6 @@ Discrepancias: **0**
 | MLU703127807 | 1600 | 1210 | 390 | saltear | saltear_piso → 1197 | sí |
 | MLU703127727 | 2450 | 1882 | 568 | no_tocar | sin_tocar_umbral → 1882 | sí |
 | MLU703127655 | 1600 | 375 | 1225 | no_tocar | sin_tocar_umbral → 375 | sí |
-| MLU703127601 | 1690 | 1642 | 48 | bajar | bajar → 1625 | sí |
 | MLU703127547 | 3160 | 2464 | 696 | no_tocar | sin_tocar_umbral → 2464 | sí |
 | MLU703127229 | 2710 | 1091 | 1619 | no_tocar | sin_tocar_umbral → 1091 | sí |
 | MLU703126877 | 3640 | 2712 | 928 | no_tocar | sin_tocar_umbral → 2712 | sí |
@@ -6137,27 +6032,22 @@ Discrepancias: **0**
 | MLU703123555 | 2970 | 2376 | 594 | no_tocar | sin_tocar_umbral → 2376 | sí |
 | MLU703123505 | 4920 | 2039 | 2881 | no_tocar | sin_tocar_umbral → 2039 | sí |
 | MLU703122407 | 3890 | 3276 | 614 | no_tocar | sin_tocar_umbral → 3276 | sí |
-| MLU703122101 | 2390 | 2286 | 104 | bajar | bajar → 2263 | sí |
 | MLU703121961 | 1600 | 1013 | 587 | no_tocar | sin_tocar_umbral → 1013 | sí |
 | MLU703121937 | 1600 | 1009 | 591 | no_tocar | sin_tocar_umbral → 1009 | sí |
 | MLU703121913 | 1600 | 1193 | 407 | no_tocar | sin_tocar_umbral → 1193 | sí |
-| MLU703121825 | 1870 | 1107 | 763 | no_tocar | sin_tocar_umbral → 1107 | sí |
+| MLU703121825 | 1870 | 1108 | 762 | no_tocar | sin_tocar_umbral → 1108 | sí |
 | MLU703121737 | 2760 | 1861 | 899 | no_tocar | sin_tocar_umbral → 1861 | sí |
 | MLU703121647 | 1910 | 1460 | 450 | no_tocar | sin_tocar_umbral → 1460 | sí |
 | MLU703121561 | 3190 | 2354 | 836 | no_tocar | sin_tocar_umbral → 2354 | sí |
-| MLU703121409 | 1600 | 1182 | 418 | no_tocar | sin_tocar_umbral → 1182 | sí |
+| MLU703121409 | 1600 | 1184 | 416 | no_tocar | sin_tocar_umbral → 1184 | sí |
 | MLU703121377 | 5270 | 2018 | 3252 | no_tocar | sin_tocar_umbral → 2018 | sí |
 | MLU703121365 | 2180 | 1034 | 1146 | no_tocar | sin_tocar_umbral → 1034 | sí |
 | MLU703121277 | 3280 | 2686 | 594 | no_tocar | sin_tocar_umbral → 2686 | sí |
-| MLU703121191 | 1600 | 1567 | 33 | bajar | bajar → 1551 | sí |
 | MLU703121083 | 3120 | 2597 | 523 | no_tocar | sin_tocar_umbral → 2597 | sí |
 | MLU703120903 | 2800 | 2025 | 775 | no_tocar | sin_tocar_umbral → 2025 | sí |
 | MLU703120883 | 2790 | 2025 | 765 | no_tocar | sin_tocar_umbral → 2025 | sí |
 | MLU703120649 | 2240 | 1440 | 800 | no_tocar | sin_tocar_umbral → 1440 | sí |
-| MLU703120645 | 1910 | 1835 | 75 | bajar | bajar → 1816 | sí |
 | MLU703120509 | 1720 | 1281 | 439 | no_tocar | sin_tocar_umbral → 1281 | sí |
-| MLU703120381 | 2100 | 1959 | 141 | bajar | bajar → 1939 | sí |
-| MLU703120269 | 1860 | 1583 | 277 | bajar | bajar → 1567 | sí |
 | MLU703120119 | 2210 | 1477 | 733 | no_tocar | sin_tocar_umbral → 1477 | sí |
 | MLU703120117 | 2570 | 2025 | 545 | no_tocar | sin_tocar_umbral → 2025 | sí |
 | MLU703120083 | 2480 | 2021 | 459 | no_tocar | sin_tocar_umbral → 2021 | sí |
@@ -6176,13 +6066,13 @@ Discrepancias: **0**
 | MLU703115779 | 2760 | 1393 | 1367 | no_tocar | sin_tocar_umbral → 1393 | sí |
 | MLU703115615 | 1600 | 1057 | 543 | no_tocar | sin_tocar_umbral → 1057 | sí |
 | MLU703115581 | 1710 | 995 | 715 | no_tocar | sin_tocar_umbral → 995 | sí |
-| MLU703115203 | 1600 | 1050 | 550 | no_tocar | sin_tocar_umbral → 1050 | sí |
+| MLU703115203 | 1600 | 1051 | 549 | no_tocar | sin_tocar_umbral → 1051 | sí |
 | MLU703115025 | 1600 | 1189 | 411 | no_tocar | sin_tocar_umbral → 1189 | sí |
 | MLU703114947 | 4530 | 3326 | 1204 | no_tocar | sin_tocar_umbral → 3326 | sí |
 | MLU703114817 | 1600 | 1107 | 493 | no_tocar | sin_tocar_umbral → 1107 | sí |
 | MLU703114783 | 2650 | 2138 | 512 | no_tocar | sin_tocar_umbral → 2138 | sí |
 | MLU703114777 | 2750 | 2138 | 612 | no_tocar | sin_tocar_umbral → 2138 | sí |
-| MLU703114733 | 1600 | 701 | 899 | no_tocar | sin_tocar_umbral → 701 | sí |
+| MLU703114733 | 1600 | 703 | 897 | no_tocar | sin_tocar_umbral → 703 | sí |
 | MLU703114553 | 3140 | 1590 | 1550 | no_tocar | sin_tocar_umbral → 1590 | sí |
 | MLU703114433 | 1600 | 1059 | 541 | no_tocar | sin_tocar_umbral → 1059 | sí |
 | MLU703114117 | 1600 | 1130 | 470 | no_tocar | sin_tocar_umbral → 1130 | sí |
@@ -6209,14 +6099,12 @@ Discrepancias: **0**
 | MLU703109939 | 11880 | 10287 | 1593 | no_tocar | sin_tocar_umbral → 10287 | sí |
 | MLU703109937 | 15690 | 13169 | 2521 | no_tocar | sin_tocar_umbral → 13169 | sí |
 | MLU703109757 | 2020 | 1615 | 405 | no_tocar | sin_tocar_umbral → 1615 | sí |
-| MLU703109755 | 2510 | 2433 | 77 | bajar | bajar → 2408 | sí |
 | MLU703109737 | 3090 | 2527 | 563 | no_tocar | sin_tocar_umbral → 2527 | sí |
 | MLU703109723 | 1600 | 1028 | 572 | no_tocar | sin_tocar_umbral → 1028 | sí |
 | MLU703109691 | 5450 | 2792 | 2658 | no_tocar | sin_tocar_umbral → 2792 | sí |
 | MLU703109469 | 4070 | 3227 | 843 | no_tocar | sin_tocar_umbral → 3227 | sí |
-| MLU703109461 | 1990 | 1890 | 100 | bajar | bajar → 1871 | sí |
 | MLU703109243 | 2230 | 1098 | 1132 | no_tocar | sin_tocar_umbral → 1098 | sí |
-| MLU703109171 | 1600 | 656 | 944 | no_tocar | sin_tocar_umbral → 656 | sí |
+| MLU703109171 | 1600 | 657 | 943 | no_tocar | sin_tocar_umbral → 657 | sí |
 | MLU703108879 | 4620 | 4039 | 581 | no_tocar | sin_tocar_umbral → 4039 | sí |
 | MLU703108809 | 2780 | 1973 | 807 | no_tocar | sin_tocar_umbral → 1973 | sí |
 | MLU703108803 | 1820 | 1195 | 625 | no_tocar | sin_tocar_umbral → 1195 | sí |
@@ -6233,25 +6121,23 @@ Discrepancias: **0**
 | MLU703107979 | 2400 | 1835 | 565 | no_tocar | sin_tocar_umbral → 1835 | sí |
 | MLU703107541 | 2700 | 1816 | 884 | no_tocar | sin_tocar_umbral → 1816 | sí |
 | MLU703107521 | 4200 | 3329 | 871 | no_tocar | sin_tocar_umbral → 3329 | sí |
-| MLU703107345 | 1830 | 938 | 892 | no_tocar | sin_tocar_umbral → 938 | sí |
+| MLU703107345 | 1830 | 939 | 891 | no_tocar | sin_tocar_umbral → 939 | sí |
 | MLU703107311 | 2380 | 1772 | 608 | no_tocar | sin_tocar_umbral → 1772 | sí |
 | MLU703107237 | 2420 | 1645 | 775 | no_tocar | sin_tocar_umbral → 1645 | sí |
 | MLU703107113 | 2680 | 1357 | 1323 | no_tocar | sin_tocar_umbral → 1357 | sí |
-| MLU703106849 | 2000 | 1742 | 258 | bajar | bajar → 1724 | sí |
-| MLU703106739 | 2000 | 1603 | 397 | bajar | bajar → 1586 | sí |
 | MLU703106541 | 3160 | 2461 | 699 | no_tocar | sin_tocar_umbral → 2461 | sí |
 | MLU703104151 | 1600 | 1167 | 433 | no_tocar | sin_tocar_umbral → 1167 | sí |
-| MLU703104087 | 1990 | 1093 | 897 | no_tocar | sin_tocar_umbral → 1093 | sí |
+| MLU703104087 | 1990 | 1094 | 896 | no_tocar | sin_tocar_umbral → 1094 | sí |
 | MLU703104063 | 2470 | 1099 | 1371 | no_tocar | sin_tocar_umbral → 1099 | sí |
 | MLU703103521 | 3840 | 1999 | 1841 | no_tocar | sin_tocar_umbral → 1999 | sí |
 | MLU703103353 | 5110 | 2505 | 2605 | no_tocar | sin_tocar_umbral → 2505 | sí |
 | MLU703103247 | 1810 | 1076 | 734 | no_tocar | sin_tocar_umbral → 1076 | sí |
-| MLU703103237 | 1800 | 1185 | 615 | no_tocar | sin_tocar_umbral → 1185 | sí |
+| MLU703103237 | 1800 | 1186 | 614 | no_tocar | sin_tocar_umbral → 1186 | sí |
 | MLU703103145 | 1600 | 1098 | 502 | no_tocar | sin_tocar_umbral → 1098 | sí |
-| MLU703102935 | 1890 | 608 | 1282 | no_tocar | sin_tocar_umbral → 608 | sí |
+| MLU703102935 | 1890 | 609 | 1281 | no_tocar | sin_tocar_umbral → 609 | sí |
 | MLU703102815 | 1600 | 971 | 629 | no_tocar | sin_tocar_umbral → 971 | sí |
 | MLU703102735 | 3200 | 2068 | 1132 | no_tocar | sin_tocar_umbral → 2068 | sí |
-| MLU703102505 | 2990 | 1206 | 1784 | no_tocar | sin_tocar_umbral → 1206 | sí |
+| MLU703102505 | 2990 | 1207 | 1783 | no_tocar | sin_tocar_umbral → 1207 | sí |
 | MLU703102071 | 3680 | 1742 | 1938 | no_tocar | sin_tocar_umbral → 1742 | sí |
 | MLU703101957 | 1880 | 1266 | 614 | no_tocar | sin_tocar_umbral → 1266 | sí |
 | MLU703101801 | 2830 | 2168 | 662 | no_tocar | sin_tocar_umbral → 2168 | sí |
@@ -6267,7 +6153,6 @@ Discrepancias: **0**
 | MLU703100651 | 3220 | 2676 | 544 | no_tocar | sin_tocar_umbral → 2676 | sí |
 | MLU703100325 | 2400 | 1889 | 511 | no_tocar | sin_tocar_umbral → 1889 | sí |
 | MLU703100057 | 3950 | 3444 | 506 | no_tocar | sin_tocar_umbral → 3444 | sí |
-| MLU703099231 | 2270 | 1989 | 281 | bajar | bajar → 1969 | sí |
 | MLU703098839 | 1600 | 1018 | 582 | no_tocar | sin_tocar_umbral → 1018 | sí |
 | MLU703098805 | 7530 | 6932 | 598 | no_tocar | sin_tocar_umbral → 6932 | sí |
 | MLU703098779 | 5020 | 2098 | 2922 | no_tocar | sin_tocar_umbral → 2098 | sí |
@@ -6277,19 +6162,18 @@ Discrepancias: **0**
 | MLU703098601 | 3630 | 3205 | 425 | no_tocar | sin_tocar_umbral → 3205 | sí |
 | MLU703098527 | 3550 | 2673 | 877 | no_tocar | sin_tocar_umbral → 2673 | sí |
 | MLU703098519 | 3300 | 2644 | 656 | no_tocar | sin_tocar_umbral → 2644 | sí |
-| MLU703097073 | 1600 | 1520 | 80 | bajar | bajar → 1504 | sí |
 | MLU703097053 | 15690 | 13169 | 2521 | no_tocar | sin_tocar_umbral → 13169 | sí |
 | MLU703096943 | 2070 | 1098 | 972 | no_tocar | sin_tocar_umbral → 1098 | sí |
-| MLU703096837 | 1494 | 1445 | 49 | bajar | bajar → 1430 | sí |
+| MLU703096829 | 1600 | 900 | 700 | no_tocar | sin_tocar_umbral → 900 | sí |
 | MLU703096787 | 2690 | 2286 | 404 | no_tocar | sin_tocar_umbral → 2286 | sí |
 | MLU703096689 | 2880 | 2210 | 670 | no_tocar | sin_tocar_umbral → 2210 | sí |
 | MLU703096455 | 4160 | 2473 | 1687 | no_tocar | sin_tocar_umbral → 2473 | sí |
-| MLU703096445 | 2030 | 1008 | 1022 | no_tocar | sin_tocar_umbral → 1008 | sí |
+| MLU703096445 | 2030 | 1009 | 1021 | no_tocar | sin_tocar_umbral → 1009 | sí |
 | MLU703096287 | 2360 | 1803 | 557 | no_tocar | sin_tocar_umbral → 1803 | sí |
 | MLU703096163 | 2110 | 1504 | 606 | no_tocar | sin_tocar_umbral → 1504 | sí |
 | MLU703096099 | 3080 | 1760 | 1320 | no_tocar | sin_tocar_umbral → 1760 | sí |
 | MLU703096021 | 1600 | 1128 | 472 | no_tocar | sin_tocar_umbral → 1128 | sí |
-| MLU703095981 | 2060 | 1851 | 209 | bajar | bajar → 1832 | sí |
+| MLU703095901 | 2603 | 2544 | 59 | bajar | bajar → 2518 | sí |
 | MLU703095843 | 2640 | 1933 | 707 | no_tocar | sin_tocar_umbral → 1933 | sí |
 | MLU703095713 | 2650 | 2128 | 522 | no_tocar | sin_tocar_umbral → 2128 | sí |
 | MLU703095699 | 3200 | 2182 | 1018 | no_tocar | sin_tocar_umbral → 2182 | sí |
@@ -6303,26 +6187,22 @@ Discrepancias: **0**
 | MLU703094969 | 2500 | 2088 | 412 | no_tocar | sin_tocar_umbral → 2088 | sí |
 | MLU703094837 | 1600 | 1057 | 543 | no_tocar | sin_tocar_umbral → 1057 | sí |
 | MLU703094705 | 3450 | 2930 | 520 | no_tocar | sin_tocar_umbral → 2930 | sí |
-| MLU703094439 | 1860 | 938 | 922 | no_tocar | sin_tocar_umbral → 938 | sí |
+| MLU703094439 | 1860 | 939 | 921 | no_tocar | sin_tocar_umbral → 939 | sí |
 | MLU703094413 | 2840 | 1338 | 1502 | no_tocar | sin_tocar_umbral → 1338 | sí |
 | MLU703094253 | 2260 | 1064 | 1196 | no_tocar | sin_tocar_umbral → 1064 | sí |
 | MLU703094241 | 2850 | 1495 | 1355 | no_tocar | sin_tocar_umbral → 1495 | sí |
-| MLU703094217 | 1800 | 1534 | 266 | bajar | bajar → 1518 | sí |
 | MLU703094035 | 1600 | 1167 | 433 | no_tocar | sin_tocar_umbral → 1167 | sí |
 | MLU703093907 | 1890 | 1464 | 426 | no_tocar | sin_tocar_umbral → 1464 | sí |
 | MLU703093775 | 2070 | 1102 | 968 | no_tocar | sin_tocar_umbral → 1102 | sí |
-| MLU703093703 | 1700 | 1583 | 117 | bajar | bajar → 1567 | sí |
 | MLU703093693 | 1600 | 1197 | 403 | no_tocar | sin_tocar_umbral → 1197 | sí |
 | MLU703091231 | 2620 | 1401 | 1219 | no_tocar | sin_tocar_umbral → 1401 | sí |
 | MLU703090857 | 2170 | 1336 | 834 | no_tocar | sin_tocar_umbral → 1336 | sí |
 | MLU703090801 | 2940 | 2401 | 539 | no_tocar | sin_tocar_umbral → 2401 | sí |
 | MLU703090731 | 4640 | 3535 | 1105 | no_tocar | sin_tocar_umbral → 3535 | sí |
 | MLU703090713 | 2880 | 1861 | 1019 | no_tocar | sin_tocar_umbral → 1861 | sí |
-| MLU703090601 | 1750 | 1613 | 137 | bajar | bajar → 1596 | sí |
 | MLU703090419 | 2540 | 2028 | 512 | no_tocar | sin_tocar_umbral → 2028 | sí |
 | MLU703090107 | 2320 | 1851 | 469 | no_tocar | sin_tocar_umbral → 1851 | sí |
 | MLU703090037 | 2940 | 1757 | 1183 | no_tocar | sin_tocar_umbral → 1757 | sí |
-| MLU703089683 | 1600 | 1500 | 100 | bajar | bajar → 1485 | sí |
 | MLU703089339 | 1760 | 1029 | 731 | no_tocar | sin_tocar_umbral → 1029 | sí |
 | MLU703089265 | 2600 | 2120 | 480 | no_tocar | sin_tocar_umbral → 2120 | sí |
 | MLU703089129 | 2110 | 1623 | 487 | no_tocar | sin_tocar_umbral → 1623 | sí |
@@ -6335,8 +6215,6 @@ Discrepancias: **0**
 | MLU703088129 | 2770 | 2276 | 494 | no_tocar | sin_tocar_umbral → 2276 | sí |
 | MLU703088105 | 3280 | 2226 | 1054 | no_tocar | sin_tocar_umbral → 2226 | sí |
 | MLU703088003 | 2540 | 1738 | 802 | no_tocar | sin_tocar_umbral → 1738 | sí |
-| MLU703087969 | 2110 | 1851 | 259 | bajar | bajar → 1832 | sí |
-| MLU703087941 | 2370 | 2107 | 263 | bajar | bajar → 2085 | sí |
 | MLU703087537 | 4790 | 3884 | 906 | no_tocar | sin_tocar_umbral → 3884 | sí |
 | MLU703087271 | 2950 | 2370 | 580 | no_tocar | sin_tocar_umbral → 2370 | sí |
 | MLU703087161 | 3330 | 2256 | 1074 | no_tocar | sin_tocar_umbral → 2256 | sí |
@@ -6347,10 +6225,8 @@ Discrepancias: **0**
 | MLU703084849 | 2010 | 1154 | 856 | no_tocar | sin_tocar_umbral → 1154 | sí |
 | MLU703084515 | 8310 | 7059 | 1251 | no_tocar | sin_tocar_umbral → 7059 | sí |
 | MLU703084397 | 2420 | 1591 | 829 | no_tocar | sin_tocar_umbral → 1591 | sí |
-| MLU703084385 | 2350 | 2124 | 226 | bajar | bajar → 2102 | sí |
-| MLU703084269 | 2500 | 2261 | 239 | bajar | bajar → 2238 | sí |
 | MLU703083873 | 3470 | 2588 | 882 | no_tocar | sin_tocar_umbral → 2588 | sí |
-| MLU703083833 | 3070 | 1215 | 1855 | no_tocar | sin_tocar_umbral → 1215 | sí |
+| MLU703083833 | 3070 | 1216 | 1854 | no_tocar | sin_tocar_umbral → 1216 | sí |
 | MLU703083819 | 4140 | 1661 | 2479 | no_tocar | sin_tocar_umbral → 1661 | sí |
 | MLU703083469 | 2230 | 1326 | 904 | no_tocar | sin_tocar_umbral → 1326 | sí |
 | MLU703083385 | 4610 | 2401 | 2209 | no_tocar | sin_tocar_umbral → 2401 | sí |
@@ -6362,7 +6238,6 @@ Discrepancias: **0**
 | MLU703082623 | 6280 | 5423 | 857 | no_tocar | sin_tocar_umbral → 5423 | sí |
 | MLU703082551 | 1600 | 1067 | 533 | no_tocar | sin_tocar_umbral → 1067 | sí |
 | MLU703082499 | 2560 | 1636 | 924 | no_tocar | sin_tocar_umbral → 1636 | sí |
-| MLU703082479 | 2520 | 2465 | 55 | bajar | bajar → 2440 | sí |
 | MLU703082419 | 2740 | 1737 | 1003 | no_tocar | sin_tocar_umbral → 1737 | sí |
 | MLU703082199 | 1600 | 1167 | 433 | no_tocar | sin_tocar_umbral → 1167 | sí |
 | MLU703082137 | 2610 | 2138 | 472 | no_tocar | sin_tocar_umbral → 2138 | sí |
@@ -6378,8 +6253,7 @@ Discrepancias: **0**
 | MLU703081279 | 2360 | 1237 | 1123 | no_tocar | sin_tocar_umbral → 1237 | sí |
 | MLU703081149 | 5580 | 3524 | 2056 | no_tocar | sin_tocar_umbral → 3524 | sí |
 | MLU703080957 | 2210 | 1788 | 422 | no_tocar | sin_tocar_umbral → 1788 | sí |
-| MLU703080923 | 1600 | 1182 | 418 | no_tocar | sin_tocar_umbral → 1182 | sí |
-| MLU703080891 | 1760 | 1662 | 98 | bajar | bajar → 1645 | sí |
+| MLU703080923 | 1600 | 1184 | 416 | no_tocar | sin_tocar_umbral → 1184 | sí |
 | MLU703080875 | 2760 | 1671 | 1089 | no_tocar | sin_tocar_umbral → 1671 | sí |
 | MLU703080789 | 2770 | 1479 | 1291 | no_tocar | sin_tocar_umbral → 1479 | sí |
 | MLU1524703084 | 3290 | 2543 | 747 | no_tocar | sin_tocar_umbral → 2543 | sí |
@@ -6387,11 +6261,10 @@ Discrepancias: **0**
 | MLU1524703032 | 3450 | 2593 | 857 | no_tocar | sin_tocar_umbral → 2593 | sí |
 | MLU1524703030 | 3130 | 1218 | 1912 | no_tocar | sin_tocar_umbral → 1218 | sí |
 | MLU1524703002 | 1600 | 1089 | 511 | no_tocar | sin_tocar_umbral → 1089 | sí |
-| MLU1524702980 | 1890 | 1742 | 148 | bajar | bajar → 1724 | sí |
 | MLU1524699428 | 1600 | 1060 | 540 | no_tocar | sin_tocar_umbral → 1060 | sí |
 | MLU1524699394 | 1600 | 1111 | 489 | no_tocar | sin_tocar_umbral → 1111 | sí |
 | MLU1524699358 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
-| MLU1524699216 | 1600 | 810 | 790 | no_tocar | sin_tocar_umbral → 810 | sí |
+| MLU1524699216 | 1600 | 811 | 789 | no_tocar | sin_tocar_umbral → 811 | sí |
 | MLU1524699184 | 3060 | 2563 | 497 | no_tocar | sin_tocar_umbral → 2563 | sí |
 | MLU1524699156 | 2550 | 1930 | 620 | no_tocar | sin_tocar_umbral → 1930 | sí |
 | MLU1524698806 | 1600 | 1006 | 594 | no_tocar | sin_tocar_umbral → 1006 | sí |
@@ -6416,7 +6289,7 @@ Discrepancias: **0**
 | MLU1524524200 | 3330 | 2654 | 676 | no_tocar | sin_tocar_umbral → 2654 | sí |
 | MLU1524523818 | 3150 | 2557 | 593 | no_tocar | sin_tocar_umbral → 2557 | sí |
 | MLU1524523622 | 2820 | 2415 | 405 | no_tocar | sin_tocar_umbral → 2415 | sí |
-| MLU1524523068 | 1600 | 1186 | 414 | no_tocar | sin_tocar_umbral → 1186 | sí |
+| MLU1524523068 | 1600 | 1188 | 412 | no_tocar | sin_tocar_umbral → 1188 | sí |
 | MLU1524521860 | 3430 | 1732 | 1698 | no_tocar | sin_tocar_umbral → 1732 | sí |
 | MLU1524521416 | 1600 | 1150 | 450 | no_tocar | sin_tocar_umbral → 1150 | sí |
 | MLU1524520976 | 3090 | 2430 | 660 | no_tocar | sin_tocar_umbral → 2430 | sí |
@@ -6424,8 +6297,7 @@ Discrepancias: **0**
 | MLU1524520744 | 2480 | 2015 | 465 | no_tocar | sin_tocar_umbral → 2015 | sí |
 | MLU1524519596 | 2540 | 2110 | 430 | no_tocar | sin_tocar_umbral → 2110 | sí |
 | MLU1524519372 | 2880 | 1207 | 1673 | no_tocar | sin_tocar_umbral → 1207 | sí |
-| MLU1524517992 | 2450 | 2128 | 322 | bajar | bajar → 2106 | sí |
-| MLU1524517792 | 5720 | 2379 | 3341 | no_tocar | sin_tocar_umbral → 2379 | sí |
+| MLU1524517792 | 5720 | 1258 | 4462 | no_tocar | sin_tocar_umbral → 1258 | sí |
 | MLU1524517746 | 3360 | 2433 | 927 | no_tocar | sin_tocar_umbral → 2433 | sí |
 | MLU1524517676 | 1600 | 1098 | 502 | no_tocar | sin_tocar_umbral → 1098 | sí |
 | MLU1524517588 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
@@ -6438,8 +6310,7 @@ Discrepancias: **0**
 | MLU1524515322 | 4040 | 3118 | 922 | no_tocar | sin_tocar_umbral → 3118 | sí |
 | MLU1524515314 | 2220 | 1098 | 1122 | no_tocar | sin_tocar_umbral → 1098 | sí |
 | MLU1524515268 | 3350 | 2575 | 775 | no_tocar | sin_tocar_umbral → 2575 | sí |
-| MLU1524515262 | 2560 | 2210 | 350 | bajar | bajar → 2187 | sí |
-| MLU1524513952 | 1600 | 1098 | 502 | saltear | saltear_ganador_sin_dato | sí |
+| MLU1524513952 | 1600 | 1098 | 502 | no_tocar | sin_tocar_umbral → 1098 | sí |
 | MLU1524513906 | 3300 | 1709 | 1591 | no_tocar | sin_tocar_umbral → 1709 | sí |
 | MLU1524513846 | 2240 | 1258 | 982 | no_tocar | sin_tocar_umbral → 1258 | sí |
 | MLU1524513830 | 1600 | 1079 | 521 | no_tocar | sin_tocar_umbral → 1079 | sí |
@@ -6455,7 +6326,7 @@ Discrepancias: **0**
 | MLU1524511830 | 3070 | 2595 | 475 | no_tocar | sin_tocar_umbral → 2595 | sí |
 | MLU1524497608 | 4040 | 1577 | 2463 | no_tocar | sin_tocar_umbral → 1577 | sí |
 | MLU1524497596 | 3520 | 2335 | 1185 | no_tocar | sin_tocar_umbral → 2335 | sí |
-| MLU1524496844 | 3400 | 1392 | 2008 | saltear | saltear_ganador_sin_dato | sí |
+| MLU1524496844 | 3400 | 1392 | 2008 | no_tocar | sin_tocar_umbral → 1392 | sí |
 | MLU1524496840 | 3410 | 2207 | 1203 | no_tocar | sin_tocar_umbral → 2207 | sí |
 | MLU1524496782 | 5550 | 4137 | 1413 | no_tocar | sin_tocar_umbral → 4137 | sí |
 | MLU1524496712 | 2910 | 2370 | 540 | no_tocar | sin_tocar_umbral → 2370 | sí |
@@ -6483,14 +6354,13 @@ Discrepancias: **0**
 | MLU1524490388 | 2120 | 1265 | 855 | no_tocar | sin_tocar_umbral → 1265 | sí |
 | MLU1524490168 | 2750 | 2059 | 691 | no_tocar | sin_tocar_umbral → 2059 | sí |
 | MLU1524489462 | 2360 | 1151 | 1209 | no_tocar | sin_tocar_umbral → 1151 | sí |
-| MLU1524488686 | 1600 | 1196 | 404 | no_tocar | sin_tocar_umbral → 1196 | sí |
+| MLU1524488686 | 1600 | 1197 | 403 | no_tocar | sin_tocar_umbral → 1197 | sí |
 | MLU1524488666 | 4360 | 3729 | 631 | no_tocar | sin_tocar_umbral → 3729 | sí |
 | MLU1524488378 | 2010 | 1341 | 669 | no_tocar | sin_tocar_umbral → 1341 | sí |
 | MLU1524487884 | 2740 | 2102 | 638 | no_tocar | sin_tocar_umbral → 2102 | sí |
 | MLU1524487374 | 2890 | 2326 | 564 | no_tocar | sin_tocar_umbral → 2326 | sí |
 | MLU1524487238 | 2660 | 1815 | 845 | no_tocar | sin_tocar_umbral → 1815 | sí |
 | MLU1524486072 | 1600 | 1167 | 433 | no_tocar | sin_tocar_umbral → 1167 | sí |
-| MLU1524485572 | 2470 | 2128 | 342 | bajar | bajar → 2106 | sí |
 | MLU1524485490 | 2250 | 1623 | 627 | no_tocar | sin_tocar_umbral → 1623 | sí |
 | MLU1524485472 | 2780 | 2316 | 464 | no_tocar | sin_tocar_umbral → 2316 | sí |
 | MLU1524485002 | 3730 | 3197 | 533 | no_tocar | sin_tocar_umbral → 3197 | sí |
@@ -6521,10 +6391,9 @@ Discrepancias: **0**
 | MLU1524475166 | 3240 | 1503 | 1737 | no_tocar | sin_tocar_umbral → 1503 | sí |
 | MLU1524474888 | 1910 | 1217 | 693 | no_tocar | sin_tocar_umbral → 1217 | sí |
 | MLU1524474278 | 2150 | 1107 | 1043 | no_tocar | sin_tocar_umbral → 1107 | sí |
-| MLU1524474118 | 2160 | 1522 | 638 | no_tocar | sin_tocar_umbral → 1522 | sí |
+| MLU1524474118 | 2160 | 1522 | 638 | saltear | saltear_ganador_sin_dato | sí |
 | MLU1524473546 | 2420 | 1842 | 578 | no_tocar | sin_tocar_umbral → 1842 | sí |
 | MLU1524473454 | 5110 | 2177 | 2933 | no_tocar | sin_tocar_umbral → 2177 | sí |
-| MLU1524472634 | 6240 | 5929 | 311 | bajar | bajar → 5869 | sí |
 | MLU1524472564 | 1760 | 997 | 763 | no_tocar | sin_tocar_umbral → 997 | sí |
 | MLU1524472534 | 3860 | 3157 | 703 | no_tocar | sin_tocar_umbral → 3157 | sí |
 | MLU1524372726 | 2100 | 1593 | 507 | no_tocar | sin_tocar_umbral → 1593 | sí |
@@ -6532,18 +6401,18 @@ Discrepancias: **0**
 | MLU1524372584 | 3730 | 1973 | 1757 | no_tocar | sin_tocar_umbral → 1973 | sí |
 | MLU1524372578 | 2780 | 1185 | 1595 | no_tocar | sin_tocar_umbral → 1185 | sí |
 | MLU1524371688 | 6040 | 4029 | 2011 | no_tocar | sin_tocar_umbral → 4029 | sí |
-| MLU1524371654 | 1600 | 866 | 734 | no_tocar | sin_tocar_umbral → 866 | sí |
+| MLU1524371654 | 1600 | 867 | 733 | no_tocar | sin_tocar_umbral → 867 | sí |
 | MLU1524371640 | 2580 | 1422 | 1158 | no_tocar | sin_tocar_umbral → 1422 | sí |
 | MLU1524371636 | 3760 | 1577 | 2183 | no_tocar | sin_tocar_umbral → 1577 | sí |
 | MLU1524371570 | 2100 | 1631 | 469 | no_tocar | sin_tocar_umbral → 1631 | sí |
 | MLU1524371502 | 1600 | 1201 | 399 | saltear | saltear_piso → 1188 | sí |
-| MLU1524371456 | 1710 | 1058 | 652 | no_tocar | sin_tocar_umbral → 1058 | sí |
+| MLU1524371456 | 1710 | 1059 | 651 | no_tocar | sin_tocar_umbral → 1059 | sí |
 | MLU1524371064 | 2530 | 2098 | 432 | no_tocar | sin_tocar_umbral → 2098 | sí |
 | MLU1524371042 | 3090 | 1781 | 1309 | no_tocar | sin_tocar_umbral → 1781 | sí |
 | MLU1524359898 | 1600 | 1000 | 600 | no_tocar | sin_tocar_umbral → 1000 | sí |
 | MLU1524359634 | 2210 | 1565 | 645 | no_tocar | sin_tocar_umbral → 1565 | sí |
 | MLU1524358800 | 1600 | 1157 | 443 | no_tocar | sin_tocar_umbral → 1157 | sí |
-| MLU1524358706 | 1600 | 1050 | 550 | no_tocar | sin_tocar_umbral → 1050 | sí |
+| MLU1524358706 | 1600 | 1051 | 549 | no_tocar | sin_tocar_umbral → 1051 | sí |
 | MLU1524358528 | 1600 | 1135 | 465 | no_tocar | sin_tocar_umbral → 1135 | sí |
 | MLU1524358466 | 4220 | 2279 | 1941 | no_tocar | sin_tocar_umbral → 2279 | sí |
 | MLU1524358444 | 2680 | 1696 | 984 | no_tocar | sin_tocar_umbral → 1696 | sí |
@@ -6560,14 +6429,12 @@ Discrepancias: **0**
 | MLU1524353602 | 2660 | 2152 | 508 | no_tocar | sin_tocar_umbral → 2152 | sí |
 | MLU1524352624 | 4660 | 2762 | 1898 | no_tocar | sin_tocar_umbral → 2762 | sí |
 | MLU1524352486 | 1600 | 1098 | 502 | no_tocar | sin_tocar_umbral → 1098 | sí |
-| MLU1524352194 | 1600 | 1504 | 96 | bajar | bajar → 1488 | sí |
 | MLU1524351336 | 3680 | 1663 | 2017 | no_tocar | sin_tocar_umbral → 1663 | sí |
 | MLU1524350798 | 4070 | 3283 | 787 | no_tocar | sin_tocar_umbral → 3283 | sí |
 | MLU1524350764 | 1600 | 1098 | 502 | no_tocar | sin_tocar_umbral → 1098 | sí |
 | MLU1524350166 | 1740 | 1143 | 597 | no_tocar | sin_tocar_umbral → 1143 | sí |
 | MLU1524350158 | 3370 | 2653 | 717 | no_tocar | sin_tocar_umbral → 2653 | sí |
 | MLU1524349838 | 3960 | 1839 | 2121 | no_tocar | sin_tocar_umbral → 1839 | sí |
-| MLU1524349808 | 2920 | 2860 | 60 | bajar | bajar → 2831 | sí |
 | MLU1524348844 | 4480 | 2734 | 1746 | no_tocar | sin_tocar_umbral → 2734 | sí |
 | MLU1524348612 | 3410 | 2416 | 994 | no_tocar | sin_tocar_umbral → 2416 | sí |
 | MLU1524348544 | 5930 | 5180 | 750 | no_tocar | sin_tocar_umbral → 5180 | sí |
@@ -6580,14 +6447,11 @@ Discrepancias: **0**
 | MLU1524345014 | 2240 | 1702 | 538 | no_tocar | sin_tocar_umbral → 1702 | sí |
 | MLU1524344884 | 1600 | 1078 | 522 | no_tocar | sin_tocar_umbral → 1078 | sí |
 | MLU1524344834 | 2370 | 1623 | 747 | no_tocar | sin_tocar_umbral → 1623 | sí |
-| MLU1524334740 | 2810 | 2435 | 375 | bajar | bajar → 2410 | sí |
-| MLU1524333920 | 2040 | 1712 | 328 | bajar | bajar → 1694 | sí |
 | MLU1524333892 | 3150 | 1599 | 1551 | no_tocar | sin_tocar_umbral → 1599 | sí |
 | MLU1524333754 | 2780 | 2227 | 553 | no_tocar | sin_tocar_umbral → 2227 | sí |
 | MLU1524332416 | 1600 | 1064 | 536 | no_tocar | sin_tocar_umbral → 1064 | sí |
 | MLU1524332202 | 1600 | 1128 | 472 | no_tocar | sin_tocar_umbral → 1128 | sí |
 | MLU1524331922 | 1600 | 592 | 1008 | no_tocar | sin_tocar_umbral → 592 | sí |
-| MLU1524331820 | 1690 | 1642 | 48 | bajar | bajar → 1625 | sí |
 | MLU703162197 | 3390 | 2841 | 549 | no_tocar | sin_tocar_umbral → 2841 | sí |
 | MLU703162171 | 1600 | 1089 | 511 | no_tocar | sin_tocar_umbral → 1089 | sí |
 | MLU703162155 | 1600 | 1089 | 511 | no_tocar | sin_tocar_umbral → 1089 | sí |
@@ -6620,7 +6484,6 @@ Discrepancias: **0**
 | MLU1524970506 | 3330 | 2207 | 1123 | no_tocar | sin_tocar_umbral → 2207 | sí |
 | MLU1524969852 | 3770 | 2775 | 995 | no_tocar | sin_tocar_umbral → 2775 | sí |
 | MLU1524969712 | 1600 | 1098 | 502 | no_tocar | sin_tocar_umbral → 1098 | sí |
-| MLU1524968116 | 1600 | 1521 | 79 | bajar | bajar → 1505 | sí |
 | MLU1524968082 | 2280 | 1512 | 768 | no_tocar | sin_tocar_umbral → 1512 | sí |
 | MLU1524967520 | 1760 | 1092 | 668 | no_tocar | sin_tocar_umbral → 1092 | sí |
 | MLU1524967390 | 2820 | 2161 | 659 | no_tocar | sin_tocar_umbral → 2161 | sí |
@@ -6629,31 +6492,29 @@ Discrepancias: **0**
 | MLU1524955448 | 2210 | 1685 | 525 | no_tocar | sin_tocar_umbral → 1685 | sí |
 | MLU1524954512 | 3440 | 2781 | 659 | no_tocar | sin_tocar_umbral → 2781 | sí |
 | MLU1524953962 | 2510 | 1998 | 512 | no_tocar | sin_tocar_umbral → 1998 | sí |
-| MLU1524953782 | 1600 | 786 | 814 | no_tocar | sin_tocar_umbral → 786 | sí |
+| MLU1524953782 | 1600 | 788 | 812 | no_tocar | sin_tocar_umbral → 788 | sí |
 | MLU1524953510 | 3500 | 2722 | 778 | no_tocar | sin_tocar_umbral → 2722 | sí |
 | MLU1524945118 | 8310 | 6680 | 1630 | no_tocar | sin_tocar_umbral → 6680 | sí |
 | MLU1524945088 | 2620 | 2049 | 571 | no_tocar | sin_tocar_umbral → 2049 | sí |
 | MLU1524944940 | 3160 | 2683 | 477 | no_tocar | sin_tocar_umbral → 2683 | sí |
 | MLU1524944386 | 2290 | 1860 | 430 | no_tocar | sin_tocar_umbral → 1860 | sí |
 | MLU1524941816 | 2280 | 1688 | 592 | no_tocar | sin_tocar_umbral → 1688 | sí |
-| MLU1524941632 | 2580 | 2405 | 175 | bajar | bajar → 2380 | sí |
 | MLU1524941142 | 2410 | 1999 | 411 | no_tocar | sin_tocar_umbral → 1999 | sí |
 | MLU1524941112 | 2230 | 1807 | 423 | no_tocar | sin_tocar_umbral → 1807 | sí |
 | MLU1524940970 | 3620 | 3207 | 413 | no_tocar | sin_tocar_umbral → 3207 | sí |
 | MLU1524940954 | 4560 | 3781 | 779 | no_tocar | sin_tocar_umbral → 3781 | sí |
 | MLU1524940918 | 2450 | 1900 | 550 | no_tocar | sin_tocar_umbral → 1900 | sí |
 | MLU1524940886 | 5340 | 1242 | 4098 | no_tocar | sin_tocar_umbral → 1242 | sí |
-| MLU1524940872 | 1600 | 866 | 734 | no_tocar | sin_tocar_umbral → 866 | sí |
+| MLU1524940872 | 1600 | 867 | 733 | no_tocar | sin_tocar_umbral → 867 | sí |
 | MLU1524940830 | 5190 | 3903 | 1287 | no_tocar | sin_tocar_umbral → 3903 | sí |
 | MLU1524940802 | 3890 | 2488 | 1402 | no_tocar | sin_tocar_umbral → 2488 | sí |
 | MLU1524863274 | 3070 | 2435 | 635 | no_tocar | sin_tocar_umbral → 2435 | sí |
-| MLU1524863250 | 2950 | 2336 | 614 | no_tocar | sin_tocar_umbral → 2336 | sí |
+| MLU1524863250 | 2950 | 2336 | 614 | saltear | saltear_ganador_sin_dato | sí |
 | MLU1524863236 | 3040 | 1821 | 1219 | no_tocar | sin_tocar_umbral → 1821 | sí |
 | MLU1524863212 | 1600 | 1091 | 509 | no_tocar | sin_tocar_umbral → 1091 | sí |
 | MLU1524706418 | 7170 | 3554 | 3616 | no_tocar | sin_tocar_umbral → 3554 | sí |
 | MLU1524705782 | 1600 | 1157 | 443 | no_tocar | sin_tocar_umbral → 1157 | sí |
 | MLU1524705724 | 3180 | 1270 | 1910 | no_tocar | sin_tocar_umbral → 1270 | sí |
-| MLU1524705670 | 1650 | 1533 | 117 | bajar | bajar → 1517 | sí |
 | MLU1524705044 | 3020 | 2057 | 963 | no_tocar | sin_tocar_umbral → 2057 | sí |
 | MLU1524704872 | 2240 | 1275 | 965 | no_tocar | sin_tocar_umbral → 1275 | sí |
 | MLU1524704692 | 5570 | 2387 | 3183 | no_tocar | sin_tocar_umbral → 2387 | sí |
@@ -6663,11 +6524,11 @@ Discrepancias: **0**
 | MLU1524703390 | 1610 | 989 | 621 | no_tocar | sin_tocar_umbral → 989 | sí |
 | MLU703174075 | 9150 | 8438 | 712 | no_tocar | sin_tocar_umbral → 8438 | sí |
 | MLU703174061 | 7360 | 4750 | 2610 | no_tocar | sin_tocar_umbral → 4750 | sí |
-| MLU703173937 | 1600 | 1121 | 479 | no_tocar | sin_tocar_umbral → 1121 | sí |
+| MLU703173937 | 1600 | 1122 | 478 | no_tocar | sin_tocar_umbral → 1122 | sí |
 | MLU703173209 | 1600 | 1197 | 403 | no_tocar | sin_tocar_umbral → 1197 | sí |
 | MLU703173189 | 2770 | 1623 | 1147 | no_tocar | sin_tocar_umbral → 1623 | sí |
 | MLU703162515 | 3910 | 1627 | 2283 | no_tocar | sin_tocar_umbral → 1627 | sí |
-| MLU703151221 | 2940 | 2316 | 624 | no_tocar | sin_tocar_umbral → 2316 | sí |
+| MLU703151221 | 2940 | 2316 | 624 | saltear | saltear_ganador_sin_dato | sí |
 | MLU703138217 | 3690 | 1236 | 2454 | no_tocar | sin_tocar_umbral → 1236 | sí |
 | MLU703138209 | 2700 | 2158 | 542 | no_tocar | sin_tocar_umbral → 2158 | sí |
 | MLU703259199 | 1600 | 1203 | 397 | saltear | saltear_piso → 1190 | sí |
@@ -6677,8 +6538,8 @@ Discrepancias: **0**
 | MLU703258691 | 3020 | 2461 | 559 | no_tocar | sin_tocar_umbral → 2461 | sí |
 | MLU703258487 | 3080 | 1700 | 1380 | no_tocar | sin_tocar_umbral → 1700 | sí |
 | MLU703257919 | 4060 | 1999 | 2061 | no_tocar | sin_tocar_umbral → 1999 | sí |
-| MLU703246341 | 1600 | 826 | 774 | no_tocar | sin_tocar_umbral → 826 | sí |
-| MLU703246181 | 3000 | 2385 | 615 | saltear | saltear_ganador_sin_dato | sí |
+| MLU703246341 | 1600 | 827 | 773 | no_tocar | sin_tocar_umbral → 827 | sí |
+| MLU703246181 | 3000 | 2385 | 615 | no_tocar | sin_tocar_umbral → 2385 | sí |
 | MLU703245121 | 3670 | 3247 | 423 | no_tocar | sin_tocar_umbral → 3247 | sí |
 | MLU703244899 | 2270 | 1025 | 1245 | no_tocar | sin_tocar_umbral → 1025 | sí |
 | MLU703244485 | 2750 | 1498 | 1252 | no_tocar | sin_tocar_umbral → 1498 | sí |
@@ -6705,12 +6566,8 @@ Discrepancias: **0**
 | MLU1525872028 | 2710 | 1661 | 1049 | no_tocar | sin_tocar_umbral → 1661 | sí |
 | MLU1525872006 | 1900 | 1377 | 523 | no_tocar | sin_tocar_umbral → 1377 | sí |
 | MLU1525871810 | 4130 | 1834 | 2296 | no_tocar | sin_tocar_umbral → 1834 | sí |
-| MLU1525871660 | 1790 | 1613 | 177 | bajar | bajar → 1596 | sí |
 | MLU1525871274 | 3020 | 2306 | 714 | no_tocar | sin_tocar_umbral → 2306 | sí |
-| MLU1525871224 | 2490 | 2227 | 263 | bajar | bajar → 2204 | sí |
 | MLU1525870116 | 2800 | 2167 | 633 | no_tocar | sin_tocar_umbral → 2167 | sí |
-| MLU1525869212 | 2320 | 2188 | 132 | bajar | bajar → 2166 | sí |
-| MLU1525868954 | 2660 | 2356 | 304 | bajar | bajar → 2332 | sí |
 | MLU1525868666 | 6000 | 4751 | 1249 | no_tocar | sin_tocar_umbral → 4751 | sí |
 | MLU1525867978 | 2290 | 1009 | 1281 | no_tocar | sin_tocar_umbral → 1009 | sí |
 | MLU1525867866 | 2790 | 2138 | 652 | no_tocar | sin_tocar_umbral → 2138 | sí |
@@ -6723,12 +6580,9 @@ Discrepancias: **0**
 | MLU1525866262 | 3600 | 1599 | 2001 | no_tocar | sin_tocar_umbral → 1599 | sí |
 | MLU1525866248 | 2110 | 1484 | 626 | no_tocar | sin_tocar_umbral → 1484 | sí |
 | MLU1525866240 | 9130 | 3880 | 5250 | no_tocar | sin_tocar_umbral → 3880 | sí |
-| MLU1525866024 | 2460 | 2120 | 340 | bajar | bajar → 2098 | sí |
 | MLU1525865942 | 2160 | 1440 | 720 | no_tocar | sin_tocar_umbral → 1440 | sí |
-| MLU1525865918 | 2220 | 1855 | 365 | bajar | bajar → 1836 | sí |
 | MLU1525865876 | 3390 | 2613 | 777 | no_tocar | sin_tocar_umbral → 2613 | sí |
 | MLU1525865702 | 2580 | 2098 | 482 | no_tocar | sin_tocar_umbral → 2098 | sí |
-| MLU1525865660 | 2740 | 2366 | 374 | bajar | bajar → 2342 | sí |
 | MLU1525865564 | 3690 | 2401 | 1289 | no_tocar | sin_tocar_umbral → 2401 | sí |
 | MLU1525865540 | 2550 | 1811 | 739 | no_tocar | sin_tocar_umbral → 1811 | sí |
 | MLU1525864616 | 3730 | 1930 | 1800 | no_tocar | sin_tocar_umbral → 1930 | sí |
@@ -6737,21 +6591,17 @@ Discrepancias: **0**
 | MLU1525862600 | 2560 | 1835 | 725 | no_tocar | sin_tocar_umbral → 1835 | sí |
 | MLU1525861904 | 3060 | 2591 | 469 | no_tocar | sin_tocar_umbral → 2591 | sí |
 | MLU1525861716 | 2380 | 1866 | 514 | no_tocar | sin_tocar_umbral → 1866 | sí |
-| MLU1525861512 | 2400 | 2068 | 332 | bajar | bajar → 2047 | sí |
 | MLU1525860512 | 8200 | 6732 | 1468 | no_tocar | sin_tocar_umbral → 6732 | sí |
 | MLU1525860220 | 2520 | 2110 | 410 | no_tocar | sin_tocar_umbral → 2110 | sí |
 | MLU1525860172 | 2780 | 1732 | 1048 | no_tocar | sin_tocar_umbral → 1732 | sí |
 | MLU1525859654 | 1600 | 1130 | 470 | no_tocar | sin_tocar_umbral → 1130 | sí |
-| MLU1525859628 | 2120 | 1197 | 923 | saltear | saltear_ganador_sin_dato | sí |
+| MLU1525859628 | 2120 | 1198 | 922 | no_tocar | sin_tocar_umbral → 1198 | sí |
 | MLU1525859616 | 1600 | 1167 | 433 | no_tocar | sin_tocar_umbral → 1167 | sí |
-| MLU1525858590 | 2400 | 2021 | 379 | bajar | bajar → 2000 | sí |
 | MLU1525857318 | 1600 | 1197 | 403 | no_tocar | sin_tocar_umbral → 1197 | sí |
 | MLU1525854994 | 6010 | 5195 | 815 | no_tocar | sin_tocar_umbral → 5195 | sí |
 | MLU1525854892 | 6120 | 5195 | 925 | no_tocar | sin_tocar_umbral → 5195 | sí |
 | MLU1525854884 | 4340 | 3430 | 910 | no_tocar | sin_tocar_umbral → 3430 | sí |
-| MLU1525854546 | 1413 | 1366 | 47 | bajar | bajar → 1352 | sí |
 | MLU1525853458 | 3800 | 3132 | 668 | no_tocar | sin_tocar_umbral → 3132 | sí |
-| MLU1525853448 | 2470 | 2072 | 398 | bajar | bajar → 2051 | sí |
 | MLU1525852114 | 1600 | 1171 | 429 | no_tocar | sin_tocar_umbral → 1171 | sí |
 | MLU1525852098 | 7030 | 4811 | 2219 | no_tocar | sin_tocar_umbral → 4811 | sí |
 | MLU1525851874 | 1600 | 1187 | 413 | no_tocar | sin_tocar_umbral → 1187 | sí |
@@ -6762,12 +6612,8 @@ Discrepancias: **0**
 | MLU1525836408 | 2590 | 1835 | 755 | no_tocar | sin_tocar_umbral → 1835 | sí |
 | MLU1525835892 | 2470 | 1811 | 659 | no_tocar | sin_tocar_umbral → 1811 | sí |
 | MLU1525835868 | 2200 | 1265 | 935 | no_tocar | sin_tocar_umbral → 1265 | sí |
-| MLU1525835040 | 1700 | 1603 | 97 | bajar | bajar → 1586 | sí |
-| MLU1525834972 | 2190 | 1900 | 290 | bajar | bajar → 1881 | sí |
-| MLU1525834956 | 1700 | 1593 | 107 | bajar | bajar → 1577 | sí |
 | MLU1525834880 | 6580 | 3390 | 3190 | no_tocar | sin_tocar_umbral → 3390 | sí |
 | MLU1525833186 | 3190 | 2692 | 498 | no_tocar | sin_tocar_umbral → 2692 | sí |
-| MLU1525833004 | 2570 | 2211 | 359 | bajar | bajar → 2188 | sí |
 | MLU1525832430 | 2510 | 1124 | 1386 | no_tocar | sin_tocar_umbral → 1124 | sí |
 | MLU1525830980 | 12270 | 10662 | 1608 | no_tocar | sin_tocar_umbral → 10662 | sí |
 | MLU1525830914 | 2360 | 1793 | 567 | no_tocar | sin_tocar_umbral → 1793 | sí |
@@ -6779,8 +6625,6 @@ Discrepancias: **0**
 | MLU1525828954 | 1600 | 1016 | 584 | no_tocar | sin_tocar_umbral → 1016 | sí |
 | MLU1525828714 | 1600 | 1104 | 496 | no_tocar | sin_tocar_umbral → 1104 | sí |
 | MLU1525828022 | 4040 | 3058 | 982 | no_tocar | sin_tocar_umbral → 3058 | sí |
-| MLU1525827678 | 2370 | 2009 | 361 | bajar | bajar → 1988 | sí |
-| MLU1525827396 | 2040 | 1726 | 314 | bajar | bajar → 1708 | sí |
 | MLU1525827362 | 2380 | 1940 | 440 | no_tocar | sin_tocar_umbral → 1940 | sí |
 | MLU1525827306 | 2860 | 2398 | 462 | no_tocar | sin_tocar_umbral → 2398 | sí |
 | MLU1525827276 | 1600 | 1135 | 465 | no_tocar | sin_tocar_umbral → 1135 | sí |
@@ -6789,15 +6633,11 @@ Discrepancias: **0**
 | MLU1525826680 | 1600 | 1089 | 511 | no_tocar | sin_tocar_umbral → 1089 | sí |
 | MLU1525826648 | 2680 | 2128 | 552 | no_tocar | sin_tocar_umbral → 2128 | sí |
 | MLU1525826334 | 2160 | 1695 | 465 | no_tocar | sin_tocar_umbral → 1695 | sí |
-| MLU1525825644 | 2200 | 2098 | 102 | bajar | bajar → 2077 | sí |
 | MLU1525823572 | 2600 | 2089 | 511 | no_tocar | sin_tocar_umbral → 2089 | sí |
 | MLU1525823550 | 3450 | 2433 | 1017 | no_tocar | sin_tocar_umbral → 2433 | sí |
 | MLU1525821932 | 3230 | 2593 | 637 | no_tocar | sin_tocar_umbral → 2593 | sí |
-| MLU1525820572 | 1780 | 947 | 833 | no_tocar | sin_tocar_umbral → 947 | sí |
 | MLU1525820350 | 3080 | 2112 | 968 | no_tocar | sin_tocar_umbral → 2112 | sí |
-| MLU1525818986 | 1600 | 1504 | 96 | bajar | bajar → 1488 | sí |
 | MLU1525818194 | 2830 | 2371 | 459 | no_tocar | sin_tocar_umbral → 2371 | sí |
-| MLU1525817678 | 2790 | 2452 | 338 | bajar | bajar → 2427 | sí |
 | MLU1525816692 | 2800 | 2171 | 629 | no_tocar | sin_tocar_umbral → 2171 | sí |
 | MLU1525816570 | 5430 | 4073 | 1357 | no_tocar | sin_tocar_umbral → 4073 | sí |
 | MLU1525816530 | 2380 | 1069 | 1311 | no_tocar | sin_tocar_umbral → 1069 | sí |
@@ -6806,10 +6646,9 @@ Discrepancias: **0**
 | MLU1525815312 | 2910 | 2484 | 426 | no_tocar | sin_tocar_umbral → 2484 | sí |
 | MLU1525815282 | 2540 | 1208 | 1332 | no_tocar | sin_tocar_umbral → 1208 | sí |
 | MLU1525815092 | 2810 | 2120 | 690 | no_tocar | sin_tocar_umbral → 2120 | sí |
-| MLU1525815062 | 3670 | 3334 | 336 | bajar | bajar → 3300 | sí |
 | MLU1525814622 | 1930 | 1030 | 900 | no_tocar | sin_tocar_umbral → 1030 | sí |
 | MLU1525814604 | 2260 | 1733 | 527 | no_tocar | sin_tocar_umbral → 1733 | sí |
-| MLU1525814586 | 1890 | 1196 | 694 | no_tocar | sin_tocar_umbral → 1196 | sí |
+| MLU1525814586 | 1890 | 1197 | 693 | no_tocar | sin_tocar_umbral → 1197 | sí |
 | MLU1525814298 | 2190 | 1653 | 537 | no_tocar | sin_tocar_umbral → 1653 | sí |
 | MLU1525814202 | 1600 | 1064 | 536 | no_tocar | sin_tocar_umbral → 1064 | sí |
 | MLU1525814082 | 1600 | 1104 | 496 | no_tocar | sin_tocar_umbral → 1104 | sí |
@@ -6817,17 +6656,14 @@ Discrepancias: **0**
 | MLU1525813442 | 1600 | 1128 | 472 | no_tocar | sin_tocar_umbral → 1128 | sí |
 | MLU1525813416 | 4140 | 2921 | 1219 | no_tocar | sin_tocar_umbral → 2921 | sí |
 | MLU1525813052 | 2940 | 2466 | 474 | no_tocar | sin_tocar_umbral → 2466 | sí |
-| MLU703313467 | 2420 | 2088 | 332 | bajar | bajar → 2067 | sí |
 | MLU703312857 | 2560 | 1650 | 910 | no_tocar | sin_tocar_umbral → 1650 | sí |
 | MLU703312841 | 3270 | 1977 | 1293 | no_tocar | sin_tocar_umbral → 1977 | sí |
 | MLU703312351 | 2960 | 1196 | 1764 | no_tocar | sin_tocar_umbral → 1196 | sí |
 | MLU703312209 | 4470 | 3427 | 1043 | no_tocar | sin_tocar_umbral → 3427 | sí |
-| MLU703312177 | 1830 | 1702 | 128 | bajar | bajar → 1684 | sí |
 | MLU703311045 | 2290 | 1415 | 875 | no_tocar | sin_tocar_umbral → 1415 | sí |
 | MLU703310069 | 2520 | 1674 | 846 | no_tocar | sin_tocar_umbral → 1674 | sí |
 | MLU703306983 | 1600 | 1128 | 472 | no_tocar | sin_tocar_umbral → 1128 | sí |
 | MLU703306785 | 2790 | 2338 | 452 | no_tocar | sin_tocar_umbral → 2338 | sí |
-| MLU703304127 | 1620 | 1534 | 86 | bajar | bajar → 1518 | sí |
 | MLU703303969 | 2180 | 1336 | 844 | no_tocar | sin_tocar_umbral → 1336 | sí |
 | MLU703303271 | 2500 | 1504 | 996 | no_tocar | sin_tocar_umbral → 1504 | sí |
 | MLU703302581 | 1920 | 1512 | 408 | no_tocar | sin_tocar_umbral → 1512 | sí |
@@ -6848,10 +6684,8 @@ Discrepancias: **0**
 | MLU703298705 | 4880 | 2581 | 2299 | no_tocar | sin_tocar_umbral → 2581 | sí |
 | MLU703298283 | 2440 | 1477 | 963 | no_tocar | sin_tocar_umbral → 1477 | sí |
 | MLU703297247 | 2250 | 1415 | 835 | no_tocar | sin_tocar_umbral → 1415 | sí |
-| MLU703296247 | 1600 | 1186 | 414 | no_tocar | sin_tocar_umbral → 1186 | sí |
+| MLU703296247 | 1600 | 1188 | 412 | no_tocar | sin_tocar_umbral → 1188 | sí |
 | MLU703293045 | 2310 | 1092 | 1218 | no_tocar | sin_tocar_umbral → 1092 | sí |
-| MLU703290415 | 2130 | 1803 | 327 | bajar | bajar → 1784 | sí |
-| MLU703289851 | 2320 | 2217 | 103 | bajar | bajar → 2194 | sí |
 | MLU703289737 | 2400 | 1866 | 534 | no_tocar | sin_tocar_umbral → 1866 | sí |
 | MLU703289609 | 2270 | 1851 | 419 | no_tocar | sin_tocar_umbral → 1851 | sí |
 | MLU703289471 | 2270 | 1851 | 419 | no_tocar | sin_tocar_umbral → 1851 | sí |
@@ -6862,13 +6696,11 @@ Discrepancias: **0**
 | MLU703287733 | 8150 | 6537 | 1613 | no_tocar | sin_tocar_umbral → 6537 | sí |
 | MLU703287663 | 3580 | 2464 | 1116 | no_tocar | sin_tocar_umbral → 2464 | sí |
 | MLU703286639 | 3360 | 2426 | 934 | no_tocar | sin_tocar_umbral → 2426 | sí |
-| MLU703286299 | 2790 | 2445 | 345 | bajar | bajar → 2420 | sí |
 | MLU703285899 | 3190 | 1750 | 1440 | no_tocar | sin_tocar_umbral → 1750 | sí |
 | MLU703285693 | 3220 | 2749 | 471 | no_tocar | sin_tocar_umbral → 2749 | sí |
 | MLU703284153 | 1720 | 1199 | 521 | no_tocar | sin_tocar_umbral → 1199 | sí |
 | MLU703280929 | 2740 | 2118 | 622 | no_tocar | sin_tocar_umbral → 2118 | sí |
 | MLU703277563 | 1950 | 1296 | 654 | no_tocar | sin_tocar_umbral → 1296 | sí |
-| MLU703277545 | 2190 | 2059 | 131 | bajar | bajar → 2038 | sí |
 | MLU703277319 | 2070 | 1190 | 880 | no_tocar | sin_tocar_umbral → 1190 | sí |
 | MLU703277307 | 1960 | 1529 | 431 | no_tocar | sin_tocar_umbral → 1529 | sí |
 | MLU703277249 | 2780 | 1782 | 998 | no_tocar | sin_tocar_umbral → 1782 | sí |
@@ -6880,18 +6712,15 @@ Discrepancias: **0**
 | MLU703276091 | 3390 | 2405 | 985 | no_tocar | sin_tocar_umbral → 2405 | sí |
 | MLU703276017 | 3010 | 2493 | 517 | no_tocar | sin_tocar_umbral → 2493 | sí |
 | MLU703275871 | 2250 | 1803 | 447 | no_tocar | sin_tocar_umbral → 1803 | sí |
-| MLU703275437 | 2130 | 1804 | 326 | bajar | bajar → 1785 | sí |
 | MLU703275317 | 1600 | 1207 | 393 | saltear | saltear_piso → 1194 | sí |
 | MLU703274527 | 3070 | 2355 | 715 | no_tocar | sin_tocar_umbral → 2355 | sí |
 | MLU703273863 | 2130 | 1107 | 1023 | no_tocar | sin_tocar_umbral → 1107 | sí |
-| MLU703273849 | 4850 | 4079 | 771 | no_tocar | sin_tocar_umbral → 4079 | sí |
-| MLU703273279 | 1990 | 1624 | 366 | bajar | bajar → 1607 | sí |
-| MLU703265891 | 1830 | 1682 | 148 | bajar | bajar → 1665 | sí |
+| MLU703273849 | 4850 | 4069 | 781 | no_tocar | sin_tocar_umbral → 4069 | sí |
 | MLU703264541 | 2950 | 2104 | 846 | no_tocar | sin_tocar_umbral → 2104 | sí |
 | MLU703264487 | 2260 | 1821 | 439 | no_tocar | sin_tocar_umbral → 1821 | sí |
 | MLU703264403 | 1600 | 1124 | 476 | no_tocar | sin_tocar_umbral → 1124 | sí |
 | MLU703264271 | 1600 | 1160 | 440 | no_tocar | sin_tocar_umbral → 1160 | sí |
-| MLU703264259 | 2260 | 1851 | 409 | no_tocar | sin_tocar_umbral → 1851 | sí |
+| MLU703264259 | 2260 | 1883 | 377 | bajar | bajar → 1864 | sí |
 | MLU703264237 | 1600 | 1057 | 543 | no_tocar | sin_tocar_umbral → 1057 | sí |
 | MLU703264201 | 2640 | 1835 | 805 | no_tocar | sin_tocar_umbral → 1835 | sí |
 | MLU703263409 | 2570 | 1888 | 682 | no_tocar | sin_tocar_umbral → 1888 | sí |
@@ -6901,17 +6730,16 @@ Discrepancias: **0**
 | MLU703262709 | 2100 | 1631 | 469 | no_tocar | sin_tocar_umbral → 1631 | sí |
 | MLU703262645 | 2260 | 1841 | 419 | no_tocar | sin_tocar_umbral → 1841 | sí |
 | MLU703262509 | 2530 | 1835 | 695 | no_tocar | sin_tocar_umbral → 1835 | sí |
-| MLU1526374302 | 1650 | 1147 | 503 | no_tocar | sin_tocar_umbral → 1147 | sí |
+| MLU1526374302 | 1650 | 1148 | 502 | no_tocar | sin_tocar_umbral → 1148 | sí |
 | MLU1526374146 | 1600 | 1104 | 496 | no_tocar | sin_tocar_umbral → 1104 | sí |
 | MLU1526374122 | 1600 | 1078 | 522 | no_tocar | sin_tocar_umbral → 1078 | sí |
 | MLU1526373448 | 4010 | 3276 | 734 | no_tocar | sin_tocar_umbral → 3276 | sí |
 | MLU1526373300 | 1600 | 1133 | 467 | no_tocar | sin_tocar_umbral → 1133 | sí |
-| MLU1526373162 | 1620 | 810 | 810 | no_tocar | sin_tocar_umbral → 810 | sí |
+| MLU1526373162 | 1620 | 811 | 809 | no_tocar | sin_tocar_umbral → 811 | sí |
 | MLU1526372752 | 3440 | 2779 | 661 | no_tocar | sin_tocar_umbral → 2779 | sí |
 | MLU1526372216 | 3880 | 3227 | 653 | no_tocar | sin_tocar_umbral → 3227 | sí |
 | MLU1526370870 | 2940 | 2464 | 476 | no_tocar | sin_tocar_umbral → 2464 | sí |
 | MLU1526370816 | 2810 | 2366 | 444 | no_tocar | sin_tocar_umbral → 2366 | sí |
-| MLU1526370792 | 2190 | 1880 | 310 | bajar | bajar → 1861 | sí |
 | MLU1526370786 | 3830 | 2747 | 1083 | no_tocar | sin_tocar_umbral → 2747 | sí |
 | MLU1526361968 | 9770 | 7267 | 2503 | no_tocar | sin_tocar_umbral → 7267 | sí |
 | MLU1526361930 | 10420 | 7504 | 2916 | no_tocar | sin_tocar_umbral → 7504 | sí |
@@ -6922,29 +6750,36 @@ Discrepancias: **0**
 | MLU1526359756 | 2980 | 1978 | 1002 | no_tocar | sin_tocar_umbral → 1978 | sí |
 | MLU1526359724 | 2820 | 2098 | 722 | no_tocar | sin_tocar_umbral → 2098 | sí |
 | MLU1526359310 | 2280 | 1742 | 538 | no_tocar | sin_tocar_umbral → 1742 | sí |
-| MLU1526359110 | 1600 | 1098 | 502 | no_tocar | sin_tocar_umbral → 1098 | sí |
+| MLU1526359110 | 1600 | 1099 | 501 | no_tocar | sin_tocar_umbral → 1099 | sí |
 | MLU1526357952 | 2310 | 1453 | 857 | no_tocar | sin_tocar_umbral → 1453 | sí |
 | MLU1526357728 | 2640 | 1884 | 756 | no_tocar | sin_tocar_umbral → 1884 | sí |
 | MLU1526348880 | 2770 | 2306 | 464 | no_tocar | sin_tocar_umbral → 2306 | sí |
 | MLU1526347370 | 3610 | 3195 | 415 | no_tocar | sin_tocar_umbral → 3195 | sí |
+| MLU1526346856 | 1603 | 1553 | 50 | bajar | bajar → 1537 | sí |
 | MLU1526346124 | 3630 | 2732 | 898 | no_tocar | sin_tocar_umbral → 2732 | sí |
 | MLU1526345608 | 1600 | 1116 | 484 | no_tocar | sin_tocar_umbral → 1116 | sí |
 | MLU1526345578 | 3240 | 1920 | 1320 | no_tocar | sin_tocar_umbral → 1920 | sí |
 | MLU1526344798 | 3070 | 2521 | 549 | no_tocar | sin_tocar_umbral → 2521 | sí |
 | MLU1526344742 | 1600 | 1193 | 407 | no_tocar | sin_tocar_umbral → 1193 | sí |
-| MLU1526344730 | 2320 | 1999 | 321 | bajar | bajar → 1979 | sí |
 | MLU1526344724 | 2710 | 1590 | 1120 | no_tocar | sin_tocar_umbral → 1590 | sí |
 | MLU1526336128 | 9720 | 7536 | 2184 | no_tocar | sin_tocar_umbral → 7536 | sí |
 | MLU1526335510 | 4750 | 2152 | 2598 | no_tocar | sin_tocar_umbral → 2152 | sí |
-| MLU1526334602 | 1860 | 741 | 1119 | no_tocar | sin_tocar_umbral → 741 | sí |
+| MLU1526334602 | 1860 | 742 | 1118 | no_tocar | sin_tocar_umbral → 742 | sí |
 | MLU1526334358 | 2740 | 1285 | 1455 | no_tocar | sin_tocar_umbral → 1285 | sí |
 | MLU1526334322 | 3390 | 2266 | 1124 | no_tocar | sin_tocar_umbral → 2266 | sí |
 | MLU1526334058 | 2730 | 1375 | 1355 | no_tocar | sin_tocar_umbral → 1375 | sí |
 | MLU1526334042 | 3300 | 2395 | 905 | no_tocar | sin_tocar_umbral → 2395 | sí |
 | MLU1526333874 | 2710 | 1811 | 899 | no_tocar | sin_tocar_umbral → 1811 | sí |
 | MLU1526331900 | 1670 | 1185 | 485 | no_tocar | sin_tocar_umbral → 1185 | sí |
-| MLU1526227806 | 1870 | 1771 | 99 | bajar | bajar → 1753 | sí |
 | MLU703314033 | 3010 | 2532 | 478 | no_tocar | sin_tocar_umbral → 2532 | sí |
 | MLU703313933 | 4340 | 3774 | 566 | no_tocar | sin_tocar_umbral → 3774 | sí |
-| MLU703300893 | 2250 | 1878 | 372 | bajar | bajar → 1859 | sí |
 | MLU703288309 | 2490 | 2071 | 419 | no_tocar | sin_tocar_umbral → 2071 | sí |
+| MLU1530816882 | 2090 | 804 | 1286 | saltear | saltear_ganador_inmediato | sí |
+| MLU1530816746 | 4020 | 1183 | 2837 | saltear | saltear_ganador_inmediato | sí |
+| MLU1530816686 | 3660 | 1007 | 2653 | saltear | saltear_ganador_inmediato | sí |
+| MLU1530816652 | 1870 | 655 | 1215 | saltear | saltear_ganador_inmediato | sí |
+| MLU1530740444 | 1600 | 712 | 888 | saltear | saltear_ganador_inmediato | sí |
+| MLU1530642464 | 1910 | 738 | 1172 | saltear | saltear_ganador_inmediato | sí |
+| MLU1530642288 | 2750 | 1077 | 1673 | saltear | saltear_ganador_inmediato | sí |
+| MLU1530642168 | 2030 | 1495 | 535 | saltear | saltear_ganador_inmediato | sí |
+| MLU1530616314 | 1600 | 685 | 915 | saltear | saltear_ganador_inmediato | sí |
