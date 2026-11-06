@@ -3,8 +3,8 @@ name: Precio Ganador
 # Precio ganador automático en Mercado Libre para Amado Libros (440298103) y
 # Amado Vintage (2341378249). Reglas por cuenta en precio-ganador/src/config.mjs.
 #
-# 09:00, 15:00 y 21:00 de Montevideo (UTC-3). El mail diario sale con la de las 21:00.
-# Vintage corre dos veces por día, en las de las 09:00 y 21:00 (Seba, 05/11/2026).
+# Cada 2 horas de 09:00 a 21:00 de Montevideo (UTC-3), las dos cuentas (Seba, 06/11/2026).
+# El mail diario sale con la de las 21:00.
 # Modo real si precio-ganador/modo.json dice "real" para la cuenta. Para pausar sin
 # tocar código: variable del repo PRECIO_GANADOR_DRY_RUN = true (consulta y reporta,
 # no cambia nada), o desactivar el workflow.
@@ -14,7 +14,11 @@ name: Precio Ganador
 on:
   schedule:
     - cron: '0 12 * * *'
+    - cron: '0 14 * * *'
+    - cron: '0 16 * * *'
     - cron: '0 18 * * *'
+    - cron: '0 20 * * *'
+    - cron: '0 22 * * *'
     - cron: '0 0 * * *'
   workflow_dispatch:
     inputs:
@@ -30,7 +34,7 @@ on:
         description: 'Sólo para diagnosticar: IDs separados por coma (sólo lee)'
         required: false
       cuenta:
-        description: 'Cuenta (a mano corre una sola; las programadas: Libros siempre, Vintage a las 09:00 y 21:00)'
+        description: 'Cuenta (a mano corre una sola; las programadas corren las dos)'
         type: choice
         options: [libros, vintage, ambas]
         default: libros
@@ -53,8 +57,8 @@ permissions:
 
 jobs:
   # El Worker de Cloudflare dispara la corrida puntual; el cron de GitHub queda de
-  # respaldo. Si una programada llega tarde y ya hubo una corrida en las últimas 2
-  # horas, se saltea para no duplicar.
+  # respaldo. Si una programada llega tarde y ya hubo una corrida en la última
+  # hora, se saltea para no duplicar (las franjas están cada 2 horas).
   franja:
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -69,8 +73,8 @@ jobs:
           saltar=no
           if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
             n=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/precio-ganador.yml/runs?branch=main&per_page=15" \
-              --jq "[.workflow_runs[] | select(.id != $GITHUB_RUN_ID) | select(.event == \"schedule\" or .event == \"workflow_dispatch\") | select((now - (.created_at | fromdateiso8601)) < 7200) | select(.status != \"completed\" or .conclusion == \"success\")] | length" 2>/dev/null || echo 0)
-            if [ "${n:-0}" -gt 0 ]; then saltar=si; echo "Ya hubo una corrida en las últimas 2 horas: se saltea"; fi
+              --jq "[.workflow_runs[] | select(.id != $GITHUB_RUN_ID) | select(.event == \"schedule\" or .event == \"workflow_dispatch\") | select((now - (.created_at | fromdateiso8601)) < 3600) | select(.status != \"completed\" or .conclusion == \"success\")] | length" 2>/dev/null || echo 0)
+            if [ "${n:-0}" -gt 0 ]; then saltar=si; echo "Ya hubo una corrida en la última hora: se saltea"; fi
           fi
           echo "saltar=$saltar" >> "$GITHUB_OUTPUT"
 
@@ -83,8 +87,8 @@ jobs:
       max-parallel: 1
       fail-fast: false
       matrix:
-        # Vintage dos veces por día: las programadas de las 09:00 y 21:00 de Montevideo (12:00 y 00:00 UTC).
-        cuenta: ${{ fromJSON(((github.event_name == 'schedule' && github.event.schedule != '0 18 * * *') || inputs.cuenta == 'ambas') && '["libros","vintage"]' || inputs.cuenta == 'vintage' && '["vintage"]' || '["libros"]') }}
+        # Las programadas corren las dos cuentas (cada 2 horas, Seba 06/11/2026).
+        cuenta: ${{ fromJSON((github.event_name == 'schedule' || inputs.cuenta == 'ambas') && '["libros","vintage"]' || inputs.cuenta == 'vintage' && '["vintage"]' || '["libros"]') }}
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}

@@ -36,7 +36,7 @@ if (horas > MAX_HORAS) {
     ? `Caso: CORRIÓ PERO FALLÓ. La última corrida (${ultimaFallida.html_url}) no completó el paso Correr.`
     : 'Caso: NO CORRIÓ. No hay ninguna corrida reciente (el cron de GitHub se atrasó o no se lanzó).';
   const r = await enviarAlarma({ asunto: `no corre bien desde hace ${h}`,
-    texto: `${caso}\nÚltima corrida que terminó el paso Correr: ${ultima ? `${ultima.updated_at} (${ultima.html_url})${ultima === ultimaConAvisos ? ', con avisos de auditoría' : ''}` : 'ninguna'}.\nDebería correr a las 09:00, 15:00 y 21:00. Revisá Actions > Precio Ganador.` });
+    texto: `${caso}\nÚltima corrida que terminó el paso Correr: ${ultima ? `${ultima.updated_at} (${ultima.html_url})${ultima === ultimaConAvisos ? ', con avisos de auditoría' : ''}` : 'ninguna'}.\nDebería correr cada 2 horas de 09:00 a 21:00. Revisá Actions > Precio Ganador.` });
   console.log('Alarma:', JSON.stringify(r));
   process.exit(1);
 }
