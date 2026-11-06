@@ -1,0 +1,329 @@
+{
+  "MLU660973661": {
+    "item": {
+      "id": "MLU660973661",
+      "title": "Bright Ideas 5 - Activity Book With Online Practice - Oxford",
+      "price": 898,
+      "base_price": 898,
+      "original_price": null,
+      "currency_id": "UYU",
+      "available_quantity": 2,
+      "sold_quantity": 0,
+      "sale_terms": [
+        {
+          "id": "WARRANTY_TIME",
+          "name": "Tiempo de garantía",
+          "value_id": null,
+          "value_name": "30 días",
+          "value_struct": {
+            "number": 30,
+            "unit": "días"
+          },
+          "values": [
+            {
+              "id": null,
+              "name": "30 días",
+              "struct": {
+                "number": 30,
+                "unit": "días"
+              }
+            }
+          ],
+          "value_type": "number_unit"
+        },
+        {
+          "id": "WARRANTY_TYPE",
+          "name": "Tipo de garantía",
+          "value_id": "2230279",
+          "value_name": "Garantía de fábrica",
+          "value_struct": null,
+          "values": [
+            {
+              "id": "2230279",
+              "name": "Garantía de fábrica",
+              "struct": null
+            }
+          ],
+          "value_type": "list"
+        }
+      ],
+      "listing_type_id": "gold_special",
+      "status": "active",
+      "sub_status": [],
+      "tags": [
+        "dynamic_standard_price",
+        "immediate_payment",
+        "cart_eligible"
+      ],
+      "catalog_product_id": "MLU19845046",
+      "deal_ids": [],
+      "date_created": "2026-02-24T17:29:48.758Z",
+      "last_updated": "2026-10-23T10:59:20.901Z",
+      "health": null,
+      "catalog_listing": true,
+      "item_relations": [
+        {
+          "id": "MLU661012589",
+          "variation_id": null,
+          "stock_relation": 1
+        }
+      ]
+    },
+    "precios": {
+      "id": "MLU660973661",
+      "prices": [
+        {
+          "id": "129",
+          "type": "standard",
+          "amount": 898,
+          "regular_amount": null,
+          "currency_id": "UYU",
+          "last_updated": "2026-10-15T02:09:13Z",
+          "conditions": {
+            "context_restrictions": [],
+            "start_time": null,
+            "end_time": null
+          }
+        }
+      ]
+    },
+    "precio_venta": {
+      "price_id": "129",
+      "amount": 898,
+      "regular_amount": null,
+      "currency_id": "UYU",
+      "reference_date": "2026-11-06T12:26:09Z",
+      "metadata": {}
+    },
+    "promociones": [
+      {
+        "type": "PRICE_DISCOUNT",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 898,
+        "name": "",
+        "min_discounted_price": 179.6,
+        "max_discounted_price": 853.1,
+        "suggested_discounted_price": 583
+      },
+      {
+        "id": "P-MLU18109362",
+        "type": "DEAL",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 898,
+        "start_date": "2026-11-02T00:00:00-03:00",
+        "finish_date": "2026-11-11T23:00:00-03:00",
+        "name": "Ciberlunes",
+        "min_discounted_price": 179.6,
+        "max_discounted_price": 740.11,
+        "suggested_discounted_price": 650.31
+      },
+      {
+        "id": "P-MLU18109364",
+        "type": "DEAL",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 898,
+        "start_date": "2026-11-11T00:00:00-03:00",
+        "finish_date": "2026-11-11T23:00:00-03:00",
+        "name": "Ofertas por 24hs 11/11",
+        "min_discounted_price": 179.6,
+        "max_discounted_price": 853.1,
+        "suggested_discounted_price": 583
+      },
+      {
+        "id": "P-MLU18243028",
+        "type": "DEAL",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 898,
+        "start_date": "2026-11-13T00:00:00-03:00",
+        "finish_date": "2026-11-15T23:00:00-03:00",
+        "name": "Finde de las Librerías",
+        "min_discounted_price": 179.6,
+        "max_discounted_price": 853.1,
+        "suggested_discounted_price": 583
+      },
+      {
+        "id": "C-MLU1021947",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 300,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 898,
+        "start_date": "2026-10-24T00:00:00",
+        "finish_date": "2026-11-22T23:59:59",
+        "name": "Cupón para carritos abandonados"
+      },
+      {
+        "id": "C-MLU1021958",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 300,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 898,
+        "start_date": "2026-10-24T00:00:00",
+        "finish_date": "2026-11-22T23:59:59",
+        "name": "Bienvenida Amado"
+      },
+      {
+        "id": "C-MLU1029974",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 500,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 898,
+        "start_date": "2026-10-27T00:00:00",
+        "finish_date": "2026-11-25T23:59:59",
+        "name": "Cupon de recompra"
+      },
+      {
+        "id": "C-MLU1040730",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 400,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 898,
+        "start_date": "2026-10-30T00:00:00",
+        "finish_date": "2026-11-28T23:59:59",
+        "name": "Seguidores 400"
+      },
+      {
+        "id": "C-MLU1040790",
+        "type": "SELLER_CAMPAIGN",
+        "sub_type": "FLEXIBLE_PERCENTAGE",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 898,
+        "start_date": "2026-11-01T00:00:00",
+        "finish_date": "2026-11-30T23:59:59",
+        "name": "Amado 15",
+        "min_discounted_price": 179.6,
+        "max_discounted_price": 853.1,
+        "suggested_discounted_price": 583
+      },
+      {
+        "id": "C-MLU1056007",
+        "type": "SELLER_COUPON_CAMPAIGN",
+        "sub_type": "FIXED_AMOUNT",
+        "fixed_amount": 300,
+        "status": "candidate",
+        "price": 0,
+        "original_price": 898,
+        "start_date": "2026-11-03T00:00:00",
+        "finish_date": "2026-12-02T23:59:59",
+        "name": "Seguidores Amado"
+      },
+      {
+        "id": "C-MLU1059178",
+        "type": "VOLUME",
+        "sub_type": "SPONTH",
+        "status": "candidate",
+        "price": 0,
+        "original_price": 898,
+        "start_date": "2026-11-04T00:00:00",
+        "finish_date": "2026-11-10T23:59:59",
+        "name": "Llevá 2 y ahorrá",
+        "buy_quantity": 2,
+        "discount_percentage": 40,
+        "allow_combination": true
+      }
+    ],
+    "price_to_win": {
+      "item_id": "MLU660973661",
+      "current_price": 898,
+      "currency_id": "UYU",
+      "price_to_win": 875,
+      "boosts": [
+        {
+          "id": "fulfillment",
+          "status": "opportunity",
+          "description": "Envíos Full"
+        },
+        {
+          "id": "free_installments",
+          "status": "boosted",
+          "description": "Cuotas sin recargo"
+        },
+        {
+          "id": "free_shipping",
+          "status": "opportunity",
+          "description": "Envío gratis"
+        },
+        {
+          "id": "shipping_collect",
+          "status": "boosted",
+          "description": "Envíos con colecta"
+        },
+        {
+          "id": "same_day_shipping",
+          "status": "opportunity",
+          "description": "Envíos en el día"
+        }
+      ],
+      "status": "competing",
+      "consistent": true,
+      "visit_share": "minimum",
+      "competitors_sharing_first_place": null,
+      "reason": [],
+      "catalog_product_id": "MLU19845046",
+      "winner": {
+        "item_id": "MLU673102740",
+        "price": 1139.9,
+        "currency_id": "UYU",
+        "boosts": [
+          {
+            "id": "fulfillment",
+            "status": "opportunity",
+            "description": "Envíos Full"
+          },
+          {
+            "id": "free_installments",
+            "status": "boosted",
+            "description": "Cuotas sin recargo"
+          },
+          {
+            "id": "free_shipping",
+            "status": "boosted",
+            "description": "Envío gratis"
+          },
+          {
+            "id": "shipping_collect",
+            "status": "boosted",
+            "description": "Envíos con colecta"
+          },
+          {
+            "id": "same_day_shipping",
+            "status": "boosted",
+            "description": "Envíos en el día"
+          }
+        ]
+      }
+    },
+    "automatizacion": {
+      "item_id": "MLU660973661",
+      "rules": [
+        {
+          "rule_id": "INT"
+        },
+        {
+          "rule_id": "INT_EXT"
+        }
+      ]
+    },
+    "gemelas": [
+      {
+        "id": "MLU661012589",
+        "price": 898,
+        "status": "active",
+        "last_updated": "2026-10-23T10:59:18.973Z",
+        "catalog_listing": false
+      }
+    ]
+  }
+}
