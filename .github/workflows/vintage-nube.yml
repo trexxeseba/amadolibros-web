@@ -56,7 +56,7 @@ jobs:
           node-version: '22'
 
       - name: Tests
-        run: node --experimental-sqlite --test functions/__tests__/vintage-cloud.test.js functions/__tests__/vintage-stock-sync-local.test.js
+        run: node --experimental-sqlite --test functions/__tests__/vintage-cloud.test.js functions/__tests__/vintage-stock-sync-local.test.js functions/__tests__/vintage-cloud-aviso.test.js
 
       - name: Decidir qué hacer
         id: decidir
@@ -103,6 +103,7 @@ jobs:
           restore-keys: vintage-motor-
 
       - name: Correr
+        id: correr
         env:
           ACCION: ${{ steps.decidir.outputs.accion }}
           IN_TANDA: ${{ inputs.tanda }}
@@ -133,6 +134,20 @@ jobs:
             ${{ runner.temp }}/vintage/status.json
           retention-days: 30
           if-no-files-found: ignore
+
+      # Mail: cierre del día (la primera corrida después de la medianoche) y alarma si la corrida
+      # falló o publicó 0 sin llegar al tope (uno cada 3 h como mucho). Ver scripts/vintage-cloud/aviso.mjs.
+      - name: Avisos por mail
+        if: always() && steps.decidir.outputs.accion != 'nada'
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
+          FALLO: ${{ steps.correr.outcome == 'failure' && 'si' || 'no' }}
+          DETALLE: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          ARGS=(--reporte "$RUNNER_TEMP/reporte/reporte.json" --run-url "$DETALLE")
+          if [ "$FALLO" = "si" ]; then ARGS+=(--fallo); fi
+          node scripts/vintage-cloud/aviso.mjs "${ARGS[@]}" || true
 
       - name: Borrar la clave de corrida
         if: always()
