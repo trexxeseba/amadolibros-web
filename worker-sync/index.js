@@ -70,6 +70,7 @@ import { mlSales, handleSalesRoute } from './ml-sales.js';
 import { handleMoneyRoute } from './money-probe.js';
 import { handlePurchasesRoute } from './purchases.js';
 import { handleReposicionRead, REPOSICION_PATH } from './reposicion-read.js';
+import { handlePricingToken, PRICING_TOKEN_PATH } from './pricing-token.js';
 import { mlCompetition, competitionStatus } from './ml-competition.js';
 import { fxRates } from './fx-rates.js';
 import {
@@ -210,6 +211,9 @@ export default {
     if (url.pathname === PUBLICATION_PATH) return handlePublicationRoute(request,env);
     // Motor de reposición para GPT: firmado, de un solo uso y de solo lectura (D1 + R2).
     if (url.pathname === REPOSICION_PATH) return handleReposicionRead(request, env);
+    // Motor local de precios (PC): sólo el access token vigente, con su propio secreto
+    // (PRICING_TOKEN_SECRET, distinto de SYNC_SECRET). Sin el secreto cargado responde 404.
+    if (url.pathname === PRICING_TOKEN_PATH) return handlePricingToken(request, env);
 
     // Validar SYNC_SECRET (común a todas las rutas protegidas)
     if (!env.SYNC_SECRET) {
