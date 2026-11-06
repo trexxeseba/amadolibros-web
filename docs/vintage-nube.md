@@ -64,6 +64,18 @@ precio no cambió reusa lo preparado y sólo vuelve a mirar el SKU, reserva el I
 crea. Las altas siguen saliendo de a una: el riesgo de duplicar no cambia. El clasificador escribe
 sólo si el trabajo sigue pendiente y el publicador no toma un candidato que se esté clasificando.
 
+## Avisos por mail
+
+Después de cada corrida, `scripts/vintage-cloud/aviso.mjs` manda (con Resend, al mismo destinatario
+que Precio Ganador):
+
+- **Cierre del día**: la primera corrida después de la medianoche de Montevideo avisa cuántas altas
+  hubo el día anterior y el total de la campaña. Una vez por día.
+- **Alarma**: si la corrida falló, o si publicó 0 sin haber llegado al tope diario. Como mucho una
+  cada 3 horas por motivo.
+
+Lo avisado queda en D1 (`ml_vintage_cloud_alerts`).
+
 ## Convivencia con Precio Ganador
 
 Precio Ganador (`precio-ganador/`) maneja los precios de Vintage tres veces por día. El
