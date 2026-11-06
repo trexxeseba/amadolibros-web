@@ -1,0 +1,29 @@
+{
+  "corridas": [
+    {
+      "fecha": "2026-11-06T04:33:39.522Z",
+      "modo": "real",
+      "activas": 6884,
+      "revisadas": 6884,
+      "compiten": 96,
+      "marcadas": 96,
+      "ganador_inmediato": 0,
+      "ganador_sin_dato": 0,
+      "bajadas": 52,
+      "ajustadas": 12,
+      "subidas": 0,
+      "restauradas": 1,
+      "sin_tocar_umbral": 28,
+      "sin_tocar_pct": 1,
+      "verificadas": 65,
+      "no_verificadas": 0,
+      "promo": 0,
+      "bajo_piso": 0,
+      "sin_costo": 0,
+      "otras_salteadas": 0,
+      "editadas_a_mano": 0,
+      "errores": 1,
+      "cambios_stock": 0
+    }
+  ]
+}

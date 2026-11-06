@@ -2,33 +2,26 @@
   "cuenta": "libros",
   "seller_id": "440298103",
   "publicaciones": {
-    "MLU663199900": {
-      "titulo": "Libro La Última Encrucijada - Jorge Liotti - Planeta",
-      "precio_original": 1106,
-      "precio_aplicado": 1082,
-      "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
-      "fecha": "2026-11-04T18:12:08.928Z"
-    },
     "MLU637065821": {
       "titulo": "The adidas Archive. The Footwear Collection, De Christian Habermeier. Editorial ",
       "precio_original": 1944,
-      "precio_aplicado": 1864,
+      "precio_aplicado": 1824,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
-      "fecha": "2026-11-05T00:52:11.447Z"
+      "fecha": "2026-11-06T04:33:11.662Z"
     },
     "MLU691609938": {
       "titulo": "La Nobleza Negra Génesis Del Imperio Veneciano De Jorge Guerra Editorial Indepen",
       "precio_original": 1271,
-      "precio_aplicado": 1204,
+      "precio_aplicado": 1179,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
-      "fecha": "2026-11-05T23:17:55.904Z"
+      "fecha": "2026-11-06T04:33:11.662Z"
     },
     "MLU692647026": {
       "titulo": "Libro Mi Viaje Sin Ti - Alejandro Sequera",
       "precio_original": 764,
-      "precio_aplicado": 654,
+      "precio_aplicado": 628,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
-      "fecha": "2026-11-05T00:52:11.447Z"
+      "fecha": "2026-11-06T04:33:11.662Z"
     },
     "MLU757785172": {
       "titulo": "Instrumentación Quirúrgica Principios Y Práctica De Joanna Kotcher Fuller Vol 1 ",
@@ -47,16 +40,16 @@
     "MLU889968514": {
       "titulo": "Actitud Mental Positiva - Napoleon Hill Y W. Clement Stone",
       "precio_original": 910,
-      "precio_aplicado": 846,
+      "precio_aplicado": 821,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
-      "fecha": "2026-11-05T00:52:11.447Z"
+      "fecha": "2026-11-06T04:33:11.662Z"
     },
     "MLU888292642": {
       "titulo": "Netter Flashcards De Histología",
       "precio_original": 2694,
-      "precio_aplicado": 2417,
+      "precio_aplicado": 2345,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
-      "fecha": "2026-11-05T00:52:11.447Z"
+      "fecha": "2026-11-06T04:33:11.662Z"
     },
     "MLU1240815646": {
       "titulo": "El Pequeño Gran Libro Del Crochet, De Marie Noelle Bayard. Editorial Hoaki, Tapa",
@@ -68,9 +61,9 @@
     "MLU1248458670": {
       "titulo": "Libro La Montaña Eres Tú [ Brianna Wiest ] Original, De Brianna Wiest. Editorial",
       "precio_original": 725,
-      "precio_aplicado": 693,
+      "precio_aplicado": 673,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
-      "fecha": "2026-11-05T04:32:18.148Z"
+      "fecha": "2026-11-06T04:33:11.662Z"
     },
     "MLU695916883": {
       "titulo": "Gestión Del Talento Humano",
@@ -96,44 +89,44 @@
     "MLU631748561": {
       "titulo": "Libro Secuencias Didacticas - 30 Preguntas Y Respuestas - Taboada, De Taboada, M",
       "precio_original": 429,
-      "precio_aplicado": 420,
+      "precio_aplicado": 401,
       "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
-      "fecha": "2026-11-05T18:05:10.031Z"
+      "fecha": "2026-11-06T04:33:11.662Z"
     },
     "MLU669860318": {
       "titulo": "Cómo Te Sientes, De Anthony Browne. Editorial Kalandraka, Tapa Dura En Español",
       "precio_original": 825,
-      "precio_aplicado": 813,
+      "precio_aplicado": 782,
       "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
-      "fecha": "2026-11-05T18:05:10.031Z"
+      "fecha": "2026-11-06T04:33:11.662Z"
     },
     "MLU884651706": {
       "titulo": "El Ascendente: Tu Gps Existencial. Descubrí La Llave De Tu Destino, De Beatriz L",
       "precio_original": 571,
-      "precio_aplicado": 562,
+      "precio_aplicado": 538,
       "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
-      "fecha": "2026-11-05T18:05:10.031Z"
+      "fecha": "2026-11-06T04:33:11.662Z"
     },
     "MLU884315176": {
       "titulo": "Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Editorial Siruela Tapa Dura En Esp",
       "precio_original": 2899,
-      "precio_aplicado": 2869,
+      "precio_aplicado": 2783,
       "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
-      "fecha": "2026-11-05T18:05:10.031Z"
+      "fecha": "2026-11-06T04:33:11.662Z"
     },
     "MLU655257859": {
       "titulo": "Respeto Por La Interpretacion - Uta, Frankel",
       "precio_original": 767,
-      "precio_aplicado": 755,
+      "precio_aplicado": 726,
       "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
-      "fecha": "2026-11-05T18:05:10.031Z"
+      "fecha": "2026-11-06T04:33:11.662Z"
     },
     "MLU669640600": {
       "titulo": "Cress - Crónicas Lunares Libro 3, De Marissa Meyer., Vol. 3. Editorial V&r, Tapa",
       "precio_original": 716,
-      "precio_aplicado": 705,
+      "precio_aplicado": 677,
       "fecha_primera_baja": "2026-11-05T18:05:10.031Z",
-      "fecha": "2026-11-05T23:17:55.904Z"
+      "fecha": "2026-11-06T04:33:11.662Z"
     },
     "MLU648468395": {
       "titulo": "Todas Aquellas Veces Y Otros Asuntos Pendientes - Alejand...",
@@ -141,7 +134,371 @@
       "precio_aplicado": 1182,
       "fecha_primera_baja": "2026-11-05T18:05:10.031Z",
       "fecha": "2026-11-05T18:05:10.031Z"
+    },
+    "MLU625745211": {
+      "titulo": "Cartas 72 Angeles, Las - Christiane Muller, Kaya",
+      "precio_original": 2210,
+      "precio_aplicado": 2132,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU628756958": {
+      "titulo": "Libro Motivar A Estudiantes Dificiles",
+      "precio_original": 1090,
+      "precio_aplicado": 1066,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU629952461": {
+      "titulo": "Enemigo Intimo - Gabriela Arias Uriburu - Libro Kier",
+      "precio_original": 830,
+      "precio_aplicado": 807,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU651526224": {
+      "titulo": "Libro La Sexuación En La Infancia - Eric Laurent - Paidós",
+      "precio_original": 581,
+      "precio_aplicado": 558,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU652201858": {
+      "titulo": "Libro El Juego Como Andamiaje De La Educación, De María Cristina Cortés. Editori",
+      "precio_original": 793,
+      "precio_aplicado": 772,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU656981028": {
+      "titulo": "Libro Los Monstruos Y Los Criticos - Tolkien, J. R. R",
+      "precio_original": 908,
+      "precio_aplicado": 884,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU658066442": {
+      "titulo": "Juego Del Ahora, El, De Elisenda/ Scharrenberg Joost Pallas. Editorial Kairos En",
+      "precio_original": 1143,
+      "precio_aplicado": 1120,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU661228680": {
+      "titulo": "Libro: El Ala Derecha. Cegador, 3. Premio Fil 2022",
+      "precio_original": 1341,
+      "precio_aplicado": 1314,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU668180202": {
+      "titulo": "Libro: El Álbum De Nuestro Bebe / Christine Roussey",
+      "precio_original": 1143,
+      "precio_aplicado": 1120,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU669371830": {
+      "titulo": "Libro Enseñar Pensando En Todos",
+      "precio_original": 1297,
+      "precio_aplicado": 1270,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU672374574": {
+      "titulo": "Mi Primer Album - Niña - Varios Autores",
+      "precio_original": 753,
+      "precio_aplicado": 733,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU637901309": {
+      "titulo": "Las Aventuras De Lola Y Pepe, De Monfort,marc. Editorial Ciencias De La Educacio",
+      "precio_original": 857,
+      "precio_aplicado": 815,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU676002408": {
+      "titulo": "Mientras Dormiamos El Engaño Maestro, De Nocera Costabile, Giuseppe. Editorial C",
+      "precio_original": 1480,
+      "precio_aplicado": 1449,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU680067794": {
+      "titulo": "Libro Nuestro Mejor Regalo, De José Carlos Román. Editorial Cuento De Luz, Tapa ",
+      "precio_original": 853,
+      "precio_aplicado": 830,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU690771652": {
+      "titulo": "El Oraculo Astrologico, De Jennifer Freed. Editorial Guy Tredaniel Ediciones En ",
+      "precio_original": 1979,
+      "precio_aplicado": 1939,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU643926671": {
+      "titulo": "La Filosofía De Mafalda, De Quino. Editorial Lumen, Tapa Blanda En Español, 2021",
+      "precio_original": 745,
+      "precio_aplicado": 720,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU643887987": {
+      "titulo": "Mafalda. En Esta Familia No Hay Jefes, De Quino. Editorial Lumen, Tapa Blanda En",
+      "precio_original": 740,
+      "precio_aplicado": 720,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU693373346": {
+      "titulo": "La Última Invitación: Un Mensaje De Esperanza, De Clifford Goldstein. Editorial ",
+      "precio_original": 889,
+      "precio_aplicado": 870,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU644865309": {
+      "titulo": "Hess - Bernard Hutton, De Bernard Hutton. Editorial Torres De Papel En Español",
+      "precio_original": 941,
+      "precio_aplicado": 914,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU696979022": {
+      "titulo": "Libro Finanzas Descentralizadas, De Pepe Díaz. Editorial Deusto, Tapa Blanda (20",
+      "precio_original": 824,
+      "precio_aplicado": 781,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU700727840": {
+      "titulo": "¿quien Es? ¡cuidado!",
+      "precio_original": 785,
+      "precio_aplicado": 763,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU701212828": {
+      "titulo": "Sujetos A Nuestro Propio Y Múltiple Ser: Teoría Social, Psicoanálisis Y Posmoder",
+      "precio_original": 908,
+      "precio_aplicado": 884,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU702790272": {
+      "titulo": "Libro Óscar, El Unicornio Hambriento, De Carter, Lou. Editorial Picarona-obelisc",
+      "precio_original": 651,
+      "precio_aplicado": 632,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU647222539": {
+      "titulo": "Cuentos De Navidad (clasicos)",
+      "precio_original": 864,
+      "precio_aplicado": 842,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU647354923": {
+      "titulo": "System Of A Down Hypnotize Importado Cd Nuevo Standar",
+      "precio_original": 1212,
+      "precio_aplicado": 1187,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU706422734": {
+      "titulo": "Gargantua Y Pantagruel - Rabelais, Francois",
+      "precio_original": 2668,
+      "precio_aplicado": 2613,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU716964802": {
+      "titulo": "Invencion Del Pueblo Judio, La - Shlomo Sand",
+      "precio_original": 2110,
+      "precio_aplicado": 2067,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU650471169": {
+      "titulo": "Un Año De Conexión Con La Naturaleza: Calendario Para Crear Hábitos Saludables Y",
+      "precio_original": 1374,
+      "precio_aplicado": 1345,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU736315916": {
+      "titulo": "Mi Maleta De Yoga, De Sofia Rossi. Editorial Eccomi En Español, 2024",
+      "precio_original": 881,
+      "precio_aplicado": 858,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU740312654": {
+      "titulo": "Falacias Libertarias - Guido Agostinelli: Cómo Evitar Caer En La Estafa De Moda,",
+      "precio_original": 685,
+      "precio_aplicado": 662,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU740235092": {
+      "titulo": "El Canario En La Mina: Mitos Modernos (y No Tanto) Sobre Israel Y Los Judíos, De",
+      "precio_original": 1226,
+      "precio_aplicado": 1201,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU752364594": {
+      "titulo": "Vuelve Mañana, Abuela: Una Celebración Del Amor Incondicional Entre Los Abuelos ",
+      "precio_original": 487,
+      "precio_aplicado": 466,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU844994424": {
+      "titulo": "El Lenguaje Secreto De La Oscuridad: Transmisiones De La Luz Del Alma Desde La S",
+      "precio_original": 1685,
+      "precio_aplicado": 1650,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU653035273": {
+      "titulo": "Escritos Sobre Astrología, De Carl Gustav Jung., Vol. 1. Editorial Trotta, Tapa ",
+      "precio_original": 1659,
+      "precio_aplicado": 1624,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU863973534": {
+      "titulo": "Libro Perderte Para Encontrarme - Elizabeth Clapés - Montena",
+      "precio_original": 665,
+      "precio_aplicado": 640,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU886822546": {
+      "titulo": "Personal Best B1+ Intermediate - Workbook - Richmond",
+      "precio_original": 1178,
+      "precio_aplicado": 1153,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU893491504": {
+      "titulo": "¿tienes Miedo, Iverson? - Copons & Fortuny, De Jaume Copons. Bitmax & Co, Vol. 1",
+      "precio_original": 624,
+      "precio_aplicado": 603,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU893374506": {
+      "titulo": "Abc De La Alfabetizacion O Enseñamos A Leer Y Es, De Pujato, Beatriz. Editorial ",
+      "precio_original": 849,
+      "precio_aplicado": 826,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU957971524": {
+      "titulo": "Libro No Es Un Monstruo, Es Una Herida, De López Pavón, Raquel, Vol. 1. Editoria",
+      "precio_original": 1105,
+      "precio_aplicado": 1082,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU1038897776": {
+      "titulo": "Investigomania En La Historia: 16 Enigmas Que Te Harán Viajar, De Varios Autores",
+      "precio_original": 746,
+      "precio_aplicado": 725,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU1041860778": {
+      "titulo": "Animal, De Blanco Pantoja, Daniel., Vol. 1. Editorial Errata Naturae Editores S.",
+      "precio_original": 917,
+      "precio_aplicado": 890,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU1044045622": {
+      "titulo": "Libro Estan Aqui, De Benitez, J. J.. Editorial Planeta, Tapa Dura (-1)",
+      "precio_original": 1450,
+      "precio_aplicado": 1420,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU1094451174": {
+      "titulo": "Libro Complicidades Sensibles En La Clínica Con Las Infancias, De Esteban Levin,",
+      "precio_original": 999.99,
+      "precio_aplicado": 970,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU1225086640": {
+      "titulo": "Libro A Treinta Días Del Poder, De Henry Ashby Turner Jr.. Editorial Edhasa, Tap",
+      "precio_original": 1067,
+      "precio_aplicado": 1045,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU1256260106": {
+      "titulo": "Libros De Terramar, Los, De Le Guin, Ursula K.., Vol. 0.0. Editorial Minotauro, ",
+      "precio_original": 3573,
+      "precio_aplicado": 3501,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU678026821": {
+      "titulo": "El Secreto De Las Abejas",
+      "precio_original": 899,
+      "precio_aplicado": 875,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU692266501": {
+      "titulo": "El Mal De Ojo - Historia, Magia Y Misterios De La Maldición Silenciosa - De Anto",
+      "precio_original": 648,
+      "precio_aplicado": 630,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU1435128162": {
+      "titulo": "Libro Historia Política Del Psicoanálisis, De Gabarron-garcia, Florent, Vol. 1. ",
+      "precio_original": 811,
+      "precio_aplicado": 789,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU1444639912": {
+      "titulo": "Luz De Tungsteno: La Respuesta A Tu Problema Está En El Interior, De Jj Benítez.",
+      "precio_original": 1155,
+      "precio_aplicado": 1112,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU1444239492": {
+      "titulo": "Está Entre Nosotros: ¿de Dónde Sale Y Hasta Dónde Puede Llegar La Extrema Derech",
+      "precio_original": 755,
+      "precio_aplicado": 734,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU1494067032": {
+      "titulo": "La Historia Del Mundo Como Nunca Antes Te La Habian Contado",
+      "precio_original": 1577,
+      "precio_aplicado": 1544,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
+    },
+    "MLU1496874810": {
+      "titulo": "Libro: Privacidad Es Poder. Veliz, Carissa. Debate",
+      "precio_original": 1464,
+      "precio_aplicado": 1433,
+      "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
+      "fecha": "2026-11-06T04:33:11.662Z"
     }
   },
-  "actualizado": "2026-11-06T00:30:06.601Z"
+  "actualizado": "2026-11-06T04:33:39.540Z"
 }
