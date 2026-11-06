@@ -59,34 +59,46 @@ export class VintageBulkStore extends VintageStore {
 
 // A persistent seller-wide request clock prevents bursts across tabs/isolates.
 // It is an application budget (30 requests/minute), not a claimed ML limit.
-// intervalMs: separación mínima entre pedidos a Mercado Libre (2 s por defecto; la nube puede bajarlo).
-export function createVintageBulkFetch({fetcher=(...args)=>fetch(...args),now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),random=Math.random,intervalMs=2000,cooldownFloorMs=120000}={}){
+// intervalMs: separación mínima entre el comienzo de dos pedidos a Mercado Libre (2 s por
+// defecto; la nube puede bajarlo). parallel=false (la PC y el sitio): un pedido termina antes de
+// que empiece el siguiente. parallel=true (la nube con clasificadores): se espacia el comienzo de
+// cada pedido igual, pero puede haber varios en vuelo. cacheTtlMs: vigencia de la caché de
+// categorías y atributos (30 min por defecto).
+export function createVintageBulkFetch({fetcher=(...args)=>fetch(...args),now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),random=Math.random,intervalMs=2000,cooldownFloorMs=120000,parallel=false,cacheTtlMs=1800000}={}){
  const gap=Math.max(250,Math.min(10000,Number(intervalMs)||2000));
  let tail=Promise.resolve();
  return (env,url,options)=>{
-  const task=tail.then(async()=>{
-   const db=env.ORDERS_DB,rate=await db.prepare('SELECT * FROM ml_vintage_bulk_rate WHERE id=1').first();
+  const db=env.ORDERS_DB;
+  const parsed=new URL(url),cacheable=(options.method??'GET')==='GET'&&parsed.origin==='https://api.mercadolibre.com'&&(/^\/categories\/MLU\d+(?:\/attributes)?$/.test(parsed.pathname)||/^\/catalog_domains\/MLU-[A-Z_]+\/categories$/.test(parsed.pathname));
+  // Turno: cooldown, caché y espera hasta el próximo comienzo permitido.
+  const slot=tail.then(async()=>{
+   const rate=await db.prepare('SELECT * FROM ml_vintage_bulk_rate WHERE id=1').first();
    if(rate.cooldown>now())throw new MercadoLibreError('vintage_rate_cooldown',429,Math.ceil((rate.cooldown-now())/1000));
-   const parsed=new URL(url),cacheable=(options.method??'GET')==='GET'&&parsed.origin==='https://api.mercadolibre.com'&&(/^\/categories\/MLU\d+(?:\/attributes)?$/.test(parsed.pathname)||/^\/catalog_domains\/MLU-[A-Z_]+\/categories$/.test(parsed.pathname));
-   if(cacheable){const cached=await db.prepare('SELECT response_json FROM ml_vintage_bulk_cache WHERE url=? AND expires_at>?').bind(url,now()).first();if(cached)return new Response(cached.response_json,{headers:{'Content-Type':'application/json'}});}
-   const slot=await db.prepare('UPDATE ml_vintage_bulk_rate SET next_at=MAX(next_at,?)+? WHERE id=1 AND cooldown<=? RETURNING next_at').bind(now(),gap,now()).first();
-   if(!slot)throw new MercadoLibreError('vintage_rate_cooldown',429,120);
-   const wait=slot.next_at-gap-now();
+   if(cacheable){const cached=await db.prepare('SELECT response_json FROM ml_vintage_bulk_cache WHERE url=? AND expires_at>?').bind(url,now()).first();if(cached)return {cached:new Response(cached.response_json,{headers:{'Content-Type':'application/json'}})};}
+   const next=await db.prepare('UPDATE ml_vintage_bulk_rate SET next_at=MAX(next_at,?)+? WHERE id=1 AND cooldown<=? RETURNING next_at').bind(now(),gap,now()).first();
+   if(!next)throw new MercadoLibreError('vintage_rate_cooldown',429,120);
+   const wait=next.next_at-gap-now();
    if(wait>30000)throw new MercadoLibreError('vintage_rate_budget',429,Math.ceil(wait/1000));
    if(wait>0)await sleep(wait);
    const again=await db.prepare('SELECT cooldown FROM ml_vintage_bulk_rate WHERE id=1').first();
    if(again.cooldown>now())throw new MercadoLibreError('vintage_rate_cooldown',429,Math.ceil((again.cooldown-now())/1000));
+   return {strikes:rate.strikes};
+  });
+  const request=async({cached,strikes})=>{
+   if(cached)return cached;
    const response=await fetcher(url,options);
-   if(response.ok&&rate.strikes>0)await db.prepare('UPDATE ml_vintage_bulk_rate SET strikes=0 WHERE id=1 AND cooldown<=?').bind(now()).run();
-   if(cacheable&&response.ok){try{const text=await response.clone().text();if(text.length<=524288){JSON.parse(text);await db.prepare('INSERT INTO ml_vintage_bulk_cache(url,expires_at,response_json) VALUES(?,?,?) ON CONFLICT(url) DO UPDATE SET expires_at=excluded.expires_at,response_json=excluded.response_json').bind(url,now()+1800000,text).run();}}catch{}}
+   if(response.ok&&strikes>0)await db.prepare('UPDATE ml_vintage_bulk_rate SET strikes=0 WHERE id=1 AND cooldown<=?').bind(now()).run();
+   if(cacheable&&response.ok){try{const text=await response.clone().text();if(text.length<=524288){JSON.parse(text);await db.prepare('INSERT INTO ml_vintage_bulk_cache(url,expires_at,response_json) VALUES(?,?,?) ON CONFLICT(url) DO UPDATE SET expires_at=excluded.expires_at,response_json=excluded.response_json').bind(url,now()+cacheTtlMs,text).run();}}catch{}}
    if(response.status===429){
     const header=response.headers.get('retry-after'),seconds=Number(header),serverWait=Number.isFinite(seconds)?seconds*1000:Math.max(0,Date.parse(header)-now())||0;
-    const until=now()+Math.max(serverWait,Math.min(3600000,cooldownFloorMs*2**Math.min(rate.strikes,5)))+Math.floor(random()*15000);
+    const current=(await db.prepare('SELECT strikes FROM ml_vintage_bulk_rate WHERE id=1').first())?.strikes??strikes;
+    const until=now()+Math.max(serverWait,Math.min(3600000,cooldownFloorMs*2**Math.min(current,5)))+Math.floor(random()*15000);
     await db.prepare('UPDATE ml_vintage_bulk_rate SET cooldown=MAX(cooldown,?),strikes=MIN(strikes+1,6) WHERE id=1').bind(until).run();
    }
    return response;
-  });
-  tail=task.catch(()=>{});return task;
+  };
+  if(parallel){tail=slot.catch(()=>{});return slot.then(request);}
+  const task=slot.then(request);tail=task.catch(()=>{});return task;
  };
 }
 function identifiers(item){

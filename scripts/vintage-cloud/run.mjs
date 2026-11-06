@@ -10,6 +10,8 @@
 //   keepalive  sólo mantiene vigente el token de Vintage (Precio Ganador lo lee de D1).
 //   numeros    baja la lista, la carga y cuenta (sin Mercado Libre).
 //   prueba     numeros + qué pausaría o reactivaría + 5 altas preparadas sin enviar (nunca POST /items).
+//   clasificar revisa candidatos en paralelo y los deja validados o descartados (sólo lecturas a
+//              Mercado Libre, nunca POST /items). Lo validado lo aprovecha la próxima publicación.
 //   publicar   pausa/reactiva según la lista (nunca toca precios: eso es de Precio Ganador) y publica
 //              una tanda con freno diario. Exige campaign.json "ejecutor": "nube" y "nube.modo": "real".
 import fs from 'node:fs/promises';
@@ -22,7 +24,7 @@ import {openDatabase} from '../vintage-local/db.mjs';
 import {campaignNumbers} from './numbers.mjs';
 import {d1Client,loadStockState,saveStockState,STOCK_COLUMNS} from './d1.mjs';
 
-export const ACTIONS=['keepalive','numeros','prueba','publicar'];
+export const ACTIONS=['keepalive','numeros','prueba','clasificar','publicar'];
 export const HARD_MAX_PER_RUN=1000,HARD_MAX_PER_DAY=5000;
 // Ajustes del motor en la nube: lecturas cortadas a los 15 s (crear sigue en 60 s), estado del
 // servidor cada 10 vueltas y el recorrido del inventario se conserva hasta 3 días.
@@ -41,7 +43,11 @@ export function cloudSettings(campaign,{tanda,tope}={}){
   tope_diario:Math.min(HARD_MAX_PER_DAY,int(tope,int(nube.tope_diario,300))),
   minutos:Math.min(150,Math.max(5,int(nube.minutos,90))),
   // Separación entre pedidos a Mercado Libre: 2 s en la PC; la nube puede bajarla hasta 0,4 s.
-  intervalo_ms:Math.min(2000,Math.max(400,int(nube.intervalo_ms,2000))),
+  intervalo_ms:Math.min(2000,Math.max(250,int(nube.intervalo_ms,2000))),
+  // Clasificadores en paralelo junto al publicador (0 = como la PC, un candidato por vez).
+  clasificadores:Math.min(6,Math.max(0,int(nube.clasificadores,0))),
+  // Para la acción clasificar (medición sin altas): cuántos en paralelo y a qué ritmo.
+  clasificar:{clasificadores:Math.min(6,Math.max(1,int(nube.clasificar?.clasificadores,4))),intervalo_ms:Math.min(2000,Math.max(250,int(nube.clasificar?.intervalo_ms,250)))},
   target_total:Number.isInteger(campaign?.target_total)?campaign.target_total:10000,
  };
 }
@@ -93,7 +99,14 @@ async function cloudRunInner({action,directory,campaign,overrides={},env=process
   report.numeros=campaignNumbers(input.rows,c.receipts,policy);
   if(action==='numeros')return {...report,estado:'listo'};
   state.fase='stock';const q=query??d1Client();
-  report.stock=await (deps.sync??syncWithD1State)({query:q,directory,connection,excel,mode:action==='publicar'?'stock_only':'report',intervalMs:settings.intervalo_ms});
+  if(action!=='clasificar')report.stock=await (deps.sync??syncWithD1State)({query:q,directory,connection,excel,mode:action==='publicar'?'stock_only':'report',intervalMs:settings.intervalo_ms});
+  if(action==='clasificar'){
+   state.fase='clasificar';
+   const result=await (deps.engine??runEngine)({excel,connection,directory,target:settings.target_total,intervalMs:settings.clasificar.intervalo_ms,...CLOUD_ENGINE,classifiers:settings.clasificar.clasificadores,classifyOnly:true,maxMs:settings.minutos*60000,onStatus:x=>console.log(x)});
+   const total=Object.values(result.classified??{}).reduce((a,b)=>a+b,0);
+   report.clasificacion={estado:result.state,minutos:result.minutes,revisados:total,por_hora:result.minutes?Math.round(total*60/result.minutes):null,validados_por_hora:result.minutes?Math.round((result.classified?.validated??0)*60/result.minutes):null,resultado:result.classified,cola:result.counts};
+   return {...report,estado:result.state};
+  }
   if(action==='prueba'){
    state.fase='motor_prueba';let result;
    // Un corte de autorización a mitad del recorrido se reintenta: la base guardada sigue desde donde quedó.
@@ -107,7 +120,7 @@ async function cloudRunInner({action,directory,campaign,overrides={},env=process
   report.freno={altas_hoy:status.daily_created,tope_diario:settings.tope_diario,tanda:n};
   if(n===0)return {...report,estado:'tope_diario_alcanzado'};
   let result;
-  for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,limitNew:n,target:settings.target_total,raiseTargetTo:settings.target_total,intervalMs:settings.intervalo_ms,...CLOUD_ENGINE,maxMs:settings.minutos*60000,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
+  for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,limitNew:n,target:settings.target_total,raiseTargetTo:settings.target_total,intervalMs:settings.intervalo_ms,...CLOUD_ENGINE,classifiers:settings.clasificadores,maxMs:settings.minutos*60000,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
   const after=await (deps.broker??makeBroker)(c)('status');
   report.publicacion={estado:result.state,publicados_total:result.published_total,altas_de_esta_corrida:Math.max(0,after.daily_created-status.daily_created)};
   return {...report,estado:result.state};
@@ -129,6 +142,7 @@ export function markdown(r){
  if(n)lines.push('| | Libros |','|---|---:|',`| Filas en la lista | ${n.filas_lista} |`,`| Con stock en SBS | ${n.con_stock} |`,`| Publicados en Vintage | ${n.publicados} |`,`| Altas sin confirmar | ${n.sin_confirmar} |`,`| Publicados que hoy no tienen stock | ${n.publicados_sin_stock_hoy} |`,`| **Candidatos a publicar** | **${n.candidatos_nuevos}** |`,'',`Precio completo de los candidatos (antes de mirar al ganador): mínimo ${peso(n.precio_lista_completo.minimo)}, mediana ${peso(n.precio_lista_completo.mediana)}, 90 % por debajo de ${peso(n.precio_lista_completo.p90)}.`,'');
  if(r.stock)lines.push(`Stock: ${r.stock.mode==='report'?'(sólo informe) ':''}publicados ${r.stock.published??'—'}, con stock ${r.stock.in_stock??'—'}, faltan ${r.stock.missing??'—'}${r.stock.suspicious_feed?' (lista incompleta: no se pausa nada)':''}; pausados ${r.stock.paused??0}, reactivados ${r.stock.activated??0}.`,'');
  if(r.prueba){lines.push(`Prueba de altas (no se envió nada a Mercado Libre): ${r.prueba.estado}`,'','| ISBN | Estado | Precio | Título |','|---|---|---:|---|');for(const p of r.prueba.altas_preparadas)lines.push(`| ${p.isbn} | ${p.estado}${p.motivo?' ('+p.motivo+')':''} | ${peso(p.precio)} | ${(p.titulo??'').replace(/\|/g,'/')} |`);lines.push('');}
+ if(r.clasificacion){const c=r.clasificacion;lines.push(`Clasificación (sin publicar): ${c.revisados} candidatos en ${c.minutos} min (${c.por_hora}/h), validados ${c.resultado?.validated??0} (${c.validados_por_hora}/h).`,'','```',JSON.stringify(c.resultado),'```','');}
  if(r.freno)lines.push(`Freno: ${r.freno.altas_hoy} altas hoy, tope ${r.freno.tope_diario}, tanda de esta corrida ${r.freno.tanda}.`,'');
  if(r.publicacion)lines.push(`Publicación: ${r.publicacion.altas_de_esta_corrida} altas nuevas; total ${r.publicacion.publicados_total}.`,'');
  return lines.join('\n');

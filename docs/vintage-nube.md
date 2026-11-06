@@ -47,11 +47,22 @@ Para correr a mano: Actions, **Vintage publicador (nube)**, *Run workflow*:
 | --- | --- | --- |
 | `numeros` | Baja la lista de SBS, la carga en D1 y cuenta: con stock, publicados, candidatos, precios. | No |
 | `prueba` | `numeros` + qué pausaría o reactivaría + 5 altas preparadas con título y precio. | Sólo lecturas (GET). Nunca `POST /items`. |
-| `publicar` | Pausa lo agotado, reactiva lo que volvió y publica una tanda. | Sí. Exige las dos llaves. |
+| `clasificar` | Revisa candidatos en paralelo (`nube.clasificar`: 4 a la vez, una consulta cada 0,25 s) y los deja validados, con la publicación preparada, o descartados con su motivo. Sirve para medir y deja trabajo hecho para la próxima publicación. | Sólo lecturas. Nunca `POST /items` ni reservas. |
+| `publicar` | Pausa lo agotado, reactiva lo que volvió y publica una tanda. Con `nube.clasificadores` mayor a 0, los clasificadores trabajan al lado y el publicador toma primero los validados. | Sí. Exige las dos llaves. |
 | `keepalive` | Sólo mantiene vigente el token. | Sólo la renovación del token |
 
 El resultado queda en el resumen de la corrida y en el artefacto `vintage-nube-<id>`
 (`reporte.md` y `reporte.json`, sin claves ni tokens).
+
+## Clasificador
+
+El publicador revisaba un candidato por vez y 4 de cada 5 se descartan (categoría que no es libro,
+ISBN distinto, sin ficha, stock dudoso). El clasificador (`classify` en
+`worker-sync/publication-engine.js`) hace los mismos controles que el publicador hasta preparar la
+publicación, en paralelo y sin reservar ni crear. El publicador toma primero los `validated`; si el
+precio no cambió reusa lo preparado y sólo vuelve a mirar el SKU, reserva el ISBN en el servidor y
+crea. Las altas siguen saliendo de a una: el riesgo de duplicar no cambia. El clasificador escribe
+sólo si el trabajo sigue pendiente y el publicador no toma un candidato que se esté clasificando.
 
 ## Convivencia con Precio Ganador
 
