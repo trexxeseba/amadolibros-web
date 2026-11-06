@@ -10,6 +10,7 @@ export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
     activas: ids, revisadas: filas.length,
     compiten: filas.filter(f => f.comp?.compite).length,
     marcadas: filas.filter(f => f.comp?.marcada).length,
+    precio_dinamico: c('saltear_precio_dinamico'),
     ganador_inmediato: c('saltear_ganador_inmediato'),
     ganador_sin_dato: c('saltear_ganador_sin_dato'),
     bajadas: aplicada('bajar'),
@@ -39,7 +40,9 @@ export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
   }
   const errores = {};
   for (const f of filas) if (/^error/.test(f.d.accion)) errores[f.d.motivo] = (errores[f.d.motivo] ?? 0) + 1;
-  return { cuenta: cuenta.clave, umbral, duracion_s: Math.round((Date.now() - inicio) / 1000), contadores, catalogo: { estados, publicaciones_con_alguna_sugerencia: filas.filter(f => f.comp?.oportunidades?.length).length, sugerencias, motivos, por_tipo: porTipo, errores_por_tipo: filas.filter(f => f.comp?.error).reduce((a, f) => (a[f.comp.error] = (a[f.comp.error] ?? 0) + 1, a), {}) }, errores, llamadas: stats.llamadas, por_status: stats.porStatus };
+  // Ejemplos de errores con el motivo que dio Mercado Libre (sin tokens ni datos personales).
+  const ejemplosError = filas.filter(f => /^error/.test(f.d.accion)).slice(0, 10).map(f => ({ id: f.item.id, accion: f.d.accion, motivo: f.d.motivo ?? null, detalle: f.d.detalle ?? null }));
+  return { cuenta: cuenta.clave, umbral, ejemplos_error: ejemplosError, duracion_s: Math.round((Date.now() - inicio) / 1000), contadores, catalogo: { estados, publicaciones_con_alguna_sugerencia: filas.filter(f => f.comp?.oportunidades?.length).length, sugerencias, motivos, por_tipo: porTipo, errores_por_tipo: filas.filter(f => f.comp?.error).reduce((a, f) => (a[f.comp.error] = (a[f.comp.error] ?? 0) + 1, a), {}) }, errores, llamadas: stats.llamadas, por_status: stats.porStatus };
 }
 
 const ACCION = {
@@ -48,7 +51,7 @@ const ACCION = {
   saltear_promo_desconocida: 'Saltear: no se pudo confirmar promoción', saltear_piso: 'Saltear: queda bajo el piso',
   saltear_variaciones: 'Saltear: tiene variaciones', saltear_moneda: 'Saltear: no está en pesos', saltear_sin_precio: 'Saltear: sin precio ganador',
   saltear_ganador_inmediato: 'No tocar: el ganador entrega de inmediato', saltear_ganador_sin_dato: 'No tocar: sin dato del plazo del ganador',
-  mantener: 'Mantener', mantener_promo: 'Mantener: promoción en curso', saltear_cambio_reciente: 'Saltear: el precio cambió durante la corrida', mantener_umbral: 'Mantener: el ganador bajó más de 360 desde el original', mantener_piso: 'Mantener: piso',
+  saltear_precio_dinamico: 'No tocar: precio administrado por Mercado Libre', mantener: 'Mantener', mantener_promo: 'Mantener: promoción en curso', saltear_cambio_reciente: 'Saltear: el precio cambió durante la corrida', mantener_umbral: 'Mantener: el ganador bajó más de 360 desde el original', mantener_piso: 'Mantener: piso',
   liberar_editada: 'Liberar: editada a mano', error_consulta: 'Error de consulta', error_aplicar: 'Error al aplicar', inactiva: 'Inactiva',
 };
 
