@@ -6,7 +6,7 @@ const J = (b, status = 200) => new Response(JSON.stringify(b), { status, headers
 const env = { GITHUB_TOKEN: 'x', RESEND_API_KEY: 'r', PRECIO_GANADOR_EMAIL_TO: 'a@b.c' };
 const ahora = Date.parse('2026-11-05T12:00:00Z');
 
-test('tres horarios fijos en UTC', () => { assert.deepEqual(CRONS_PRECIO_GANADOR, ['0 12 * * *', '0 18 * * *', '0 0 * * *']); });
+test('cada 2 horas de 09:00 a 21:00 de Montevideo, en UTC', () => { assert.deepEqual(CRONS_PRECIO_GANADOR, ['0 12 * * *', '0 14 * * *', '0 16 * * *', '0 18 * * *', '0 20 * * *', '0 22 * * *', '0 0 * * *']); });
 
 test('no dispara si ya hay una corrida de esta franja (creada en los últimos 10 minutos)', async () => {
   const llamadas = [];
@@ -61,12 +61,10 @@ test('sin GITHUB_TOKEN no llama a GitHub y avisa', async () => {
   assert.deepEqual([r.state, r.alerta, github], ['sin_token', 'enviada', 0]);
 });
 
-test('Vintage corre dos veces por día (09:00 y 21:00 de Montevideo); Libros en los tres horarios', async () => {
-  assert.equal(cuentaDelHorario('0 0 * * *'), 'ambas');
-  assert.equal(cuentaDelHorario('0 12 * * *'), 'ambas');
-  assert.equal(cuentaDelHorario('0 18 * * *'), 'libros');
+test('las dos cuentas corren en todos los horarios (Seba, 06/11/2026)', async () => {
+  for (const c of CRONS_PRECIO_GANADOR) assert.equal(cuentaDelHorario(c), 'ambas');
   let body = null;
   const fetcher = async (url, o) => { if (o?.method === 'POST') { body = JSON.parse(o.body); return new Response(null, { status: 204 }); } return J({ workflow_runs: [] }); };
-  await dispararPrecioGanador(env, { cron: '0 18 * * *', fetcher, now: () => ahora });
-  assert.equal(body.inputs.cuenta, 'libros');
+  await dispararPrecioGanador(env, { cron: '0 16 * * *', fetcher, now: () => ahora });
+  assert.deepEqual(body.inputs, { accion: 'correr', cuenta: 'ambas' });
 });
