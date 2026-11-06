@@ -24,7 +24,9 @@ export const TRANSFER_DISCOUNT = 0.12;
 
 export const LIQUIDACION_PRECIO = Object.freeze({
     name: 'Liquidación',
-    discount: 0.25,
+    // Descuento BASE (Seba, 5/11/2026: 10 %). La Rueda y el Acertijo lo suben después hasta
+    // MAX_TOTAL_DISCOUNT; el tope de 25 % sigue siendo el techo de todo el sistema.
+    discount: 0.10,
     // Martes 10/11/2026 00:00, hora de Montevideo (UTC-3, sin horario de verano).
     startsAt: '2026-11-10T00:00:00-03:00',
 });

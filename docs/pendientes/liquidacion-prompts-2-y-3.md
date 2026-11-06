@@ -90,3 +90,20 @@ Tres PR, tests en verde, y un resumen con qué quedó, qué falta y qué necesit
   constante que usen la Rueda, el Acertijo y el canje.
 - Para el Prompt 3: el Estante y la Escalera dependen del mismo tope y del
   piso de $1.200.
+
+---
+
+## Decisiones de Seba del 5/11/2026 (valen para los prompts 2 y 3)
+
+- **El juego decide cuánto se descuenta (opción B).** El descuento base de la
+  liquidación es **10 %** desde el 10/11/2026 00:00 (`LIQUIDACION_PRECIO.discount`
+  en `functions/_shared/descuentos.js`). La Rueda y el Acertijo lo suben hasta el
+  tope de 25 % (`MAX_TOTAL_DISCOUNT`), que sigue siendo el techo de todo el sistema.
+- Los avisos dicen **"Hasta 25% menos"**, no "25% menos".
+- **Mascota:** el gatito del logo de Amado hace girar la Rueda (la empuja con la
+  pata, animación sobria). El resultado lo decide siempre el servidor; el gato es
+  solo la animación. Con animaciones apagadas, la rueda muestra el premio sin girar.
+  Hace falta un dibujo del gato en SVG liviano, inspirado en el logo.
+- Si hay otra promo mejor (p. ej. Amado Week), rige el mejor precio y no se
+  acumulan: el precio nunca sube por la liquidación.
+- Mientras la Rueda no esté lista, la liquidación corre con el 10 % base.
