@@ -1,4 +1,4 @@
-# Auditoría Precio Ganador · Amado Libros · 2026-11-05T23:18:27.112Z
+# Auditoría Precio Ganador · Amado Libros · 2026-11-06T00:30:20.226Z
 
 Discrepancias: **0**
 
@@ -6,18 +6,18 @@ Discrepancias: **0**
 
 | Publicación | Precio | Estado ML | Para ganar | Competidor más barato | Sugerencias de ML | Conclusión | OK |
 |---|---:|---|---:|---:|---|---|---|
-| MLU1346609456 Jujutsu Kaisen V21, De V21. Jujutsu Kaisen Editorial Bookazi | 1750 | winning | 1750 | 2900 | Envíos Full | Gana: el competidor más barato está en 2900 | sí |
-| MLU735608772 Dibujos Para Colorear Que Misterio Pequeñas Princesas, De Va | 1995 | winning | 1995 | 1283 | Envíos Full | Gana aunque hay uno más barato (1283): ML pesa envío y reputación | sí |
-| MLU657172226 La Trampa De La Felicidad, De Russ Harris. Editorial Editori | 1990 | winning | 1990 | 1607 | Envíos Full | Gana aunque hay uno más barato (1607): ML pesa envío y reputación | sí |
-| MLU881180640 Los Secretos De Las Plantas, De David Burnie. Editorial Alte | 2450 | winning | 2450 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
-| MLU632064619 Yo Soy Sofia Castro... Y Dicen Que Soy Boba - Sofia Castro | 1567 | winning | 1567 | 2590 | Envíos Full | Gana: el competidor más barato está en 2590 | sí |
-| MLU688352618 La Ultima Barrera Un Viaje Sufi, De Rashad Field. Editorial  | 2517 | winning | 2517 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
-| MLU685035986 Logopedia: Guía De Actividades Para El Tratamiento De La Tar | 2538 | winning | 2538 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
-| MLU638939381 El Mensaje De Las Lágrimas, De Payàs Puigarnau, Alba., Vol.  | 1277 | winning | 1277 | 1265 | Envíos Full | Gana aunque hay uno más barato (1265): ML pesa envío y reputación | sí |
-| MLU700042754 Todo Lo Que He Aprendido Con La Psicologia Economica - Th... | 2300 | winning | 2300 | 2015 | Envíos Full | Gana aunque hay uno más barato (2015): ML pesa envío y reputación | sí |
-| MLU700573106 Tarot Ciro Marchetti Mystic Palette 78 Cartas | 2400 | winning | 1862 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
+| MLU695676540 Medicina Psicoanalítica L: (extensión Universitaria), De Mar | 1450 | winning | 1450 | 13190 | Envíos Full | Gana: el competidor más barato está en 13190 | sí |
+| MLU692801976 Complicaciones De La Cirugía Abdominal: Cómo Manejarlas, De  | 3300 | winning | 3300 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
+| MLU656225250 Learn With Us 4 - Activity Book With Online Practice Oxford | 914 | winning | 914 | 1168 | Envíos Full, Envío gratis | Gana: el competidor más barato está en 1168 | sí |
+| MLU631883467 Libro La Revolucion Blockchain De Don Tapscott | 1900 | winning | 1900 | 2458 | Envíos Full | Gana: el competidor más barato está en 2458 | sí |
+| MLU656954282 La Figurabilidad Psíquica César Botella Y Sara Botella (am) | 1950 | winning | 1950 | 1960 | Envíos Full | Gana: el competidor más barato está en 1960 | sí |
+| MLU653954353 Libro Star Wars. Cuaderno De Vacaciones Para Adultos, De Sta | 990 | winning | 990 | 202 | Envíos Full | Gana aunque hay uno más barato (202): ML pesa envío y reputación | sí |
+| MLU676694232 Radiant Rider-waite Tarot - Pamela Colman Smith | 2450 | winning | 2067 | 2400 | Envíos Full | Gana aunque hay uno más barato (2400): ML pesa envío y reputación | sí |
+| MLU653167139 La Conquista De Plassans, De Zola, Émile. Alba Editorial, Ta | 782 | winning | 782 | 790 | Envíos Full, Envío gratis | Gana: el competidor más barato está en 790 | sí |
+| MLU657988468 Libro Avances Y Realidades De La Educación Matemática, De Be | 800 | winning | 800 | 729 | Envíos Full | Gana aunque hay uno más barato (729): ML pesa envío y reputación | sí |
+| MLU651083160 Ethereal Visions Tarot Luna Edition - Matt Hughes, De Matt H | 2058 | winning | 2058 | 2079 | Envíos Full | Gana: el competidor más barato está en 2079 | sí |
 
-## Publicaciones que el sistema bajó (21)
+## Publicaciones que el sistema bajó (20)
 
 | Publicación | Original | Registrado | En ML hoy | OK |
 |---|---:|---:|---:|---|
@@ -31,7 +31,7 @@ Discrepancias: **0**
 | MLU888292642 Netter Flashcards De Histología | 2694 | 2417 | 2417 | sí |
 | MLU1240815646 El Pequeño Gran Libro Del Crochet, De Marie Noelle | 1250 | 1173 | 1173 | sí |
 | MLU1248458670 Libro La Montaña Eres Tú [ Brianna Wiest ] Origina | 725 | 693 | 693 | sí |
-| MLU695916883 Gestión Del Talento Humano | 3554 | 3308 | 3308 | sí |
+| MLU695916883 Gestión Del Talento Humano | 3554 | 3241 | 3241 | sí |
 | MLU636406403 El Libro Perdido - Cassandra Clare - Destino | 651 | 637 | 637 | sí |
 | MLU728203732 Sé Amable Contigo Mismo El Arte De La Compasión Ha | 2150 | 1899 | 1899 | sí |
 | MLU631748561 Libro Secuencias Didacticas - 30 Preguntas Y Respu | 429 | 420 | 420 | sí |
@@ -41,9 +41,8 @@ Discrepancias: **0**
 | MLU655257859 Respeto Por La Interpretacion - Uta, Frankel | 767 | 755 | 755 | sí |
 | MLU669640600 Cress - Crónicas Lunares Libro 3, De Marissa Meyer | 716 | 705 | 705 | sí |
 | MLU648468395 Todas Aquellas Veces Y Otros Asuntos Pendientes -  | 1232 | 1182 | 1182 | sí |
-| MLU696979022 Libro Finanzas Descentralizadas, De Pepe Díaz. Edi | 824 | 802 | 802 | sí |
 
-## Regla recalculada sobre las marcadas de la última corrida (29)
+## Regla recalculada sobre las marcadas de la última corrida (28)
 
 | Publicación | Precio | Ganador | Diferencia | Esperado | Hizo | OK |
 |---|---:|---:|---:|---|---|---|
@@ -55,9 +54,8 @@ Discrepancias: **0**
 | MLU669549988 | 1790 | 1003 | 787 | no_tocar | sin_tocar_umbral → 1003 | sí |
 | MLU674520846 | 2750 | 1164 | 1586 | no_tocar | sin_tocar_umbral → 1164 | sí |
 | MLU683328768 | 1985 | 934 | 1051 | no_tocar | sin_tocar_umbral → 934 | sí |
-| MLU691295954 | 1990 | 999 | 991 | no_tocar | sin_tocar_umbral → 999 | sí |
+| MLU691295954 | 1990 | 989 | 1001 | no_tocar | sin_tocar_umbral → 989 | sí |
 | MLU693155252 | 2300 | 788 | 1512 | no_tocar | sin_tocar_umbral → 788 | sí |
-| MLU696979022 | 824 | 802 | 22 | bajar | bajar → 802 | sí |
 | MLU706364386 | 2137 | 1303 | 834 | no_tocar | sin_tocar_umbral → 1303 | sí |
 | MLU648669567 | 1450 | 1039 | 411 | no_tocar | sin_tocar_umbral → 1039 | sí |
 | MLU728138914 | 2050 | 1089 | 961 | no_tocar | sin_tocar_umbral → 1089 | sí |

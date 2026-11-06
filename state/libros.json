@@ -75,9 +75,9 @@
     "MLU695916883": {
       "titulo": "Gestión Del Talento Humano",
       "precio_original": 3554,
-      "precio_aplicado": 3308,
+      "precio_aplicado": 3241,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
-      "fecha": "2026-11-05T23:17:55.904Z"
+      "fecha": "2026-11-06T00:30:00.734Z"
     },
     "MLU636406403": {
       "titulo": "El Libro Perdido - Cassandra Clare - Destino",
@@ -141,14 +141,7 @@
       "precio_aplicado": 1182,
       "fecha_primera_baja": "2026-11-05T18:05:10.031Z",
       "fecha": "2026-11-05T18:05:10.031Z"
-    },
-    "MLU696979022": {
-      "titulo": "Libro Finanzas Descentralizadas, De Pepe Díaz. Editorial Deusto, Tapa Blanda (20",
-      "precio_original": 824,
-      "precio_aplicado": 802,
-      "fecha_primera_baja": "2026-11-05T23:17:55.904Z",
-      "fecha": "2026-11-05T23:17:55.904Z"
     }
   },
-  "actualizado": "2026-11-05T23:18:02.529Z"
+  "actualizado": "2026-11-06T00:30:06.601Z"
 }

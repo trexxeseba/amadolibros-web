@@ -2,7 +2,7 @@
 
 ```json
 {
-  "fecha": "2026-11-05T23:18:02.516Z",
+  "fecha": "2026-11-06T00:30:06.582Z",
   "modo": "real",
   "activas": 6884,
   "revisadas": 6884,
@@ -10,13 +10,13 @@
   "marcadas": 30,
   "ganador_inmediato": 0,
   "ganador_sin_dato": 0,
-  "bajadas": 1,
-  "ajustadas": 0,
-  "subidas": 3,
-  "restauradas": 0,
+  "bajadas": 0,
+  "ajustadas": 1,
+  "subidas": 0,
+  "restauradas": 1,
   "sin_tocar_umbral": 27,
   "sin_tocar_pct": 1,
-  "verificadas": 4,
+  "verificadas": 2,
   "no_verificadas": 0,
   "promo": 0,
   "bajo_piso": 0,
@@ -32,7 +32,7 @@
 |---|---|---:|---:|---:|---|---|---|
 | [MLU663199900](https://articulo.mercadolibre.com.uy/MLU-663199900-libro-la-ultima-encrucijada-jorge-liotti-planeta-_JM) Libro La Última Encrucijada - Jorge Liotti - Plane | catalogo sharing_first_place | 1082 | 1072 | 10 | Mantener |  |  |
 | [MLU637065821](https://articulo.mercadolibre.com.uy/MLU-637065821-the-adidas-archive-the-footwear-collection-de-christian-habermeier-editorial-taschen-america-llc-en-ingles-_JM) The adidas Archive. The Footwear Collection, De Ch | catalogo sharing_first_place | 1864 | 1833 | 31 | Mantener |  |  |
-| [MLU691609938](https://articulo.mercadolibre.com.uy/MLU-691609938-la-nobleza-negra-genesis-del-imperio-veneciano-de-jorge-guerra-editorial-independently-published-tapa-blanda-en-espanol-2023-_JM) La Nobleza Negra Génesis Del Imperio Veneciano De  | catalogo winning | 1193 | 1193 | 0 | Subir (sigue ganando) → 1204 (aplicado y verificado) |  |  |
+| [MLU691609938](https://articulo.mercadolibre.com.uy/MLU-691609938-la-nobleza-negra-genesis-del-imperio-veneciano-de-jorge-guerra-editorial-independently-published-tapa-blanda-en-espanol-2023-_JM) La Nobleza Negra Génesis Del Imperio Veneciano De  | catalogo sharing_first_place | 1204 | 1192 | 12 | Mantener |  |  |
 | [MLU692647026](https://articulo.mercadolibre.com.uy/MLU-692647026-libro-mi-viaje-sin-ti-alejandro-sequera-_JM) Libro Mi Viaje Sin Ti - Alejandro Sequera | catalogo sharing_first_place | 654 | 646 | 8 | Mantener |  |  |
 | [MLU757785172](https://articulo.mercadolibre.com.uy/MLU-757785172-instrumentacion-quirurgica-principios-y-practica-de-joanna-kotcher-fuller-vol-1-editorial-medica-panamericana-tapa-blanda-edicion-8a-en-espanol-2023-_JM) Instrumentación Quirúrgica Principios Y Práctica D | catalogo competing | 6507 | 6377 | 130 | Mantener: el ganador bajó más de 360 desde el original |  |  |
 | [MLU862968034](https://articulo.mercadolibre.com.uy/MLU-862968034-granja-la-libro-de-juegos-y-puzzle-de-anonimo-editorial-el-gato-de-hojalata-tapa-blanda-en-espanol-_JM) Granja, La Libro De Juegos Y Puzzle, De Anónimo. E | catalogo winning | 376 | 376 | 0 | Mantener |  |  |
@@ -40,7 +40,7 @@
 | [MLU888292642](https://articulo.mercadolibre.com.uy/MLU-888292642-netter-flashcards-de-histologia-_JM) Netter Flashcards De Histología | catalogo sharing_first_place | 2417 | 2393 | 24 | Mantener |  |  |
 | [MLU1240815646](https://articulo.mercadolibre.com.uy/MLU-1240815646-el-pequeno-gran-libro-del-crochet-de-marie-noelle-bayard-editorial-hoaki-tapa-blanda-edicion-1-en-espanol-2024-_JM) El Pequeño Gran Libro Del Crochet, De Marie Noelle | catalogo winning | 1173 | 1173 | 0 | Mantener |  |  |
 | [MLU1248458670](https://articulo.mercadolibre.com.uy/MLU-1248458670-libro-la-montana-eres-tu-brianna-wiest-original-de-brianna-wiest-editorial-booket-tapa-blanda-en-espanol-2024-_JM) Libro La Montaña Eres Tú [ Brianna Wiest ] Origina | catalogo sharing_first_place | 693 | 675 | 18 | Mantener |  |  |
-| [MLU695916883](https://articulo.mercadolibre.com.uy/MLU-695916883-gestion-del-talento-humano-_JM) Gestión Del Talento Humano | catalogo winning | 3276 | 3276 | 0 | Subir (sigue ganando) → 3308 (aplicado y verificado) |  |  |
+| [MLU695916883](https://articulo.mercadolibre.com.uy/MLU-695916883-gestion-del-talento-humano-_JM) Gestión Del Talento Humano | catalogo competing | 3308 | 3241 | 67 | Ajustar al ganador → 3241 (aplicado y verificado) |  |  |
 | [MLU636406403](https://articulo.mercadolibre.com.uy/MLU-636406403-el-libro-perdido-cassandra-clare-destino-_JM) El Libro Perdido - Cassandra Clare - Destino | catalogo winning | 637 | 637 | 0 | Mantener |  |  |
 | [MLU728203732](https://articulo.mercadolibre.com.uy/MLU-728203732-se-amable-contigo-mismo-el-arte-de-la-compasion-hacia-uno-mismo-kristin-neff-editorial-ediciones-paidos-tapa-blanda-_JM) Sé Amable Contigo Mismo El Arte De La Compasión Ha | catalogo winning | 1899 | 1899 | 0 | Mantener |  |  |
 | [MLU631748561](https://articulo.mercadolibre.com.uy/MLU-631748561-libro-secuencias-didacticas-30-preguntas-y-respuestas-taboada-de-taboada-maria-beatriz-editorial-ateneo-tapa-blanda-en-espanol-2021-_JM) Libro Secuencias Didacticas - 30 Preguntas Y Respu | catalogo sharing_first_place | 420 | 414 | 6 | Mantener |  |  |
@@ -48,8 +48,9 @@
 | [MLU884651706](https://articulo.mercadolibre.com.uy/MLU-884651706-el-ascendente-tu-gps-existencial-descubri-la-llave-de-tu-destino-de-beatriz-leveratto-vol-1-editorial-aguilar-tapa-blanda-edicion-1-en-espanol-2019-_JM) El Ascendente: Tu Gps Existencial. Descubrí La Lla | catalogo sharing_first_place | 562 | 554 | 8 | Mantener |  |  |
 | [MLU884315176](https://articulo.mercadolibre.com.uy/MLU-884315176-viaje-al-oeste-de-anonimo-chino-del-siglo-xvi-editorial-siruela-tapa-dura-en-espanol-_JM) Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Edit | catalogo sharing_first_place | 2869 | 2840 | 29 | Mantener |  |  |
 | [MLU655257859](https://articulo.mercadolibre.com.uy/MLU-655257859-respeto-por-la-interpretacion-uta-frankel-_JM) Respeto Por La Interpretacion - Uta, Frankel | catalogo sharing_first_place | 755 | 746 | 9 | Mantener |  |  |
-| [MLU669640600](https://articulo.mercadolibre.com.uy/MLU-669640600-cress-cronicas-lunares-libro-3-de-marissa-meyer-vol-3-editorial-vr-tapa-blanda-en-espanol-2014-_JM) Cress - Crónicas Lunares Libro 3, De Marissa Meyer | catalogo winning | 696 | 696 | 0 | Subir (sigue ganando) → 705 (aplicado y verificado) |  |  |
+| [MLU669640600](https://articulo.mercadolibre.com.uy/MLU-669640600-cress-cronicas-lunares-libro-3-de-marissa-meyer-vol-3-editorial-vr-tapa-blanda-en-espanol-2014-_JM) Cress - Crónicas Lunares Libro 3, De Marissa Meyer | catalogo sharing_first_place | 705 | 696 | 9 | Mantener |  |  |
 | [MLU648468395](https://articulo.mercadolibre.com.uy/MLU-648468395-todas-aquellas-veces-y-otros-asuntos-pendientes-alejand-_JM) Todas Aquellas Veces Y Otros Asuntos Pendientes -  | catalogo winning | 1182 | 1182 | 0 | Mantener |  |  |
+| [MLU696979022](https://articulo.mercadolibre.com.uy/MLU-696979022-libro-finanzas-descentralizadas-de-pepe-diaz-editorial-deusto-tapa-blanda-2023-_JM) Libro Finanzas Descentralizadas, De Pepe Díaz. Edi | catalogo winning | 802 | 802 | 0 | Volver al original → 824 (aplicado y verificado) |  |  |
 | [MLU636030618](https://articulo.mercadolibre.com.uy/MLU-636030618-libro-a-mi-no-me-va-a-pasar-estol-conrado-_JM) Libro A Mi No Me Va A Pasar - Estol, Conrado | catalogo competing | 2800 | 669 | 2131 | No tocar: diferencia por encima del tope |  |  |
 | [MLU651058026](https://articulo.mercadolibre.com.uy/MLU-651058026-oxford-english-for-cambridge-primary-4-workbook-de-editorial-oxford-university-press-tapa-blanda-en-ingles-2017-_JM) Oxford English For Cambridge Primary 4 - Workbook, | catalogo competing | 2850 | 1161 | 1689 | No tocar: diferencia por encima del tope |  |  |
 | [MLU651009706](https://articulo.mercadolibre.com.uy/MLU-651009706-fantastic-mr-fox-de-roald-dahl-editorial-viking-books-for-young-readers-tapa-blanda-en-ingles-2007-_JM) Fantastic Mr. Fox, De Roald Dahl. Editorial Viking | catalogo competing | 1400 | 753 | 647 | No tocar: diferencia por encima del tope |  |  |
@@ -58,9 +59,8 @@
 | [MLU669549988](https://articulo.mercadolibre.com.uy/MLU-669549988-reiki-libro-cartas-inspirational-cards-arcana-caeli-_JM) Reiki Libro + Cartas Inspirational Cards - Arcana  | catalogo competing | 1790 | 1003 | 787 | No tocar: diferencia por encima del tope |  |  |
 | [MLU674520846](https://articulo.mercadolibre.com.uy/MLU-674520846-libro-el-genero-en-disputa-de-butler-judith-editorial-paidos-mexico-tapa-blanda-2019-_JM) Libro El Género En Disputa, De Butler, Judith. Edi | catalogo competing | 2750 | 1164 | 1586 | No tocar: diferencia por encima del tope |  |  |
 | [MLU683328768](https://articulo.mercadolibre.com.uy/MLU-683328768-evangelio-de-los-esenios-vol-i-aavv-_JM) Evangelio De Los Esenios Vol I - Aa.vv | catalogo competing | 1985 | 934 | 1051 | No tocar: diferencia por encima del tope |  |  |
-| [MLU691295954](https://articulo.mercadolibre.com.uy/MLU-691295954-libro-cocina-para-personas-con-diabetes-gabriela-lima-_JM) Libro Cocina Para Personas Con Diabetes - Gabriela | catalogo competing | 1990 | 999 | 991 | No tocar: diferencia por encima del tope |  |  |
+| [MLU691295954](https://articulo.mercadolibre.com.uy/MLU-691295954-libro-cocina-para-personas-con-diabetes-gabriela-lima-_JM) Libro Cocina Para Personas Con Diabetes - Gabriela | catalogo competing | 1990 | 989 | 1001 | No tocar: diferencia por encima del tope |  |  |
 | [MLU693155252](https://articulo.mercadolibre.com.uy/MLU-693155252-libro-el-espejo-del-alma-dr-walter-dresel-_JM) Libro El Espejo Del Alma, Dr. Walter Dresel | catalogo competing | 2300 | 788 | 1512 | No tocar: diferencia por encima del tope |  |  |
-| [MLU696979022](https://articulo.mercadolibre.com.uy/MLU-696979022-libro-finanzas-descentralizadas-de-pepe-diaz-editorial-deusto-tapa-blanda-2023-_JM) Libro Finanzas Descentralizadas, De Pepe Díaz. Edi | catalogo competing | 824 | 802 | 22 | Bajar al ganador → 802 (aplicado y verificado) |  |  |
 | [MLU706364386](https://articulo.mercadolibre.com.uy/MLU-706364386-system-of-a-down-mezmerize-cd-clasico-metal-alternativo-_JM) System Of A Down - Mezmerize Cd Clásico Metal Alte | catalogo competing | 2137 | 1303 | 834 | No tocar: diferencia por encima del tope |  |  |
 | [MLU648669567](https://articulo.mercadolibre.com.uy/MLU-648669567-te-servire-de-paula-bistagnino-por-editorial-planeta-en-tapa-blanda-edicion-1-en-espanol-_JM) Te Serviré De Paula Bistagnino Por Editorial Plane | catalogo competing | 1450 | 1039 | 411 | No tocar: diferencia por encima del tope |  |  |
 | [MLU728138914](https://articulo.mercadolibre.com.uy/MLU-728138914-libro-bailar-en-la-cocina-el-secreto-de-los-matrimonios-de-pep-borrell-vilanova-editorial-palabra-tapa-blanda-en-espanol-2023-_JM) Libro Bailar En La Cocina [ El Secreto De Los Matr | catalogo competing | 2050 | 1089 | 961 | No tocar: diferencia por encima del tope |  |  |

@@ -1,54 +1,26 @@
 {
-  "fecha": "2026-11-05T23:18:27.112Z",
+  "fecha": "2026-11-06T00:30:20.226Z",
   "muestra": [
     {
-      "id": "MLU1346609456",
-      "titulo": "Jujutsu Kaisen V21, De V21. Jujutsu Kaisen Editorial Bookazi",
-      "precio": 1750,
+      "id": "MLU695676540",
+      "titulo": "Medicina Psicoanalítica L: (extensión Universitaria), De Mar",
+      "precio": 1450,
       "estado": "winning",
-      "precio_para_ganar": 1750,
-      "competidor_mas_barato": 2900,
+      "precio_para_ganar": 1450,
+      "competidor_mas_barato": 13190,
       "otras_ofertas": 1,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana: el competidor más barato está en 2900",
+      "conclusion": "Gana: el competidor más barato está en 13190",
       "ok": true
     },
     {
-      "id": "MLU735608772",
-      "titulo": "Dibujos Para Colorear Que Misterio Pequeñas Princesas, De Va",
-      "precio": 1995,
+      "id": "MLU692801976",
+      "titulo": "Complicaciones De La Cirugía Abdominal: Cómo Manejarlas, De ",
+      "precio": 3300,
       "estado": "winning",
-      "precio_para_ganar": 1995,
-      "competidor_mas_barato": 1283,
-      "otras_ofertas": 4,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (1283): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU657172226",
-      "titulo": "La Trampa De La Felicidad, De Russ Harris. Editorial Editori",
-      "precio": 1990,
-      "estado": "winning",
-      "precio_para_ganar": 1990,
-      "competidor_mas_barato": 1607,
-      "otras_ofertas": 2,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (1607): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU881180640",
-      "titulo": "Los Secretos De Las Plantas, De David Burnie. Editorial Alte",
-      "precio": 2450,
-      "estado": "winning",
-      "precio_para_ganar": 2450,
+      "precio_para_ganar": 3300,
       "competidor_mas_barato": null,
       "otras_ofertas": 0,
       "sugerencias_ml": [
@@ -58,87 +30,117 @@
       "ok": true
     },
     {
-      "id": "MLU632064619",
-      "titulo": "Yo Soy Sofia Castro... Y Dicen Que Soy Boba - Sofia Castro",
-      "precio": 1567,
+      "id": "MLU656225250",
+      "titulo": "Learn With Us 4 - Activity Book With Online Practice Oxford",
+      "precio": 914,
       "estado": "winning",
-      "precio_para_ganar": 1567,
-      "competidor_mas_barato": 2590,
+      "precio_para_ganar": 914,
+      "competidor_mas_barato": 1168,
+      "otras_ofertas": 3,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envío gratis"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 1168",
+      "ok": true
+    },
+    {
+      "id": "MLU631883467",
+      "titulo": "Libro La Revolucion Blockchain De Don Tapscott",
+      "precio": 1900,
+      "estado": "winning",
+      "precio_para_ganar": 1900,
+      "competidor_mas_barato": 2458,
       "otras_ofertas": 3,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana: el competidor más barato está en 2590",
+      "conclusion": "Gana: el competidor más barato está en 2458",
       "ok": true
     },
     {
-      "id": "MLU688352618",
-      "titulo": "La Ultima Barrera Un Viaje Sufi, De Rashad Field. Editorial ",
-      "precio": 2517,
+      "id": "MLU656954282",
+      "titulo": "La Figurabilidad Psíquica César Botella Y Sara Botella (am)",
+      "precio": 1950,
       "estado": "winning",
-      "precio_para_ganar": 2517,
-      "competidor_mas_barato": null,
-      "otras_ofertas": 0,
+      "precio_para_ganar": 1950,
+      "competidor_mas_barato": 1960,
+      "otras_ofertas": 3,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana: no hay otros vendedores",
+      "conclusion": "Gana: el competidor más barato está en 1960",
       "ok": true
     },
     {
-      "id": "MLU685035986",
-      "titulo": "Logopedia: Guía De Actividades Para El Tratamiento De La Tar",
-      "precio": 2538,
+      "id": "MLU653954353",
+      "titulo": "Libro Star Wars. Cuaderno De Vacaciones Para Adultos, De Sta",
+      "precio": 990,
       "estado": "winning",
-      "precio_para_ganar": 2538,
-      "competidor_mas_barato": null,
-      "otras_ofertas": 0,
+      "precio_para_ganar": 990,
+      "competidor_mas_barato": 202,
+      "otras_ofertas": 3,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana: no hay otros vendedores",
+      "conclusion": "Gana aunque hay uno más barato (202): ML pesa envío y reputación",
       "ok": true
     },
     {
-      "id": "MLU638939381",
-      "titulo": "El Mensaje De Las Lágrimas, De Payàs Puigarnau, Alba., Vol. ",
-      "precio": 1277,
+      "id": "MLU676694232",
+      "titulo": "Radiant Rider-waite Tarot - Pamela Colman Smith",
+      "precio": 2450,
       "estado": "winning",
-      "precio_para_ganar": 1277,
-      "competidor_mas_barato": 1265,
-      "otras_ofertas": 5,
+      "precio_para_ganar": 2067,
+      "competidor_mas_barato": 2400,
+      "otras_ofertas": 3,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana aunque hay uno más barato (1265): ML pesa envío y reputación",
+      "conclusion": "Gana aunque hay uno más barato (2400): ML pesa envío y reputación",
       "ok": true
     },
     {
-      "id": "MLU700042754",
-      "titulo": "Todo Lo Que He Aprendido Con La Psicologia Economica - Th...",
-      "precio": 2300,
+      "id": "MLU653167139",
+      "titulo": "La Conquista De Plassans, De Zola, Émile. Alba Editorial, Ta",
+      "precio": 782,
       "estado": "winning",
-      "precio_para_ganar": 2300,
-      "competidor_mas_barato": 2015,
-      "otras_ofertas": 4,
+      "precio_para_ganar": 782,
+      "competidor_mas_barato": 790,
+      "otras_ofertas": 3,
       "sugerencias_ml": [
-        "Envíos Full"
+        "Envíos Full",
+        "Envío gratis"
       ],
-      "conclusion": "Gana aunque hay uno más barato (2015): ML pesa envío y reputación",
+      "conclusion": "Gana: el competidor más barato está en 790",
       "ok": true
     },
     {
-      "id": "MLU700573106",
-      "titulo": "Tarot Ciro Marchetti Mystic Palette 78 Cartas",
-      "precio": 2400,
+      "id": "MLU657988468",
+      "titulo": "Libro Avances Y Realidades De La Educación Matemática, De Be",
+      "precio": 800,
       "estado": "winning",
-      "precio_para_ganar": 1862,
-      "competidor_mas_barato": null,
-      "otras_ofertas": 0,
+      "precio_para_ganar": 800,
+      "competidor_mas_barato": 729,
+      "otras_ofertas": 3,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana: no hay otros vendedores",
+      "conclusion": "Gana aunque hay uno más barato (729): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU651083160",
+      "titulo": "Ethereal Visions Tarot Luna Edition - Matt Hughes, De Matt H",
+      "precio": 2058,
+      "estado": "winning",
+      "precio_para_ganar": 2058,
+      "competidor_mas_barato": 2079,
+      "otras_ofertas": 3,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 2079",
       "ok": true
     }
   ],
@@ -237,8 +239,8 @@
       "id": "MLU695916883",
       "titulo": "Gestión Del Talento Humano",
       "original": 3554,
-      "aplicado": 3308,
-      "en_ml": 3308,
+      "aplicado": 3241,
+      "en_ml": 3241,
       "ok": true,
       "problemas": []
     },
@@ -320,15 +322,6 @@
       "original": 1232,
       "aplicado": 1182,
       "en_ml": 1182,
-      "ok": true,
-      "problemas": []
-    },
-    {
-      "id": "MLU696979022",
-      "titulo": "Libro Finanzas Descentralizadas, De Pepe Díaz. Editorial Deusto, Tapa Blanda (20",
-      "original": 824,
-      "aplicado": 802,
-      "en_ml": 802,
       "ok": true,
       "problemas": []
     }
@@ -425,12 +418,12 @@
     {
       "id": "MLU691295954",
       "precio": 1990,
-      "ganador": 999,
-      "diferencia": 991,
-      "objetivo": 999,
+      "ganador": 989,
+      "diferencia": 1001,
+      "objetivo": 989,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 999,
+      "precio_nuevo": 989,
       "ok": true
     },
     {
@@ -442,17 +435,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 788,
-      "ok": true
-    },
-    {
-      "id": "MLU696979022",
-      "precio": 824,
-      "ganador": 802,
-      "diferencia": 22,
-      "objetivo": 802,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 802,
       "ok": true
     },
     {
@@ -655,5 +637,5 @@
     }
   ],
   "discrepancias": [],
-  "llamadas": 438
+  "llamadas": 437
 }
