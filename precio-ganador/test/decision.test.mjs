@@ -87,3 +87,14 @@ test('regla simple de Vintage: umbral 400, sin tope de porcentaje, mínimo 1500 
   assert.equal(decidir({ item: item({ price: 1800 }), comp: marcada(1450), umbral: 400, topePct: null, piso: 1500 }).accion, 'saltear_piso');
   assert.equal(decidir({ item: item({ price: 702 }), comp: marcada(391), umbral: 400, topePct: null }).accion, 'bajar');
 });
+test('seguir: una publicación con excepción sigue al ganador aunque pase el umbral contra el original', () => {
+  // Caso Instrumentación Quirúrgica (06/11/2026): original 6775, aplicado 6507, ganador 6377.
+  const previo = { precio_original: 6775, precio_aplicado: 6507 };
+  const it = item({ price: 6507 });
+  assert.equal(decidir({ item: it, comp: marcada(6377), previo }).accion, 'mantener_umbral');
+  const d = decidir({ item: it, comp: marcada(6377), previo, seguir: true });
+  assert.equal(d.accion, 'ajustar'); assert.equal(d.precio, 6377);
+  // El tope del 30 % y el piso siguen valiendo.
+  assert.equal(decidir({ item: it, comp: marcada(4000), previo, seguir: true }).accion, 'mantener_umbral');
+  assert.equal(decidir({ item: it, comp: marcada(6377), previo, seguir: true, piso: 6400 }).accion, 'mantener_piso');
+});

@@ -31,6 +31,8 @@ const objetivoDe = (g, d = DESCUENTO) => Math.floor(g * (1 - (d || 0)) + 1e-9);
 const dirEstado = opt('estado', 'state'), dirSalida = opt('salida', 'salida'), N = Number(opt('muestra', 10));
 const leer = (f, d) => { try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return d; } };
 const estado = leer(join(dirEstado, `${cuenta.clave}.json`), { publicaciones: {} }).publicaciones;
+// Excepciones pedidas por Seba: siguen al ganador aunque pasen el umbral contra el original.
+const seguir = leer(new URL(`../seguir/${cuenta.clave}.json`, import.meta.url), {});
 const ultima = leer(join(dirSalida, `${cuenta.clave}-filas.json`), []);
 
 export function reglaEsperada(f, { umbral = UMBRAL, inclusivo = INCLUSIVO, descuento = DESCUENTO, tope = TOPE, minimo = MINIMO } = {}) {
@@ -99,7 +101,7 @@ async function main() {
     if (apl > orig) problemas.push('aplicado mayor al original');
     // La baja máxima permitida contra el original: el umbral sobre el ganador y, encima, el descuento.
     const minimoPermitido = objetivoDe(orig - UMBRAL);
-    if (INCLUSIVO ? apl < minimoPermitido : apl <= minimoPermitido) problemas.push(`bajó ${orig - apl} (más de lo que permite el umbral ${UMBRAL})`);
+    if (!seguir[id] && (INCLUSIVO ? apl < minimoPermitido : apl <= minimoPermitido)) problemas.push(`bajó ${orig - apl} (más de lo que permite el umbral ${UMBRAL})`);
     if (TOPE !== null && (orig - apl) / orig > TOPE + 1e-9) problemas.push(`bajó ${Math.round((orig - apl) / orig * 100)} % (más de ${TOPE * 100})`);
     if (MINIMO !== null && apl < MINIMO) problemas.push(`aplicado ${apl} por debajo del mínimo ${MINIMO}`);
     controlEstado.push({ id, titulo: e.titulo, original: orig, aplicado: apl, en_ml: real, ok: !problemas.length, problemas });
