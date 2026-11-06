@@ -113,9 +113,9 @@ test('an authorization cut during the test is retried and resumes from the saved
  assert.equal(r.prueba.estado,'ready');assert.equal(r.reintentos_autorizacion,1);
 });
 
-test('the request interval is configurable for the cloud, clamped between 0.4 and 2 seconds',()=>{
+test('the request interval is configurable for the cloud, clamped between 0.25 and 2 seconds',()=>{
  assert.equal(cloudSettings(campaign('nube','real',{intervalo_ms:500})).intervalo_ms,500);
- assert.equal(cloudSettings(campaign('nube','real',{intervalo_ms:50})).intervalo_ms,400);
+ assert.equal(cloudSettings(campaign('nube','real',{intervalo_ms:50})).intervalo_ms,250);
  assert.equal(cloudSettings(campaign('nube','real')).intervalo_ms,2000);
 });
 
@@ -164,4 +164,102 @@ test('the D1 state save runs several writes at once and still saves every row',a
  const rows=Array.from({length:100},(_,i)=>({isbn:String(i),item_id:'MLU'+i,updated_at:1}));
  assert.equal(await saveStockState(query,rows),100);
  assert.equal(saved,100);assert.ok(peak>1&&peak<=8);
+});
+
+async function freshEngine(t,{rows,receipts=[]}){
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'vintage-classify-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+ const now=Date.now(),source_date=new Date(now-3600000).toISOString(),sha='e'.repeat(64);
+ const c={version:1,endpoint:'https://www.amadolibros.com/operations/vintage-local',key:'b'.repeat(64),expires_at:now+86400000,seller_id:'2341378249',app_id:'4741021817925208',run_id:BULK_RUN,policy,policy_hash:await policyHash(policy),feed_id:crypto.randomUUID(),source_date,source_sha256:sha,receipts,inventory:[],identifiers:[],amendments:[],inventory_checkpoint:{status:'all',scroll:null,pending:[],done:true,seen:0,completedAt:new Date(now).toISOString()}};
+ const connection=path.join(dir,'c.json');await fs.writeFile(connection,JSON.stringify(c));
+ return {dir,connection,readWorkbook:async()=>({source_date,source_sha256:sha,rows})};
+}
+const isbnN=n=>{const stem='978'+String(n).padStart(9,'0');const sum=[...stem].reduce((t,c,i)=>t+Number(c)*(i%2?3:1),0);return stem+((10-sum%10)%10);};
+
+test('classify-only checks candidates in parallel and never reserves nor creates',async t=>{
+ const {run}=await import('../../scripts/vintage-local/engine.mjs');
+ const {openDatabase}=await import('../../scripts/vintage-local/db.mjs');
+ const rows=Array.from({length:12},(_,i)=>({isbn:isbnN(100+i),title:'Libro '+i,listArs:40000,weightKg:.5,stock:'2'}));
+ const f=await freshEngine(t,{rows});
+ let inFlight=0,peak=0,creates=0,reserves=0;
+ const slow=async v=>{inFlight++;peak=Math.max(peak,inFlight);await new Promise(r=>setTimeout(r,5));inFlight--;return v;};
+ const api={
+  async account(){return {id:2341378249};},
+  async call(env,p){if(p.includes('seller_sku='))return slow({results:[]});throw new Error('unexpected_call '+p);},
+  async skuItems(){return slow([]);},
+  async competitorPrice(){return slow(null);},
+  async prepare(env,row,pol,price){if(row.isbn===isbnN(103)){const {PublicationError}=await import('../../worker-sync/publication-policy.js');throw new PublicationError('missing_book_category',422);}return slow({title:row.title,price,currency_id:'UYU'});},
+  async create(){creates++;throw new Error('must_not_create');},
+ };
+ const broker=async action=>{if(action==='reserve')reserves++;return {daily_created:0,daily_cap:10000,published_total:5};};
+ const result=await run({excel:'x',connection:f.connection,directory:f.dir,readWorkbook:f.readWorkbook,classifiers:4,classifyOnly:true,maxMs:60000,apiFactory:()=>api,brokerFactory:()=>broker,waitFor:ms=>new Promise(r=>setTimeout(r,Math.min(ms,5)))});
+ assert.equal(creates,0);assert.equal(reserves,0);
+ assert.equal(result.state,'classified');assert.equal(result.classified.validated,11);assert.equal(result.classified.skipped_category,1);
+ assert.ok(peak>1,'several candidates are checked at once');
+ const db=openDatabase(path.join(f.dir,'publisher.sqlite'));t.after(()=>db.close());
+ const states=(await db.prepare('SELECT state,COUNT(*) n FROM ml_vintage_pub_jobs WHERE run_id=? GROUP BY state').bind(BULK_RUN).all()).results;
+ assert.deepEqual(Object.fromEntries(states.map(x=>[x.state,x.n])),{validated:11,skipped_category:1});
+ const payload=JSON.parse((await db.prepare("SELECT payload_json FROM ml_vintage_pub_jobs WHERE state='validated' LIMIT 1").first()).payload_json);
+ assert.equal(payload.currency_id,'UYU');
+});
+
+test('the classifier never overwrites a job the publisher already handled',async t=>{
+ const {openDatabase}=await import('../../scripts/vintage-local/db.mjs');
+ const {VintageBulkStore}=await import('../_shared/meli-vintage-bulk.js');
+ const {PublicationStore}=await import('../../worker-sync/publication-store.js');
+ const db=openDatabase(':memory:');t.after(()=>db.close());
+ const s=new VintageBulkStore(db,{sellerId:'2341378249'});await new PublicationStore(db).initialize();await s.initialize();
+ await s.stmt("INSERT INTO ml_pub_jobs(run_id,isbn,state,item_id) VALUES(?,?,'published','MLU1')",BULK_RUN,'1').run();
+ await s.stmt("INSERT INTO ml_pub_jobs(run_id,isbn,state) VALUES(?,?,'pending')",BULK_RUN,'2').run();
+ assert.equal(await s.jobIfOpen(BULK_RUN,'1','validated',{payload:{price:1}}),false);
+ assert.equal(await s.jobIfOpen(BULK_RUN,'2','validated',{payload:{price:1}}),true);
+ const rows=(await s.stmt('SELECT isbn,state,item_id FROM ml_pub_jobs WHERE run_id=? ORDER BY isbn',BULK_RUN).all()).results;
+ assert.deepEqual(rows.map(r=>[r.isbn,r.state,r.item_id]),[['1','published','MLU1'],['2','validated',null]]);
+});
+
+test('with parallel=true the clock spaces the start of each request but lets several be in flight',async()=>{
+ const {createVintageBulkFetch}=await import('../_shared/meli-vintage-bulk.js');
+ const {openDatabase}=await import('../../scripts/vintage-local/db.mjs');
+ for(const [parallel,expectPeak] of [[true,3],[false,1]]){
+  const db=openDatabase(':memory:');
+  await db.prepare('CREATE TABLE ml_vintage_bulk_rate (id INTEGER PRIMARY KEY,next_at INTEGER NOT NULL DEFAULT 0,cooldown INTEGER NOT NULL DEFAULT 0,strikes INTEGER NOT NULL DEFAULT 0)').run();
+  await db.prepare('INSERT INTO ml_vintage_bulk_rate(id) VALUES(1)').run();
+  let inFlight=0,peak=0;const starts=[];
+  const limited=createVintageBulkFetch({intervalMs:250,parallel,sleep:ms=>new Promise(r=>setTimeout(r,ms)),fetcher:async()=>{starts.push(Date.now());inFlight++;peak=Math.max(peak,inFlight);await new Promise(r=>setTimeout(r,700));inFlight--;return new Response('{}');}});
+  await Promise.all([1,2,3].map(()=>limited({ORDERS_DB:db},'https://api.mercadolibre.com/items/MLU1',{})));
+  assert.equal(peak,expectPeak,`parallel=${parallel}`);
+  for(let i=1;i<starts.length;i++)assert.ok(starts[i]-starts[i-1]>=240,'starts stay spaced');
+  db.close();
+ }
+});
+
+test('publishing next to the classifiers creates each ISBN at most once and stops at the batch',async t=>{
+ const {run}=await import('../../scripts/vintage-local/engine.mjs');
+ const rows=Array.from({length:10},(_,i)=>({isbn:isbnN(200+i),title:'Libro '+i,listArs:40000,weightKg:.5,stock:'2'}));
+ const f=await freshEngine(t,{rows});
+ const created=new Map();let n=0;
+ const api={
+  async account(){return {id:2341378249};},
+  async call(env,p){
+   if(p.includes('seller_sku='))return {results:[]};
+   const m=p.match(/^\/items\/(MLU\d+)$/);
+   if(m){const x=[...created.values()].find(v=>v.id===m[1]);return {id:x.id,seller_id:2341378249,seller_custom_field:'AMADO-AR-'+x.isbn,attributes:[],price:x.price,currency_id:'UYU',available_quantity:1,status:'active',sale_terms:[{id:'MANUFACTURING_TIME',value_name:'18 días'}]};}
+   throw new Error('unexpected_call '+p);
+  },
+  async skuItems(){return [];},
+  async competitorPrice(){return null;},
+  async prepare(env,row,pol,price){await new Promise(r=>setTimeout(r,3));return {title:row.title,price,currency_id:'UYU',condition:'new',catalog_listing:false,seller_custom_field:'AMADO-AR-'+row.isbn};},
+  async create(env,payload){const isbn=payload.seller_custom_field.replace('AMADO-AR-','');if(created.has(isbn))throw new Error('duplicate_create '+isbn);const id='MLU'+(++n);created.set(isbn,{id,isbn,price:payload.price});return {id};},
+ };
+ const reserved=new Set();
+ const broker=async(action,args)=>{
+  if(action==='status')return {daily_created:reserved.size,daily_cap:10000,published_total:5+reserved.size};
+  if(action==='token')return {access_token:'t',expires_at:Date.now()+600000};
+  if(action==='reserve'){if(reserved.has(args.isbn))return {reserved:false,receipt:null};reserved.add(args.isbn);return {reserved:true};}
+  if(action==='report')return {recorded:true};
+  return {};
+ };
+ const result=await run({excel:'x',connection:f.connection,directory:f.dir,readWorkbook:f.readWorkbook,classifiers:3,limitNew:4,target:80000,raiseTargetTo:80000,maxMs:60000,apiFactory:()=>api,brokerFactory:()=>broker,waitFor:ms=>new Promise(r=>setTimeout(r,Math.min(ms,5)))});
+ assert.equal(created.size,4,'stops at the batch');
+ assert.equal(new Set([...created.values()].map(v=>v.id)).size,4);
+ assert.ok(result.classified.validated>=4);
 });
