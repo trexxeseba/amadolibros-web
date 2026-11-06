@@ -1,4 +1,5 @@
 import { dispararPrecioGanador, CRONS_PRECIO_GANADOR } from './precio-ganador-trigger.js';
+import { dispararVintageNube, CRON_VINTAGE_NUBE } from './vintage-nube-trigger.js';
 import { IMAGE_SOURCE_POLICY_VERSION } from '../functions/_shared/image-source-policy.js';
 /**
  * worker-sync/index.js
@@ -167,6 +168,14 @@ export default {
     }
     // Precio Ganador: a las 09:00, 15:00 y 21:00 de Montevideo le pide a GitHub (Vintage a las 09:00 y 21:00)
     // que corra el workflow (el cron de GitHub se atrasa horas; queda de respaldo).
+    // Publicador de Amado Vintage en la nube: cada hora le pide a GitHub que corra
+    // vintage-nube.yml (el cron de GitHub no lo estaba lanzando).
+    if (event?.cron === CRON_VINTAGE_NUBE) {
+      ctx.waitUntil(dispararVintageNube(env).then(result => {
+        console.log('[vintage nube]', JSON.stringify(result));
+      }));
+      return;
+    }
     if (CRONS_PRECIO_GANADOR.includes(event?.cron)) {
       ctx.waitUntil(dispararPrecioGanador(env, { cron: event.cron }).then(result => {
         console.log('[precio ganador]', JSON.stringify(result));
