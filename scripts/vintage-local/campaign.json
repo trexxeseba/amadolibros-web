@@ -7,8 +7,8 @@
     "tanda": 1000,
     "tope_diario": 5000,
     "minutos": 50,
-    "intervalo_ms": 500,
-    "clasificadores": 0,
+    "intervalo_ms": 250,
+    "clasificadores": 4,
     "clasificar": {
       "clasificadores": 4,
       "intervalo_ms": 250
