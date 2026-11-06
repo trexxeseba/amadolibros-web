@@ -25,7 +25,8 @@ import {campaignNumbers} from './numbers.mjs';
 import {d1Client,loadStockState,saveStockState,STOCK_COLUMNS} from './d1.mjs';
 
 export const ACTIONS=['keepalive','numeros','prueba','clasificar','publicar'];
-export const HARD_MAX_PER_RUN=1000,HARD_MAX_PER_DAY=5000;
+// Techo duro del día: el mismo VINTAGE_DAILY_CAP del servidor (functions/_shared/meli-vintage-bulk.js).
+export const HARD_MAX_PER_RUN=1000,HARD_MAX_PER_DAY=10000;
 // Ajustes del motor en la nube: lecturas cortadas a los 15 s (crear sigue en 60 s), estado del
 // servidor cada 10 vueltas y el recorrido del inventario se conserva hasta 3 días.
 // Además: no repite en create lo que validó prepare hace menos de 2 h, ni espera la descarga de fotos.

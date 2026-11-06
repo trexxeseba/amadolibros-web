@@ -119,10 +119,10 @@ test('the request interval is configurable for the cloud, clamped between 0.25 a
  assert.equal(cloudSettings(campaign('nube','real')).intervalo_ms,2000);
 });
 
-test('the committed campaign publishes from the cloud at up to 5000 a day',async()=>{
+test('the committed campaign publishes from the cloud at up to 8000 a day',async()=>{
  const c=JSON.parse(await fs.readFile(new URL('../../scripts/vintage-local/campaign.json',import.meta.url),'utf8'));
  const s=cloudSettings(c);
- assert.equal(s.real,true);assert.equal(s.tope_diario,5000);assert.ok(s.intervalo_ms>=250);assert.equal(s.clasificadores,4);
+ assert.equal(s.real,true);assert.equal(s.tope_diario,8000);assert.ok(s.intervalo_ms>=250);assert.equal(s.clasificadores,4);
 });
 
 test('the Vintage request clock spaces requests by the configured interval',async()=>{
@@ -271,4 +271,9 @@ test('a fresh create paused only for picture download is accepted when deferring
  assert.doesNotThrow(()=>checkCreated(item,'9789502323060',1990,{picturesPending:true}));
  assert.throws(()=>checkCreated({...item,price:2000},'9789502323060',1990,{picturesPending:true}),/created_item_check_failed/);
  assert.throws(()=>checkCreated({...item,sub_status:['out_of_stock']},'9789502323060',1990,{picturesPending:true}),/created_item_check_failed/);
+});
+
+test('the daily cap can never pass the server cap of 10000',async()=>{
+ const {VINTAGE_DAILY_CAP}=await import('../_shared/meli-vintage-bulk.js');
+ assert.equal(cloudSettings(campaign('nube','real',{tope_diario:50000})).tope_diario,VINTAGE_DAILY_CAP);
 });

@@ -5,7 +5,7 @@
   "nube": {
     "modo": "real",
     "tanda": 1000,
-    "tope_diario": 5000,
+    "tope_diario": 8000,
     "minutos": 50,
     "intervalo_ms": 250,
     "clasificadores": 4,

@@ -29,8 +29,8 @@ la identidad del alta (vendedor, ISBN, moneda, piso de 1.200, 18 días) y no el 
 ```json
 {
   "target_total": 80000,
-  "ejecutor": "pc",
-  "nube": { "modo": "prueba", "tanda": 50, "tope_diario": 300, "minutos": 90 }
+  "ejecutor": "nube",
+  "nube": { "modo": "real", "tanda": 1000, "tope_diario": 8000, "minutos": 50, "intervalo_ms": 250, "clasificadores": 4 }
 }
 ```
 
@@ -38,7 +38,7 @@ la identidad del alta (vendedor, ISBN, moneda, piso de 1.200, 18 días) y no el 
 - `nube.modo`: `prueba` (default), `real` o `apagado`.
 - Publica de verdad **sólo** con `"ejecutor": "nube"` y `"modo": "real"` a la vez.
 - `tanda`: altas máximas por corrida (tope duro 1.000). `tope_diario`: altas por día de
-  Montevideo, contando todas las del día (tope duro 5.000). `minutos`: tiempo máximo del motor.
+  Montevideo, contando todas las del día (tope duro 10.000, el mismo del servidor). `minutos`: tiempo máximo del motor.
 - `target_total`: meta total de la campaña, igual que en la PC.
 
 Para correr a mano: Actions, **Vintage publicador (nube)**, *Run workflow*:
