@@ -62,12 +62,17 @@ test('las páginas cacheadas vencen justo al entrar la regla nueva', () => {
 
 // ── Precio de liquidación y piso ─────────────────────────────────────────
 
-test('liquidación: 25 % sobre el habitual, redondeado para no pasar el tope', () => {
-    assert.deepEqual(liquidationPrice(2000), { price: 1500, applied: true, reason: 'ok' });
-    assert.equal(liquidationPrice(1999).price, 1500); // 1499,25 → 1500 (24,99 %)
-    assert.equal(liquidationPrice(1600).price, 1200); // justo en el piso: se aplica
-    assert.equal(liquidationPrice(1599).price, 1200); // 1199,25 → 1200: entra justo
-    assert.deepEqual(liquidationPrice(1590), { price: 1590, applied: false, reason: 'bajo_piso' }); // 1193
+test('el descuento base de la liquidación es 10 % y nunca pasa el tope', () => {
+    assert.equal(LIQUIDACION_PRECIO.discount, 0.10, 'Seba fijó la base en 10 % el 5/11/2026');
+    assert.ok(LIQUIDACION_PRECIO.discount <= MAX_TOTAL_DISCOUNT);
+});
+
+test('liquidación: 10 % sobre el habitual y piso de $1.200', () => {
+    assert.deepEqual(liquidationPrice(2000), { price: 1800, applied: true, reason: 'ok' });
+    assert.equal(liquidationPrice(1999).price, 1799); // 1799,1
+    assert.equal(liquidationPrice(1334).price, 1201);
+    assert.equal(liquidationPrice(1333).price, 1200); // 1199,7 → 1200: entra justo
+    assert.deepEqual(liquidationPrice(1332), { price: 1332, applied: false, reason: 'bajo_piso' }); // 1198,8 → 1199
     assert.deepEqual(liquidationPrice(900), { price: 900, applied: false, reason: 'bajo_piso' });
     assert.equal(liquidationPrice(0).applied, false);
 });
@@ -92,7 +97,10 @@ test('transferencia: desde el 10/11 suma solo hasta el 25 % total', () => {
     // Sin descuento previo: 12 % entero.
     assert.equal(transferUnitDiscount(2000, 2000, AFTER), 240);
     assert.equal(transferDisplayPrice({ price: 2000 }, AFTER), 1760);
-    // Liquidación (ya en el 25 %): la transferencia no suma; único precio final.
+    // Liquidación base (10 %): la transferencia suma su 12 % sobre el precio de liquidación (≈ 20,8 % total).
+    assert.equal(transferUnitDiscount(1800, 2000, AFTER), 216);
+    assert.equal(transferDisplayPrice({ price: 1800, original_price: 2000, liquidation: true }, AFTER), 1584);
+    // Un libro que ya está en el tope (25 %) no suma nada: único precio final.
     assert.equal(transferUnitDiscount(1500, 2000, AFTER), 0);
     assert.equal(transferDisplayPrice({ price: 1500, original_price: 2000, liquidation: true }, AFTER), null);
     // Descuento previo de 15 %: la transferencia completa hasta 25 % y no más.
@@ -124,6 +132,7 @@ test('total por transferencia: carrito mixto, el libro en liquidación no suma e
         { unit_price_uyu: 1500, habitual_unit_uyu: 2000, quantity: 1, line_total_uyu: 1500 },
         { unit_price_uyu: 1000, habitual_unit_uyu: 1000, quantity: 2, line_total_uyu: 2000 },
     ];
+    // El libro que ya está en el tope no suma el 12 %; el otro sí.
     assert.equal(transferProductsTotal(lines, AFTER), 3500 - 240);
     assert.equal(transferProductsTotal(lines, BEFORE), Math.round(3500 * 0.88));
 });
@@ -136,21 +145,26 @@ test('catálogo: antes del 10/11 no cambia nada', () => {
 });
 
 test('catálogo: desde el 10/11 pone precio de liquidación, habitual y marca; idempotente', () => {
-    const items = [book('MLU1'), book('MLU2', { price: 1500 }), book('MLU9')];
+    const items = [book('MLU1'), book('MLU2', { price: 1300 }), book('MLU9')];
     const out = applyLiquidationPrices(items, { now: AFTER, data: DATA });
-    assert.deepEqual([out[0].price, out[0].original_price, out[0].liquidation], [1500, 2000, true]);
-    assert.equal(out[1].price, 1500);
-    assert.equal(out[1].liquidation_skip, 'bajo_piso'); // 1125 < 1200
+    assert.deepEqual([out[0].price, out[0].original_price, out[0].liquidation], [1800, 2000, true]);
+    assert.equal(out[1].price, 1300);
+    assert.equal(out[1].liquidation_skip, 'bajo_piso'); // 1170 < 1200
     assert.equal(out[2], items[2]); // fuera de la lista
     assert.deepEqual(applyLiquidationPrices(out, { now: AFTER, data: DATA }), out);
 });
 
-test('catálogo: con promo web previa, el 25 % se calcula sobre el habitual y no se acumula', () => {
+test('catálogo: con promo web previa rige el mejor precio; no se acumulan ni el precio sube', () => {
     const promo = { name: 'X', percent: 15, startsAt: '2026-11-01T00:00:00-03:00', endsAt: '2026-11-30T23:59:59-03:00', endLabel: '30/11' };
     const withPromo = applyWebPromoToItems([book('MLU1')], { now: AFTER, promo });
     assert.equal(withPromo[0].price, 1700);
     const out = applyLiquidationPrices(withPromo, { now: AFTER, data: DATA });
-    assert.deepEqual([out[0].price, out[0].original_price], [1500, 2000]);
+    // Amado Week (15 %) es mejor que la base de 10 %: se queda el precio de la promo.
+    assert.deepEqual([out[0].price, out[0].original_price, out[0].liquidation], [1700, 2000, true]);
+    // Con una promo de 5 % gana la liquidación.
+    const chica = applyWebPromoToItems([book('MLU1')], { now: AFTER, promo: { ...promo, percent: 5 } });
+    assert.equal(chica[0].price, 1900);
+    assert.equal(applyLiquidationPrices(chica, { now: AFTER, data: DATA })[0].price, 1800);
 });
 
 test('catálogo: LIQUIDACION_PRECIO_OFF=1 apaga el precio de liquidación', () => {
@@ -164,12 +178,12 @@ test('catálogo: sin lista entregada no cambia ningún precio', () => {
 });
 
 test('vitrina y feed: desde el 10/11 los que quedan bajo el piso salen y se cuentan', async () => {
-    const priced = applyLiquidationPrices([book('MLU1'), book('MLU2', { price: 1500 }), book('MLU3', { price: 1400 })], { now: AFTER, data: DATA });
+    const priced = applyLiquidationPrices([book('MLU1'), book('MLU2', { price: 1300 }), book('MLU3', { price: 1200 })], { now: AFTER, data: DATA });
     const r = await resolveLiquidation({ env: {} }, priced, { now: AFTER.getTime(), data: DATA });
     assert.deepEqual(r.selected.map(i => i.id), ['MLU1']);
     assert.equal(r.excluded.bajo_piso, 2);
     assert.deepEqual([...liquidationIds(priced, { now: AFTER.getTime(), data: DATA })], ['MLU1']);
-    const before = await resolveLiquidation({ env: {} }, [book('MLU1'), book('MLU2', { price: 1500 })], { now: BEFORE.getTime(), data: DATA });
+    const before = await resolveLiquidation({ env: {} }, [book('MLU1'), book('MLU2', { price: 1300 })], { now: BEFORE.getTime(), data: DATA });
     assert.equal(before.selected.length, 2);
     assert.equal(before.excluded.bajo_piso, undefined);
 });
