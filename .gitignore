@@ -35,6 +35,3 @@ wrangler_dev.log
 /*.xlsx
 /*.csv
 /*.diff
-
-# Motor local de precios: estado, costos, informes, sondas y log (precios e IDs; repo público).
-precios-libros-local/datos/
