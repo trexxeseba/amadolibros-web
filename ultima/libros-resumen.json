@@ -1,62 +1,62 @@
 {
   "cuenta": "libros",
   "umbral": 360,
-  "duracion_s": 258,
+  "ejemplos_error": [],
+  "duracion_s": 229,
   "contadores": {
-    "fecha": "2026-11-06T12:04:55.850Z",
+    "fecha": "2026-11-06T18:04:36.592Z",
     "modo": "real",
-    "activas": 6884,
-    "revisadas": 6884,
-    "compiten": 39,
-    "marcadas": 39,
+    "activas": 6897,
+    "revisadas": 6897,
+    "compiten": 50,
+    "marcadas": 50,
+    "precio_dinamico": 1,
     "ganador_inmediato": 0,
     "ganador_sin_dato": 0,
-    "bajadas": 2,
-    "ajustadas": 2,
-    "subidas": 19,
-    "restauradas": 39,
-    "sin_tocar_umbral": 31,
+    "bajadas": 9,
+    "ajustadas": 7,
+    "subidas": 1,
+    "restauradas": 2,
+    "sin_tocar_umbral": 30,
     "sin_tocar_pct": 1,
-    "verificadas": 62,
+    "verificadas": 19,
     "no_verificadas": 0,
     "promo": 0,
     "bajo_piso": 0,
     "sin_costo": 0,
     "otras_salteadas": 0,
-    "editadas_a_mano": 0,
-    "errores": 1,
+    "editadas_a_mano": 11,
+    "errores": 0,
     "cambios_stock": 0
   },
   "catalogo": {
     "estados": {
-      "sharing_first_place": 69,
-      "competing": 39,
-      "winning": 2961,
-      "not_listed": 3815
+      "competing": 50,
+      "winning": 2964,
+      "sharing_first_place": 61,
+      "not_listed": 3822
     },
-    "publicaciones_con_alguna_sugerencia": 3069,
+    "publicaciones_con_alguna_sugerencia": 3075,
     "sugerencias": {
-      "fulfillment": 3069,
-      "same_day_shipping": 3069,
+      "fulfillment": 3075,
+      "same_day_shipping": 3075,
       "free_shipping": 107
     },
     "motivos": {
-      "not_listed:item_not_opted_in": 3815
+      "not_listed:item_not_opted_in": 3822
     },
     "por_tipo": {
-      "catalogo:sharing_first_place:con_stock": 69,
-      "catalogo:competing:con_stock": 39,
-      "catalogo:winning:con_stock": 2961,
-      "tradicional:not_listed:con_stock": 3815
+      "catalogo:competing:con_stock": 50,
+      "catalogo:winning:con_stock": 2964,
+      "catalogo:sharing_first_place:con_stock": 61,
+      "tradicional:not_listed:con_stock": 3822
     },
     "errores_por_tipo": {}
   },
-  "errores": {
-    "http_400": 1
-  },
-  "llamadas": 7502,
+  "errores": {},
+  "llamadas": 7381,
   "por_status": {
-    "200": 7501,
-    "400": 1
+    "200": 7378,
+    "429": 3
   }
 }
