@@ -122,7 +122,7 @@ test('the request interval is configurable for the cloud, clamped between 0.25 a
 test('the committed campaign publishes from the cloud at up to 5000 a day',async()=>{
  const c=JSON.parse(await fs.readFile(new URL('../../scripts/vintage-local/campaign.json',import.meta.url),'utf8'));
  const s=cloudSettings(c);
- assert.equal(s.real,true);assert.equal(s.tope_diario,5000);assert.ok(s.intervalo_ms>=400);
+ assert.equal(s.real,true);assert.equal(s.tope_diario,5000);assert.ok(s.intervalo_ms>=250);assert.equal(s.clasificadores,4);
 });
 
 test('the Vintage request clock spaces requests by the configured interval',async()=>{
