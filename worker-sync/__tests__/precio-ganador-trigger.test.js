@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dispararPrecioGanador, CRONS_PRECIO_GANADOR, cuentaDelHorario } from '../precio-ganador-trigger.js';
+import { dispararPrecioGanador, CRONS_PRECIO_GANADOR, CRON_RESUMEN, cuentaDelHorario } from '../precio-ganador-trigger.js';
 
 const J = (b, status = 200) => new Response(JSON.stringify(b), { status, headers: { 'content-type': 'application/json' } });
 const env = { GITHUB_TOKEN: 'x', RESEND_API_KEY: 'r', PRECIO_GANADOR_EMAIL_TO: 'a@b.c' };
@@ -8,9 +8,9 @@ const ahora = Date.parse('2026-11-05T12:00:00Z');
 
 test('tres horarios fijos en UTC', () => { assert.deepEqual(CRONS_PRECIO_GANADOR, ['0 12 * * *', '0 18 * * *', '0 0 * * *']); });
 
-test('no dispara si ya hubo una corrida exitosa en las últimas 2 horas', async () => {
+test('no dispara si ya hay una corrida de esta franja (creada en los últimos 10 minutos)', async () => {
   const llamadas = [];
-  const fetcher = async (url, o) => { llamadas.push([String(url), o?.method ?? 'GET']); return J({ workflow_runs: [{ event: 'schedule', created_at: '2026-11-05T11:10:00Z', status: 'completed', conclusion: 'success', html_url: 'u' }] }); };
+  const fetcher = async (url, o) => { llamadas.push([String(url), o?.method ?? 'GET']); return J({ workflow_runs: [{ event: 'schedule', created_at: '2026-11-05T11:55:00Z', status: 'completed', conclusion: 'success', html_url: 'u' }] }); };
   const r = await dispararPrecioGanador(env, { fetcher, now: () => ahora });
   assert.equal(r.state, 'ya_corrio');
   assert.ok(!llamadas.some(([, m]) => m === 'POST'));
@@ -19,9 +19,26 @@ test('no dispara si ya hubo una corrida exitosa en las últimas 2 horas', async 
 test('dispara con cuenta=ambas cuando no hay corrida reciente', async () => {
   let body = null;
   const fetcher = async (url, o) => { if (o?.method === 'POST') { body = JSON.parse(o.body); return new Response(null, { status: 204 }); } return J({ workflow_runs: [{ event: 'schedule', created_at: '2026-11-05T05:00:00Z', status: 'completed', conclusion: 'success' }] }); };
-  const r = await dispararPrecioGanador(env, { fetcher, now: () => ahora });
+  const r = await dispararPrecioGanador(env, { cron: '0 12 * * *', fetcher, now: () => ahora });
   assert.equal(r.state, 'disparado');
   assert.deepEqual(body, { ref: 'main', inputs: { accion: 'correr', cuenta: 'ambas' } });
+});
+
+test('una corrida atrasada de la franja anterior no tapa a la de las 21:00 y la de las 21:00 pide el mail', async () => {
+  // El 05/11 la programada de las 18:00 UTC arrancó a las 23:13: 47 minutos antes de las 00:00 UTC.
+  const medianoche = Date.parse('2026-11-06T00:00:00Z');
+  let body = null;
+  const fetcher = async (url, o) => { if (o?.method === 'POST') { body = JSON.parse(o.body); return new Response(null, { status: 204 }); } return J({ workflow_runs: [{ event: 'schedule', created_at: '2026-11-05T23:13:52Z', status: 'completed', conclusion: 'success' }] }); };
+  const r = await dispararPrecioGanador(env, { cron: CRON_RESUMEN, fetcher, now: () => medianoche });
+  assert.equal(r.state, 'disparado');
+  assert.deepEqual(body, { ref: 'main', inputs: { accion: 'correr', cuenta: 'ambas', correo: 'true' } });
+});
+
+test('sólo el horario de las 21:00 pide el mail de resumen', async () => {
+  let body = null;
+  const fetcher = async (url, o) => { if (o?.method === 'POST') { body = JSON.parse(o.body); return new Response(null, { status: 204 }); } return J({ workflow_runs: [] }); };
+  await dispararPrecioGanador(env, { cron: '0 12 * * *', fetcher, now: () => ahora });
+  assert.equal(body.inputs.correo, undefined);
 });
 
 test('reintenta una vez y, si no pudo, manda la alerta por Resend', async () => {
