@@ -36,6 +36,9 @@ export function decidir({ item, comp, promo = false, previo, piso = null, tocarS
   const reglas = { umbral, topePct, umbralInclusivo, descuento, pasoMinimoSubida };
   const r = previo ? decidirConEstado({ precio, comp, previo, piso, ...reglas }) : decidirNueva({ precio, comp, piso, ...reglas });
   if (!CAMBIA.has(r.accion)) return r;
+  // Precio administrado por Mercado Libre (tag dynamic_standard_price): el PUT a
+  // /items/{id} responde 400. El 06/11/2026 falló así MLU660973661 en Libros. No se intenta.
+  if (item.precio_dinamico) return { accion: 'saltear_precio_dinamico', motivo: 'precio administrado por Mercado Libre (dynamic_standard_price)' };
   if (promo === true) return { accion: 'saltear_promo', motivo: 'promoción activa' };
   if (promo === null) return { accion: 'saltear_promo_desconocida', motivo: 'no se pudo confirmar si tiene promoción' };
 

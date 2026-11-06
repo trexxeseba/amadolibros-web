@@ -36,7 +36,7 @@ const ultima = leer(join(dirSalida, `${cuenta.clave}-filas.json`), []);
 export function reglaEsperada(f, { umbral = UMBRAL, inclusivo = INCLUSIVO, descuento = DESCUENTO, tope = TOPE, minimo = MINIMO } = {}) {
   const g = Math.floor(f.ganador + 1e-9), dif = f.precio - g, objetivo = Math.floor(g * (1 - (descuento || 0)) + 1e-9);
   const piso = Number.isFinite(Number(f.piso)) ? Number(f.piso) : minimo;
-  if (f.bloqueo) return { esperado: 'saltear', objetivo };
+  if (f.bloqueo || f.precio_dinamico) return { esperado: 'saltear', objetivo };
   if (f.moneda !== 'UYU' || f.variaciones) return { esperado: 'saltear', objetivo };
   if ((inclusivo ? dif > umbral : dif >= umbral) || (tope !== null && dif / f.precio > tope)) return { esperado: 'no_tocar', objetivo };
   if (piso !== null && objetivo < piso) return { esperado: 'saltear', objetivo };
@@ -107,7 +107,9 @@ async function main() {
   }
 
   // 3. La regla recalculada desde cero para cada marcada nueva de la última corrida.
-  for (const f of ultima.filter(f => (f.marcada || f.compite) && !f.en_estado_antes)) {
+  // Los errores de aplicación o de consulta no son un desacuerdo con la regla: se cuentan
+  // aparte (erroresAplicar) y sólo tumban el job si superan el umbral.
+  for (const f of ultima.filter(f => (f.marcada || f.compite) && !f.en_estado_antes && !/^error/.test(f.accion))) {
     const g = Math.floor(f.ganador + 1e-9), dif = f.precio - g;
     const { esperado, objetivo } = reglaEsperada(f);
     const hecho = f.accion === 'bajar' ? 'bajar' : /^sin_tocar/.test(f.accion) ? 'no_tocar' : /^saltear/.test(f.accion) ? 'saltear' : f.accion === 'sin_marcar' ? 'no_tocar' : f.accion;
@@ -133,7 +135,7 @@ async function main() {
   // Cualquier discrepancia se avisa por mail con los IDs; el job queda en verde si no es seria.
   if (discrepancias.length || erroresAplicar) {
     const lineas = discrepancias.map(d => `- ${d.id} (${d.tipo}): ${d.detalle}`).join('\n');
-    const errores = ultima.filter(f => f.accion === 'error_aplicar').map(f => `- ${f.id}: ${f.motivo ?? 'error'}`).join('\n');
+    const errores = ultima.filter(f => f.accion === 'error_aplicar').map(f => `- ${f.id}: ${f.motivo ?? 'error'}${f.detalle ? ' ' + JSON.stringify(f.detalle) : ''} (precio ${f.precio}, ganador ${f.ganador})`).join('\n');
     await enviarAlarma({
       aviso: !motivosFalla.length,
       asunto: motivosFalla.length ? `auditoría de ${cuenta.nombre} con problemas serios` : `auditoría de ${cuenta.nombre} con avisos (la corrida está bien)`,
