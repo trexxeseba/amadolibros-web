@@ -60,7 +60,7 @@ export class VintageBulkStore extends VintageStore {
 // A persistent seller-wide request clock prevents bursts across tabs/isolates.
 // It is an application budget (30 requests/minute), not a claimed ML limit.
 // intervalMs: separación mínima entre pedidos a Mercado Libre (2 s por defecto; la nube puede bajarlo).
-export function createVintageBulkFetch({fetcher=(...args)=>fetch(...args),now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),random=Math.random,intervalMs=2000}={}){
+export function createVintageBulkFetch({fetcher=(...args)=>fetch(...args),now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),random=Math.random,intervalMs=2000,cooldownFloorMs=120000}={}){
  const gap=Math.max(250,Math.min(10000,Number(intervalMs)||2000));
  let tail=Promise.resolve();
  return (env,url,options)=>{
@@ -81,7 +81,7 @@ export function createVintageBulkFetch({fetcher=(...args)=>fetch(...args),now=Da
    if(cacheable&&response.ok){try{const text=await response.clone().text();if(text.length<=524288){JSON.parse(text);await db.prepare('INSERT INTO ml_vintage_bulk_cache(url,expires_at,response_json) VALUES(?,?,?) ON CONFLICT(url) DO UPDATE SET expires_at=excluded.expires_at,response_json=excluded.response_json').bind(url,now()+1800000,text).run();}}catch{}}
    if(response.status===429){
     const header=response.headers.get('retry-after'),seconds=Number(header),serverWait=Number.isFinite(seconds)?seconds*1000:Math.max(0,Date.parse(header)-now())||0;
-    const until=now()+Math.max(serverWait,Math.min(3600000,120000*2**Math.min(rate.strikes,5)))+Math.floor(random()*15000);
+    const until=now()+Math.max(serverWait,Math.min(3600000,cooldownFloorMs*2**Math.min(rate.strikes,5)))+Math.floor(random()*15000);
     await db.prepare('UPDATE ml_vintage_bulk_rate SET cooldown=MAX(cooldown,?),strikes=MIN(strikes+1,6) WHERE id=1').bind(until).run();
    }
    return response;

@@ -137,3 +137,31 @@ test('the Vintage request clock spaces requests by the configured interval',asyn
  assert.deepEqual(waits,[500,500]);
  db.close();
 });
+
+test('a new supplier list keeps a recent complete inventory scan (cloud), and the old behaviour stays without keepIndexDays',async t=>{
+ const {run}=await import('../../scripts/vintage-local/engine.mjs');
+ const {openDatabase}=await import('../../scripts/vintage-local/db.mjs');
+ const isbn=n=>{const stem='978'+String(n).padStart(9,'0');const sum=[...stem].reduce((t,c,i)=>t+Number(c)*(i%2?3:1),0);return stem+((10-sum%10)%10);};
+ for(const [keepIndexDays,expected] of [[3,1],[0,0]]){
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'vintage-keep-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+  const now=Date.now(),source_date=new Date(now-3600000).toISOString(),rows=[{isbn:isbn(1),title:'Hoy',listArs:40000,weightKg:.5,stock:'2'}];
+  const base={version:1,endpoint:'https://www.amadolibros.com/operations/vintage-local',key:'b'.repeat(64),expires_at:now+86400000,seller_id:'2341378249',app_id:'4741021817925208',run_id:BULK_RUN,policy,policy_hash:await policyHash(policy),source_date,receipts:[],inventory:[{item_id:'MLU9',isbn:isbn(9),title_key:'x',status:'active'}],identifiers:[],amendments:[],inventory_checkpoint:{status:'all',scroll:null,pending:[],done:true,seen:1,completedAt:new Date(now-3600000).toISOString()}};
+  const stop=Object.assign(new Error('stop_here'),{code:'stop_here'});
+  const go=async(feed_id,sha)=>{const connection=path.join(dir,'c.json');await fs.writeFile(connection,JSON.stringify({...base,feed_id,source_sha256:sha}));
+   await assert.rejects(()=>run({excel:'x',connection,directory:dir,keepIndexDays,readWorkbook:async()=>({source_date,source_sha256:sha,rows}),apiFactory:()=>({async account(){throw stop;}}),brokerFactory:()=>async()=>({})}),/stop_here/);};
+  await go(crypto.randomUUID(),'c'.repeat(64));
+  await go(crypto.randomUUID(),'d'.repeat(64));
+  const db=openDatabase(path.join(dir,'publisher.sqlite'));
+  const n=(await db.prepare('SELECT COUNT(*) n FROM ml_vintage_pub_index').first()).n,idx=JSON.parse((await db.prepare('SELECT index_json FROM ml_vintage_pub_runs WHERE id=?').bind(BULK_RUN).first()).index_json);
+  db.close();
+  assert.equal(n,expected,`keepIndexDays=${keepIndexDays}`);assert.equal(Boolean(idx.done),expected===1);
+ }
+});
+
+test('the D1 state save runs several writes at once and still saves every row',async()=>{
+ let inFlight=0,peak=0,saved=0;
+ const query=async(sql,params)=>{inFlight++;peak=Math.max(peak,inFlight);await new Promise(r=>setTimeout(r,5));inFlight--;saved+=params.length/13;return [];};
+ const rows=Array.from({length:100},(_,i)=>({isbn:String(i),item_id:'MLU'+i,updated_at:1}));
+ assert.equal(await saveStockState(query,rows),100);
+ assert.equal(saved,100);assert.ok(peak>1&&peak<=8);
+});

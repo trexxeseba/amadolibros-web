@@ -117,3 +117,15 @@ test('on a brand-new database (cloud) the request clock table is created, so the
  const db=openDatabase(path.join(f.temp,'publisher.sqlite'));t.after(()=>db.close());
  assert.ok(await db.prepare('SELECT next_at FROM ml_vintage_bulk_rate WHERE id=1').first());
 });
+test('a run where nothing changed leaves updated_at alone, so the cloud saves no rows to D1',async t=>{
+ const f=await fixture(t),all=new Set(ISBNS);
+ await f.run(all,{mode:'report'});
+ const db=openDatabase(path.join(f.temp,'publisher.sqlite'));t.after(()=>db.close());
+ const before=(await db.prepare('SELECT MAX(updated_at) m FROM vintage_stock_sync').first()).m;
+ f.clock.value+=3600000;
+ await f.run(all,{mode:'report'});
+ assert.equal((await db.prepare('SELECT COUNT(*) n FROM vintage_stock_sync WHERE updated_at>?').bind(before).first()).n,0);
+ // Un libro que falta hoy sí cambia.
+ await f.run(new Set(ISBNS.slice(1)),{mode:'report'});
+ assert.equal((await db.prepare('SELECT COUNT(*) n FROM vintage_stock_sync WHERE updated_at>?').bind(before).first()).n,1);
+});

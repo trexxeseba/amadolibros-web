@@ -62,7 +62,7 @@ export async function inspectWorkbook(file){
  const bytes=await fs.readFile(file),input=readFullStock(bytes);
  return {...input,source_sha256:await sha256('vintage-bulk-positive-v1:'+await sha256(bytes))};
 }
-export async function run({excel,connection,directory,target=1000,raiseTargetTo=0,intervalMs=2000,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
+export async function run({excel,connection,directory,target=1000,raiseTargetTo=0,intervalMs=2000,requestTimeoutMs=60000,statusEvery=1,keepIndexDays=0,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
  if(!Number.isInteger(target)||target<5||target>MAX_TARGET_TOTAL||!Number.isInteger(validateOnly)||validateOnly<0||validateOnly>5)throw new Error('invalid_local_limits');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
  if(await policyHash(policy)!==c.policy_hash)throw new Error('connection_policy_changed');
@@ -71,7 +71,7 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
  await fs.mkdir(directory,{recursive:true});
  const db=openDatabase(path.join(directory,validateOnly?'validation.sqlite':'publisher.sqlite')),broker=brokerFactory(c),env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id,ML_PUBLISHER_MODE:'enabled',ML_PUBLISH_QUEUE_ENABLED:'false'};
  let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false,capHit=false,sliceDone=false;
- const limited=createVintageBulkFetch({intervalMs}),rateLog=path.join(directory,'rate-limit-events.jsonl');let listingQuotaHit=false;
+ const limited=createVintageBulkFetch({intervalMs,cooldownFloorMs:intervalMs<2000?15000:120000}),rateLog=path.join(directory,'rate-limit-events.jsonl');let listingQuotaHit=false;
  // Records which endpoint got a real 429 (no ids or tokens) and notices the listing-quota refusal.
  const watched=async(url,options)=>{
   const response=await limited(env,url,options);
@@ -81,7 +81,7 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
   }catch{}
   return response;
  };
- api=apiFactory({sellerId:SELLER,timeouts:{request:60000,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>watched(url,options)});
+ api=apiFactory({sellerId:SELLER,timeouts:{request:requestTimeoutMs,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>watched(url,options)});
  class LocalStore extends VintageBulkStore{
   async reserve(seller,isbn,runId,now,cap,lease){
    if(validateOnly)throw new Error('validation_cannot_reserve');
@@ -89,6 +89,18 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
    if(!result.reserved){const r=result.receipt;if(r)await this.stmt('INSERT OR IGNORE INTO ml_pub_receipts VALUES(?,?,?,?,?,?,?)',SELLER,r.isbn,r.state,r.item_id??null,r.run_id,r.created_at,r.updated_at).run();return null;}
    reservationsThisProcess++;
    return super.reserve(seller,isbn,runId,now,cap,lease);
+  }
+  // Lista nueva del proveedor: el servidor borra el recorrido del inventario y lo rehace entero
+  // (~15.000 publicaciones, un tercio de la corrida). Con keepIndexDays se conserva un recorrido
+  // completo de hace menos de N días. No abre duplicados: los recibos, la reserva por ISBN en el
+  // servidor y la búsqueda por SKU de cada candidato siguen igual.
+  async attachFeed(id,feedId){
+   const before=await this.run(id);let keep=null,rows=null;
+   try{keep=JSON.parse(before?.index_json??'null');}catch{}
+   const fresh=keepIndexDays>0&&keep?.done&&Date.now()-Date.parse(keep.completedAt??'')<keepIndexDays*86400000;
+   if(fresh)rows=(await this.stmt('SELECT item_id,isbn,title_key,status FROM ml_pub_index WHERE run_id=?',id).all()).results;
+   await super.attachFeed(id,feedId);
+   if(rows)await this.saveIndex(id,keep,rows.map(r=>({id:r.item_id,isbn:r.isbn,titleKey:r.title_key,status:r.status})));
   }
   async receiptState(seller,isbn,state,itemId=null){
    if(state==='published'){
@@ -163,7 +175,7 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
     const q=new URLSearchParams({search_type:'scan',limit:'100'});if(next.scroll)q.set('scroll_id',next.scroll);
     let page;try{page=await api.call(e,`/users/${SELLER}/items/search?${q}`);}catch(error){if(!next.scroll||![400,404,410].includes(error.status))throw error;q.delete('scroll_id');next.scroll=null;page=await api.call(e,`/users/${SELLER}/items/search?${q}`);}
     if(page.seller_id!==undefined&&String(page.seller_id)!==SELLER)throw new Error('inventory_seller_mismatch');
-    if(page.results===null||Array.isArray(page.results)&&!page.results.length)return {index:{...next,done:true},items:[]};
+    if(page.results===null||Array.isArray(page.results)&&!page.results.length)return {index:{...next,done:true,completedAt:new Date().toISOString()},items:[]};
     if(!Array.isArray(page.results)||page.results.some(x=>!/^MLU\d+$/.test(x)))throw new Error('inventory_invalid');
     next.pending=page.results;next.scroll=page.scroll_id??null;
    }
@@ -182,12 +194,17 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
   const service=createPublicationService({sellerId:SELLER,api:localApi,storeFactory:()=>s,maxJobsPerTick:1,maxIndexSlicesPerTick:1,stockMaxHours:VINTAGE_STOCK_MAX_HOURS});
   const identity=await api.account(env);if(String(identity.id)!==SELLER)throw new Error('seller_mismatch');
   const start=5+await s.publishedCount(BULK_RUN);let batchStart=start;
+  let remoteCache=null,reservationsAtStatus=0,ticks=0;
   // Turno de publicación: con maxMs el motor cede el tiempo restante a la corrección de
   // precios de lo ya publicado (reparto 70/30 del día, lo fija el autorun).
   const turnStarted=Date.now();
   for(;;){
    if(maxMs&&Date.now()-turnStarted>=maxMs){sliceDone=true;break;}
-   const remote=await broker('status'),hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0);const dailyCap=Number.isInteger(remote.daily_cap)&&remote.daily_cap>0?remote.daily_cap:1000;if(!validateOnly)await s.stmt('UPDATE ml_pub_runs SET daily_cap=? WHERE id=? AND daily_cap<>?',dailyCap,BULK_RUN,dailyCap).run();if(remote.daily_created>=dailyCap&&!validateOnly&&!hasUncertain){capHit=true;const capped={at:new Date().toISOString(),seller_id:SELLER,state:'daily_cap_reached',published_total:remote.published_total};await fs.writeFile(path.join(directory,'status.json'),JSON.stringify(capped,null,2));onStatus(JSON.stringify(capped));break;}
+   // El estado del servidor (altas del día, total) se pide cada statusEvery vueltas; entre medio se
+   // suman las reservas propias, así el tope diario se respeta igual.
+   if(!remoteCache||ticks%statusEvery===0){remoteCache=await broker('status');reservationsAtStatus=reservationsThisProcess;}
+   ticks++;
+   const extra=reservationsThisProcess-reservationsAtStatus,remote={...remoteCache,daily_created:(remoteCache.daily_created??0)+extra,published_total:(remoteCache.published_total??0)+extra},hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0);const dailyCap=Number.isInteger(remote.daily_cap)&&remote.daily_cap>0?remote.daily_cap:1000;if(!validateOnly)await s.stmt('UPDATE ml_pub_runs SET daily_cap=? WHERE id=? AND daily_cap<>?',dailyCap,BULK_RUN,dailyCap).run();if(remote.daily_created>=dailyCap&&!validateOnly&&!hasUncertain){capHit=true;const capped={at:new Date().toISOString(),seller_id:SELLER,state:'daily_cap_reached',published_total:remote.published_total};await fs.writeFile(path.join(directory,'status.json'),JSON.stringify(capped,null,2));onStatus(JSON.stringify(capped));break;}
    if(!validateOnly&&(remote.published_total>=target||limitNew&&reservationsThisProcess>=limitNew))break;
    const result=await service.tick(env,BULK_RUN),summary=await s.summary(BULK_RUN),published=5+await s.publishedCount(BULK_RUN),status={at:new Date().toISOString(),seller_id:SELLER,mode:validateOnly?'validate_only':'publish',published_total:published,run:summary,state:result.state??summary.state,...(result.error?{error:result.error}:{})};
    if(failedReadback)status.state='stopped_item_readback_failed';else if(listingQuotaHit)status.state='stopped_listing_quota';
@@ -195,7 +212,7 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
    if(failedReadback||listingQuotaHit)break;
    if(validateOnly&&summary.state==='ready'||['stock_stale','auth_error','complete','complete_with_review'].includes(summary.state))break;
    const activeRun=await s.run(BULK_RUN);
-   let wait=Math.max(1000,activeRun.backoff_until-Date.now(),result.state==='busy'?Math.min(15000,Math.max(1000,activeRun.lease_until-Date.now())):0,remote.daily_created>=dailyCap?60000:0);
+   let wait=Math.max(statusEvery>1?200:1000,activeRun.backoff_until-Date.now(),result.state==='busy'?Math.min(15000,Math.max(1000,activeRun.lease_until-Date.now())):0,remote.daily_created>=dailyCap?60000:0);
    if(published-batchStart>=25){batchStart=published;wait=Math.max(wait,20000);}
    if(wait>1000)onStatus(JSON.stringify({state:'waiting',seconds:Math.ceil(wait/1000)}));await waitFor(wait);
   }

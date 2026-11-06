@@ -77,7 +77,8 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
    const since=prev?.missing_since||feedTime;
    updates.push({isbn:r.isbn,item_id:r.item_id,desired:feedTime-since>=graceMs?'paused':(prev?.desired_status??null),missing_since:since});
   }
-  for(const u of updates)await stmt('INSERT INTO vintage_stock_sync(isbn,item_id,desired_status,missing_since,feed_id,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(isbn) DO UPDATE SET item_id=excluded.item_id,desired_status=excluded.desired_status,missing_since=excluded.missing_since,feed_id=excluded.feed_id,updated_at=excluded.updated_at',u.isbn,u.item_id,u.desired,u.missing_since,c.feed_id,now()).run();
+  // updated_at sólo cambia si cambió algo de verdad: la nube guarda en D1 únicamente esas filas.
+  for(const u of updates)await stmt('INSERT INTO vintage_stock_sync(isbn,item_id,desired_status,missing_since,feed_id,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(isbn) DO UPDATE SET updated_at=CASE WHEN item_id IS NOT excluded.item_id OR desired_status IS NOT excluded.desired_status OR missing_since IS NOT excluded.missing_since THEN excluded.updated_at ELSE updated_at END,item_id=excluded.item_id,desired_status=excluded.desired_status,missing_since=excluded.missing_since,feed_id=excluded.feed_id',u.isbn,u.item_id,u.desired,u.missing_since,c.feed_id,now()).run();
   const summary={state:'synced',mode,feed_id:c.feed_id,source_date:input.source_date,published:rows.length,in_stock:rows.length-missing,missing,suspicious_feed:suspicious,paused:0,activated:0,unchanged:0,skipped:0,errors:0};
   if(mode==='report')return finish({...summary,state:'report'});
   const wanted=mode==='pause_only'?['paused']:['paused','active'];

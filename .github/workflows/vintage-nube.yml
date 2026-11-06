@@ -127,7 +127,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vintage-nube-${{ github.run_id }}
-          path: ${{ runner.temp }}/reporte/
+          path: |
+            ${{ runner.temp }}/reporte/
+            ${{ runner.temp }}/vintage/rate-limit-events.jsonl
+            ${{ runner.temp }}/vintage/status.json
           retention-days: 30
           if-no-files-found: ignore
 

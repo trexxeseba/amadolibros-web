@@ -30,13 +30,15 @@ export async function loadStockState(query){
  await query(CLOUD_STOCK_SCHEMA);
  return query(`SELECT ${STOCK_COLUMNS.join(',')} FROM ${CLOUD_STOCK_TABLE}`);
 }
-export async function saveStockState(query,rows){
- let saved=0;
- for(let i=0;i<rows.length;i+=ROWS_PER_INSERT){
-  const group=rows.slice(i,i+ROWS_PER_INSERT);
+export async function saveStockState(query,rows,{parallel=8}={}){
+ let saved=0;const groups=[];
+ for(let i=0;i<rows.length;i+=ROWS_PER_INSERT)groups.push(rows.slice(i,i+ROWS_PER_INSERT));
+ // Varias consultas a la vez: grabar 13.000 filas de a una tardaba 20 minutos.
+ let next=0;
+ await Promise.all(Array.from({length:Math.min(parallel,groups.length)},async()=>{for(;;){const group=groups[next++];if(!group)return;
   const values=group.map(()=>`(${STOCK_COLUMNS.map(()=>'?').join(',')})`).join(',');
   await query(`INSERT INTO ${CLOUD_STOCK_TABLE}(${STOCK_COLUMNS.join(',')}) VALUES ${values} ON CONFLICT(isbn) DO UPDATE SET ${STOCK_COLUMNS.slice(1).map(c=>`${c}=excluded.${c}`).join(',')}`,group.flatMap(r=>STOCK_COLUMNS.map(c=>r[c]??null)));
   saved+=group.length;
- }
+ }}));
  return saved;
 }

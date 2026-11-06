@@ -24,6 +24,9 @@ import {d1Client,loadStockState,saveStockState,STOCK_COLUMNS} from './d1.mjs';
 
 export const ACTIONS=['keepalive','numeros','prueba','publicar'];
 export const HARD_MAX_PER_RUN=1000,HARD_MAX_PER_DAY=5000;
+// Ajustes del motor en la nube: lecturas cortadas a los 15 s (crear sigue en 60 s), estado del
+// servidor cada 10 vueltas y el recorrido del inventario se conserva hasta 3 días.
+export const CLOUD_ENGINE={requestTimeoutMs:15000,statusEvery:10,keepIndexDays:3};
 const CAMPAIGN=path.join(path.dirname(fileURLToPath(import.meta.url)),'..','vintage-local','campaign.json');
 const problem=(code,detail={})=>Object.assign(new Error(code),{code,detail});
 
@@ -94,7 +97,7 @@ async function cloudRunInner({action,directory,campaign,overrides={},env=process
   if(action==='prueba'){
    state.fase='motor_prueba';let result;
    // Un corte de autorización a mitad del recorrido se reintenta: la base guardada sigue desde donde quedó.
-   for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,validateOnly:5,target:settings.target_total,intervalMs:settings.intervalo_ms,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
+   for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,validateOnly:5,target:settings.target_total,intervalMs:settings.intervalo_ms,...CLOUD_ENGINE,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
    let preview=[];try{preview=JSON.parse(await fs.readFile(path.join(directory,'items.preview.json'),'utf8'));}catch{}
    report.prueba={estado:result.state,altas_preparadas:preview.map(p=>({isbn:p.isbn,estado:p.state,precio:p.payload?.price??null,titulo:p.payload?.title??null,motivo:p.error_code??null}))};
    return {...report,estado:'prueba_lista'};
@@ -104,7 +107,7 @@ async function cloudRunInner({action,directory,campaign,overrides={},env=process
   report.freno={altas_hoy:status.daily_created,tope_diario:settings.tope_diario,tanda:n};
   if(n===0)return {...report,estado:'tope_diario_alcanzado'};
   let result;
-  for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,limitNew:n,target:settings.target_total,raiseTargetTo:settings.target_total,intervalMs:settings.intervalo_ms,maxMs:settings.minutos*60000,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
+  for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,limitNew:n,target:settings.target_total,raiseTargetTo:settings.target_total,intervalMs:settings.intervalo_ms,...CLOUD_ENGINE,maxMs:settings.minutos*60000,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
   const after=await (deps.broker??makeBroker)(c)('status');
   report.publicacion={estado:result.state,publicados_total:result.published_total,altas_de_esta_corrida:Math.max(0,after.daily_created-status.daily_created)};
   return {...report,estado:result.state};
