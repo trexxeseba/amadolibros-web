@@ -1,103 +1,43 @@
 {
-  "fecha": "2026-11-07T18:35:05.075Z",
+  "fecha": "2026-11-07T20:27:16.599Z",
   "muestra": [
     {
-      "id": "MLU703046085",
-      "titulo": "La Barca De Hanielle, De Arias Dominguez, Emilia Laura. Edit",
-      "precio": 2970,
-      "estado": "competing",
-      "precio_para_ganar": 2484,
-      "competidor_mas_barato": 2510,
-      "otras_ofertas": 4,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Pierde: para ganar, 2484. Ganador MLU695699747 a 2510",
-      "ok": true
-    },
-    {
-      "id": "MLU1531960924",
-      "titulo": "Dinosaurios Brillantes - Megakit De Arte - Con Marcadores",
-      "precio": 2450,
-      "estado": "listed",
-      "precio_para_ganar": 2450,
-      "competidor_mas_barato": 770,
-      "otras_ofertas": 4,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Estado listed (no compite)",
-      "ok": true
-    },
-    {
-      "id": "MLU1521276438",
-      "titulo": "¡a Jugar Ya! Ajedrez Para Niños - Intermedio -",
-      "precio": 2080,
-      "estado": "competing",
-      "precio_para_ganar": 1523,
-      "competidor_mas_barato": 1539,
-      "otras_ofertas": 5,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Pierde: para ganar, 1523. Ganador MLU1525447396 a 1539",
-      "ok": true
-    },
-    {
-      "id": "MLU703114959",
-      "titulo": "Campo Albornoz - Osvaldo Aguirre",
-      "precio": 1600,
-      "estado": "listed",
-      "precio_para_ganar": 1600,
-      "competidor_mas_barato": 527,
-      "otras_ofertas": 4,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Estado listed (no compite)",
-      "ok": true
-    },
-    {
-      "id": "MLU1522603634",
-      "titulo": "Amazing Spider-man N.11, De Zeb Wells, Rainbow Rowell, John ",
-      "precio": 1600,
+      "id": "MLU703070939",
+      "titulo": "Bear & Bird Adventure & Other S, De Jarvis. Editorial Candle",
+      "precio": 1255,
       "estado": "winning",
-      "precio_para_ganar": 1600,
-      "competidor_mas_barato": 1462,
+      "precio_para_ganar": 1255,
+      "competidor_mas_barato": 1268,
+      "otras_ofertas": 2,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 1268",
+      "ok": true
+    },
+    {
+      "id": "MLU1518192632",
+      "titulo": "Cuando No Queden Mas Estrellas Que Contar Ed Esp - Booket",
+      "precio": 2648,
+      "estado": "competing",
+      "precio_para_ganar": 1692,
+      "competidor_mas_barato": 1710,
       "otras_ofertas": 1,
       "sugerencias_ml": [
         "Envíos Full",
         "Envíos en el día"
       ],
-      "conclusion": "Gana aunque hay uno más barato (1462): ML pesa envío y reputación",
+      "conclusion": "Pierde: para ganar, 1692. Ganador MLU1525447450 a 1710",
       "ok": true
     },
     {
-      "id": "MLU703771377",
-      "titulo": "Experiencia Y Pobreza",
-      "precio": 2380,
-      "estado": "winning",
-      "precio_para_ganar": 2380,
-      "competidor_mas_barato": 1990,
-      "otras_ofertas": 3,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (1990): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU1531870626",
-      "titulo": "Libro Dias De Ocio En La Patagonia, De Hudson William H.. Ed",
-      "precio": 3050,
+      "id": "MLU1522466152",
+      "titulo": "El Alfabeto Del Perfume - Fernandez - Montena",
+      "precio": 2210,
       "estado": "listed",
-      "precio_para_ganar": 3050,
-      "competidor_mas_barato": 800,
+      "precio_para_ganar": 2210,
+      "competidor_mas_barato": 746,
       "otras_ofertas": 10,
       "sugerencias_ml": [
         "Envíos Full",
@@ -107,48 +47,108 @@
       "ok": true
     },
     {
-      "id": "MLU1524358496",
-      "titulo": "Capitan Muerte, De Nahuel Amaya. Editorial Maten Al Mensajer",
-      "precio": 1365,
+      "id": "MLU1531846390",
+      "titulo": "Libro Donde El Viento Nos Lleve - Mariano Rodriguez, De Rodr",
+      "precio": 2340,
+      "estado": "listed",
+      "precio_para_ganar": 2340,
+      "competidor_mas_barato": 847,
+      "otras_ofertas": 5,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Estado listed (no compite)",
+      "ok": true
+    },
+    {
+      "id": "MLU1522467732",
+      "titulo": "Ali Baba And The Forty Thieves- Pesr Level 3 Kel Ediciones",
+      "precio": 1488,
       "estado": "winning",
-      "precio_para_ganar": 1365,
-      "competidor_mas_barato": 1380,
+      "precio_para_ganar": 1488,
+      "competidor_mas_barato": 1504,
+      "otras_ofertas": 1,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 1504",
+      "ok": true
+    },
+    {
+      "id": "MLU703639213",
+      "titulo": "Libro Diccionario Guarania Ilustrado Guarani - Espa/ol De Fe",
+      "precio": 1653,
+      "estado": "winning",
+      "precio_para_ganar": 1653,
+      "competidor_mas_barato": 1670,
+      "otras_ofertas": 3,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 1670",
+      "ok": true
+    },
+    {
+      "id": "MLU1523487018",
+      "titulo": "El Arte De Vivir (ed.arg.), De Krishnamurti, Jiddu. Editoria",
+      "precio": 2180,
+      "estado": "listed",
+      "precio_para_ganar": 2180,
+      "competidor_mas_barato": 990,
+      "otras_ofertas": 7,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Estado listed (no compite)",
+      "ok": true
+    },
+    {
+      "id": "MLU703592869",
+      "titulo": "Libro Dive #3: The Danger, De Gordon Korman. Editorial Schol",
+      "precio": 1448,
+      "estado": "winning",
+      "precio_para_ganar": 1448,
+      "competidor_mas_barato": 1463,
+      "otras_ofertas": 1,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 1463",
+      "ok": true
+    },
+    {
+      "id": "MLU1523004754",
+      "titulo": "Libro Anatomia Oculta, De Pellegrino, Andrea. Editorial Edic",
+      "precio": 2120,
+      "estado": "competing",
+      "precio_para_ganar": 1189,
+      "competidor_mas_barato": 971,
       "otras_ofertas": 4,
       "sugerencias_ml": [
         "Envíos Full",
         "Envíos en el día"
       ],
-      "conclusion": "Gana: el competidor más barato está en 1380",
+      "conclusion": "Pierde: para ganar, 1189. Ganador MLU1069714494 a 971",
       "ok": true
     },
     {
-      "id": "MLU703069499",
-      "titulo": "Barcelona Pocket 8º Edition - Lonely Planet, De No Aplica. E",
-      "precio": 1690,
-      "estado": "winning",
-      "precio_para_ganar": 1690,
-      "competidor_mas_barato": null,
-      "otras_ofertas": 0,
+      "id": "MLU1524177206",
+      "titulo": "Blood Of Hercules - Jasmine Mas",
+      "precio": 1721,
+      "estado": "sharing_first_place",
+      "precio_para_ganar": 1704,
+      "competidor_mas_barato": 1722,
+      "otras_ofertas": 1,
       "sugerencias_ml": [
         "Envíos Full",
         "Envíos en el día"
       ],
-      "conclusion": "Gana: no hay otros vendedores",
-      "ok": true
-    },
-    {
-      "id": "MLU1531973154",
-      "titulo": "Estrogenos Importan Los",
-      "precio": 2670,
-      "estado": "competing",
-      "precio_para_ganar": 1002,
-      "competidor_mas_barato": 792,
-      "otras_ofertas": 8,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Pierde: para ganar, 1002. Ganador MLU1343304776 a 792",
+      "conclusion": "Comparte el primer lugar (1 más)",
       "ok": true
     }
   ],
@@ -229,8 +229,8 @@
       "id": "MLU1521872560",
       "titulo": "Libro Mafalda 2026, Pocket, De Quino. Editorial Ediciones Granica",
       "original": 1600,
-      "aplicado": 1524,
-      "en_ml": 1524,
+      "aplicado": 1459,
+      "en_ml": 1459,
       "ok": true,
       "problemas": []
     },
@@ -328,8 +328,8 @@
       "id": "MLU1521718936",
       "titulo": "Adomania 1 - Cahier D'activites + Cd Audio + Parcours Digita",
       "original": 2220,
-      "aplicado": 2138,
-      "en_ml": 2138,
+      "aplicado": 2168,
+      "en_ml": 2168,
       "ok": true,
       "problemas": []
     },
@@ -661,8 +661,8 @@
       "id": "MLU1522278822",
       "titulo": "El Ajedrez En La Escuela - Miguel Soutullo !",
       "original": 1692,
-      "aplicado": 1616,
-      "en_ml": 1616,
+      "aplicado": 1633,
+      "en_ml": 1633,
       "ok": true,
       "problemas": []
     },
@@ -1147,8 +1147,8 @@
       "id": "MLU1522462982",
       "titulo": "Al Pie De La Torre Eiffel - Oardo Bazan Emilia - #w",
       "original": 2140,
-      "aplicado": 1969,
-      "en_ml": 1969,
+      "aplicado": 1989,
+      "en_ml": 1989,
       "ok": true,
       "problemas": []
     },
@@ -1372,8 +1372,8 @@
       "id": "MLU702966409",
       "titulo": "Ama Tu Soledad Editorial Vergara Tapa Blanda",
       "original": 2440,
-      "aplicado": 2277,
-      "en_ml": 2277,
+      "aplicado": 2204,
+      "en_ml": 2204,
       "ok": true,
       "problemas": []
     },
@@ -1534,8 +1534,8 @@
       "id": "MLU702952833",
       "titulo": "Planeta Manga: Alter Ego Nº 02, De Ana C. Sánchez., Vol. 2. Editorial Planeta Co",
       "original": 1750,
-      "aplicado": 1673,
-      "en_ml": 1673,
+      "aplicado": 1606,
+      "en_ml": 1606,
       "ok": true,
       "problemas": []
     },
@@ -4132,15 +4132,6 @@
       "problemas": []
     },
     {
-      "id": "MLU1523656642",
-      "titulo": "Asquerosologia De La Cabeza A Los Pies",
-      "original": 1670,
-      "aplicado": 1569,
-      "en_ml": 1569,
-      "ok": true,
-      "problemas": []
-    },
-    {
       "id": "MLU1523656512",
       "titulo": "Libro Aspekte Neu (b2. 1) Lehrbuch + Arbeitsbuch + Licencias Digitales, De Koith",
       "original": 4220,
@@ -4414,8 +4405,8 @@
       "id": "MLU1523504758",
       "titulo": "Atalaya: Con Fotografías De Paz Juristo, De Del Castaño Villanueva, Álvaro. N/a,",
       "original": 1770,
-      "aplicado": 1633,
-      "en_ml": 1633,
+      "aplicado": 1567,
+      "en_ml": 1567,
       "ok": true,
       "problemas": []
     },
@@ -4630,8 +4621,8 @@
       "id": "MLU1523495184",
       "titulo": "Libros Sobre Ruedas: El Auto De Bruno, De Varios Autores. Editorial Pluton Kids,",
       "original": 1600,
-      "aplicado": 1455,
-      "en_ml": 1455,
+      "aplicado": 1400,
+      "en_ml": 1400,
       "ok": true,
       "problemas": []
     },
@@ -5314,8 +5305,8 @@
       "id": "MLU703058643",
       "titulo": "Libro La Ballena Que Se Creia Un Pececito, De Chiara Ravizza ; Susanna Covelli, ",
       "original": 1920,
-      "aplicado": 1742,
-      "en_ml": 1742,
+      "aplicado": 1675,
+      "en_ml": 1675,
       "ok": true,
       "problemas": []
     },
@@ -7402,8 +7393,8 @@
       "id": "MLU1524180382",
       "titulo": "Bosque, El, De Anónimo. Editorial Manolito Books, Tapa Blanda",
       "original": 2670,
-      "aplicado": 2336,
-      "en_ml": 2336,
+      "aplicado": 2263,
+      "en_ml": 2263,
       "ok": true,
       "problemas": []
     },
@@ -7573,8 +7564,8 @@
       "id": "MLU1524176416",
       "titulo": "Blanco, De Han Kang. Única, Vol. Único. Editorial Random House, Tapa Blanda En E",
       "original": 2180,
-      "aplicado": 1970,
-      "en_ml": 1970,
+      "aplicado": 1899,
+      "en_ml": 1899,
       "ok": true,
       "problemas": []
     },
@@ -7780,8 +7771,8 @@
       "id": "MLU703073719",
       "titulo": "La Beseria De Feliz",
       "original": 1980,
-      "aplicado": 1673,
-      "en_ml": 1673,
+      "aplicado": 1606,
+      "en_ml": 1606,
       "ok": true,
       "problemas": []
     },
@@ -8059,8 +8050,8 @@
       "id": "MLU703062783",
       "titulo": "Libro Bela Bartok En El Exilio - Xavier Guell, De Guell, Xavier. Editorial Galax",
       "original": 2530,
-      "aplicado": 2335,
-      "en_ml": 2335,
+      "aplicado": 2264,
+      "en_ml": 2264,
       "ok": true,
       "problemas": []
     },
@@ -8266,8 +8257,8 @@
       "id": "MLU703049675",
       "titulo": "Belleza Chamãâ¡nica: Meditaciones Y Cosmética Natural, De Lumira. El Hilo Verde,",
       "original": 2620,
-      "aplicado": 2342,
-      "en_ml": 2342,
+      "aplicado": 2366,
+      "en_ml": 2366,
       "ok": true,
       "problemas": []
     },
@@ -8322,15 +8313,6 @@
       "original": 1608,
       "aplicado": 1534,
       "en_ml": 1534,
-      "ok": true,
-      "problemas": []
-    },
-    {
-      "id": "MLU703049007",
-      "titulo": "Canciones Iii De The Beatles, De Beatles, The., Vol. 3. Editorial Editorial Fund",
-      "original": 1600,
-      "aplicado": 1485,
-      "en_ml": 1485,
       "ok": true,
       "problemas": []
     },
@@ -10462,8 +10444,8 @@
       "id": "MLU703084837",
       "titulo": "Libro Mafalda 2026, Calendario De Pared, De Quino. Editorial Ediciones Granica S",
       "original": 1650,
-      "aplicado": 1584,
-      "en_ml": 1584,
+      "aplicado": 1518,
+      "en_ml": 1518,
       "ok": true,
       "problemas": []
     },
@@ -11461,8 +11443,8 @@
       "id": "MLU1524346774",
       "titulo": "Cara De Conejo - Cara De, De Varios Es. Editorial Manolito Books En Español",
       "original": 2060,
-      "aplicado": 1980,
-      "en_ml": 1980,
+      "aplicado": 1909,
+      "en_ml": 1909,
       "ok": true,
       "problemas": []
     },
@@ -14509,15 +14491,6 @@
       "problemas": []
     },
     {
-      "id": "MLU1522604150",
-      "titulo": "Libro América, De Wainer Ariel, Vol. Volumen Único. Editorial Marea, Tapa Blanda",
-      "original": 1603,
-      "aplicado": 1504,
-      "en_ml": 1504,
-      "ok": true,
-      "problemas": []
-    },
-    {
       "id": "MLU1522604008",
       "titulo": "Libro Amelia Bedelia - Level 2 I Can Read, De Parish, Peggy. Editorial Harpercol",
       "original": 1600,
@@ -14791,8 +14764,8 @@
       "id": "MLU1522456022",
       "titulo": "Alicia En El Pais De Las Maravillas - Lewis Carroll, De Carroll, Lewis. Editoria",
       "original": 1600,
-      "aplicado": 1381,
-      "en_ml": 1381,
+      "aplicado": 1395,
+      "en_ml": 1395,
       "ok": true,
       "problemas": []
     },
@@ -23134,8 +23107,8 @@
       "id": "MLU1524697980",
       "titulo": "Cautivo En Patagonia, Benjamin Franklin Bourne, Continente",
       "original": 1600,
-      "aplicado": 1376,
-      "en_ml": 1376,
+      "aplicado": 1440,
+      "en_ml": 1440,
       "ok": true,
       "problemas": []
     },
@@ -23773,8 +23746,8 @@
       "id": "MLU1524481120",
       "titulo": "Nate The Great & Me:the Case Of The Fleeing Fang -yearling K",
       "original": 1600,
-      "aplicado": 1306,
-      "en_ml": 1306,
+      "aplicado": 1376,
+      "en_ml": 1376,
       "ok": true,
       "problemas": []
     },
@@ -25123,8 +25096,8 @@
       "id": "MLU1525835142",
       "titulo": "La Ciencia No Respeta Nada, De Alphonse Allais., Vol. 0. Editorial La Fuga, Tapa",
       "original": 2270,
-      "aplicado": 2067,
-      "en_ml": 2067,
+      "aplicado": 2088,
+      "en_ml": 2088,
       "ok": true,
       "problemas": []
     },
@@ -26050,8 +26023,8 @@
       "id": "MLU702854493",
       "titulo": "Aforismos Visiones Y Sueãâos, De Kafka, Franz. El Club Diógenes, Vol. 1. Editori",
       "original": 2130,
-      "aplicado": 1852,
-      "en_ml": 1852,
+      "aplicado": 1871,
+      "en_ml": 1871,
       "ok": true,
       "problemas": []
     },
@@ -26428,8 +26401,8 @@
       "id": "MLU702996053",
       "titulo": "Aprendiz De Maga - El Trebol Azul - Serie Magenta, De Garcia Bazterra, Lilia. El",
       "original": 1346,
-      "aplicado": 1214,
-      "en_ml": 1214,
+      "aplicado": 1227,
+      "en_ml": 1227,
       "ok": true,
       "problemas": []
     },
@@ -27553,8 +27526,8 @@
       "id": "MLU703095901",
       "titulo": "Cabalgar El Tigre Orientaciones Existenciales Para Una Época De Disolución, De E",
       "original": 2603,
-      "aplicado": 2400,
-      "en_ml": 2400,
+      "aplicado": 2425,
+      "en_ml": 2425,
       "ok": true,
       "problemas": []
     },
@@ -27634,8 +27607,8 @@
       "id": "MLU702947163",
       "titulo": "Libro - Apocalipsis 3 - Stephen King",
       "original": 2200,
-      "aplicado": 2077,
-      "en_ml": 2077,
+      "aplicado": 2098,
+      "en_ml": 2098,
       "ok": true,
       "problemas": []
     },
@@ -27643,8 +27616,8 @@
       "id": "MLU1523497796",
       "titulo": "Arte De Gobernar La Complejidad, El: Pensamiento Y Acción Para Construir Futuro ",
       "original": 1929,
-      "aplicado": 1881,
-      "en_ml": 1881,
+      "aplicado": 1812,
+      "en_ml": 1812,
       "ok": true,
       "problemas": []
     },
@@ -27661,8 +27634,8 @@
       "id": "MLU1524218550",
       "titulo": "Borges, Textos Secretos Y Falsas Atribuciones, De Alejandro Vaccaro., Vol. 1. Ed",
       "original": 2563,
-      "aplicado": 2504,
-      "en_ml": 2504,
+      "aplicado": 2420,
+      "en_ml": 2420,
       "ok": true,
       "problemas": []
     },
@@ -27670,8 +27643,8 @@
       "id": "MLU1524193122",
       "titulo": "Boscombe Valley Mistery,the, De An Doyle, Arthur. Editorial Helbling Languages, ",
       "original": 1600,
-      "aplicado": 1488,
-      "en_ml": 1488,
+      "aplicado": 1504,
+      "en_ml": 1504,
       "ok": true,
       "problemas": []
     },
@@ -27940,8 +27913,8 @@
       "id": "MLU1525827152",
       "titulo": "El Camino Del Alma Sensible, De Eva Aznar Baeza. Editorial Ediciones Isthar Luna",
       "original": 2750,
-      "aplicado": 2633,
-      "en_ml": 2633,
+      "aplicado": 2547,
+      "en_ml": 2547,
       "ok": true,
       "problemas": []
     },
@@ -29893,8 +29866,8 @@
       "id": "MLU1531171858",
       "titulo": "Complete English For Cambridge Lower Secondary 9 - Wb, De Parkinson, Tony. Edito",
       "original": 1660,
-      "aplicado": 1584,
-      "en_ml": 1584,
+      "aplicado": 1612,
+      "en_ml": 1612,
       "ok": true,
       "problemas": []
     },
@@ -30001,8 +29974,8 @@
       "id": "MLU1531170964",
       "titulo": "Como Mandar A La Mierda De Forma Educada, De Alba Cardalda. Única, Vol. Único. E",
       "original": 2530,
-      "aplicado": 2282,
-      "en_ml": 2282,
+      "aplicado": 2306,
+      "en_ml": 2306,
       "ok": true,
       "problemas": []
     },
@@ -30235,8 +30208,8 @@
       "id": "MLU1531169434",
       "titulo": "Los Colores De La Amabilidad, De Schiavo Galmozzi. Editorial Manolito Books, Edi",
       "original": 1950,
-      "aplicado": 1704,
-      "en_ml": 1704,
+      "aplicado": 1722,
+      "en_ml": 1722,
       "ok": true,
       "problemas": []
     },
@@ -31477,8 +31450,8 @@
       "id": "MLU1531147452",
       "titulo": "Comte: Orígenes Silenciados De La Deshumanización En Las Ciencias Sociales, De M",
       "original": 1600,
-      "aplicado": 1420,
-      "en_ml": 1420,
+      "aplicado": 1435,
+      "en_ml": 1435,
       "ok": true,
       "problemas": []
     },
@@ -33592,8 +33565,8 @@
       "id": "MLU1531133850",
       "titulo": "Cómo Superar La Depresión (relanzamiento), De Enrique Rojas., Vol. 1. Editorial ",
       "original": 2680,
-      "aplicado": 2494,
-      "en_ml": 2494,
+      "aplicado": 2410,
+      "en_ml": 2410,
       "ok": true,
       "problemas": []
     },
@@ -33934,8 +33907,8 @@
       "id": "MLU1531132094",
       "titulo": "Cometas:la Verdadera Historia: La Verdadera Historia, De Centeno, Holden. 1, Vol",
       "original": 2600,
-      "aplicado": 2376,
-      "en_ml": 2376,
+      "aplicado": 2302,
+      "en_ml": 2302,
       "ok": true,
       "problemas": []
     },
@@ -34618,8 +34591,8 @@
       "id": "MLU1531128070",
       "titulo": "Libro # Selfie : Cristal De Liliana Cinetto",
       "original": 1600,
-      "aplicado": 1376,
-      "en_ml": 1376,
+      "aplicado": 1393,
+      "en_ml": 1393,
       "ok": true,
       "problemas": []
     },
@@ -35338,8 +35311,8 @@
       "id": "MLU1531122414",
       "titulo": "Conferencias. Morir Es De Vital Importancia, De Elisabeth Kubler Ross. Editorial",
       "original": 3130,
-      "aplicado": 2723,
-      "en_ml": 2723,
+      "aplicado": 2752,
+      "en_ml": 2752,
       "ok": true,
       "problemas": []
     },
@@ -35788,8 +35761,8 @@
       "id": "MLU1531120810",
       "titulo": "Libro Como Si Un Angel - Erich Hackl",
       "original": 2140,
-      "aplicado": 1959,
-      "en_ml": 1959,
+      "aplicado": 1980,
+      "en_ml": 1980,
       "ok": true,
       "problemas": []
     },
@@ -37453,8 +37426,8 @@
       "id": "MLU703588633",
       "titulo": "El Cubo Magico - Azulejos Rojos",
       "original": 1600,
-      "aplicado": 1415,
-      "en_ml": 1415,
+      "aplicado": 1441,
+      "en_ml": 1441,
       "ok": true,
       "problemas": []
     },
@@ -40828,8 +40801,8 @@
       "id": "MLU1531845686",
       "titulo": "Libro El Dinero No Crece De Los Árboles De Heat Mckenzie Editorial El Gato De Ho",
       "original": 1690,
-      "aplicado": 1528,
-      "en_ml": 1528,
+      "aplicado": 1469,
+      "en_ml": 1469,
       "ok": true,
       "problemas": []
     },
@@ -41798,10 +41771,10 @@
     },
     {
       "id": "MLU703632629",
-      "titulo": "Dentro Del Bosque: Un Ensayo Personal En Dos Tiempos Sobe Las Desventuras De Un,",
+      "titulo": "Libro Dentro Del Bosque, De Gould, Emily. Editorial Gris Tormenta",
       "original": 1600,
-      "aplicado": 1504,
-      "en_ml": 1504,
+      "aplicado": 1430,
+      "en_ml": 1430,
       "ok": true,
       "problemas": []
     },
@@ -43195,8 +43168,8 @@
       "id": "MLU703626755",
       "titulo": "Cuentos Con Hadas Y Duendes / Pd., De Guadal Ediciones. Editorial El Gato De Hoj",
       "original": 1600,
-      "aplicado": 1336,
-      "en_ml": 1336,
+      "aplicado": 1283,
+      "en_ml": 1283,
       "ok": true,
       "problemas": []
     },
@@ -43861,8 +43834,8 @@
       "id": "MLU703621267",
       "titulo": "Der Grune Max 1 Neu A1 - Lehrbuch",
       "original": 2700,
-      "aplicado": 2574,
-      "en_ml": 2574,
+      "aplicado": 2600,
+      "en_ml": 2600,
       "ok": true,
       "problemas": []
     },
@@ -46165,8 +46138,8 @@
       "id": "MLU703607883",
       "titulo": "Delicias Turcas",
       "original": 1800,
-      "aplicado": 1554,
-      "en_ml": 1554,
+      "aplicado": 1488,
+      "en_ml": 1488,
       "ok": true,
       "problemas": []
     },
@@ -47344,8 +47317,8 @@
       "id": "MLU703602477",
       "titulo": "Cuentos De La A A La Z",
       "original": 1600,
-      "aplicado": 1475,
-      "en_ml": 1475,
+      "aplicado": 1504,
+      "en_ml": 1504,
       "ok": true,
       "problemas": []
     },
@@ -47776,8 +47749,8 @@
       "id": "MLU703598457",
       "titulo": "Despierta Al Chaman Interior - Jose Luis Steven",
       "original": 2190,
-      "aplicado": 2079,
-      "en_ml": 2079,
+      "aplicado": 2110,
+      "en_ml": 2110,
       "ok": true,
       "problemas": []
     },
@@ -51898,8 +51871,8 @@
       "id": "MLU1531879574",
       "titulo": "Una Especie De Dios: Ese Maldito Destino, De Rial Hector Rial Hecto., Vol. 1. Ed",
       "original": 2110,
-      "aplicado": 1871,
-      "en_ml": 1871,
+      "aplicado": 1890,
+      "en_ml": 1890,
       "ok": true,
       "problemas": []
     },
@@ -52105,8 +52078,8 @@
       "id": "MLU1531878900",
       "titulo": "Habia Una Vez... La Escoba De La Brujita, De Guadal, Editorial. Editorial El Gat",
       "original": 1600,
-      "aplicado": 1376,
-      "en_ml": 1376,
+      "aplicado": 1302,
+      "en_ml": 1302,
       "ok": true,
       "problemas": []
     },
@@ -52933,8 +52906,8 @@
       "id": "MLU1531876062",
       "titulo": "La Empresa Social: Cómo Cambiar El Mundo A Través De Los Negocios, De Josh Littl",
       "original": 2030,
-      "aplicado": 1851,
-      "en_ml": 1851,
+      "aplicado": 1782,
+      "en_ml": 1782,
       "ok": true,
       "problemas": []
     },
@@ -53887,8 +53860,8 @@
       "id": "MLU1531866124",
       "titulo": "Libro El Espacio - Mi Primer Pop Up, De Aa.vv., Vol. 1. Editorial Plutón, Tapa D",
       "original": 2190,
-      "aplicado": 1907,
-      "en_ml": 1907,
+      "aplicado": 1842,
+      "en_ml": 1842,
       "ok": true,
       "problemas": []
     },
@@ -55417,8 +55390,8 @@
       "id": "MLU1531861148",
       "titulo": "Dracula ( En Inglés, Completo ), Bram Stoker",
       "original": 1600,
-      "aplicado": 1366,
-      "en_ml": 1366,
+      "aplicado": 1391,
+      "en_ml": 1391,
       "ok": true,
       "problemas": []
     },
@@ -56227,8 +56200,8 @@
       "id": "MLU1531852594",
       "titulo": "Érase Una Vez Un Corazon Roto, De Garber, Stephanie. Editorial Book4pocket, Tapa",
       "original": 2050,
-      "aplicado": 1801,
-      "en_ml": 1801,
+      "aplicado": 1714,
+      "en_ml": 1714,
       "ok": true,
       "problemas": []
     },
@@ -57928,8 +57901,8 @@
       "id": "MLU1531858714",
       "titulo": "Discapacidad Y Universidad - Seda Juan Antonio",
       "original": 1600,
-      "aplicado": 1361,
-      "en_ml": 1361,
+      "aplicado": 1376,
+      "en_ml": 1376,
       "ok": true,
       "problemas": []
     },
@@ -57937,8 +57910,8 @@
       "id": "MLU1531846418",
       "titulo": "¿dónde Está Stitch?, De Disney., Vol. 1. Editorial Planeta, Tapa Blanda En Españ",
       "original": 1610,
-      "aplicado": 1547,
-      "en_ml": 1547,
+      "aplicado": 1564,
+      "en_ml": 1564,
       "ok": true,
       "problemas": []
     },
@@ -57946,8 +57919,8 @@
       "id": "MLU1531180462",
       "titulo": "Cuentos, De Monterroso, Augusto. Editorial Alianza Editorial, Tapa Blanda, Edici",
       "original": 1790,
-      "aplicado": 1723,
-      "en_ml": 1723,
+      "aplicado": 1742,
+      "en_ml": 1742,
       "ok": true,
       "problemas": []
     },
@@ -57964,8 +57937,8 @@
       "id": "MLU703635963",
       "titulo": "Despues De La Belleza Hegel Y La Filosofia De La Pintura Mo: Hegel Y La Filosofí",
       "original": 2970,
-      "aplicado": 2880,
-      "en_ml": 2880,
+      "aplicado": 2910,
+      "en_ml": 2910,
       "ok": true,
       "problemas": []
     },
@@ -57973,8 +57946,8 @@
       "id": "MLU703630545",
       "titulo": "Darwin's Super-pooping Worm Spectacular - Polly Owen, De Owen, Polly. Editorial ",
       "original": 2210,
-      "aplicado": 1980,
-      "en_ml": 1980,
+      "aplicado": 2001,
+      "en_ml": 2001,
       "ok": true,
       "problemas": []
     },
@@ -57982,8 +57955,8 @@
       "id": "MLU703630397",
       "titulo": "Daniel Und Das Aegyptische Grab - Erste Hub-lekturen Stufe 4, De Cadwallader, Ja",
       "original": 1600,
-      "aplicado": 1386,
-      "en_ml": 1386,
+      "aplicado": 1401,
+      "en_ml": 1401,
       "ok": true,
       "problemas": []
     },
@@ -57991,8 +57964,8 @@
       "id": "MLU703627085",
       "titulo": "Libro Cuentos De Humor Y Satira De Edgar Allan Poe",
       "original": 2060,
-      "aplicado": 1704,
-      "en_ml": 1704,
+      "aplicado": 1722,
+      "en_ml": 1722,
       "ok": true,
       "problemas": []
     },
@@ -58009,8 +57982,8 @@
       "id": "MLU703615573",
       "titulo": "Cuentos De La Selva - Horacio Quiroga - Aique",
       "original": 1600,
-      "aplicado": 1332,
-      "en_ml": 1332,
+      "aplicado": 1346,
+      "en_ml": 1346,
       "ok": true,
       "problemas": []
     },
@@ -58018,8 +57991,8 @@
       "id": "MLU703608271",
       "titulo": "Derecha Catolica La, De Maradeo Julian. Editorial De La Campana (argentina) En E",
       "original": 1630,
-      "aplicado": 1528,
-      "en_ml": 1528,
+      "aplicado": 1544,
+      "en_ml": 1544,
       "ok": true,
       "problemas": []
     },
@@ -58027,8 +58000,8 @@
       "id": "MLU703602095",
       "titulo": "Cuentos Con Brujas Y Magos / Pd., De Guadal Ediciones. Editorial El Gato De Hoja",
       "original": 1600,
-      "aplicado": 1347,
-      "en_ml": 1347,
+      "aplicado": 1362,
+      "en_ml": 1362,
       "ok": true,
       "problemas": []
     },
@@ -58036,8 +58009,8 @@
       "id": "MLU703601533",
       "titulo": "Ãâ¡cucãâº! Ãâ¿quiãâ©n Soy?, De Ferri, Francesca., Vol. 1. Editorial Editorial Ba",
       "original": 2240,
-      "aplicado": 2166,
-      "en_ml": 2166,
+      "aplicado": 2187,
+      "en_ml": 2187,
       "ok": true,
       "problemas": []
     },
@@ -58045,8 +58018,8 @@
       "id": "MLU703600403",
       "titulo": "Diario Para Mentes Revoltosas María Roca Amelia Sola",
       "original": 1920,
-      "aplicado": 1841,
-      "en_ml": 1841,
+      "aplicado": 1861,
+      "en_ml": 1861,
       "ok": true,
       "problemas": []
     },
@@ -58063,8 +58036,8 @@
       "id": "MLU1531963818",
       "titulo": "East Coast Australia 8th. Edition",
       "original": 2900,
-      "aplicado": 2537,
-      "en_ml": 2537,
+      "aplicado": 2564,
+      "en_ml": 2564,
       "ok": true,
       "problemas": []
     },
@@ -58072,8 +58045,8 @@
       "id": "MLU1531962240",
       "titulo": "Dragon Ball Color - Saga Androides Y Saga Cell # 04, De Akira Toriyama. Editoria",
       "original": 1960,
-      "aplicado": 1675,
-      "en_ml": 1675,
+      "aplicado": 1692,
+      "en_ml": 1692,
       "ok": true,
       "problemas": []
     },
@@ -58081,8 +58054,8 @@
       "id": "MLU1531879060",
       "titulo": "Los Escritos Del Dragon Rojo - Memorias De Un Angel",
       "original": 1600,
-      "aplicado": 1394,
-      "en_ml": 1394,
+      "aplicado": 1409,
+      "en_ml": 1409,
       "ok": true,
       "problemas": []
     },
@@ -58090,8 +58063,8 @@
       "id": "MLU1531877134",
       "titulo": "Encuentros Con Samuel Beckett - Juliet, Beckett, De Juliet, Beckett. Editorial S",
       "original": 1710,
-      "aplicado": 1646,
-      "en_ml": 1646,
+      "aplicado": 1663,
+      "en_ml": 1663,
       "ok": true,
       "problemas": []
     },
@@ -58099,8 +58072,8 @@
       "id": "MLU1531876420",
       "titulo": "En El Oido Medio: Hojas De Hierba, De Armas, Edda., Vol. 1. Editorial Hojas De H",
       "original": 2230,
-      "aplicado": 2155,
-      "en_ml": 2155,
+      "aplicado": 2178,
+      "en_ml": 2178,
       "ok": true,
       "problemas": []
     },
@@ -58108,8 +58081,8 @@
       "id": "MLU1531872766",
       "titulo": "Dr Stone 15, De Inagaki, Riichiro. Editorial Panini Mexico En Español",
       "original": 1600,
-      "aplicado": 1316,
-      "en_ml": 1316,
+      "aplicado": 1330,
+      "en_ml": 1330,
       "ok": true,
       "problemas": []
     },
@@ -58117,8 +58090,8 @@
       "id": "MLU1531865732",
       "titulo": "Escribir En La Escuela. Cuad. Docente De Jimena Dib",
       "original": 2330,
-      "aplicado": 2031,
-      "en_ml": 2031,
+      "aplicado": 2049,
+      "en_ml": 2049,
       "ok": true,
       "problemas": []
     },
@@ -58126,8 +58099,53 @@
       "id": "MLU1531849086",
       "titulo": "Editar «guerra Y Paz»",
       "original": 1620,
-      "aplicado": 1558,
-      "en_ml": 1558,
+      "aplicado": 1574,
+      "en_ml": 1574,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531167706",
+      "titulo": "Cocteles De Mr Lyan El Rey De Los Tragos,los - Chetiyawar...",
+      "original": 2370,
+      "aplicado": 2292,
+      "en_ml": 2292,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703630553",
+      "titulo": "Das Grãâ¼ne Band: Spurensuche In Göttingen, De Borbein,volker. Die Daf Bibliothe",
+      "original": 1860,
+      "aplicado": 1792,
+      "en_ml": 1792,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703619831",
+      "titulo": "De Las Cosas Pálidas",
+      "original": 1890,
+      "aplicado": 1822,
+      "en_ml": 1822,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703587923",
+      "titulo": "Libro Cuando Dudas De Ti - Antoni Tolmos, De Tolmos, Antoni, Vol. 1. Editorial M",
+      "original": 2240,
+      "aplicado": 2166,
+      "en_ml": 2166,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531861080",
+      "titulo": "Desierto De Los Tartaros - Dino Buzzati - Alianza - Libro",
+      "original": 2020,
+      "aplicado": 1949,
+      "en_ml": 1949,
       "ok": true,
       "problemas": []
     }
@@ -58774,12 +58792,12 @@
     {
       "id": "MLU1517946956",
       "precio": 4483,
-      "ganador": 3273,
-      "diferencia": 1210,
-      "objetivo": 3240,
+      "ganador": 3227,
+      "diferencia": 1256,
+      "objetivo": 3194,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 3273,
+      "precio_nuevo": 3227,
       "ok": true
     },
     {
@@ -58931,9 +58949,9 @@
       "ganador": 1477,
       "diferencia": 3289,
       "objetivo": 1462,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1477,
       "ok": true
     },
     {
@@ -60881,17 +60899,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1733,
-      "ok": true
-    },
-    {
-      "id": "MLU702349437",
-      "precio": 2524,
-      "ganador": 1329,
-      "diferencia": 1195,
-      "objetivo": 1315,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1329,
       "ok": true
     },
     {
@@ -63568,6 +63575,17 @@
       "ok": true
     },
     {
+      "id": "MLU702311211",
+      "precio": 2930,
+      "ganador": 2870,
+      "diferencia": 60,
+      "objetivo": 2841,
+      "esperado": "saltear",
+      "hecho": "saltear_promo",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
       "id": "MLU702311209",
       "precio": 2825,
       "ganador": 1573,
@@ -64816,9 +64834,9 @@
       "ganador": 1425,
       "diferencia": 1529,
       "objetivo": 1410,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1425,
       "ok": true
     },
     {
@@ -64960,7 +64978,7 @@
       "diferencia": 360,
       "objetivo": 3171,
       "esperado": "saltear",
-      "hecho": "saltear_promo",
+      "hecho": "saltear_ganador_sin_dato",
       "precio_nuevo": null,
       "ok": true
     },
@@ -68718,12 +68736,12 @@
     {
       "id": "MLU702819503",
       "precio": 3700,
-      "ganador": 3247,
-      "diferencia": 453,
-      "objetivo": 3214,
+      "ganador": 2960,
+      "diferencia": 740,
+      "objetivo": 2930,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 3247,
+      "precio_nuevo": 2960,
       "ok": true
     },
     {
@@ -70767,9 +70785,9 @@
       "ganador": 3885,
       "diferencia": 415,
       "objetivo": 3846,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 3885,
       "ok": true
     },
     {
@@ -72571,9 +72589,9 @@
       "ganador": 1526,
       "diferencia": 944,
       "objetivo": 1510,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1526,
       "ok": true
     },
     {
@@ -75277,9 +75295,9 @@
       "ganador": 2277,
       "diferencia": 503,
       "objetivo": 2254,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 2277,
       "ok": true
     },
     {
@@ -75409,9 +75427,9 @@
       "ganador": 949,
       "diferencia": 871,
       "objetivo": 939,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 949,
       "ok": true
     },
     {
@@ -78225,9 +78243,9 @@
       "ganador": 2009,
       "diferencia": 491,
       "objetivo": 1988,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 2009,
       "ok": true
     },
     {
@@ -79358,9 +79376,9 @@
       "ganador": 1187,
       "diferencia": 413,
       "objetivo": 1175,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1187,
       "ok": true
     },
     {
@@ -79490,9 +79508,9 @@
       "ganador": 2184,
       "diferencia": 1466,
       "objetivo": 2162,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 2184,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_sin_dato",
+      "precio_nuevo": null,
       "ok": true
     },
     {
@@ -79501,9 +79519,9 @@
       "ganador": 1098,
       "diferencia": 502,
       "objetivo": 1087,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1098,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_sin_dato",
+      "precio_nuevo": null,
       "ok": true
     },
     {
@@ -80711,9 +80729,9 @@
       "ganador": 2563,
       "diferencia": 1637,
       "objetivo": 2537,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 2563,
       "ok": true
     },
     {
@@ -83527,9 +83545,9 @@
       "ganador": 2195,
       "diferencia": 535,
       "objetivo": 2173,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 2195,
       "ok": true
     },
     {
@@ -84044,9 +84062,9 @@
       "ganador": 1069,
       "diferencia": 1391,
       "objetivo": 1058,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1069,
       "ok": true
     },
     {
@@ -87608,9 +87626,9 @@
       "ganador": 3544,
       "diferencia": 1316,
       "objetivo": 3508,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 3544,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_sin_dato",
+      "precio_nuevo": null,
       "ok": true
     },
     {
@@ -88254,12 +88272,12 @@
     {
       "id": "MLU703036859",
       "precio": 4310,
-      "ganador": 2772,
-      "diferencia": 1538,
-      "objetivo": 2744,
+      "ganador": 3243,
+      "diferencia": 1067,
+      "objetivo": 3210,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 2772,
+      "precio_nuevo": 3243,
       "ok": true
     },
     {
@@ -88386,12 +88404,12 @@
     {
       "id": "MLU703035799",
       "precio": 3680,
-      "ganador": 1689,
-      "diferencia": 1991,
-      "objetivo": 1672,
+      "ganador": 1671,
+      "diferencia": 2009,
+      "objetivo": 1654,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1689,
+      "precio_nuevo": 1671,
       "ok": true
     },
     {
@@ -89610,9 +89628,9 @@
       "ganador": 2504,
       "diferencia": 546,
       "objetivo": 2478,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 2504,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_sin_dato",
+      "precio_nuevo": null,
       "ok": true
     },
     {
@@ -90699,9 +90717,9 @@
       "ganador": 1064,
       "diferencia": 1196,
       "objetivo": 1053,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1064,
       "ok": true
     },
     {
@@ -95176,9 +95194,9 @@
       "ganador": 1111,
       "diferencia": 489,
       "objetivo": 1099,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1111,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_sin_dato",
+      "precio_nuevo": null,
       "ok": true
     },
     {
@@ -96375,9 +96393,9 @@
       "ganador": 1124,
       "diferencia": 476,
       "objetivo": 1112,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1124,
       "ok": true
     },
     {
@@ -99109,17 +99127,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531858714",
-      "precio": 1600,
-      "ganador": 1375,
-      "diferencia": 225,
-      "objetivo": 1361,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1361,
-      "ok": true
-    },
-    {
       "id": "MLU1531858698",
       "precio": 1760,
       "ganador": 1194,
@@ -99502,17 +99509,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2025,
-      "ok": true
-    },
-    {
-      "id": "MLU1531846418",
-      "precio": 1610,
-      "ganador": 1563,
-      "diferencia": 47,
-      "objetivo": 1547,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1547,
       "ok": true
     },
     {
@@ -100253,17 +100249,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531180462",
-      "precio": 1790,
-      "ganador": 1741,
-      "diferencia": 49,
-      "objetivo": 1723,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1723,
-      "ok": true
-    },
-    {
       "id": "MLU1531180418",
       "precio": 1600,
       "ganador": 1057,
@@ -100819,9 +100804,9 @@
       "ganador": 2266,
       "diferencia": 514,
       "objetivo": 2243,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 2266,
       "ok": true
     },
     {
@@ -101644,9 +101629,9 @@
       "ganador": 1323,
       "diferencia": 1437,
       "objetivo": 1309,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1323,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_sin_dato",
+      "precio_nuevo": null,
       "ok": true
     },
     {
@@ -101933,6 +101918,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2118,
+      "ok": true
+    },
+    {
+      "id": "MLU1531167706",
+      "precio": 2370,
+      "ganador": 2316,
+      "diferencia": 54,
+      "objetivo": 2292,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2292,
       "ok": true
     },
     {
@@ -105054,9 +105050,9 @@
       "ganador": 5224,
       "diferencia": 756,
       "objetivo": 5171,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 5224,
       "ok": true
     },
     {
@@ -105076,9 +105072,9 @@
       "ganador": 1706,
       "diferencia": 444,
       "objetivo": 1688,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1706,
       "ok": true
     },
     {
@@ -107194,17 +107190,6 @@
       "ok": true
     },
     {
-      "id": "MLU703636915",
-      "precio": 1600,
-      "ganador": 1282,
-      "diferencia": 318,
-      "objetivo": 1269,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1269,
-      "ok": true
-    },
-    {
       "id": "MLU703636665",
       "precio": 3040,
       "ganador": 2455,
@@ -107312,17 +107297,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 3211,
-      "ok": true
-    },
-    {
-      "id": "MLU703635963",
-      "precio": 2970,
-      "ganador": 2910,
-      "diferencia": 60,
-      "objetivo": 2880,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 2880,
       "ok": true
     },
     {
@@ -107854,6 +107828,17 @@
       "ok": true
     },
     {
+      "id": "MLU703630553",
+      "precio": 1860,
+      "ganador": 1811,
+      "diferencia": 49,
+      "objetivo": 1792,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1792,
+      "ok": true
+    },
+    {
       "id": "MLU703630549",
       "precio": 1910,
       "ganador": 1193,
@@ -107865,17 +107850,6 @@
       "ok": true
     },
     {
-      "id": "MLU703630545",
-      "precio": 2210,
-      "ganador": 2001,
-      "diferencia": 209,
-      "objetivo": 1980,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1980,
-      "ok": true
-    },
-    {
       "id": "MLU703630465",
       "precio": 1840,
       "ganador": 1009,
@@ -107884,17 +107858,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1009,
-      "ok": true
-    },
-    {
-      "id": "MLU703630397",
-      "precio": 1600,
-      "ganador": 1401,
-      "diferencia": 199,
-      "objetivo": 1386,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1386,
       "ok": true
     },
     {
@@ -108338,17 +108301,6 @@
       "ok": true
     },
     {
-      "id": "MLU703627085",
-      "precio": 2060,
-      "ganador": 1722,
-      "diferencia": 338,
-      "objetivo": 1704,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1704,
-      "ok": true
-    },
-    {
       "id": "MLU703627049",
       "precio": 1600,
       "ganador": 1064,
@@ -108706,9 +108658,9 @@
       "ganador": 1079,
       "diferencia": 941,
       "objetivo": 1068,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1079,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_sin_dato",
+      "precio_nuevo": null,
       "ok": true
     },
     {
@@ -109163,6 +109115,17 @@
       "ok": true
     },
     {
+      "id": "MLU703619831",
+      "precio": 1890,
+      "ganador": 1841,
+      "diferencia": 49,
+      "objetivo": 1822,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1822,
+      "ok": true
+    },
+    {
       "id": "MLU703619731",
       "precio": 1600,
       "ganador": 1017,
@@ -109614,17 +109577,6 @@
       "ok": true
     },
     {
-      "id": "MLU703616995",
-      "precio": 3870,
-      "ganador": 3554,
-      "diferencia": 316,
-      "objetivo": 3518,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 3518,
-      "ok": true
-    },
-    {
       "id": "MLU703616991",
       "precio": 1600,
       "ganador": 545,
@@ -109754,17 +109706,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1157,
-      "ok": true
-    },
-    {
-      "id": "MLU703615573",
-      "precio": 1600,
-      "ganador": 1346,
-      "diferencia": 254,
-      "objetivo": 1332,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1332,
       "ok": true
     },
     {
@@ -110623,17 +110564,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 3494,
-      "ok": true
-    },
-    {
-      "id": "MLU703608271",
-      "precio": 1630,
-      "ganador": 1544,
-      "diferencia": 86,
-      "objetivo": 1528,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1528,
       "ok": true
     },
     {
@@ -111605,17 +111535,6 @@
       "ok": true
     },
     {
-      "id": "MLU703602095",
-      "precio": 1600,
-      "ganador": 1361,
-      "diferencia": 239,
-      "objetivo": 1347,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1347,
-      "ok": true
-    },
-    {
       "id": "MLU703602027",
       "precio": 3550,
       "ganador": 2594,
@@ -111745,17 +111664,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1179,
-      "ok": true
-    },
-    {
-      "id": "MLU703601533",
-      "precio": 2240,
-      "ganador": 2188,
-      "diferencia": 52,
-      "objetivo": 2166,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 2166,
       "ok": true
     },
     {
@@ -112031,17 +111939,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1755,
-      "ok": true
-    },
-    {
-      "id": "MLU703600403",
-      "precio": 1920,
-      "ganador": 1860,
-      "diferencia": 60,
-      "objetivo": 1841,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1841,
       "ok": true
     },
     {
@@ -112996,9 +112893,9 @@
       "ganador": 2193,
       "diferencia": 1417,
       "objetivo": 2171,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 2193,
       "ok": true
     },
     {
@@ -113582,6 +113479,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1145,
+      "ok": true
+    },
+    {
+      "id": "MLU703587923",
+      "precio": 2240,
+      "ganador": 2188,
+      "diferencia": 52,
+      "objetivo": 2166,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2166,
       "ok": true
     },
     {
@@ -114561,17 +114469,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1503,
-      "ok": true
-    },
-    {
-      "id": "MLU1531968466",
-      "precio": 2580,
-      "ganador": 2524,
-      "diferencia": 56,
-      "objetivo": 2498,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 2498,
       "ok": true
     },
     {
@@ -115906,17 +115803,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531963818",
-      "precio": 2900,
-      "ganador": 2563,
-      "diferencia": 337,
-      "objetivo": 2537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 2537,
-      "ok": true
-    },
-    {
       "id": "MLU1531963646",
       "precio": 3860,
       "ganador": 3310,
@@ -116112,17 +115998,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 935,
-      "ok": true
-    },
-    {
-      "id": "MLU1531962240",
-      "precio": 1960,
-      "ganador": 1692,
-      "diferencia": 268,
-      "objetivo": 1675,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1675,
       "ok": true
     },
     {
@@ -116541,17 +116416,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 3257,
-      "ok": true
-    },
-    {
-      "id": "MLU1531879060",
-      "precio": 1600,
-      "ganador": 1409,
-      "diferencia": 191,
-      "objetivo": 1394,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1394,
       "ok": true
     },
     {
@@ -117028,17 +116892,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531877134",
-      "precio": 1710,
-      "ganador": 1663,
-      "diferencia": 47,
-      "objetivo": 1646,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1646,
-      "ok": true
-    },
-    {
       "id": "MLU1531877004",
       "precio": 1600,
       "ganador": 1116,
@@ -117256,17 +117109,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1355,
-      "ok": true
-    },
-    {
-      "id": "MLU1531876420",
-      "precio": 2230,
-      "ganador": 2177,
-      "diferencia": 53,
-      "objetivo": 2155,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 2155,
       "ok": true
     },
     {
@@ -118051,17 +117893,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531872766",
-      "precio": 1600,
-      "ganador": 1330,
-      "diferencia": 270,
-      "objetivo": 1316,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1316,
-      "ok": true
-    },
-    {
       "id": "MLU1531872748",
       "precio": 1600,
       "ganador": 1122,
@@ -118653,17 +118484,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2588,
-      "ok": true
-    },
-    {
-      "id": "MLU1531865732",
-      "precio": 2330,
-      "ganador": 2052,
-      "diferencia": 278,
-      "objetivo": 2031,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 2031,
       "ok": true
     },
     {
@@ -119937,9 +119757,9 @@
       "ganador": 1898,
       "diferencia": 412,
       "objetivo": 1879,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1898,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_sin_dato",
+      "precio_nuevo": null,
       "ok": true
     },
     {
@@ -120080,9 +119900,9 @@
       "ganador": 2632,
       "diferencia": 688,
       "objetivo": 2605,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 2632,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_sin_dato",
+      "precio_nuevo": null,
       "ok": true
     },
     {
@@ -120204,6 +120024,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1958,
+      "ok": true
+    },
+    {
+      "id": "MLU1531861080",
+      "precio": 2020,
+      "ganador": 1969,
+      "diferencia": 51,
+      "objetivo": 1949,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1949,
       "ok": true
     },
     {
@@ -121780,17 +121611,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531849086",
-      "precio": 1620,
-      "ganador": 1574,
-      "diferencia": 46,
-      "objetivo": 1558,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1558,
-      "ok": true
-    },
-    {
       "id": "MLU1531849068",
       "precio": 2370,
       "ganador": 1107,
@@ -122176,6 +121996,820 @@
       "ok": true
     },
     {
+      "id": "MLU703783973",
+      "precio": 2640,
+      "ganador": 1280,
+      "diferencia": 1360,
+      "objetivo": 1267,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783969",
+      "precio": 3660,
+      "ganador": 963,
+      "diferencia": 2697,
+      "objetivo": 953,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783961",
+      "precio": 2180,
+      "ganador": 896,
+      "diferencia": 1284,
+      "objetivo": 887,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783943",
+      "precio": 1860,
+      "ganador": 930,
+      "diferencia": 930,
+      "objetivo": 920,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783933",
+      "precio": 2480,
+      "ganador": 888,
+      "diferencia": 1592,
+      "objetivo": 879,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783931",
+      "precio": 2740,
+      "ganador": 1444,
+      "diferencia": 1296,
+      "objetivo": 1429,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783927",
+      "precio": 1600,
+      "ganador": 729,
+      "diferencia": 871,
+      "objetivo": 721,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783907",
+      "precio": 2100,
+      "ganador": 783,
+      "diferencia": 1317,
+      "objetivo": 775,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783903",
+      "precio": 2130,
+      "ganador": 1027,
+      "diferencia": 1103,
+      "objetivo": 1016,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783891",
+      "precio": 1600,
+      "ganador": 1145,
+      "diferencia": 455,
+      "objetivo": 1133,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783871",
+      "precio": 2380,
+      "ganador": 1088,
+      "diferencia": 1292,
+      "objetivo": 1077,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783857",
+      "precio": 1940,
+      "ganador": 1163,
+      "diferencia": 777,
+      "objetivo": 1151,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783851",
+      "precio": 2480,
+      "ganador": 1048,
+      "diferencia": 1432,
+      "objetivo": 1037,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783845",
+      "precio": 1870,
+      "ganador": 950,
+      "diferencia": 920,
+      "objetivo": 940,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783793",
+      "precio": 2170,
+      "ganador": 931,
+      "diferencia": 1239,
+      "objetivo": 921,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783783",
+      "precio": 2480,
+      "ganador": 762,
+      "diferencia": 1718,
+      "objetivo": 754,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783777",
+      "precio": 2070,
+      "ganador": 1108,
+      "diferencia": 962,
+      "objetivo": 1096,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783759",
+      "precio": 2350,
+      "ganador": 657,
+      "diferencia": 1693,
+      "objetivo": 650,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783745",
+      "precio": 2010,
+      "ganador": 1129,
+      "diferencia": 881,
+      "objetivo": 1117,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783743",
+      "precio": 2260,
+      "ganador": 545,
+      "diferencia": 1715,
+      "objetivo": 539,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783731",
+      "precio": 1600,
+      "ganador": 685,
+      "diferencia": 915,
+      "objetivo": 678,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783723",
+      "precio": 3420,
+      "ganador": 998,
+      "diferencia": 2422,
+      "objetivo": 988,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783713",
+      "precio": 2610,
+      "ganador": 738,
+      "diferencia": 1872,
+      "objetivo": 730,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783709",
+      "precio": 3720,
+      "ganador": 1347,
+      "diferencia": 2373,
+      "objetivo": 1333,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783703",
+      "precio": 1600,
+      "ganador": 475,
+      "diferencia": 1125,
+      "objetivo": 470,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783661",
+      "precio": 1790,
+      "ganador": 1084,
+      "diferencia": 706,
+      "objetivo": 1073,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783649",
+      "precio": 3590,
+      "ganador": 970,
+      "diferencia": 2620,
+      "objetivo": 960,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783625",
+      "precio": 3260,
+      "ganador": 1260,
+      "diferencia": 2000,
+      "objetivo": 1247,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783615",
+      "precio": 2040,
+      "ganador": 813,
+      "diferencia": 1227,
+      "objetivo": 804,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783613",
+      "precio": 2050,
+      "ganador": 873,
+      "diferencia": 1177,
+      "objetivo": 864,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783611",
+      "precio": 2070,
+      "ganador": 805,
+      "diferencia": 1265,
+      "objetivo": 796,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783593",
+      "precio": 3260,
+      "ganador": 1078,
+      "diferencia": 2182,
+      "objetivo": 1067,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783591",
+      "precio": 1600,
+      "ganador": 514,
+      "diferencia": 1086,
+      "objetivo": 508,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783571",
+      "precio": 2060,
+      "ganador": 1010,
+      "diferencia": 1050,
+      "objetivo": 999,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783569",
+      "precio": 3520,
+      "ganador": 1255,
+      "diferencia": 2265,
+      "objetivo": 1242,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783563",
+      "precio": 2840,
+      "ganador": 888,
+      "diferencia": 1952,
+      "objetivo": 879,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783559",
+      "precio": 2470,
+      "ganador": 1444,
+      "diferencia": 1026,
+      "objetivo": 1429,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783557",
+      "precio": 2250,
+      "ganador": 888,
+      "diferencia": 1362,
+      "objetivo": 879,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783539",
+      "precio": 2460,
+      "ganador": 822,
+      "diferencia": 1638,
+      "objetivo": 813,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783537",
+      "precio": 3240,
+      "ganador": 1347,
+      "diferencia": 1893,
+      "objetivo": 1333,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783523",
+      "precio": 1600,
+      "ganador": 777,
+      "diferencia": 823,
+      "objetivo": 769,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783521",
+      "precio": 1600,
+      "ganador": 492,
+      "diferencia": 1108,
+      "objetivo": 487,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783501",
+      "precio": 2800,
+      "ganador": 983,
+      "diferencia": 1817,
+      "objetivo": 973,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783495",
+      "precio": 1600,
+      "ganador": 664,
+      "diferencia": 936,
+      "objetivo": 657,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783489",
+      "precio": 1740,
+      "ganador": 892,
+      "diferencia": 848,
+      "objetivo": 883,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783485",
+      "precio": 1600,
+      "ganador": 674,
+      "diferencia": 926,
+      "objetivo": 667,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783417",
+      "precio": 2380,
+      "ganador": 982,
+      "diferencia": 1398,
+      "objetivo": 972,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783411",
+      "precio": 2000,
+      "ganador": 1048,
+      "diferencia": 952,
+      "objetivo": 1037,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783389",
+      "precio": 2620,
+      "ganador": 852,
+      "diferencia": 1768,
+      "objetivo": 843,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783385",
+      "precio": 1830,
+      "ganador": 742,
+      "diferencia": 1088,
+      "objetivo": 734,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783279",
+      "precio": 1600,
+      "ganador": 667,
+      "diferencia": 933,
+      "objetivo": 660,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783265",
+      "precio": 2470,
+      "ganador": 1444,
+      "diferencia": 1026,
+      "objetivo": 1429,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783253",
+      "precio": 1640,
+      "ganador": 656,
+      "diferencia": 984,
+      "objetivo": 649,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783251",
+      "precio": 2750,
+      "ganador": 1163,
+      "diferencia": 1587,
+      "objetivo": 1151,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783247",
+      "precio": 1890,
+      "ganador": 1120,
+      "diferencia": 770,
+      "objetivo": 1108,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783241",
+      "precio": 1600,
+      "ganador": 529,
+      "diferencia": 1071,
+      "objetivo": 523,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783217",
+      "precio": 3310,
+      "ganador": 1129,
+      "diferencia": 2181,
+      "objetivo": 1117,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783193",
+      "precio": 1600,
+      "ganador": 523,
+      "diferencia": 1077,
+      "objetivo": 517,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783191",
+      "precio": 2320,
+      "ganador": 1010,
+      "diferencia": 1310,
+      "objetivo": 999,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783185",
+      "precio": 2210,
+      "ganador": 827,
+      "diferencia": 1383,
+      "objetivo": 818,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783163",
+      "precio": 2340,
+      "ganador": 998,
+      "diferencia": 1342,
+      "objetivo": 988,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783153",
+      "precio": 3020,
+      "ganador": 1045,
+      "diferencia": 1975,
+      "objetivo": 1034,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783147",
+      "precio": 2100,
+      "ganador": 896,
+      "diferencia": 1204,
+      "objetivo": 887,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783129",
+      "precio": 2920,
+      "ganador": 1119,
+      "diferencia": 1801,
+      "objetivo": 1107,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783115",
+      "precio": 2210,
+      "ganador": 1004,
+      "diferencia": 1206,
+      "objetivo": 993,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783093",
+      "precio": 2760,
+      "ganador": 950,
+      "diferencia": 1810,
+      "objetivo": 940,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783079",
+      "precio": 2460,
+      "ganador": 933,
+      "diferencia": 1527,
+      "objetivo": 923,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783075",
+      "precio": 2240,
+      "ganador": 1559,
+      "diferencia": 681,
+      "objetivo": 1543,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783061",
+      "precio": 1600,
+      "ganador": 475,
+      "diferencia": 1125,
+      "objetivo": 470,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783035",
+      "precio": 2580,
+      "ganador": 888,
+      "diferencia": 1692,
+      "objetivo": 879,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783019",
+      "precio": 2950,
+      "ganador": 1444,
+      "diferencia": 1506,
+      "objetivo": 1429,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703783009",
+      "precio": 3360,
+      "ganador": 1255,
+      "diferencia": 2105,
+      "objetivo": 1242,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703782943",
+      "precio": 3000,
+      "ganador": 1184,
+      "diferencia": 1816,
+      "objetivo": 1172,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703782919",
+      "precio": 2470,
+      "ganador": 915,
+      "diferencia": 1555,
+      "objetivo": 905,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
       "id": "MLU703782895",
       "precio": 2230,
       "ganador": 2177,
@@ -122203,6 +122837,831 @@
       "ganador": 634,
       "diferencia": 966,
       "objetivo": 627,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772413",
+      "precio": 1600,
+      "ganador": 447,
+      "diferencia": 1153,
+      "objetivo": 442,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772411",
+      "precio": 3150,
+      "ganador": 1192,
+      "diferencia": 1958,
+      "objetivo": 1180,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772381",
+      "precio": 2190,
+      "ganador": 664,
+      "diferencia": 1526,
+      "objetivo": 657,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772367",
+      "precio": 3150,
+      "ganador": 952,
+      "diferencia": 2198,
+      "objetivo": 942,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772359",
+      "precio": 1900,
+      "ganador": 1025,
+      "diferencia": 875,
+      "objetivo": 1014,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772355",
+      "precio": 2310,
+      "ganador": 1037,
+      "diferencia": 1273,
+      "objetivo": 1026,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772353",
+      "precio": 1840,
+      "ganador": 575,
+      "diferencia": 1265,
+      "objetivo": 569,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772349",
+      "precio": 1600,
+      "ganador": 446,
+      "diferencia": 1154,
+      "objetivo": 441,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772347",
+      "precio": 2820,
+      "ganador": 1163,
+      "diferencia": 1657,
+      "objetivo": 1151,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772337",
+      "precio": 2050,
+      "ganador": 1588,
+      "diferencia": 462,
+      "objetivo": 1572,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772331",
+      "precio": 1600,
+      "ganador": 659,
+      "diferencia": 941,
+      "objetivo": 652,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772317",
+      "precio": 2430,
+      "ganador": 1239,
+      "diferencia": 1191,
+      "objetivo": 1226,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772297",
+      "precio": 1600,
+      "ganador": 647,
+      "diferencia": 953,
+      "objetivo": 640,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772295",
+      "precio": 1890,
+      "ganador": 953,
+      "diferencia": 937,
+      "objetivo": 943,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772293",
+      "precio": 1600,
+      "ganador": 731,
+      "diferencia": 869,
+      "objetivo": 723,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772289",
+      "precio": 1600,
+      "ganador": 761,
+      "diferencia": 839,
+      "objetivo": 753,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772287",
+      "precio": 1600,
+      "ganador": 418,
+      "diferencia": 1182,
+      "objetivo": 413,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772283",
+      "precio": 1950,
+      "ganador": 1163,
+      "diferencia": 787,
+      "objetivo": 1151,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772211",
+      "precio": 1600,
+      "ganador": 717,
+      "diferencia": 883,
+      "objetivo": 709,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772205",
+      "precio": 3000,
+      "ganador": 1070,
+      "diferencia": 1930,
+      "objetivo": 1059,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772193",
+      "precio": 2290,
+      "ganador": 888,
+      "diferencia": 1402,
+      "objetivo": 879,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772189",
+      "precio": 1820,
+      "ganador": 789,
+      "diferencia": 1031,
+      "objetivo": 781,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772183",
+      "precio": 1780,
+      "ganador": 738,
+      "diferencia": 1042,
+      "objetivo": 730,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772137",
+      "precio": 3480,
+      "ganador": 739,
+      "diferencia": 2741,
+      "objetivo": 731,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772133",
+      "precio": 1840,
+      "ganador": 813,
+      "diferencia": 1027,
+      "objetivo": 804,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772129",
+      "precio": 2630,
+      "ganador": 956,
+      "diferencia": 1674,
+      "objetivo": 946,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772111",
+      "precio": 3020,
+      "ganador": 993,
+      "diferencia": 2027,
+      "objetivo": 983,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772099",
+      "precio": 2860,
+      "ganador": 1187,
+      "diferencia": 1673,
+      "objetivo": 1175,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772077",
+      "precio": 2080,
+      "ganador": 1112,
+      "diferencia": 968,
+      "objetivo": 1100,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772069",
+      "precio": 2250,
+      "ganador": 716,
+      "diferencia": 1534,
+      "objetivo": 708,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772063",
+      "precio": 1600,
+      "ganador": 523,
+      "diferencia": 1077,
+      "objetivo": 517,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772043",
+      "precio": 2040,
+      "ganador": 813,
+      "diferencia": 1227,
+      "objetivo": 804,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772033",
+      "precio": 1810,
+      "ganador": 644,
+      "diferencia": 1166,
+      "objetivo": 637,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772019",
+      "precio": 2960,
+      "ganador": 657,
+      "diferencia": 2303,
+      "objetivo": 650,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703772011",
+      "precio": 1600,
+      "ganador": 738,
+      "diferencia": 862,
+      "objetivo": 730,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771989",
+      "precio": 1870,
+      "ganador": 673,
+      "diferencia": 1197,
+      "objetivo": 666,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771985",
+      "precio": 2220,
+      "ganador": 1036,
+      "diferencia": 1184,
+      "objetivo": 1025,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771973",
+      "precio": 1600,
+      "ganador": 738,
+      "diferencia": 862,
+      "objetivo": 730,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771971",
+      "precio": 1710,
+      "ganador": 714,
+      "diferencia": 996,
+      "objetivo": 706,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771969",
+      "precio": 4050,
+      "ganador": 950,
+      "diferencia": 3100,
+      "objetivo": 940,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771949",
+      "precio": 2800,
+      "ganador": 983,
+      "diferencia": 1817,
+      "objetivo": 973,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771927",
+      "precio": 2440,
+      "ganador": 1090,
+      "diferencia": 1350,
+      "objetivo": 1079,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771877",
+      "precio": 1600,
+      "ganador": 1077,
+      "diferencia": 523,
+      "objetivo": 1066,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771865",
+      "precio": 3750,
+      "ganador": 1974,
+      "diferencia": 1776,
+      "objetivo": 1954,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771831",
+      "precio": 1600,
+      "ganador": 525,
+      "diferencia": 1075,
+      "objetivo": 519,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771821",
+      "precio": 2300,
+      "ganador": 956,
+      "diferencia": 1344,
+      "objetivo": 946,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771817",
+      "precio": 1830,
+      "ganador": 1153,
+      "diferencia": 677,
+      "objetivo": 1141,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771811",
+      "precio": 1820,
+      "ganador": 713,
+      "diferencia": 1107,
+      "objetivo": 705,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771787",
+      "precio": 1600,
+      "ganador": 722,
+      "diferencia": 878,
+      "objetivo": 714,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771717",
+      "precio": 1600,
+      "ganador": 682,
+      "diferencia": 918,
+      "objetivo": 675,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771705",
+      "precio": 1600,
+      "ganador": 731,
+      "diferencia": 869,
+      "objetivo": 723,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771675",
+      "precio": 2250,
+      "ganador": 664,
+      "diferencia": 1586,
+      "objetivo": 657,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771669",
+      "precio": 2620,
+      "ganador": 1231,
+      "diferencia": 1389,
+      "objetivo": 1218,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771663",
+      "precio": 3490,
+      "ganador": 953,
+      "diferencia": 2537,
+      "objetivo": 943,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771651",
+      "precio": 1600,
+      "ganador": 631,
+      "diferencia": 969,
+      "objetivo": 624,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771641",
+      "precio": 1600,
+      "ganador": 523,
+      "diferencia": 1077,
+      "objetivo": 517,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771629",
+      "precio": 1730,
+      "ganador": 871,
+      "diferencia": 859,
+      "objetivo": 862,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771599",
+      "precio": 1870,
+      "ganador": 871,
+      "diferencia": 999,
+      "objetivo": 862,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771595",
+      "precio": 2990,
+      "ganador": 982,
+      "diferencia": 2008,
+      "objetivo": 972,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771583",
+      "precio": 2800,
+      "ganador": 1129,
+      "diferencia": 1671,
+      "objetivo": 1117,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771575",
+      "precio": 2660,
+      "ganador": 1246,
+      "diferencia": 1414,
+      "objetivo": 1233,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771569",
+      "precio": 2430,
+      "ganador": 956,
+      "diferencia": 1474,
+      "objetivo": 946,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771557",
+      "precio": 2530,
+      "ganador": 821,
+      "diferencia": 1709,
+      "objetivo": 812,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771537",
+      "precio": 1600,
+      "ganador": 687,
+      "diferencia": 913,
+      "objetivo": 680,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771533",
+      "precio": 1600,
+      "ganador": 385,
+      "diferencia": 1215,
+      "objetivo": 381,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771527",
+      "precio": 2020,
+      "ganador": 907,
+      "diferencia": 1113,
+      "objetivo": 897,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771523",
+      "precio": 2670,
+      "ganador": 1010,
+      "diferencia": 1660,
+      "objetivo": 999,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771511",
+      "precio": 2100,
+      "ganador": 741,
+      "diferencia": 1359,
+      "objetivo": 733,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771509",
+      "precio": 1870,
+      "ganador": 1066,
+      "diferencia": 804,
+      "objetivo": 1055,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771499",
+      "precio": 1600,
+      "ganador": 1107,
+      "diferencia": 493,
+      "objetivo": 1095,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771497",
+      "precio": 2040,
+      "ganador": 708,
+      "diferencia": 1332,
+      "objetivo": 700,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771487",
+      "precio": 1600,
+      "ganador": 956,
+      "diferencia": 644,
+      "objetivo": 946,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771405",
+      "precio": 3160,
+      "ganador": 1910,
+      "diferencia": 1250,
+      "objetivo": 1890,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771401",
+      "precio": 6270,
+      "ganador": 3030,
+      "diferencia": 3240,
+      "objetivo": 2999,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703771399",
+      "precio": 1600,
+      "ganador": 664,
+      "diferencia": 936,
+      "objetivo": 657,
       "esperado": "saltear",
       "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
@@ -122797,6 +124256,798 @@
       "ganador": 870,
       "diferencia": 860,
       "objetivo": 861,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759673",
+      "precio": 1880,
+      "ganador": 960,
+      "diferencia": 920,
+      "objetivo": 950,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759639",
+      "precio": 2350,
+      "ganador": 759,
+      "diferencia": 1591,
+      "objetivo": 751,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759619",
+      "precio": 1600,
+      "ganador": 660,
+      "diferencia": 940,
+      "objetivo": 653,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759609",
+      "precio": 1600,
+      "ganador": 668,
+      "diferencia": 932,
+      "objetivo": 661,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759603",
+      "precio": 1860,
+      "ganador": 715,
+      "diferencia": 1145,
+      "objetivo": 707,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759601",
+      "precio": 1860,
+      "ganador": 952,
+      "diferencia": 908,
+      "objetivo": 942,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759599",
+      "precio": 1700,
+      "ganador": 766,
+      "diferencia": 934,
+      "objetivo": 758,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759597",
+      "precio": 1810,
+      "ganador": 474,
+      "diferencia": 1336,
+      "objetivo": 469,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759581",
+      "precio": 1600,
+      "ganador": 664,
+      "diferencia": 936,
+      "objetivo": 657,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759571",
+      "precio": 2000,
+      "ganador": 902,
+      "diferencia": 1098,
+      "objetivo": 892,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759567",
+      "precio": 1930,
+      "ganador": 823,
+      "diferencia": 1107,
+      "objetivo": 814,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759551",
+      "precio": 2070,
+      "ganador": 766,
+      "diferencia": 1304,
+      "objetivo": 758,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759543",
+      "precio": 2320,
+      "ganador": 990,
+      "diferencia": 1330,
+      "objetivo": 980,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759527",
+      "precio": 3160,
+      "ganador": 1245,
+      "diferencia": 1915,
+      "objetivo": 1232,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759523",
+      "precio": 1600,
+      "ganador": 560,
+      "diferencia": 1040,
+      "objetivo": 554,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759515",
+      "precio": 1600,
+      "ganador": 674,
+      "diferencia": 926,
+      "objetivo": 667,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759445",
+      "precio": 1600,
+      "ganador": 475,
+      "diferencia": 1125,
+      "objetivo": 470,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759437",
+      "precio": 1960,
+      "ganador": 1054,
+      "diferencia": 906,
+      "objetivo": 1043,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759435",
+      "precio": 2300,
+      "ganador": 783,
+      "diferencia": 1517,
+      "objetivo": 775,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759429",
+      "precio": 1610,
+      "ganador": 508,
+      "diferencia": 1102,
+      "objetivo": 502,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759403",
+      "precio": 1680,
+      "ganador": 1198,
+      "diferencia": 482,
+      "objetivo": 1186,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759397",
+      "precio": 2540,
+      "ganador": 993,
+      "diferencia": 1547,
+      "objetivo": 983,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759395",
+      "precio": 2470,
+      "ganador": 1214,
+      "diferencia": 1256,
+      "objetivo": 1201,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759389",
+      "precio": 1970,
+      "ganador": 862,
+      "diferencia": 1108,
+      "objetivo": 853,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759351",
+      "precio": 3480,
+      "ganador": 1347,
+      "diferencia": 2133,
+      "objetivo": 1333,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759341",
+      "precio": 1850,
+      "ganador": 651,
+      "diferencia": 1199,
+      "objetivo": 644,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759337",
+      "precio": 3040,
+      "ganador": 963,
+      "diferencia": 2077,
+      "objetivo": 953,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759295",
+      "precio": 2050,
+      "ganador": 784,
+      "diferencia": 1266,
+      "objetivo": 776,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759293",
+      "precio": 2060,
+      "ganador": 813,
+      "diferencia": 1247,
+      "objetivo": 804,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759237",
+      "precio": 4010,
+      "ganador": 1403,
+      "diferencia": 2607,
+      "objetivo": 1388,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759227",
+      "precio": 3110,
+      "ganador": 1176,
+      "diferencia": 1934,
+      "objetivo": 1164,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759223",
+      "precio": 1600,
+      "ganador": 688,
+      "diferencia": 912,
+      "objetivo": 681,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759165",
+      "precio": 1600,
+      "ganador": 571,
+      "diferencia": 1029,
+      "objetivo": 565,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759157",
+      "precio": 3320,
+      "ganador": 962,
+      "diferencia": 2358,
+      "objetivo": 952,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759155",
+      "precio": 3370,
+      "ganador": 1107,
+      "diferencia": 2263,
+      "objetivo": 1095,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759153",
+      "precio": 1600,
+      "ganador": 610,
+      "diferencia": 990,
+      "objetivo": 603,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759139",
+      "precio": 2550,
+      "ganador": 1119,
+      "diferencia": 1431,
+      "objetivo": 1107,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759123",
+      "precio": 1600,
+      "ganador": 765,
+      "diferencia": 835,
+      "objetivo": 757,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759121",
+      "precio": 3220,
+      "ganador": 805,
+      "diferencia": 2415,
+      "objetivo": 796,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759117",
+      "precio": 1630,
+      "ganador": 1015,
+      "diferencia": 615,
+      "objetivo": 1004,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759105",
+      "precio": 3500,
+      "ganador": 970,
+      "diferencia": 2530,
+      "objetivo": 960,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759097",
+      "precio": 2410,
+      "ganador": 803,
+      "diferencia": 1607,
+      "objetivo": 794,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759089",
+      "precio": 1600,
+      "ganador": 989,
+      "diferencia": 611,
+      "objetivo": 979,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759069",
+      "precio": 2420,
+      "ganador": 1213,
+      "diferencia": 1207,
+      "objetivo": 1200,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759055",
+      "precio": 1600,
+      "ganador": 668,
+      "diferencia": 932,
+      "objetivo": 661,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759047",
+      "precio": 1740,
+      "ganador": 765,
+      "diferencia": 975,
+      "objetivo": 757,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759045",
+      "precio": 1600,
+      "ganador": 510,
+      "diferencia": 1090,
+      "objetivo": 504,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759037",
+      "precio": 1990,
+      "ganador": 1129,
+      "diferencia": 861,
+      "objetivo": 1117,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703759027",
+      "precio": 1600,
+      "ganador": 730,
+      "diferencia": 870,
+      "objetivo": 722,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758949",
+      "precio": 1600,
+      "ganador": 730,
+      "diferencia": 870,
+      "objetivo": 722,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758931",
+      "precio": 1600,
+      "ganador": 730,
+      "diferencia": 870,
+      "objetivo": 722,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758929",
+      "precio": 1600,
+      "ganador": 645,
+      "diferencia": 955,
+      "objetivo": 638,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758905",
+      "precio": 2910,
+      "ganador": 964,
+      "diferencia": 1946,
+      "objetivo": 954,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758899",
+      "precio": 1600,
+      "ganador": 621,
+      "diferencia": 979,
+      "objetivo": 614,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758891",
+      "precio": 2450,
+      "ganador": 1010,
+      "diferencia": 1440,
+      "objetivo": 999,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758867",
+      "precio": 2050,
+      "ganador": 1347,
+      "diferencia": 703,
+      "objetivo": 1333,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758853",
+      "precio": 2330,
+      "ganador": 1037,
+      "diferencia": 1293,
+      "objetivo": 1026,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758847",
+      "precio": 2800,
+      "ganador": 1109,
+      "diferencia": 1691,
+      "objetivo": 1097,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758805",
+      "precio": 2790,
+      "ganador": 982,
+      "diferencia": 1808,
+      "objetivo": 972,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758793",
+      "precio": 3020,
+      "ganador": 1035,
+      "diferencia": 1985,
+      "objetivo": 1024,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758785",
+      "precio": 1710,
+      "ganador": 708,
+      "diferencia": 1002,
+      "objetivo": 700,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758771",
+      "precio": 2030,
+      "ganador": 664,
+      "diferencia": 1366,
+      "objetivo": 657,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758765",
+      "precio": 1630,
+      "ganador": 859,
+      "diferencia": 771,
+      "objetivo": 850,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758755",
+      "precio": 1600,
+      "ganador": 504,
+      "diferencia": 1096,
+      "objetivo": 498,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758721",
+      "precio": 3840,
+      "ganador": 1206,
+      "diferencia": 2634,
+      "objetivo": 1193,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758703",
+      "precio": 2110,
+      "ganador": 1010,
+      "diferencia": 1100,
+      "objetivo": 999,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758641",
+      "precio": 3970,
+      "ganador": 1780,
+      "diferencia": 2190,
+      "objetivo": 1762,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758629",
+      "precio": 1930,
+      "ganador": 738,
+      "diferencia": 1192,
+      "objetivo": 730,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758623",
+      "precio": 1930,
+      "ganador": 907,
+      "diferencia": 1023,
+      "objetivo": 897,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_sin_dato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758621",
+      "precio": 1600,
+      "ganador": 589,
+      "diferencia": 1011,
+      "objetivo": 583,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758613",
+      "precio": 1990,
+      "ganador": 855,
+      "diferencia": 1135,
+      "objetivo": 846,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703758603",
+      "precio": 2850,
+      "ganador": 1413,
+      "diferencia": 1437,
+      "objetivo": 1398,
       "esperado": "saltear",
       "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
@@ -123485,6 +125736,919 @@
       "ok": true
     },
     {
+      "id": "MLU703746833",
+      "precio": 2660,
+      "ganador": 1212,
+      "diferencia": 1448,
+      "objetivo": 1199,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746829",
+      "precio": 1600,
+      "ganador": 440,
+      "diferencia": 1160,
+      "objetivo": 435,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746827",
+      "precio": 2890,
+      "ganador": 900,
+      "diferencia": 1990,
+      "objetivo": 891,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746823",
+      "precio": 2440,
+      "ganador": 994,
+      "diferencia": 1446,
+      "objetivo": 984,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746811",
+      "precio": 1600,
+      "ganador": 435,
+      "diferencia": 1165,
+      "objetivo": 430,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746809",
+      "precio": 1600,
+      "ganador": 789,
+      "diferencia": 811,
+      "objetivo": 781,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746805",
+      "precio": 2020,
+      "ganador": 852,
+      "diferencia": 1168,
+      "objetivo": 843,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746793",
+      "precio": 2000,
+      "ganador": 956,
+      "diferencia": 1044,
+      "objetivo": 946,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746789",
+      "precio": 1600,
+      "ganador": 911,
+      "diferencia": 689,
+      "objetivo": 901,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746783",
+      "precio": 2220,
+      "ganador": 1222,
+      "diferencia": 998,
+      "objetivo": 1209,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746777",
+      "precio": 3120,
+      "ganador": 1374,
+      "diferencia": 1746,
+      "objetivo": 1360,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746767",
+      "precio": 2190,
+      "ganador": 819,
+      "diferencia": 1371,
+      "objetivo": 810,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746755",
+      "precio": 7540,
+      "ganador": 2153,
+      "diferencia": 5387,
+      "objetivo": 2131,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746753",
+      "precio": 8150,
+      "ganador": 3285,
+      "diferencia": 4865,
+      "objetivo": 3252,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746749",
+      "precio": 5640,
+      "ganador": 2026,
+      "diferencia": 3614,
+      "objetivo": 2005,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746739",
+      "precio": 2060,
+      "ganador": 863,
+      "diferencia": 1197,
+      "objetivo": 854,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746737",
+      "precio": 4830,
+      "ganador": 1781,
+      "diferencia": 3049,
+      "objetivo": 1763,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746727",
+      "precio": 8780,
+      "ganador": 3317,
+      "diferencia": 5463,
+      "objetivo": 3283,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746723",
+      "precio": 3740,
+      "ganador": 1286,
+      "diferencia": 2454,
+      "objetivo": 1273,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746721",
+      "precio": 2150,
+      "ganador": 1088,
+      "diferencia": 1062,
+      "objetivo": 1077,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746717",
+      "precio": 1830,
+      "ganador": 814,
+      "diferencia": 1016,
+      "objetivo": 805,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746715",
+      "precio": 2930,
+      "ganador": 895,
+      "diferencia": 2035,
+      "objetivo": 886,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746713",
+      "precio": 3450,
+      "ganador": 1385,
+      "diferencia": 2065,
+      "objetivo": 1371,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746709",
+      "precio": 1600,
+      "ganador": 772,
+      "diferencia": 828,
+      "objetivo": 764,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746705",
+      "precio": 2620,
+      "ganador": 1088,
+      "diferencia": 1532,
+      "objetivo": 1077,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746697",
+      "precio": 1600,
+      "ganador": 514,
+      "diferencia": 1086,
+      "objetivo": 508,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746647",
+      "precio": 2620,
+      "ganador": 1109,
+      "diferencia": 1511,
+      "objetivo": 1097,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746637",
+      "precio": 2230,
+      "ganador": 878,
+      "diferencia": 1352,
+      "objetivo": 869,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746629",
+      "precio": 2160,
+      "ganador": 1096,
+      "diferencia": 1064,
+      "objetivo": 1085,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746627",
+      "precio": 2730,
+      "ganador": 962,
+      "diferencia": 1768,
+      "objetivo": 952,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746621",
+      "precio": 2070,
+      "ganador": 1870,
+      "diferencia": 200,
+      "objetivo": 1851,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746619",
+      "precio": 2090,
+      "ganador": 888,
+      "diferencia": 1202,
+      "objetivo": 879,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746607",
+      "precio": 2720,
+      "ganador": 815,
+      "diferencia": 1905,
+      "objetivo": 806,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746569",
+      "precio": 2140,
+      "ganador": 960,
+      "diferencia": 1180,
+      "objetivo": 950,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746567",
+      "precio": 1600,
+      "ganador": 1161,
+      "diferencia": 439,
+      "objetivo": 1149,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746537",
+      "precio": 1600,
+      "ganador": 772,
+      "diferencia": 828,
+      "objetivo": 764,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746531",
+      "precio": 2310,
+      "ganador": 1184,
+      "diferencia": 1126,
+      "objetivo": 1172,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746507",
+      "precio": 2490,
+      "ganador": 1086,
+      "diferencia": 1404,
+      "objetivo": 1075,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746459",
+      "precio": 1990,
+      "ganador": 1005,
+      "diferencia": 985,
+      "objetivo": 994,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746441",
+      "precio": 1600,
+      "ganador": 485,
+      "diferencia": 1115,
+      "objetivo": 480,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746425",
+      "precio": 1600,
+      "ganador": 553,
+      "diferencia": 1047,
+      "objetivo": 547,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746417",
+      "precio": 1710,
+      "ganador": 714,
+      "diferencia": 996,
+      "objetivo": 706,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746415",
+      "precio": 2060,
+      "ganador": 1276,
+      "diferencia": 784,
+      "objetivo": 1263,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746413",
+      "precio": 1600,
+      "ganador": 446,
+      "diferencia": 1154,
+      "objetivo": 441,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746399",
+      "precio": 1600,
+      "ganador": 541,
+      "diferencia": 1059,
+      "objetivo": 535,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746389",
+      "precio": 1600,
+      "ganador": 598,
+      "diferencia": 1002,
+      "objetivo": 592,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746387",
+      "precio": 1600,
+      "ganador": 644,
+      "diferencia": 956,
+      "objetivo": 637,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746359",
+      "precio": 2250,
+      "ganador": 812,
+      "diferencia": 1438,
+      "objetivo": 803,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746349",
+      "precio": 3590,
+      "ganador": 1718,
+      "diferencia": 1872,
+      "objetivo": 1700,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746345",
+      "precio": 2730,
+      "ganador": 1398,
+      "diferencia": 1332,
+      "objetivo": 1384,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746333",
+      "precio": 1600,
+      "ganador": 767,
+      "diferencia": 833,
+      "objetivo": 759,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746319",
+      "precio": 1600,
+      "ganador": 735,
+      "diferencia": 865,
+      "objetivo": 727,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746299",
+      "precio": 1700,
+      "ganador": 854,
+      "diferencia": 846,
+      "objetivo": 845,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746291",
+      "precio": 1680,
+      "ganador": 813,
+      "diferencia": 867,
+      "objetivo": 804,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746289",
+      "precio": 2830,
+      "ganador": 1484,
+      "diferencia": 1346,
+      "objetivo": 1469,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746273",
+      "precio": 2190,
+      "ganador": 1877,
+      "diferencia": 313,
+      "objetivo": 1858,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746267",
+      "precio": 1600,
+      "ganador": 536,
+      "diferencia": 1064,
+      "objetivo": 530,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746263",
+      "precio": 1600,
+      "ganador": 1160,
+      "diferencia": 440,
+      "objetivo": 1148,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746149",
+      "precio": 1600,
+      "ganador": 730,
+      "diferencia": 870,
+      "objetivo": 722,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746145",
+      "precio": 1600,
+      "ganador": 730,
+      "diferencia": 870,
+      "objetivo": 722,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746119",
+      "precio": 2900,
+      "ganador": 1474,
+      "diferencia": 1426,
+      "objetivo": 1459,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746101",
+      "precio": 2110,
+      "ganador": 664,
+      "diferencia": 1446,
+      "objetivo": 657,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746099",
+      "precio": 2850,
+      "ganador": 2154,
+      "diferencia": 696,
+      "objetivo": 2132,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746093",
+      "precio": 1600,
+      "ganador": 514,
+      "diferencia": 1086,
+      "objetivo": 508,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746079",
+      "precio": 2970,
+      "ganador": 878,
+      "diferencia": 2092,
+      "objetivo": 869,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746057",
+      "precio": 3500,
+      "ganador": 1418,
+      "diferencia": 2082,
+      "objetivo": 1403,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746029",
+      "precio": 3900,
+      "ganador": 2622,
+      "diferencia": 1278,
+      "objetivo": 2595,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746023",
+      "precio": 1600,
+      "ganador": 1010,
+      "diferencia": 590,
+      "objetivo": 999,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703746003",
+      "precio": 2340,
+      "ganador": 1039,
+      "diferencia": 1301,
+      "objetivo": 1028,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703745977",
+      "precio": 1600,
+      "ganador": 644,
+      "diferencia": 956,
+      "objetivo": 637,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703745973",
+      "precio": 1600,
+      "ganador": 508,
+      "diferencia": 1092,
+      "objetivo": 502,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703745963",
+      "precio": 1910,
+      "ganador": 731,
+      "diferencia": 1179,
+      "objetivo": 723,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703745959",
+      "precio": 1600,
+      "ganador": 825,
+      "diferencia": 775,
+      "objetivo": 816,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703745935",
+      "precio": 3490,
+      "ganador": 1269,
+      "diferencia": 2221,
+      "objetivo": 1256,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703745933",
+      "precio": 3070,
+      "ganador": 925,
+      "diferencia": 2145,
+      "objetivo": 915,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703745929",
+      "precio": 2840,
+      "ganador": 820,
+      "diferencia": 2020,
+      "objetivo": 811,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703745925",
+      "precio": 3040,
+      "ganador": 987,
+      "diferencia": 2053,
+      "objetivo": 977,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703745923",
+      "precio": 2220,
+      "ganador": 771,
+      "diferencia": 1449,
+      "objetivo": 763,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703745921",
+      "precio": 3700,
+      "ganador": 1551,
+      "diferencia": 2149,
+      "objetivo": 1535,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703745913",
+      "precio": 1600,
+      "ganador": 804,
+      "diferencia": 796,
+      "objetivo": 795,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703745857",
+      "precio": 1630,
+      "ganador": 656,
+      "diferencia": 974,
+      "objetivo": 649,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703745841",
+      "precio": 1600,
+      "ganador": 499,
+      "diferencia": 1101,
+      "objetivo": 494,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU703745827",
+      "precio": 1600,
+      "ganador": 651,
+      "diferencia": 949,
+      "objetivo": 644,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_inmediato",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
       "id": "MLU703745823",
       "precio": 2250,
       "ganador": 962,
@@ -123938,9 +127102,9 @@
     {
       "id": "MLU703744111",
       "precio": 1600,
-      "ganador": 593,
-      "diferencia": 1007,
-      "objetivo": 587,
+      "ganador": 586,
+      "diferencia": 1014,
+      "objetivo": 580,
       "esperado": "saltear",
       "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
@@ -124289,5 +127453,5 @@
     }
   ],
   "discrepancias": [],
-  "llamadas": 2013
+  "llamadas": 2067
 }
