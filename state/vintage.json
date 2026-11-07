@@ -950,9 +950,9 @@
     "MLU1522464546": {
       "titulo": "Libro La Aldea Escondida - Susanna Harutyunyan, De Harutyunyan, Susanna, Vol. 1,",
       "precio_original": 2890,
-      "precio_aplicado": 2635,
+      "precio_aplicado": 2663,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T22:05:20.084Z",
+      "fecha": "2026-11-07T22:45:44.158Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -2471,9 +2471,9 @@
     "MLU1523097250": {
       "titulo": "Animals - Roars & Claws - Magic Water Colouring (hb)",
       "precio_original": 1640,
-      "precio_aplicado": 1498,
+      "precio_aplicado": 1514,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T22:05:20.084Z",
+      "fecha": "2026-11-07T22:45:44.158Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -13541,9 +13541,9 @@
     "MLU1521237416": {
       "titulo": "Libro 75 Cuentos Sufies - Los Caminos De La Luz, De Anónimo, Vol. 1. Editorial O",
       "precio_original": 1600,
-      "precio_aplicado": 1263,
+      "precio_aplicado": 1277,
       "fecha_primera_baja": "2026-11-05T13:22:18.605Z",
-      "fecha": "2026-11-07T22:05:20.084Z",
+      "fecha": "2026-11-07T22:45:44.158Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -21047,15 +21047,6 @@
       "stock_original": 1,
       "dias_demanda": 18
     },
-    "MLU703036289": {
-      "titulo": "Beautiful Boy - David Sheff",
-      "precio_original": 1901,
-      "precio_aplicado": 1851,
-      "fecha_primera_baja": "2026-11-05T13:22:18.605Z",
-      "fecha": "2026-11-05T18:32:02.798Z",
-      "stock_original": 1,
-      "dias_demanda": 18
-    },
     "MLU703036203": {
       "titulo": "Libro Beatles Esto Lo Estoy Escuchando Mañana, De Csipka, Juan Pablo. Editorial ",
       "precio_original": 1600,
@@ -27123,9 +27114,9 @@
     "MLU703289851": {
       "titulo": "Libro Cienmillones De Cai Marta Altamarea",
       "precio_original": 2320,
-      "precio_aplicado": 2168,
+      "precio_aplicado": 2096,
       "fecha_primera_baja": "2026-11-05T18:32:02.798Z",
-      "fecha": "2026-11-06T22:42:14.038Z",
+      "fecha": "2026-11-07T22:45:44.158Z",
       "dias_demanda": 18
     },
     "MLU703286299": {
@@ -38498,9 +38489,9 @@
     "MLU1531961026": {
       "titulo": "Diques, Los - Irene Sola",
       "precio_original": 1600,
-      "precio_aplicado": 1514,
+      "precio_aplicado": 1543,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-07T22:45:44.158Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -54815,9 +54806,9 @@
     "MLU1531861854": {
       "titulo": "Educacion Ambiental Integral En La Primera Infancia, De Brandwaiman, Mara. Edito",
       "precio_original": 2040,
-      "precio_aplicado": 1881,
+      "precio_aplicado": 1907,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-07T22:45:44.158Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -57812,20 +57803,20 @@
     "MLU1523497798": {
       "titulo": "Libro El Arte De Habitar La Frontera, De Escandell Garcia, Natxo. Editorial Barl",
       "precio_original": 2340,
-      "precio_aplicado": 2263,
+      "precio_aplicado": 2286,
       "fecha_primera_baja": "2026-11-07T22:05:20.084Z",
-      "fecha": "2026-11-07T22:05:20.084Z",
-      "dias_demanda": 18,
-      "stock_original": 1
+      "fecha": "2026-11-07T22:45:44.158Z",
+      "stock_original": 1,
+      "dias_demanda": 18
     },
     "MLU1531140782": {
       "titulo": "Crescendo - Hush Hush 2 - Becca Fitzpatrick",
       "precio_original": 2910,
-      "precio_aplicado": 2486,
+      "precio_aplicado": 2512,
       "fecha_primera_baja": "2026-11-07T22:05:20.084Z",
-      "fecha": "2026-11-07T22:05:20.084Z",
-      "dias_demanda": 18,
-      "stock_original": 1
+      "fecha": "2026-11-07T22:45:44.158Z",
+      "stock_original": 1,
+      "dias_demanda": 18
     },
     "MLU1531965242": {
       "titulo": "Libro Emigrar Con Éxito, De Borja Pérez, Flavia, Tapa Blanda (9999)",
@@ -57835,7 +57826,34 @@
       "fecha": "2026-11-07T22:05:20.084Z",
       "dias_demanda": 18,
       "stock_original": 1
+    },
+    "MLU703631943": {
+      "titulo": "Declic 1 - Cahier D'exercices + A/cd*, De Blanc, Jacques. Editorial Cle En Franc",
+      "precio_original": 2470,
+      "precio_aplicado": 2390,
+      "fecha_primera_baja": "2026-11-07T22:45:44.158Z",
+      "fecha": "2026-11-07T22:45:44.158Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531961928": {
+      "titulo": "Libro Los Dos Hemisferios De Lucca - Bárbara Anderson",
+      "precio_original": 2550,
+      "precio_aplicado": 2469,
+      "fecha_primera_baja": "2026-11-07T22:45:44.158Z",
+      "fecha": "2026-11-07T22:45:44.158Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531863078": {
+      "titulo": "En Corea Del Norte - Grieco, Florencia",
+      "precio_original": 2410,
+      "precio_aplicado": 2331,
+      "fecha_primera_baja": "2026-11-07T22:45:44.158Z",
+      "fecha": "2026-11-07T22:45:44.158Z",
+      "dias_demanda": 18,
+      "stock_original": 1
     }
   },
-  "actualizado": "2026-11-07T22:05:38.543Z"
+  "actualizado": "2026-11-07T22:45:55.212Z"
 }
