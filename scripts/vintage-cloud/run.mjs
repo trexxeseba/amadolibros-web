@@ -124,7 +124,10 @@ async function cloudRunInner({action,directory,campaign,overrides={},env=process
   let result;
   for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,limitNew:n,target:settings.target_total,raiseTargetTo:settings.target_total,intervalMs:settings.intervalo_ms,...CLOUD_ENGINE,classifiers:settings.clasificadores,maxMs:settings.minutos*60000,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
   const after=await (deps.broker??makeBroker)(c)('status');
-  report.publicacion={estado:result.state,publicados_total:result.published_total,altas_de_esta_corrida:Math.max(0,after.daily_created-status.daily_created)};
+  // Con el total de la campaña y no con las altas del día: el contador del día vuelve a 0 a la
+  // medianoche y una corrida que la cruza parecía no haber publicado nada.
+  const ganadas=Number.isFinite(after.published_total)&&Number.isFinite(status.published_total)?after.published_total-status.published_total:after.daily_created-status.daily_created;
+  report.publicacion={estado:result.state,publicados_total:result.published_total,altas_de_esta_corrida:Math.max(0,ganadas)};
   return {...report,estado:result.state};
  }finally{
   // La conexión no queda abierta entre corridas: la próxima pide una nueva.
