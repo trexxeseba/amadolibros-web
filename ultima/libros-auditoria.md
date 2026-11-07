@@ -1,4 +1,4 @@
-# Auditoría Precio Ganador · Amado Libros · 2026-11-07T21:27:02.069Z
+# Auditoría Precio Ganador · Amado Libros · 2026-11-07T22:10:21.857Z
 
 Discrepancias: **0**
 
@@ -6,58 +6,56 @@ Discrepancias: **0**
 
 | Publicación | Precio | Estado ML | Para ganar | Competidor más barato | Sugerencias de ML | Conclusión | OK |
 |---|---:|---|---:|---:|---|---|---|
-| MLU632200099 Las Adicciones De La Época, De Levato Mabel. Editorial Letra | 902 | winning | 902 | 1584 | Envíos Full, Envíos en el día | Gana: el competidor más barato está en 1584 | sí |
-| MLU669511142 El Apego | 3200 | winning | 3200 | 3790 | Envíos Full, Envíos en el día | Gana: el competidor más barato está en 3790 | sí |
-| MLU661277581 Relatos De Un Peregrino Ruso - Anonimo, Autor | 1750 | winning | 1750 | 1670 | Envíos Full, Envíos en el día | Gana aunque hay uno más barato (1670): ML pesa envío y reputación | sí |
-| MLU1224294756 Colorea Y Descubre El Misterio Disney Perritos De Disney | 2200 | winning | 2200 | ninguno | Envíos Full, Envíos en el día | Gana: no hay otros vendedores | sí |
-| MLU1302839010 Edipo Gay | 1850 | winning | 1850 | 1662 | Envíos Full, Envíos en el día | Gana aunque hay uno más barato (1662): ML pesa envío y reputación | sí |
-| MLU760905734 Cd Fiona Apple  The Idler Wheel Is Wiser, Pop Alternativo De | 2750 | winning | 2750 | ninguno | Envíos Full, Envíos en el día | Gana: no hay otros vendedores | sí |
-| MLU656280336 Señales De Vida, De Punta, Teresa. Editorial Lugar En Españo | 1377 | winning | 1377 | 3010 | Envíos Full, Envíos en el día | Gana: el competidor más barato está en 3010 | sí |
-| MLU628782797 Infancias En La Escuela | 1415 | winning | 1415 | 2570 | Envíos Full, Envíos en el día | Gana: el competidor más barato está en 2570 | sí |
-| MLU652666506 Una Vida Sin Salud Mental De Alba González Por Editorial Bre | 1950 | winning | 1950 | 985 | Envíos Full, Envíos en el día | Gana aunque hay uno más barato (985): ML pesa envío y reputación | sí |
-| MLU655006648 Libro La Tercera / La Equivocacion Del Sujeto Del Saber Laca | 950 | winning | 950 | 2540 | Envíos Full, Envíos en el día | Gana: el competidor más barato está en 2540 | sí |
+| MLU691598392 El León De Marzo 14 Manga Seinen Chica Umino, De Chica Umino | 2600 | winning | 2600 | ninguno | Envíos Full, Envíos en el día | Gana: no hay otros vendedores | sí |
+| MLU700573106 Tarot Ciro Marchetti Mystic Palette 78 Cartas | 2400 | winning | 1862 | ninguno | Envíos Full, Envíos en el día | Gana: no hay otros vendedores | sí |
+| MLU1248458670 Libro La Montaña Eres Tú [ Brianna Wiest ] Original, De Bria | 683 | competing | 663 | 684.6 | Envíos Full, Envío gratis, Envíos en el día | Pierde: para ganar, 663. Ganador MLU1248458670 a 683 | sí |
+| MLU632078511 El Liberalismo Y Sus Desencantados, De Francis Fukuyama. Edi | 2025 | winning | 2025 | 1612 | Envíos Full, Envíos en el día | Gana aunque hay uno más barato (1612): ML pesa envío y reputación | sí |
+| MLU657067118 Libro Matemáticas. Investigación, Innovación Y Buenas Prácti | 535 | winning | 535 | 612 | Envíos Full, Envíos en el día | Gana: el competidor más barato está en 612 | sí |
+| MLU631882823 Cannabis Consciente Para Un Uso Medicinal De La Marihuana | 2200 | winning | 2200 | 1293 | Envíos Full, Envíos en el día | Gana aunque hay uno más barato (1293): ML pesa envío y reputación | sí |
+| MLU888292636 Semiologia Del Sistema Nervioso - Osvaldo Fustinoni | 4300 | winning | 4300 | 3720 | Envíos Full, Envíos en el día | Gana aunque hay uno más barato (3720): ML pesa envío y reputación | sí |
+| MLU669137152 Tarot De Las Mil Y Una Noche(cartas + Manual) Lo Scarabeo | 2400 | winning | 2025 | 2000 | Envíos Full, Envíos en el día | Gana aunque hay uno más barato (2000): ML pesa envío y reputación | sí |
+| MLU1317658890 Introducción A Heidegger Gianni Vattimo Filosofía Herder | 1286 | sharing_first_place | 1274 | 1300 | Envíos Full, Envíos en el día | Comparte el primer lugar (1 más) | sí |
+| MLU649114958 La Mente Absorbente, De Maria Montessori. Editorial Montesso | 2990 | winning | 2990 | ninguno | Envíos Full, Envíos en el día | Gana: no hay otros vendedores | sí |
 
-## Publicaciones que el sistema bajó (56)
+## Publicaciones que el sistema bajó (48)
 
 | Publicación | Original | Registrado | En ML hoy | OK |
 |---|---:|---:|---:|---|
-| MLU637065821 The adidas Archive. The Footwear Collection, De Ch | 1944 | 1813 | 1813 | sí |
-| MLU757785172 Instrumentación Quirúrgica Principios Y Práctica D | 6775 | 6194 | 6194 | sí |
+| MLU637065821 The adidas Archive. The Footwear Collection, De Ch | 1944 | 1851 | 1851 | sí |
+| MLU757785172 Instrumentación Quirúrgica Principios Y Práctica D | 6775 | 6320 | 6320 | sí |
 | MLU862968034 Granja, La Libro De Juegos Y Puzzle, De Anónimo. E | 415 | 367 | 367 | sí |
 | MLU1240815646 El Pequeño Gran Libro Del Crochet, De Marie Noelle | 1250 | 1173 | 1173 | sí |
-| MLU1248458670 Libro La Montaña Eres Tú [ Brianna Wiest ] Origina | 725 | 663 | 663 | sí |
+| MLU1248458670 Libro La Montaña Eres Tú [ Brianna Wiest ] Origina | 725 | 683 | 683 | sí |
 | MLU636406403 El Libro Perdido - Cassandra Clare - Destino | 651 | 637 | 637 | sí |
 | MLU728203732 Sé Amable Contigo Mismo El Arte De La Compasión Ha | 2150 | 1899 | 1899 | sí |
-| MLU631748561 Libro Secuencias Didacticas - 30 Preguntas Y Respu | 429 | 401 | 401 | sí |
-| MLU669640600 Cress - Crónicas Lunares Libro 3, De Marissa Meyer | 716 | 677 | 677 | sí |
+| MLU631748561 Libro Secuencias Didacticas - 30 Preguntas Y Respu | 429 | 420 | 420 | sí |
+| MLU669640600 Cress - Crónicas Lunares Libro 3, De Marissa Meyer | 716 | 705 | 705 | sí |
 | MLU648468395 Todas Aquellas Veces Y Otros Asuntos Pendientes -  | 1232 | 1182 | 1182 | sí |
 | MLU651526224 Libro La Sexuación En La Infancia - Eric Laurent - | 581 | 558 | 558 | sí |
-| MLU676002408 Mientras Dormiamos El Engaño Maestro, De Nocera Co | 1480 | 1436 | 1436 | sí |
 | MLU693373346 La Última Invitación: Un Mensaje De Esperanza, De  | 889 | 870 | 870 | sí |
 | MLU647354923 System Of A Down Hypnotize Importado Cd Nuevo Stan | 1212 | 1199 | 1199 | sí |
 | MLU650471169 Un Año De Conexión Con La Naturaleza: Calendario P | 1374 | 1345 | 1345 | sí |
-| MLU653035273 Escritos Sobre Astrología, De Carl Gustav Jung., V | 1659 | 1616 | 1616 | sí |
-| MLU863973534 Libro Perderte Para Encontrarme - Elizabeth Clapés | 665 | 649 | 649 | sí |
+| MLU863973534 Libro Perderte Para Encontrarme - Elizabeth Clapés | 665 | 629 | 629 | sí |
 | MLU886822546 Personal Best B1+ Intermediate - Workbook - Richmo | 1178 | 1153 | 1153 | sí |
 | MLU1496874810 Libro: Privacidad Es Poder. Veliz, Carissa. Debate | 1464 | 1402 | 1402 | sí |
-| MLU663199900 Libro La Última Encrucijada - Jorge Liotti - Plane | 1106 | 1059 | 1059 | sí |
+| MLU663199900 Libro La Última Encrucijada - Jorge Liotti - Plane | 1106 | 1082 | 1082 | sí |
 | MLU1505128778 International Primary Science Workbook: Stage 2 -  | 1790 | 1599 | 1599 | sí |
 | MLU653960560 Dar El Duelo - Virginia Cano | 1950 | 1593 | 1593 | sí |
 | MLU660998018 Daat: El Conocimiento - Saban, Mario Javier | 3650 | 3336 | 3336 | sí |
 | MLU740027064 Autismo Una Guia Practica: Una Guía Práctica, De P | 629 | 624 | 624 | sí |
 | MLU766245318 Cartas Para La Manada Cecilia Solá Sudestada | 1450 | 1289 | 1289 | sí |
 | MLU692647026 Libro Mi Viaje Sin Ti - Alejandro Sequera | 764 | 654 | 654 | sí |
-| MLU889968514 Actitud Mental Positiva - Napoleon Hill Y W. Cleme | 910 | 821 | 821 | sí |
-| MLU888292642 Netter Flashcards De Histología | 2694 | 2345 | 2345 | sí |
-| MLU669860318 Cómo Te Sientes, De Anthony Browne. Editorial Kala | 825 | 782 | 782 | sí |
-| MLU884651706 El Ascendente: Tu Gps Existencial. Descubrí La Lla | 571 | 538 | 538 | sí |
-| MLU884315176 Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Edit | 2899 | 2783 | 2783 | sí |
-| MLU655257859 Respeto Por La Interpretacion - Uta, Frankel | 767 | 726 | 726 | sí |
-| MLU625745211 Cartas 72 Angeles, Las - Christiane Muller, Kaya | 2210 | 2132 | 2132 | sí |
-| MLU957971524 Libro No Es Un Monstruo, Es Una Herida, De López P | 1105 | 1066 | 1066 | sí |
-| MLU1444639912 Luz De Tungsteno: La Respuesta A Tu Problema Está  | 1155 | 1112 | 1112 | sí |
+| MLU889968514 Actitud Mental Positiva - Napoleon Hill Y W. Cleme | 910 | 846 | 846 | sí |
+| MLU888292642 Netter Flashcards De Histología | 2694 | 2417 | 2417 | sí |
+| MLU669860318 Cómo Te Sientes, De Anthony Browne. Editorial Kala | 825 | 813 | 813 | sí |
+| MLU884651706 El Ascendente: Tu Gps Existencial. Descubrí La Lla | 571 | 562 | 562 | sí |
+| MLU884315176 Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Edit | 2899 | 2869 | 2869 | sí |
+| MLU655257859 Respeto Por La Interpretacion - Uta, Frankel | 767 | 755 | 755 | sí |
+| MLU625745211 Cartas 72 Angeles, Las - Christiane Muller, Kaya | 2210 | 2198 | 2198 | sí |
+| MLU957971524 Libro No Es Un Monstruo, Es Una Herida, De López P | 1105 | 1099 | 1099 | sí |
+| MLU1444639912 Luz De Tungsteno: La Respuesta A Tu Problema Está  | 1155 | 1146 | 1146 | sí |
 | MLU643295539 El Desafio De Evaluar...procesos De Lectura Y Escr | 1650 | 1583 | 1583 | sí |
-| MLU691609938 La Nobleza Negra Génesis Del Imperio Veneciano De  | 1271 | 1165 | 1165 | sí |
+| MLU691609938 La Nobleza Negra Génesis Del Imperio Veneciano De  | 1271 | 1190 | 1190 | sí |
 | MLU646433323 El Desafio De Aprender A Leer:los Prerrequisitos D | 1750 | 1583 | 1583 | sí |
 | MLU767547738 Demasiadas Leyes, De Spencer, Herbert., Vol. 1. Ed | 1750 | 1583 | 1583 | sí |
 | MLU925905782 Didactica De La Gestion-conduccion. Pedagogia Del  | 2200 | 2138 | 2138 | sí |
@@ -66,19 +64,13 @@ Discrepancias: **0**
 | MLU701173804 Encendidas: Un Viaje Íntimo Por La Menopausia, De  | 2200 | 2088 | 2088 | sí |
 | MLU702932898 El Engaño Populista | 2750 | 2504 | 2504 | sí |
 | MLU833600900 Dos Perros Y Una Abuela - Loqueleo Verde | 1650 | 1599 | 1599 | sí |
-| MLU695916883 Gestión Del Talento Humano | 3554 | 3480 | 3480 | sí |
+| MLU695916883 Gestión Del Talento Humano | 3554 | 3376 | 3376 | sí |
 | MLU827082652 Libro El Estofado Del Lobo - Keiko Kasza | 1950 | 1659 | 1659 | sí |
-| MLU661228680 Libro: El Ala Derecha. Cegador, 3. Premio Fil 2022 | 1341 | 1314 | 1314 | sí |
-| MLU668180202 Libro: El Álbum De Nuestro Bebe / Christine Rousse | 1143 | 1120 | 1120 | sí |
-| MLU682218876 Libro Te Quiero, Abuela - Andreae, Giles | 947 | 922 | 922 | sí |
-| MLU701212828 Sujetos A Nuestro Propio Y Múltiple Ser: Teoría So | 908 | 884 | 884 | sí |
-| MLU702790272 Libro Óscar, El Unicornio Hambriento, De Carter, L | 651 | 631 | 631 | sí |
-| MLU713666896 Superorganismos: De La Medusa Inmortal A Los Hongo | 830 | 808 | 808 | sí |
 | MLU728418074 Filoenigmas Curiosos: Los 150 Mejores Problemas De | 2200 | 2039 | 2039 | sí |
-| MLU844994424 El Lenguaje Secreto De La Oscuridad: Transmisiones | 1685 | 1650 | 1650 | sí |
 | MLU1066586596 Física Universitaria Con Física Moderna Tomo 1 Zem | 10500 | 10286 | 10286 | sí |
+| MLU637104893 Pedagogía De Lo Cotidiano: Una Mirada Desde La Fil | 1250 | 1223 | 1223 | sí |
 
-## Regla recalculada sobre las marcadas de la última corrida (44)
+## Regla recalculada sobre las marcadas de la última corrida (36)
 
 | Publicación | Precio | Ganador | Diferencia | Esperado | Hizo | OK |
 |---|---:|---:|---:|---|---|---|
@@ -90,31 +82,23 @@ Discrepancias: **0**
 | MLU652640572 | 2450 | 812 | 1638 | no_tocar | sin_tocar_umbral → 812 | sí |
 | MLU655245898 | 4300 | 3079 | 1221 | no_tocar | sin_tocar_umbral → 3079 | sí |
 | MLU658014482 | 1950 | 1328 | 622 | no_tocar | sin_tocar_umbral → 1328 | sí |
-| MLU661228680 | 1341 | 1314 | 27 | bajar | bajar → 1314 | sí |
-| MLU668180202 | 1143 | 1120 | 23 | bajar | bajar → 1120 | sí |
 | MLU669549988 | 1790 | 982 | 808 | no_tocar | sin_tocar_umbral → 982 | sí |
+| MLU637104893 | 1250 | 1223 | 27 | bajar | bajar → 1223 | sí |
 | MLU674520846 | 2750 | 1140 | 1610 | no_tocar | sin_tocar_umbral → 1140 | sí |
-| MLU682218876 | 947 | 922 | 25 | bajar | bajar → 922 | sí |
 | MLU683328768 | 1985 | 915 | 1070 | no_tocar | sin_tocar_umbral → 915 | sí |
 | MLU691295954 | 1990 | 969 | 1021 | no_tocar | sin_tocar_umbral → 969 | sí |
-| MLU701212828 | 908 | 884 | 24 | bajar | bajar → 884 | sí |
-| MLU702790272 | 651 | 631 | 20 | bajar | bajar → 631 | sí |
 | MLU706364386 | 2137 | 1277 | 860 | no_tocar | sin_tocar_umbral → 1277 | sí |
 | MLU648669567 | 1450 | 1013 | 437 | no_tocar | sin_tocar_umbral → 1013 | sí |
-| MLU713666896 | 830 | 808 | 22 | bajar | bajar → 808 | sí |
 | MLU728138914 | 2050 | 1089 | 961 | no_tocar | sin_tocar_umbral → 1089 | sí |
-| MLU728418074 | 2200 | 2039 | 161 | bajar | bajar → 2039 | sí |
 | MLU730247430 | 2550 | 1060 | 1490 | no_tocar | sin_tocar_umbral → 1060 | sí |
 | MLU735608772 | 1995 | 1257 | 738 | no_tocar | sin_tocar_umbral → 1257 | sí |
 | MLU826991156 | 2750 | 1583 | 1167 | no_tocar | sin_tocar_umbral → 1583 | sí |
-| MLU844994424 | 1685 | 1650 | 35 | bajar | bajar → 1650 | sí |
 | MLU853875712 | 3710 | 2474 | 1236 | no_tocar | sin_tocar_umbral → 2474 | sí |
 | MLU884307200 | 2450 | 1852 | 598 | no_tocar | sin_tocar_umbral → 1852 | sí |
 | MLU912983914 | 2350 | 853 | 1497 | no_tocar | sin_tocar_umbral → 853 | sí |
 | MLU1009973108 | 2450 | 1705 | 745 | no_tocar | sin_tocar_umbral → 1705 | sí |
 | MLU1047310668 | 2650 | 812 | 1838 | no_tocar | sin_tocar_umbral → 812 | sí |
 | MLU655144089 | 1801 | 604 | 1197 | no_tocar | sin_tocar_umbral → 604 | sí |
-| MLU1066586596 | 10500 | 10286 | 214 | bajar | bajar → 10286 | sí |
 | MLU660973661 | 898 | 874 | 24 | saltear | saltear_precio_dinamico | sí |
 | MLU1183159820 | 2350 | 1305 | 1045 | no_tocar | sin_tocar_umbral → 1305 | sí |
 | MLU678056633 | 1790 | 575 | 1215 | no_tocar | sin_tocar_umbral → 575 | sí |
