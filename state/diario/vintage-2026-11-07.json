@@ -25,6 +25,32 @@
       "editadas_a_mano": 0,
       "errores": 0,
       "cambios_stock": 4
+    },
+    {
+      "fecha": "2026-11-07T12:41:33.198Z",
+      "modo": "real",
+      "activas": 26427,
+      "revisadas": 26443,
+      "compiten": 7074,
+      "marcadas": 4437,
+      "precio_dinamico": 0,
+      "ganador_inmediato": 2595,
+      "ganador_sin_dato": 41,
+      "bajadas": 40,
+      "ajustadas": 89,
+      "subidas": 51,
+      "restauradas": 11,
+      "sin_tocar_umbral": 3803,
+      "sin_tocar_pct": 0,
+      "verificadas": 191,
+      "no_verificadas": 0,
+      "promo": 394,
+      "bajo_piso": 37,
+      "sin_costo": 0,
+      "otras_salteadas": 0,
+      "editadas_a_mano": 0,
+      "errores": 0,
+      "cambios_stock": 50
     }
   ]
 }
