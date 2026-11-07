@@ -277,3 +277,15 @@ test('the daily cap can never pass the server cap of 10000',async()=>{
  const {VINTAGE_DAILY_CAP}=await import('../_shared/meli-vintage-bulk.js');
  assert.equal(cloudSettings(campaign('nube','real',{tope_diario:50000})).tope_diario,VINTAGE_DAILY_CAP);
 });
+
+test('a run that crosses midnight counts its altas with the campaign total, not the day counter',async t=>{
+ const h=await harness(t,{campaignValue:campaign('nube','real')});
+ const statuses=[{daily_created:7555,published_total:21359},{daily_created:120,published_total:21731}];
+ const r=await cloudRun({action:'publicar',directory:h.dir,campaign:campaign('nube','real',{tope_diario:8000}),env:{VINTAGE_RENEW_SECRET:'r'.repeat(40),SBS_EMAIL:'a@b.c',SBS_PASSWORD:'x'},query:async()=>[],deps:{
+  renewClient:()=>async a=>a==='keepalive'?{refreshed:false,expires_at:Date.now()+5*3600000}:{},
+  renew:async({connection:file})=>{await fs.writeFile(file,JSON.stringify({version:1,endpoint:'https://www.amadolibros.com/operations/vintage-local',key:'b'.repeat(64),expires_at:Date.now()+86400000,seller_id:'2341378249',app_id:'4741021817925208',run_id:BULK_RUN,policy,receipts:[]}));return {state:'renewed'};},
+  inspect:async()=>({rows:[]}),sync:async()=>({}),engine:async()=>({state:'time_slice_done',published_total:21731}),
+  broker:()=>async()=>statuses.shift(),
+ }});
+ assert.equal(r.publicacion.altas_de_esta_corrida,372);
+});
