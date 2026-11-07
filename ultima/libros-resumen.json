@@ -4,19 +4,19 @@
   "ejemplos_error": [],
   "duracion_s": 135,
   "contadores": {
-    "fecha": "2026-11-07T22:10:01.751Z",
+    "fecha": "2026-11-07T23:35:36.086Z",
     "modo": "real",
     "activas": 6892,
     "revisadas": 6892,
-    "compiten": 38,
-    "marcadas": 38,
+    "compiten": 60,
+    "marcadas": 60,
     "precio_dinamico": 1,
     "ganador_inmediato": 0,
     "ganador_sin_dato": 0,
-    "bajadas": 1,
-    "ajustadas": 2,
-    "subidas": 16,
-    "restauradas": 9,
+    "bajadas": 9,
+    "ajustadas": 16,
+    "subidas": 2,
+    "restauradas": 1,
     "sin_tocar_umbral": 33,
     "sin_tocar_pct": 1,
     "verificadas": 28,
@@ -31,9 +31,9 @@
   },
   "catalogo": {
     "estados": {
-      "winning": 2967,
-      "sharing_first_place": 68,
-      "competing": 38,
+      "competing": 60,
+      "winning": 2947,
+      "sharing_first_place": 66,
       "not_listed": 3819
     },
     "publicaciones_con_alguna_sugerencia": 3073,
@@ -46,16 +46,16 @@
       "not_listed:item_not_opted_in": 3819
     },
     "por_tipo": {
-      "catalogo:winning:con_stock": 2967,
-      "catalogo:sharing_first_place:con_stock": 68,
-      "catalogo:competing:con_stock": 38,
+      "catalogo:competing:con_stock": 60,
+      "catalogo:winning:con_stock": 2947,
+      "catalogo:sharing_first_place:con_stock": 66,
       "tradicional:not_listed:con_stock": 3819
     },
     "errores_por_tipo": {}
   },
   "errores": {},
-  "llamadas": 7422,
+  "llamadas": 7400,
   "por_status": {
-    "200": 7422
+    "200": 7400
   }
 }
