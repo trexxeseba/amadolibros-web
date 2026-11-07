@@ -1,89 +1,29 @@
 {
-  "fecha": "2026-11-07T00:04:28.783Z",
+  "fecha": "2026-11-07T01:43:15.834Z",
   "muestra": [
     {
-      "id": "MLU671374306",
-      "titulo": "Redes De Maternidad Y Crianza, De Garrido Mayo, María José. ",
-      "precio": 1567,
+      "id": "MLU882935602",
+      "titulo": "Serra Manual Práctico De Instrumentación Quirúrgica En Enfer",
+      "precio": 6900,
       "estado": "winning",
-      "precio_para_ganar": 1567,
-      "competidor_mas_barato": null,
-      "otras_ofertas": 0,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Gana: no hay otros vendedores",
-      "ok": true
-    },
-    {
-      "id": "MLU668231852",
-      "titulo": "Los Tres Cristos De Ypsilanti",
-      "precio": 1540,
-      "estado": "winning",
-      "precio_para_ganar": 1540,
-      "competidor_mas_barato": 1690,
-      "otras_ofertas": 8,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Gana: el competidor más barato está en 1690",
-      "ok": true
-    },
-    {
-      "id": "MLU628031187",
-      "titulo": "Libro La Razón Por La Que Salto - Naoki Higashida",
-      "precio": 2150,
-      "estado": "winning",
-      "precio_para_ganar": 2150,
-      "competidor_mas_barato": 2290,
+      "precio_para_ganar": 6900,
+      "competidor_mas_barato": 4253,
       "otras_ofertas": 2,
       "sugerencias_ml": [
         "Envíos Full",
         "Envíos en el día"
       ],
-      "conclusion": "Gana: el competidor más barato está en 2290",
+      "conclusion": "Gana aunque hay uno más barato (4253): ML pesa envío y reputación",
       "ok": true
     },
     {
-      "id": "MLU1296916364",
-      "titulo": "La Sabiduria De Los Idiotas, De Idries Shah. Editorial Isf P",
-      "precio": 1550,
+      "id": "MLU654506708",
+      "titulo": "La Chica De Medianoche, De Melissa Grey. Editorial Puck, Tap",
+      "precio": 2250,
       "estado": "winning",
-      "precio_para_ganar": 1550,
-      "competidor_mas_barato": 1290,
-      "otras_ofertas": 2,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (1290): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU667847543",
-      "titulo": "Europa En Guerra 1939-1945, De Davies, Norman. Editorial Pla",
-      "precio": 2300,
-      "estado": "winning",
-      "precio_para_ganar": 2300,
-      "competidor_mas_barato": null,
-      "otras_ofertas": 0,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Gana: no hay otros vendedores",
-      "ok": true
-    },
-    {
-      "id": "MLU627577946",
-      "titulo": "Libro Los Bebes Y Sus Madres - Donald Winnicott",
-      "precio": 1790,
-      "estado": "winning",
-      "precio_para_ganar": 1790,
+      "precio_para_ganar": 2250,
       "competidor_mas_barato": 2890,
-      "otras_ofertas": 2,
+      "otras_ofertas": 1,
       "sugerencias_ml": [
         "Envíos Full",
         "Envíos en el día"
@@ -92,63 +32,123 @@
       "ok": true
     },
     {
-      "id": "MLU669873564",
-      "titulo": "El Curso De Las Cosas, De Andrea Camilleri. Editorial Edicio",
-      "precio": 1750,
+      "id": "MLU693217892",
+      "titulo": "Libro Como Asumir La Incertidumbre - Isabel Caro Gabalda",
+      "precio": 2517,
       "estado": "winning",
-      "precio_para_ganar": 1750,
-      "competidor_mas_barato": 885,
-      "otras_ofertas": 3,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (885): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU884118590",
-      "titulo": "Manga, Naruto Vol. 13 - Kishimoto - Panini Manga",
-      "precio": 600,
-      "estado": "winning",
-      "precio_para_ganar": 600,
-      "competidor_mas_barato": 461,
-      "otras_ofertas": 8,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (461): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU678833764",
-      "titulo": "Diario De Ghostgirl - Tonya Hurley",
-      "precio": 2100,
-      "estado": "winning",
-      "precio_para_ganar": 2100,
-      "competidor_mas_barato": 3490,
-      "otras_ofertas": 2,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Gana: el competidor más barato está en 3490",
-      "ok": true
-    },
-    {
-      "id": "MLU718492532",
-      "titulo": "Biblia Letra Grande Tamaño Manual Con Referencias: Bilbia Le",
-      "precio": 4550,
-      "estado": "winning",
-      "precio_para_ganar": 4550,
-      "competidor_mas_barato": 3510,
+      "precio_para_ganar": 2517,
+      "competidor_mas_barato": 2490,
       "otras_ofertas": 1,
       "sugerencias_ml": [
         "Envíos Full",
         "Envíos en el día"
       ],
-      "conclusion": "Gana aunque hay uno más barato (3510): ML pesa envío y reputación",
+      "conclusion": "Gana aunque hay uno más barato (2490): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU951796624",
+      "titulo": "The Sandman Vol. 7: Brief Lives 30th Anniversary Edition, De",
+      "precio": 2100,
+      "estado": "winning",
+      "precio_para_ganar": 2100,
+      "competidor_mas_barato": 2620,
+      "otras_ofertas": 2,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 2620",
+      "ok": true
+    },
+    {
+      "id": "MLU702644546",
+      "titulo": "Mi Primer Libro De Terapia, De Dawn Huebner. Editorial S.a.u",
+      "precio": 2100,
+      "estado": "winning",
+      "precio_para_ganar": 2100,
+      "competidor_mas_barato": 1970,
+      "otras_ofertas": 4,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (1970): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU884118704",
+      "titulo": "Oxford Discover 2 (workbook With Online Practice) / 2 Ed.",
+      "precio": 3150,
+      "estado": "winning",
+      "precio_para_ganar": 3150,
+      "competidor_mas_barato": 3120,
+      "otras_ofertas": 2,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (3120): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU658053380",
+      "titulo": "Ayurveda: La Ciencia De Curarse Uno Mismo, De Vasant Lad. Ed",
+      "precio": 2090,
+      "estado": "winning",
+      "precio_para_ganar": 2090,
+      "competidor_mas_barato": 2590,
+      "otras_ofertas": 3,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 2590",
+      "ok": true
+    },
+    {
+      "id": "MLU750180496",
+      "titulo": "Verdugo Del Amor: Historias De Psicoterapia, De Yalom, Irvin",
+      "precio": 2200,
+      "estado": "winning",
+      "precio_para_ganar": 2200,
+      "competidor_mas_barato": 1689,
+      "otras_ofertas": 5,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (1689): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU636056348",
+      "titulo": "Libro The Butterfly Lion - Michael Morpurgo",
+      "precio": 1750,
+      "estado": "winning",
+      "precio_para_ganar": 1750,
+      "competidor_mas_barato": 2780,
+      "otras_ofertas": 2,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 2780",
+      "ok": true
+    },
+    {
+      "id": "MLU762659514",
+      "titulo": "Libro La Revolución Francesa, 1789-1799 - Macphee, Peter",
+      "precio": 1750,
+      "estado": "winning",
+      "precio_para_ganar": 1750,
+      "competidor_mas_barato": 885,
+      "otras_ofertas": 2,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (885): ML pesa envío y reputación",
       "ok": true
     }
   ],
@@ -157,8 +157,8 @@
       "id": "MLU637065821",
       "titulo": "The adidas Archive. The Footwear Collection, De Christian Habermeier. Editorial ",
       "original": 1944,
-      "aplicado": 1813,
-      "en_ml": 1813,
+      "aplicado": 1851,
+      "en_ml": 1851,
       "ok": true,
       "problemas": []
     },
@@ -166,8 +166,8 @@
       "id": "MLU757785172",
       "titulo": "Instrumentación Quirúrgica Principios Y Práctica De Joanna Kotcher Fuller Vol 1 ",
       "original": 6775,
-      "aplicado": 6377,
-      "en_ml": 6377,
+      "aplicado": 6250,
+      "en_ml": 6250,
       "ok": true,
       "problemas": []
     },
@@ -193,8 +193,8 @@
       "id": "MLU1248458670",
       "titulo": "Libro La Montaña Eres Tú [ Brianna Wiest ] Original, De Brianna Wiest. Editorial",
       "original": 725,
-      "aplicado": 663,
-      "en_ml": 663,
+      "aplicado": 683,
+      "en_ml": 683,
       "ok": true,
       "problemas": []
     },
@@ -220,8 +220,8 @@
       "id": "MLU631748561",
       "titulo": "Libro Secuencias Didacticas - 30 Preguntas Y Respuestas - Taboada, De Taboada, M",
       "original": 429,
-      "aplicado": 401,
-      "en_ml": 401,
+      "aplicado": 420,
+      "en_ml": 420,
       "ok": true,
       "problemas": []
     },
@@ -229,8 +229,8 @@
       "id": "MLU669640600",
       "titulo": "Cress - Crónicas Lunares Libro 3, De Marissa Meyer., Vol. 3. Editorial V&r, Tapa",
       "original": 716,
-      "aplicado": 677,
-      "en_ml": 677,
+      "aplicado": 705,
+      "en_ml": 705,
       "ok": true,
       "problemas": []
     },
@@ -256,8 +256,8 @@
       "id": "MLU676002408",
       "titulo": "Mientras Dormiamos El Engaño Maestro, De Nocera Costabile, Giuseppe. Editorial C",
       "original": 1480,
-      "aplicado": 1436,
-      "en_ml": 1436,
+      "aplicado": 1467,
+      "en_ml": 1467,
       "ok": true,
       "problemas": []
     },
@@ -292,8 +292,8 @@
       "id": "MLU653035273",
       "titulo": "Escritos Sobre Astrología, De Carl Gustav Jung., Vol. 1. Editorial Trotta, Tapa ",
       "original": 1659,
-      "aplicado": 1616,
-      "en_ml": 1616,
+      "aplicado": 1651,
+      "en_ml": 1651,
       "ok": true,
       "problemas": []
     },
@@ -301,8 +301,8 @@
       "id": "MLU863973534",
       "titulo": "Libro Perderte Para Encontrarme - Elizabeth Clapés - Montena",
       "original": 665,
-      "aplicado": 649,
-      "en_ml": 649,
+      "aplicado": 629,
+      "en_ml": 629,
       "ok": true,
       "problemas": []
     },
@@ -328,8 +328,8 @@
       "id": "MLU663199900",
       "titulo": "Libro La Última Encrucijada - Jorge Liotti - Planeta",
       "original": 1106,
-      "aplicado": 1059,
-      "en_ml": 1059,
+      "aplicado": 1082,
+      "en_ml": 1082,
       "ok": true,
       "problemas": []
     },
@@ -364,8 +364,8 @@
       "id": "MLU740027064",
       "titulo": "Autismo Una Guia Practica: Una Guía Práctica, De Pontis, Marco., Vol. 1. Editori",
       "original": 629,
-      "aplicado": 603,
-      "en_ml": 603,
+      "aplicado": 624,
+      "en_ml": 624,
       "ok": true,
       "problemas": []
     },
@@ -373,8 +373,8 @@
       "id": "MLU766245318",
       "titulo": "Cartas Para La Manada Cecilia Solá Sudestada",
       "original": 1450,
-      "aplicado": 1251,
-      "en_ml": 1251,
+      "aplicado": 1289,
+      "en_ml": 1289,
       "ok": true,
       "problemas": []
     },
@@ -382,8 +382,8 @@
       "id": "MLU692647026",
       "titulo": "Libro Mi Viaje Sin Ti - Alejandro Sequera",
       "original": 764,
-      "aplicado": 628,
-      "en_ml": 628,
+      "aplicado": 654,
+      "en_ml": 654,
       "ok": true,
       "problemas": []
     },
@@ -391,8 +391,8 @@
       "id": "MLU889968514",
       "titulo": "Actitud Mental Positiva - Napoleon Hill Y W. Clement Stone",
       "original": 910,
-      "aplicado": 821,
-      "en_ml": 821,
+      "aplicado": 846,
+      "en_ml": 846,
       "ok": true,
       "problemas": []
     },
@@ -400,8 +400,8 @@
       "id": "MLU888292642",
       "titulo": "Netter Flashcards De Histología",
       "original": 2694,
-      "aplicado": 2345,
-      "en_ml": 2345,
+      "aplicado": 2417,
+      "en_ml": 2417,
       "ok": true,
       "problemas": []
     },
@@ -420,8 +420,8 @@
       "id": "MLU669860318",
       "titulo": "Cómo Te Sientes, De Anthony Browne. Editorial Kalandraka, Tapa Dura En Español",
       "original": 825,
-      "aplicado": 782,
-      "en_ml": 782,
+      "aplicado": 813,
+      "en_ml": 813,
       "ok": true,
       "problemas": []
     },
@@ -429,8 +429,8 @@
       "id": "MLU884651706",
       "titulo": "El Ascendente: Tu Gps Existencial. Descubrí La Llave De Tu Destino, De Beatriz L",
       "original": 571,
-      "aplicado": 538,
-      "en_ml": 538,
+      "aplicado": 562,
+      "en_ml": 562,
       "ok": true,
       "problemas": []
     },
@@ -438,8 +438,8 @@
       "id": "MLU884315176",
       "titulo": "Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Editorial Siruela Tapa Dura En Esp",
       "original": 2899,
-      "aplicado": 2783,
-      "en_ml": 2783,
+      "aplicado": 2869,
+      "en_ml": 2869,
       "ok": true,
       "problemas": []
     },
@@ -447,8 +447,8 @@
       "id": "MLU655257859",
       "titulo": "Respeto Por La Interpretacion - Uta, Frankel",
       "original": 767,
-      "aplicado": 726,
-      "en_ml": 726,
+      "aplicado": 755,
+      "en_ml": 755,
       "ok": true,
       "problemas": []
     },
@@ -456,8 +456,8 @@
       "id": "MLU625745211",
       "titulo": "Cartas 72 Angeles, Las - Christiane Muller, Kaya",
       "original": 2210,
-      "aplicado": 2132,
-      "en_ml": 2132,
+      "aplicado": 2198,
+      "en_ml": 2198,
       "ok": true,
       "problemas": []
     },
@@ -465,8 +465,8 @@
       "id": "MLU957971524",
       "titulo": "Libro No Es Un Monstruo, Es Una Herida, De López Pavón, Raquel, Vol. 1. Editoria",
       "original": 1105,
-      "aplicado": 1076,
-      "en_ml": 1076,
+      "aplicado": 1099,
+      "en_ml": 1099,
       "ok": true,
       "problemas": []
     },
@@ -474,8 +474,8 @@
       "id": "MLU1444639912",
       "titulo": "Luz De Tungsteno: La Respuesta A Tu Problema Está En El Interior, De Jj Benítez.",
       "original": 1155,
-      "aplicado": 1112,
-      "en_ml": 1112,
+      "aplicado": 1146,
+      "en_ml": 1146,
       "ok": true,
       "problemas": []
     },
@@ -492,8 +492,8 @@
       "id": "MLU691609938",
       "titulo": "La Nobleza Negra Génesis Del Imperio Veneciano De Jorge Guerra Editorial Indepen",
       "original": 1271,
-      "aplicado": 1217,
-      "en_ml": 1217,
+      "aplicado": 1255,
+      "en_ml": 1255,
       "ok": true,
       "problemas": []
     },
@@ -516,65 +516,11 @@
       "problemas": []
     },
     {
-      "id": "MLU661228680",
-      "titulo": "Libro: El Ala Derecha. Cegador, 3. Premio Fil 2022",
-      "original": 1341,
-      "aplicado": 1314,
-      "en_ml": 1314,
-      "ok": true,
-      "problemas": []
-    },
-    {
-      "id": "MLU668180202",
-      "titulo": "Libro: El Álbum De Nuestro Bebe / Christine Roussey",
-      "original": 1143,
-      "aplicado": 1120,
-      "en_ml": 1120,
-      "ok": true,
-      "problemas": []
-    },
-    {
-      "id": "MLU682218876",
-      "titulo": "Libro Te Quiero, Abuela - Andreae, Giles",
-      "original": 947,
-      "aplicado": 922,
-      "en_ml": 922,
-      "ok": true,
-      "problemas": []
-    },
-    {
-      "id": "MLU701212828",
-      "titulo": "Sujetos A Nuestro Propio Y Múltiple Ser: Teoría Social, Psicoanálisis Y Posmoder",
-      "original": 908,
-      "aplicado": 884,
-      "en_ml": 884,
-      "ok": true,
-      "problemas": []
-    },
-    {
-      "id": "MLU702790272",
-      "titulo": "Libro Óscar, El Unicornio Hambriento, De Carter, Lou. Editorial Picarona-obelisc",
-      "original": 651,
-      "aplicado": 631,
-      "en_ml": 631,
-      "ok": true,
-      "problemas": []
-    },
-    {
-      "id": "MLU713666896",
-      "titulo": "Superorganismos: De La Medusa Inmortal A Los Hongos De Chernobil, Historia Natur",
-      "original": 830,
-      "aplicado": 808,
-      "en_ml": 808,
-      "ok": true,
-      "problemas": []
-    },
-    {
-      "id": "MLU844994424",
-      "titulo": "El Lenguaje Secreto De La Oscuridad: Transmisiones De La Luz Del Alma Desde La S",
-      "original": 1685,
-      "aplicado": 1650,
-      "en_ml": 1650,
+      "id": "MLU925905782",
+      "titulo": "Didactica De La Gestion-conduccion. Pedagogia Del Territorio, De Sanchez, Sandra",
+      "original": 2200,
+      "aplicado": 2138,
+      "en_ml": 2138,
       "ok": true,
       "problemas": []
     }
@@ -647,28 +593,6 @@
       "ok": true
     },
     {
-      "id": "MLU661228680",
-      "precio": 1341,
-      "ganador": 1314,
-      "diferencia": 27,
-      "objetivo": 1314,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1314,
-      "ok": true
-    },
-    {
-      "id": "MLU668180202",
-      "precio": 1143,
-      "ganador": 1120,
-      "diferencia": 23,
-      "objetivo": 1120,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1120,
-      "ok": true
-    },
-    {
       "id": "MLU669549988",
       "precio": 1790,
       "ganador": 982,
@@ -691,17 +615,6 @@
       "ok": true
     },
     {
-      "id": "MLU682218876",
-      "precio": 947,
-      "ganador": 922,
-      "diferencia": 25,
-      "objetivo": 922,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 922,
-      "ok": true
-    },
-    {
       "id": "MLU683328768",
       "precio": 1985,
       "ganador": 915,
@@ -715,12 +628,12 @@
     {
       "id": "MLU691295954",
       "precio": 1990,
-      "ganador": 980,
-      "diferencia": 1010,
-      "objetivo": 980,
+      "ganador": 969,
+      "diferencia": 1021,
+      "objetivo": 969,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 980,
+      "precio_nuevo": 969,
       "ok": true
     },
     {
@@ -732,28 +645,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1692,
-      "ok": true
-    },
-    {
-      "id": "MLU701212828",
-      "precio": 908,
-      "ganador": 884,
-      "diferencia": 24,
-      "objetivo": 884,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 884,
-      "ok": true
-    },
-    {
-      "id": "MLU702790272",
-      "precio": 651,
-      "ganador": 631,
-      "diferencia": 20,
-      "objetivo": 631,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 631,
       "ok": true
     },
     {
@@ -776,17 +667,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1007,
-      "ok": true
-    },
-    {
-      "id": "MLU713666896",
-      "precio": 830,
-      "ganador": 808,
-      "diferencia": 22,
-      "objetivo": 808,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 808,
       "ok": true
     },
     {
@@ -845,17 +725,6 @@
       "ok": true
     },
     {
-      "id": "MLU844994424",
-      "precio": 1685,
-      "ganador": 1650,
-      "diferencia": 35,
-      "objetivo": 1650,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1650,
-      "ok": true
-    },
-    {
       "id": "MLU853875712",
       "precio": 3710,
       "ganador": 2424,
@@ -886,6 +755,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 853,
+      "ok": true
+    },
+    {
+      "id": "MLU925905782",
+      "precio": 2200,
+      "ganador": 2138,
+      "diferencia": 62,
+      "objetivo": 2138,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2138,
       "ok": true
     },
     {
