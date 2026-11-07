@@ -2,24 +2,24 @@
   "cuenta": "libros",
   "umbral": 360,
   "ejemplos_error": [],
-  "duracion_s": 144,
+  "duracion_s": 136,
   "contadores": {
-    "fecha": "2026-11-07T17:44:41.056Z",
+    "fecha": "2026-11-07T19:54:58.220Z",
     "modo": "real",
-    "activas": 6895,
-    "revisadas": 6895,
-    "compiten": 61,
-    "marcadas": 61,
+    "activas": 6892,
+    "revisadas": 6892,
+    "compiten": 37,
+    "marcadas": 37,
     "precio_dinamico": 1,
     "ganador_inmediato": 0,
     "ganador_sin_dato": 0,
-    "bajadas": 7,
-    "ajustadas": 19,
-    "subidas": 2,
-    "restauradas": 0,
+    "bajadas": 0,
+    "ajustadas": 2,
+    "subidas": 18,
+    "restauradas": 7,
     "sin_tocar_umbral": 33,
     "sin_tocar_pct": 1,
-    "verificadas": 28,
+    "verificadas": 27,
     "no_verificadas": 0,
     "promo": 0,
     "bajo_piso": 0,
@@ -31,31 +31,31 @@
   },
   "catalogo": {
     "estados": {
-      "competing": 61,
-      "winning": 2949,
-      "sharing_first_place": 64,
-      "not_listed": 3821
+      "sharing_first_place": 75,
+      "winning": 2961,
+      "competing": 37,
+      "not_listed": 3819
     },
-    "publicaciones_con_alguna_sugerencia": 3074,
+    "publicaciones_con_alguna_sugerencia": 3073,
     "sugerencias": {
-      "fulfillment": 3074,
-      "same_day_shipping": 3074,
+      "fulfillment": 3073,
+      "same_day_shipping": 3073,
       "free_shipping": 107
     },
     "motivos": {
-      "not_listed:item_not_opted_in": 3821
+      "not_listed:item_not_opted_in": 3819
     },
     "por_tipo": {
-      "catalogo:competing:con_stock": 61,
-      "catalogo:winning:con_stock": 2949,
-      "catalogo:sharing_first_place:con_stock": 64,
-      "tradicional:not_listed:con_stock": 3821
+      "catalogo:sharing_first_place:con_stock": 75,
+      "catalogo:winning:con_stock": 2961,
+      "catalogo:competing:con_stock": 37,
+      "tradicional:not_listed:con_stock": 3819
     },
     "errores_por_tipo": {}
   },
   "errores": {},
-  "llamadas": 7399,
+  "llamadas": 7418,
   "por_status": {
-    "200": 7399
+    "200": 7418
   }
 }
