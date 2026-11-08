@@ -23,7 +23,7 @@ import {syncStock} from '../vintage-local/stock-sync.mjs';
 import {openDatabase} from '../vintage-local/db.mjs';
 import {campaignNumbers} from './numbers.mjs';
 import {d1Client,loadStockState,saveStockState,STOCK_COLUMNS} from './d1.mjs';
-import {watch,mlReaders,brakeOn,releaseBrake} from './vigia-pi.mjs';
+import {watch,mlReaders,brakeOn,releaseBrake,blockedIds,blockedIsbns} from './vigia-pi.mjs';
 
 export const ACTIONS=['keepalive','numeros','prueba','clasificar','publicar','liberar_freno'];
 // Techo duro del día: el mismo VINTAGE_DAILY_CAP del servidor (functions/_shared/meli-vintage-bulk.js).
@@ -64,7 +64,7 @@ async function syncWithD1State({query,directory,connection,excel,mode,intervalMs
   await db.prepare(`CREATE TABLE IF NOT EXISTS vintage_stock_sync (isbn TEXT PRIMARY KEY,item_id TEXT NOT NULL,desired_status TEXT,applied_status TEXT,missing_since INTEGER NOT NULL DEFAULT 0,feed_id TEXT,attempts INTEGER NOT NULL DEFAULT 0,next_at INTEGER NOT NULL DEFAULT 0,last_error TEXT,updated_at INTEGER NOT NULL DEFAULT 0,applied_price INTEGER,competitor_json TEXT,competitor_at INTEGER)`).run();
   for(const r of await loadStockState(query))await db.prepare(`INSERT OR REPLACE INTO vintage_stock_sync(${STOCK_COLUMNS.join(',')}) VALUES(${STOCK_COLUMNS.map(()=>'?').join(',')})`).bind(...STOCK_COLUMNS.map(c=>r[c]??null)).run();
  }finally{db.close();}
- const started=now(),summary=await syncStock({connection,excel,directory,mode,intervalMs,now});
+ const started=now(),summary=await syncStock({connection,excel,directory,mode,intervalMs,blockedIds:await blockedIds(query),now});
  let saved=0;
  if(mode!=='report'){
   const db2=openDatabase(path.join(directory,'publisher.sqlite'));
@@ -91,7 +91,7 @@ async function cloudRunInner({action,directory,campaign,overrides={},env=process
  const dq=query??d1Client();
  if(action==='liberar_freno'){await releaseBrake(dq);return {...report,estado:'freno_liberado'};}
  let vigiaOk=true;
- try{report.vigia_pi=await (deps.vigia??(()=>watch({query:dq,...mlReaders(),runUrl:env.RUN_URL??null})))();}
+ try{report.vigia_pi=await (deps.vigia??(()=>watch({query:dq,...mlReaders(dq),runUrl:env.RUN_URL??null})))();}
  catch(error){vigiaOk=false;report.vigia_pi={error:[error.code,error.message].find(x=>/^[a-z0-9_]{1,100}$/.test(x??''))??'vigia_fallo'};}
  if(action==='publicar'){
   // Freno puesto, o no se pudo mirar: no se publica (falla cerrada).
@@ -138,7 +138,7 @@ async function cloudRunInner({action,directory,campaign,overrides={},env=process
   report.freno={altas_hoy:status.daily_created,tope_diario:settings.tope_diario,tanda:n};
   if(n===0)return {...report,estado:'tope_diario_alcanzado'};
   let result;
-  for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,limitNew:n,target:settings.target_total,raiseTargetTo:settings.target_total,intervalMs:settings.intervalo_ms,...CLOUD_ENGINE,classifiers:settings.clasificadores,maxMs:settings.minutos*60000,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
+  for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,limitNew:n,target:settings.target_total,raiseTargetTo:settings.target_total,intervalMs:settings.intervalo_ms,...CLOUD_ENGINE,classifiers:settings.clasificadores,blockedIsbns:await blockedIsbns(q),maxMs:settings.minutos*60000,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
   const after=await (deps.broker??makeBroker)(c)('status');
   // Con el total de la campaña y no con las altas del día: el contador del día vuelve a 0 a la
   // medianoche y una corrida que la cruza parecía no haber publicado nada.
