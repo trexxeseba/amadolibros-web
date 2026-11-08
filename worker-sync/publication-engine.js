@@ -4,7 +4,7 @@ import {createPublicationMeli,MercadoLibreError,payloadPolicyMismatch} from './p
 import {enqueuePublicationWork} from './publication-queue.js';
 import {ipRisk} from './ip-risk.js';
 const idOk=id=>typeof id==='string'&&/^[a-f0-9-]{36}$/.test(id);
-const IDENTITY_SKIP=new Set(['catalog_required_needs_review','ambiguous_product_metadata','product_identity_mismatch','catalog_product_id_mismatch','catalog_product_inactive','catalog_product_children_unresolved','book_identifier_required','missing_verified_book_metadata','ambiguous_supplier_book_metadata','supplier_book_identity_mismatch','book_binding_mismatch']);
+const IDENTITY_SKIP=new Set(['catalog_required_needs_review','catalog_required_no_product','ambiguous_product_metadata','product_identity_mismatch','catalog_product_id_mismatch','catalog_product_inactive','catalog_product_children_unresolved','book_identifier_required','missing_verified_book_metadata','ambiguous_supplier_book_metadata','supplier_book_identity_mismatch','book_binding_mismatch']);
 const CATEGORY_SKIP=new Set(['missing_book_category','ambiguous_book_category','category_not_leaf_or_not_allowed']);
 const STOCK_SKIP=new Set(['supplier_stock_conflict']);
 const ML_REQUIREMENT_SKIP=new Set(['ml_http_400','shipping_not_validated','isbn_attribute_missing','missing_verified_cover','incomplete_supplier_book_metadata']);

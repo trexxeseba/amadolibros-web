@@ -55,3 +55,12 @@ test('with the option a sheet nobody sells (items 404) means no competitor, so t
  const c=await on.competitorPrice({},isbn);
  assert.equal(c.price,null);assert.equal(c.days,null);
 });
+
+test('with catalogOnly a book without a catalog sheet is never prepared as a traditional listing',async()=>{
+ const noSheet=async url=>{const p=new URL(String(url)).pathname;if(p==='/users/me')return Response.json({id:2341378249,site_id:'MLU'});if(p==='/products/search')return Response.json({paging:{total:0},results:[]});throw new Error('unexpected '+p);};
+ const on=createPublicationMeli({sellerId:'2341378249',fetcher:noSheet,tokenProvider:async()=>'tok',tokenInvalidator:async()=>{},catalogOnly:true});
+ await assert.rejects(()=>on.prepare({},row,policy,1990),e=>e.code==='catalog_required_no_product');
+ const {candidateSkipState}=await import('../publication-engine.js');
+ const {PublicationError}=await import('../publication-policy.js');
+ assert.equal(candidateSkipState(new PublicationError('catalog_required_no_product',422)),'skipped_identity');
+});

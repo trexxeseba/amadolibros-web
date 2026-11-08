@@ -122,7 +122,7 @@ test('the request interval is configurable for the cloud, clamped between 0.25 a
 test('the committed campaign is stopped (Mercado Libre suspended Vintage on 08/11 for intellectual property)',async()=>{
  const c=JSON.parse(await fs.readFile(new URL('../../scripts/vintage-local/campaign.json',import.meta.url),'utf8'));
  const s=cloudSettings(c);
- assert.equal(s.real,false);assert.equal(s.modo,'apagado');assert.equal(s.tope_diario,8000);assert.ok(s.intervalo_ms>=250);assert.equal(s.clasificadores,4);
+ assert.equal(s.real,false);assert.equal(s.modo,'apagado');assert.equal(s.tope_diario,25);assert.equal(s.tanda,25);assert.ok(s.intervalo_ms>=250);
 });
 
 test('the Vintage request clock spaces requests by the configured interval',async()=>{
