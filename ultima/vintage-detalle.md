@@ -2,7 +2,7 @@
 
 ```json
 {
-  "fecha": "2026-11-08T16:03:52.912Z",
+  "fecha": "2026-11-08T17:56:34.703Z",
   "modo": "real",
   "activas": 0,
   "revisadas": 6797,
@@ -3400,7 +3400,7 @@
 | [MLU1531153982](https://articulo.mercadolibre.com.uy/MLU-1531153982-crimenes-sorprendentes-de-la-historia-argentina-de-canaletti-ricardo-editorial-sudamericana-tapa-blanda-en-espanol-2014-_JM) Crimenes Sorprendentes De La Historia Argentina, D |   | 2486 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531153888](https://articulo.mercadolibre.com.uy/MLU-1531153888-crimen-y-castigo-fiodor-dostoievski-colihue-clasica-_JM) Crimen Y Castigo - Fiodor Dostoievski - Colihue Cl |   | 2781 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531153862](https://articulo.mercadolibre.com.uy/MLU-1531153862-crimen-de-la-calle-bambi-el-de-del-solar-hernan-editorial-zig-zag-en-espanol-_JM) Crimen De La Calle Bambi, El, De Del Solar Hernan. |   | 1292 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU1531153710](https://articulo.mercadolibre.com.uy/MLU-1531153710-los-cretinos-los-peores-vecinos-de-roald-dahl-greg-james-chris-smith-editorial-alfaguara-infantil-juvenil-tapa-blanda-en-espanol-2024-_JM) Los Cretinos Los Peores Vecinos De Roald Dahl Greg |   | 1754 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU1531153710](https://articulo.mercadolibre.com.uy/MLU-1531153710-libro-los-cretinos-los-peores-vecinos-de-roald-dahl-greg-james-chris-smith-editorial-alfaguara-infantil-juvenil-_JM) Libro Los Cretinos Los Peores Vecinos, De Roald Da |   | 1754 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531153672](https://articulo.mercadolibre.com.uy/MLU-1531153672-creo-adelgazo-de-alicia-crocco-editorial-tetraedro-en-espanol-_JM) Creo & Adelgazo, De Alicia Crocco. Editorial Tetra |   | 2028 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531153646](https://articulo.mercadolibre.com.uy/MLU-1531153646-crei-que-borraban-todo-rastro-de-ti-no-aplica-de-smadja-yoan-serie-no-aplica-vol-no-aplica-armaenia-editorial-sl-tapa-pasta-blanda-edicion-1-en-espanol-2021-_JM) Creí Que Borraban Todo Rastro De Ti: No Aplica, De |   | 2673 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531153598](https://articulo.mercadolibre.com.uy/MLU-1531153598-libro-creciendo-con-amor-antroposofica-papel-local-_JM) Libro Creciendo Con Amor Antroposofica Papel Local |   | 2425 |  |  | Inactiva | a demanda (18 d) |  |
@@ -4277,9 +4277,9 @@
 | [MLU1531961070](https://articulo.mercadolibre.com.uy/MLU-1531961070-discurso-de-la-servidumbre-voluntaria-de-de-la-boetie-etienne-editorial-colihue-tapa-blanda-en-espanol-2014-_JM) Discurso De La Servidumbre Voluntaria, De De La Bo |   | 1672 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961062](https://articulo.mercadolibre.com.uy/MLU-1531961062-the-discovery-dive-1-gordon-korman-_JM) The Discovery - Dive 1 - Gordon Korman |   | 1448 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961026](https://articulo.mercadolibre.com.uy/MLU-1531961026-diques-los-irene-sola-_JM) Diques, Los - Irene Sola |   | 1479 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU1531960944](https://articulo.mercadolibre.com.uy/MLU-1531960944-por-que-los-dinosaurios-yoyo-libro-_JM) Por Que - Los Dinosaurios - Yoyo - Libro |   | 1782 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU1531960944](https://articulo.mercadolibre.com.uy/MLU-1531960944-libro-por-que-los-dinosaurios-de-los-editores-de-yoyo-editorial-yoyo-_JM) Libro Por Qué?: Los Dinosaurios, De Los Editores D |   | 1782 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531960922](https://articulo.mercadolibre.com.uy/MLU-1531960922-dinosaurios-asombrosos-libro-rompecabezas-de-no-aplica-vol-1-editorial-sigmar-tapa-blanda-en-espanol-_JM) Dinosaurios Asombrosos - Libro + Rompecabezas, De  |   | 1283 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU1531960898](https://articulo.mercadolibre.com.uy/MLU-1531960898-dinosaurios-pop-up-con-relieve-pluton-kids-2019-_JM) Dinosaurios ¡pop Up! Con Relieve Plutón Kids 2019 |   | 1362 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU1531960898](https://articulo.mercadolibre.com.uy/MLU-1531960898-libro-dinosaurios-pop-up-de-pluton-kids-editorial-pluton-kids-_JM) Libro Dinosaurios ¡pop Up!, De Pluton Kids. Editor |   | 1362 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531960892](https://articulo.mercadolibre.com.uy/MLU-1531960892-dinosaurios-pinto-con-acuarelas-de-vol-1-editorial-el-gato-de-hojalata-tapa-blanda-en-espanol-_JM) Dinosaurios - Pinto Con Acuarelas, De ., Vol. 1. E |   | 1225 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531960870](https://articulo.mercadolibre.com.uy/MLU-1531960870-libro-diversion-sorpresa-dinosaurios-de-varios-editorial-el-gato-de-hojalata-tapa-blanda-2023-_JM) Libro Diversion Sorpresa - Dinosaurios, De Varios. |   | 1811 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531960854](https://articulo.mercadolibre.com.uy/MLU-1531960854-libro-dinosaurios-a-jugar-con-agua-magica-de-el-gato-de-hojalata-editorial-guadal-_JM) Libro Dinosaurios A Jugar Con Agua Magica, De El G |   | 1263 |  |  | Inactiva | a demanda (18 d) |  |
