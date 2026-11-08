@@ -86,9 +86,9 @@
     "MLU1521859752": {
       "titulo": "Libro El Agua Electrizada - C. E. Feiling - La Parte Maldita",
       "precio_original": 1780,
-      "precio_aplicado": 1613,
+      "precio_aplicado": 1557,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -815,9 +815,9 @@
     "MLU1522603376": {
       "titulo": "Libro Amar Y Ser Amado - Jim Towey - Debolsillo",
       "precio_original": 2395,
-      "precio_aplicado": 2316,
+      "precio_aplicado": 2243,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -2372,9 +2372,9 @@
     "MLU1523104052": {
       "titulo": "Libro Apariciones - Ariel Dorfman - Fce",
       "precio_original": 1600,
-      "precio_aplicado": 1524,
+      "precio_aplicado": 1459,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -3101,9 +3101,9 @@
     "MLU1522933488": {
       "titulo": "Libro Animales Escondidos - Lola Casas, Gusti",
       "precio_original": 2049,
-      "precio_aplicado": 1970,
+      "precio_aplicado": 1899,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -3359,15 +3359,6 @@
       "stock_original": 1,
       "dias_demanda": 18
     },
-    "MLU703023395": {
-      "titulo": "La Argentina Como Potencia Media - Roccatagliata, Juan Ignac",
-      "precio_original": 1600,
-      "precio_aplicado": 1475,
-      "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T14:46:46.072Z",
-      "stock_original": 1,
-      "dias_demanda": 18
-    },
     "MLU703023381": {
       "titulo": "(argentina) - Eduardo Gil",
       "precio_original": 2350,
@@ -3389,9 +3380,9 @@
     "MLU703018967": {
       "titulo": "Araoz Y La Verdad - Eduardo Sacheri - Libro Alfaguara",
       "precio_original": 2580,
-      "precio_aplicado": 2346,
+      "precio_aplicado": 2273,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-06T22:42:14.038Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -4028,9 +4019,9 @@
     "MLU1523654852": {
       "titulo": "Libro Wild Cars 2. Ases En Lo Alto - George R. R. Martin",
       "precio_original": 2240,
-      "precio_aplicado": 1940,
+      "precio_aplicado": 1871,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -4631,9 +4622,9 @@
     "MLU1523487426": {
       "titulo": "El Arte Nórdico De La Geometría - Eija Koski",
       "precio_original": 2600,
-      "precio_aplicado": 2405,
+      "precio_aplicado": 2332,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -4649,9 +4640,9 @@
     "MLU1523484406": {
       "titulo": "Libro Ya Leo A: Tom Sawyer - Mark Twain",
       "precio_original": 1730,
-      "precio_aplicado": 1653,
+      "precio_aplicado": 1586,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -5684,9 +5675,9 @@
     "MLU703029449": {
       "titulo": "Aves Introduccion A La Musica De Concierto (con Cd -cartone)",
       "precio_original": 2750,
-      "precio_aplicado": 2663,
+      "precio_aplicado": 2576,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-06T22:42:14.038Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -6098,9 +6089,9 @@
     "MLU1524213032": {
       "titulo": "Biología 1 - Fuera De Serie - Edelvives",
       "precio_original": 2510,
-      "precio_aplicado": 2425,
+      "precio_aplicado": 2351,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-06T22:42:14.038Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -7547,9 +7538,9 @@
     "MLU703077813": {
       "titulo": "Libro De Ejercicios Big English 4, De Herrera, Mario. Big English Editora Pearso",
       "precio_original": 2700,
-      "precio_aplicado": 2445,
+      "precio_aplicado": 2371,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-06T22:42:14.038Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -7655,9 +7646,9 @@
     "MLU703073201": {
       "titulo": "Libro La Bella Y La Bestia - Los Editores De Auzou - Auzou",
       "precio_original": 1793,
-      "precio_aplicado": 1712,
+      "precio_aplicado": 1645,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -8861,9 +8852,9 @@
     "MLU703122197": {
       "titulo": "Libro Cacería De Niños - Taeko Kno",
       "precio_original": 1871,
-      "precio_aplicado": 1791,
+      "precio_aplicado": 1724,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -8996,9 +8987,9 @@
     "MLU703119633": {
       "titulo": "Libro Bts : Icons Of The K-pop De Adrian Besley",
       "precio_original": 2530,
-      "precio_aplicado": 2277,
+      "precio_aplicado": 2204,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -9806,9 +9797,9 @@
     "MLU703096267": {
       "titulo": "Cacao - 70 Aniversario",
       "precio_original": 1553,
-      "precio_aplicado": 1475,
+      "precio_aplicado": 1420,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -9959,9 +9950,9 @@
     "MLU703094345": {
       "titulo": "Buenos Aires By The Way - Guido Indij - La Marca - Libro",
       "precio_original": 2650,
-      "precio_aplicado": 2415,
+      "precio_aplicado": 2342,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-06T22:42:14.038Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -10040,9 +10031,9 @@
     "MLU703089191": {
       "titulo": "Libro Can I Play Too ? - Mo Willems",
       "precio_original": 1620,
-      "precio_aplicado": 1544,
+      "precio_aplicado": 1488,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-06T22:42:14.038Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -12020,9 +12011,9 @@
     "MLU1525823912": {
       "titulo": "Ciencias Naturales 4 Caba - Sobre Ruedas - Edelvives",
       "precio_original": 2150,
-      "precio_aplicado": 1801,
+      "precio_aplicado": 1733,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -12038,9 +12029,9 @@
     "MLU1525820822": {
       "titulo": "Libro Cielo Drive, De Sebastián De Caro. Editorial Reservoir Books",
       "precio_original": 1979,
-      "precio_aplicado": 1900,
+      "precio_aplicado": 1842,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -12128,9 +12119,9 @@
     "MLU703287631": {
       "titulo": "El Círculo De La Suerte - Loqueleo",
       "precio_original": 1642,
-      "precio_aplicado": 1564,
+      "precio_aplicado": 1498,
       "fecha_primera_baja": "2026-11-05T02:52:00.285Z",
-      "fecha": "2026-11-06T22:42:14.038Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -12678,15 +12669,6 @@
       "titulo": "Aprende Y Mejora Rapidamente Tu Portugues (ed.arg.) - Duarte",
       "precio_original": 1852,
       "precio_aplicado": 1752,
-      "fecha_primera_baja": "2026-11-05T04:49:26.147Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
-      "stock_original": 1,
-      "dias_demanda": 18
-    },
-    "MLU1523657966": {
-      "titulo": "Atahuallpa - Daniel Larriqueta",
-      "precio_original": 1960,
-      "precio_aplicado": 1861,
       "fecha_primera_baja": "2026-11-05T04:49:26.147Z",
       "fecha": "2026-11-07T00:35:50.072Z",
       "stock_original": 1,
@@ -13559,9 +13541,9 @@
     "MLU1521898800": {
       "titulo": "Agua Salada Y Sangre Caliente Historias - Ciencia Que Ladra",
       "precio_original": 1365,
-      "precio_aplicado": 1287,
+      "precio_aplicado": 1234,
       "fecha_primera_baja": "2026-11-05T13:22:18.605Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -15392,9 +15374,9 @@
     "MLU1523289864": {
       "titulo": "El Árbol De Los Ruidos Y Las Nueces - Loqueleo",
       "precio_original": 1530,
-      "precio_aplicado": 1445,
+      "precio_aplicado": 1390,
       "fecha_primera_baja": "2026-11-05T13:22:18.605Z",
-      "fecha": "2026-11-06T22:42:14.038Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -17047,9 +17029,9 @@
     "MLU1523666228": {
       "titulo": "Mochila Gold 4 Sbk Y Cd Rom N_e Pk, De Pinkley, Diane. Serie De Mochilas Educati",
       "precio_original": 1600,
-      "precio_aplicado": 1277,
+      "precio_aplicado": 1224,
       "fecha_primera_baja": "2026-11-05T13:22:18.605Z",
-      "fecha": "2026-11-06T22:42:14.038Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -17623,9 +17605,9 @@
     "MLU1523502820": {
       "titulo": "Asociaciones Y Secuencias - Educards - Barco De Papel",
       "precio_original": 1530,
-      "precio_aplicado": 1445,
+      "precio_aplicado": 1390,
       "fecha_primera_baja": "2026-11-05T13:22:18.605Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -21985,9 +21967,9 @@
     "MLU703109035": {
       "titulo": "El Caballo Que No Sabía Relinchar - G. Gambaro - Loqueleo",
       "precio_original": 1530,
-      "precio_aplicado": 1445,
+      "precio_aplicado": 1390,
       "fecha_primera_baja": "2026-11-05T13:22:18.605Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -22030,9 +22012,9 @@
     "MLU703108173": {
       "titulo": "Buscar Una Frase - Pierre Alferi",
       "precio_original": 1600,
-      "precio_aplicado": 1287,
+      "precio_aplicado": 1234,
       "fecha_primera_baja": "2026-11-05T13:22:18.605Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -22714,9 +22696,9 @@
     "MLU703083399": {
       "titulo": "La Cabaña Del Tío Tom Beecher / Stowe Libro Gradifco",
       "precio_original": 1530,
-      "precio_aplicado": 1445,
+      "precio_aplicado": 1390,
       "fecha_primera_baja": "2026-11-05T13:22:18.605Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -22750,9 +22732,9 @@
     "MLU703082947": {
       "titulo": "Penguin Kids 3 Butterflies And Frogs Reader Clil, De Wilson, Rachel. Editorial P",
       "precio_original": 1600,
-      "precio_aplicado": 1435,
+      "precio_aplicado": 1381,
       "fecha_primera_baja": "2026-11-05T13:22:18.605Z",
-      "fecha": "2026-11-06T22:42:14.038Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -22903,9 +22885,9 @@
     "MLU1524698826": {
       "titulo": "Celeste Y La Dinosauria En El Jardín - Mempo Giardinelli",
       "precio_original": 1530,
-      "precio_aplicado": 1445,
+      "precio_aplicado": 1390,
       "fecha_primera_baja": "2026-11-05T13:22:18.605Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -23452,9 +23434,9 @@
     "MLU1524487244": {
       "titulo": "Carnavales Eran Los De Antes - Edelvives",
       "precio_original": 1435,
-      "precio_aplicado": 1356,
+      "precio_aplicado": 1302,
       "fecha_primera_baja": "2026-11-05T13:22:18.605Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -23983,9 +23965,9 @@
     "MLU1524332626": {
       "titulo": "Capitana Jennifer Aguamala Jones - A La Orilla Del Viento -, De Vivian French. E",
       "precio_original": 1415,
-      "precio_aplicado": 1376,
+      "precio_aplicado": 1322,
       "fecha_primera_baja": "2026-11-05T13:22:18.605Z",
-      "fecha": "2026-11-05T18:32:02.798Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -26007,9 +25989,9 @@
     "MLU702950059": {
       "titulo": "Ambaraba 3 - Quaderni Di Lavoro",
       "precio_original": 2160,
-      "precio_aplicado": 2059,
+      "precio_aplicado": 1988,
       "fecha_primera_baja": "2026-11-05T18:32:02.798Z",
-      "fecha": "2026-11-06T22:42:14.038Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -26647,9 +26629,9 @@
     "MLU703129067": {
       "titulo": "Candidiasis , Tu Amiga Del Alma",
       "precio_original": 2050,
-      "precio_aplicado": 1831,
+      "precio_aplicado": 1763,
       "fecha_primera_baja": "2026-11-05T18:32:02.798Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "dias_demanda": 18
     },
     "MLU703128713": {
@@ -27114,9 +27096,9 @@
     "MLU703289851": {
       "titulo": "Libro Cienmillones De Cai Marta Altamarea",
       "precio_original": 2320,
-      "precio_aplicado": 2096,
+      "precio_aplicado": 2118,
       "fecha_primera_baja": "2026-11-05T18:32:02.798Z",
-      "fecha": "2026-11-07T22:45:44.158Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "dias_demanda": 18
     },
     "MLU703286299": {
@@ -27302,11 +27284,11 @@
     "MLU1523504480": {
       "titulo": "Asuntos De Venus - Lu Gaitán",
       "precio_original": 2730,
-      "precio_aplicado": 2410,
+      "precio_aplicado": 2331,
       "fecha_primera_baja": "2026-11-06T12:24:15.583Z",
-      "fecha": "2026-11-06T12:24:15.583Z",
-      "dias_demanda": 18,
-      "stock_original": 1
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "stock_original": 1,
+      "dias_demanda": 18
     },
     "MLU1524218550": {
       "titulo": "Borges, Textos Secretos Y Falsas Atribuciones, De Alejandro Vaccaro., Vol. 1. Ed",
@@ -27383,9 +27365,9 @@
     "MLU702967739": {
       "titulo": "Holtzapfel: Ámbito De Acción De Los Órganos",
       "precio_original": 1800,
-      "precio_aplicado": 1752,
+      "precio_aplicado": 1684,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -27440,15 +27422,6 @@
       "fecha": "2026-11-06T22:42:14.038Z",
       "dias_demanda": 18,
       "stock_original": 1
-    },
-    "MLU1523290710": {
-      "titulo": "La Argentina Después De La Tormenta",
-      "precio_original": 2059,
-      "precio_aplicado": 2009,
-      "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
-      "stock_original": 1,
-      "dias_demanda": 18
     },
     "MLU1523099320": {
       "titulo": "Anotaciones Del Día Y De La Noche - Ernst Junger",
@@ -27562,15 +27535,6 @@
       "titulo": "Cartas Berlinesas Ii - José Emilio Burucúa, De José Emilio Burucúa. Editorial Ad",
       "precio_original": 1552,
       "precio_aplicado": 1504,
-      "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
-      "stock_original": 1,
-      "dias_demanda": 18
-    },
-    "MLU1525864332": {
-      "titulo": "The Aleph, De Borges, Jorge Luis. Editorial Penguin, Tapa Blanda En Inglés Inter",
-      "precio_original": 1640,
-      "precio_aplicado": 1593,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
       "fecha": "2026-11-07T00:35:50.072Z",
       "stock_original": 1,
@@ -27741,9 +27705,9 @@
     "MLU1530819060": {
       "titulo": "El Año Del Pensamiento Magico",
       "precio_original": 2150,
-      "precio_aplicado": 2025,
+      "precio_aplicado": 1959,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T12:40:25.613Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -27939,9 +27903,9 @@
     "MLU1530644788": {
       "titulo": "Las Aventuras De Facu Y Cafe Con Leche 9 - Chanti Chanti",
       "precio_original": 1600,
-      "precio_aplicado": 1504,
+      "precio_aplicado": 1439,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -29289,9 +29253,9 @@
     "MLU1531172838": {
       "titulo": "Condorito 9° Libro Tapa Dura Pepo 2016",
       "precio_original": 2330,
-      "precio_aplicado": 2277,
+      "precio_aplicado": 2204,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -29370,9 +29334,9 @@
     "MLU1531172552": {
       "titulo": "Con Ton Y Con Son Lengua Materna Educ Inicial Stapich (ai), De Stapich. Aique Ed",
       "precio_original": 1600,
-      "precio_aplicado": 1469,
+      "precio_aplicado": 1420,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -29577,9 +29541,9 @@
     "MLU1531171710": {
       "titulo": "Libro Los Compas Perdidos En El Espacio - Mikecrack",
       "precio_original": 2560,
-      "precio_aplicado": 2435,
+      "precio_aplicado": 2361,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -29667,9 +29631,9 @@
     "MLU1531170806": {
       "titulo": "Como Hicimos El 17 De Octubre, De Perelman. Editorial Punto De Encuentro En Espa",
       "precio_original": 1600,
-      "precio_aplicado": 1514,
+      "precio_aplicado": 1544,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -29955,9 +29919,9 @@
     "MLU1531169062": {
       "titulo": "Libro Colonialismo Y Derechos Humanos De Eugenio Raul Zaffar",
       "precio_original": 2490,
-      "precio_aplicado": 2395,
+      "precio_aplicado": 2322,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -30486,9 +30450,9 @@
     "MLU1531151342": {
       "titulo": "Coser Y Contar - Angels Navarro",
       "precio_original": 1960,
-      "precio_aplicado": 1881,
+      "precio_aplicado": 1812,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -31251,9 +31215,9 @@
     "MLU1531147130": {
       "titulo": "Los Compas Y La Maldicion De Mikecrack - Mikecrak / Trollino",
       "precio_original": 2560,
-      "precio_aplicado": 2419,
+      "precio_aplicado": 2341,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -31377,9 +31341,9 @@
     "MLU1531146304": {
       "titulo": "Como Los Superheroes - Turzi - Capital Intelectual - Libro",
       "precio_original": 1830,
-      "precio_aplicado": 1782,
+      "precio_aplicado": 1714,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -31602,9 +31566,9 @@
     "MLU1531144952": {
       "titulo": "Dobla Y Desdobla Colores, De Anónimo. Editorial Lexus Editores",
       "precio_original": 1600,
-      "precio_aplicado": 1247,
+      "precio_aplicado": 1276,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -32106,9 +32070,9 @@
     "MLU1531141268": {
       "titulo": "Crónicas Marcianas - Planeta Lector",
       "precio_original": 1920,
-      "precio_aplicado": 1831,
+      "precio_aplicado": 1763,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -33087,9 +33051,9 @@
     "MLU1531134518": {
       "titulo": "Comunicación Gubernamental - Luciano Elizalde Y M. Riorda",
       "precio_original": 2740,
-      "precio_aplicado": 2682,
+      "precio_aplicado": 2596,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -33411,9 +33375,9 @@
     "MLU1531133042": {
       "titulo": "Cómo Hacer De Verdad Cosas Con Palabras - Barbara Cassin",
       "precio_original": 2280,
-      "precio_aplicado": 2088,
+      "precio_aplicado": 2018,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -33438,9 +33402,9 @@
     "MLU1531132924": {
       "titulo": "Como Falsificar Una Sombra - Matías Serra Bradford",
       "precio_original": 1600,
-      "precio_aplicado": 1534,
+      "precio_aplicado": 1568,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -33483,9 +33447,9 @@
     "MLU1531132772": {
       "titulo": "Como Dos Extraños - Kleypas, Lisa",
       "precio_original": 2760,
-      "precio_aplicado": 2455,
+      "precio_aplicado": 2380,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -35013,9 +34977,9 @@
     "MLU1531122384": {
       "titulo": "Conexión Alteris - Loqueleo",
       "precio_original": 1600,
-      "precio_aplicado": 1554,
+      "precio_aplicado": 1488,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -35085,9 +35049,9 @@
     "MLU1531122226": {
       "titulo": "Condorito 7° Libro",
       "precio_original": 2340,
-      "precio_aplicado": 2286,
+      "precio_aplicado": 2214,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -35256,9 +35220,9 @@
     "MLU1531121468": {
       "titulo": "Comprender Nuestra Mente (ed.arg.)",
       "precio_original": 2600,
-      "precio_aplicado": 2336,
+      "precio_aplicado": 2263,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -36444,9 +36408,9 @@
     "MLU703614383": {
       "titulo": "Libro Torres De Malory 4. Cuarto Curso - Enid Blyton",
       "precio_original": 2240,
-      "precio_aplicado": 1999,
+      "precio_aplicado": 1930,
       "fecha_primera_baja": "2026-11-06T22:42:14.038Z",
-      "fecha": "2026-11-07T00:35:50.072Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -38786,9 +38750,9 @@
     "MLU1531872042": {
       "titulo": "Libro Doctor Glas - Hjalmar Söderberg - Leteo Edito",
       "precio_original": 1830,
-      "precio_aplicado": 1772,
+      "precio_aplicado": 1704,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -39083,9 +39047,9 @@
     "MLU1531871412": {
       "titulo": "Libro Dinero En Juego - Gonzalo Pereyra Saez - Planeta",
       "precio_original": 1710,
-      "precio_aplicado": 1613,
+      "precio_aplicado": 1548,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -40712,9 +40676,9 @@
     "MLU703639229": {
       "titulo": "Diciembre, Súper Álbum - Bodoc, Liliana",
       "precio_original": 1820,
-      "precio_aplicado": 1692,
+      "precio_aplicado": 1626,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -40775,9 +40739,9 @@
     "MLU703639033": {
       "titulo": "Libro Los Días Más Felices - Fernando Iglesias",
       "precio_original": 1930,
-      "precio_aplicado": 1707,
+      "precio_aplicado": 1645,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -40838,9 +40802,9 @@
     "MLU703637847": {
       "titulo": "Libro Diarios - Katherine Mansfield - Chai Editora",
       "precio_original": 2130,
-      "precio_aplicado": 1871,
+      "precio_aplicado": 1802,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -40856,9 +40820,9 @@
     "MLU703637615": {
       "titulo": "Diario De Un Viaje Imposible - Loqueleo",
       "precio_original": 1800,
-      "precio_aplicado": 1742,
+      "precio_aplicado": 1675,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -41009,9 +40973,9 @@
     "MLU703636579": {
       "titulo": "Libro El Día Que Ir A La Escuela Fue Noticia - Soledad Acuña",
       "precio_original": 2260,
-      "precio_aplicado": 2059,
+      "precio_aplicado": 1988,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -41396,9 +41360,9 @@
     "MLU703632683": {
       "titulo": "Deportista Cientifico - Ciencia Que Ladra",
       "precio_original": 1600,
-      "precio_aplicado": 1475,
+      "precio_aplicado": 1420,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -41504,9 +41468,9 @@
     "MLU703632267": {
       "titulo": "Libro Deletreo 3 En Cursiva - Sally Johnson",
       "precio_original": 1600,
-      "precio_aplicado": 1346,
+      "precio_aplicado": 1292,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -41996,15 +41960,6 @@
       "dias_demanda": 18,
       "stock_original": 1
     },
-    "MLU703630633": {
-      "titulo": "David Copperfield - Wordsworth Classics",
-      "precio_original": 1610,
-      "precio_aplicado": 1564,
-      "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
-      "stock_original": 1,
-      "dias_demanda": 18
-    },
     "MLU703630627": {
       "titulo": "David Copperfield + A/cd + App (new) - Green Apple Life Skil",
       "precio_original": 1710,
@@ -42377,9 +42332,9 @@
     "MLU703628965": {
       "titulo": "El Cuerpo Prohibido - Cynthia Wila - Emece - Libro",
       "precio_original": 2650,
-      "precio_aplicado": 2494,
+      "precio_aplicado": 2410,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -44222,9 +44177,9 @@
     "MLU703618511": {
       "titulo": "D.h. Lawrence En 90 Minutos, De Strathern, Paul. Editorial Siglo Xxi - España, T",
       "precio_original": 1600,
-      "precio_aplicado": 1504,
+      "precio_aplicado": 1532,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -44339,9 +44294,9 @@
     "MLU703617681": {
       "titulo": "Libro Cultura General Express - Anders Producciones - Alma",
       "precio_original": 1600,
-      "precio_aplicado": 1287,
+      "precio_aplicado": 1234,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -44555,9 +44510,9 @@
     "MLU703616871": {
       "titulo": "Cuentos Para Contar - Ballesteros* Letra Impresa Col. Batitú",
       "precio_original": 1600,
-      "precio_aplicado": 1316,
+      "precio_aplicado": 1263,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -45050,18 +45005,18 @@
     "MLU703615187": {
       "titulo": "Cuentos Con Humor - Graciela Perriconi - Cántaro",
       "precio_original": 1600,
-      "precio_aplicado": 1415,
+      "precio_aplicado": 1361,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
     "MLU703615117": {
       "titulo": "Cuentos Completos 2 - Fiodor Dostoievski - Fce - Libro",
       "precio_original": 1750,
-      "precio_aplicado": 1692,
+      "precio_aplicado": 1626,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -45716,9 +45671,9 @@
     "MLU703608055": {
       "titulo": "Demoliendo Papers",
       "precio_original": 1600,
-      "precio_aplicado": 1475,
+      "precio_aplicado": 1420,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -46724,9 +46679,9 @@
     "MLU703603903": {
       "titulo": "Libro Cuentos Para Niños Y Niñas Que Quieren Salvar El Mundo",
       "precio_original": 2230,
-      "precio_aplicado": 1900,
+      "precio_aplicado": 1831,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -47273,9 +47228,9 @@
     "MLU703599503": {
       "titulo": "El Diablo En La Botella - Stevenson Robert L",
       "precio_original": 1600,
-      "precio_aplicado": 1425,
+      "precio_aplicado": 1372,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -47534,9 +47489,9 @@
     "MLU703595875": {
       "titulo": "Desconocida Buenos Aires - Leandro Vesco",
       "precio_original": 2100,
-      "precio_aplicado": 1930,
+      "precio_aplicado": 1861,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -47624,9 +47579,9 @@
     "MLU703595289": {
       "titulo": "Los Derechos De Los Niños De Charlotte Roederer Editorial Oceano Travesía",
       "precio_original": 2060,
-      "precio_aplicado": 1841,
+      "precio_aplicado": 1773,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -48632,9 +48587,9 @@
     "MLU703591237": {
       "titulo": "Cuentos Sobre La Esclavitud - J. María - M. De Assis -",
       "precio_original": 1600,
-      "precio_aplicado": 1415,
+      "precio_aplicado": 1361,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -50144,9 +50099,9 @@
     "MLU1531966100": {
       "titulo": "Libro En Medio De La Muerte - Lawrence Block - Rba",
       "precio_original": 2600,
-      "precio_aplicado": 2336,
+      "precio_aplicado": 2263,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -50207,9 +50162,9 @@
     "MLU1531965862": {
       "titulo": "En Estas Hojas Detallo Cmo Lleg El 25 De Mayo - Loqueleo",
       "precio_original": 1600,
-      "precio_aplicado": 1455,
+      "precio_aplicado": 1400,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -50567,9 +50522,9 @@
     "MLU1531965036": {
       "titulo": "Libro Elisa Bachofen: La Primera Ingeniera - Chirimbote",
       "precio_original": 1600,
-      "precio_aplicado": 1287,
+      "precio_aplicado": 1314,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -51035,20 +50990,20 @@
     "MLU1531963242": {
       "titulo": "Adventures Of Sherlock Holmes - Wordsworth Kel Ediciones",
       "precio_original": 1600,
-      "precio_aplicado": 1366,
+      "precio_aplicado": 1312,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
     "MLU1531963236": {
       "titulo": "Activa Mente 2 - Jorge Loretto",
       "precio_original": 1600,
-      "precio_aplicado": 1390,
+      "precio_aplicado": 1331,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T16:52:08.948Z",
-      "dias_demanda": 18,
-      "stock_original": 1
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "stock_original": 1,
+      "dias_demanda": 18
     },
     "MLU1531962832": {
       "titulo": "Duerme Bellamente - Zaina, Alicia - Cántaro",
@@ -51116,9 +51071,9 @@
     "MLU1531962644": {
       "titulo": "El Druida ( Las Siete Llaves De La Sabiduria)",
       "precio_original": 1600,
-      "precio_aplicado": 1316,
+      "precio_aplicado": 1263,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -51368,9 +51323,9 @@
     "MLU1531961874": {
       "titulo": "Libro Los Dos Amores De Mi Vida - Jenkins Reid, Taylor",
       "precio_original": 2740,
-      "precio_aplicado": 2435,
+      "precio_aplicado": 2361,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -52817,9 +52772,9 @@
     "MLU1531874990": {
       "titulo": "Educacion En Pandemia - Mariana Maggio - Paidos - Libro",
       "precio_original": 2170,
-      "precio_aplicado": 2053,
+      "precio_aplicado": 1979,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -52916,9 +52871,9 @@
     "MLU1531874770": {
       "titulo": "Libro Ecos - Álex Saldías",
       "precio_original": 1760,
-      "precio_aplicado": 1603,
+      "precio_aplicado": 1537,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -53438,9 +53393,9 @@
     "MLU1531872270": {
       "titulo": "Libro Donde Estoy ? - Bruno Latour - Taurus",
       "precio_original": 2110,
-      "precio_aplicado": 1980,
+      "precio_aplicado": 1909,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -53654,9 +53609,9 @@
     "MLU1531865782": {
       "titulo": "Escrito Sobre El Cuerpo - Teresa Zalazar - Grijalbo - Libro",
       "precio_original": 2180,
-      "precio_aplicado": 2019,
+      "precio_aplicado": 1949,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -54401,9 +54356,9 @@
     "MLU1531863064": {
       "titulo": "Libro En Cinco Minutos Levantate María - Pablo Ramos",
       "precio_original": 2220,
-      "precio_aplicado": 2039,
+      "precio_aplicado": 1969,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -54716,9 +54671,9 @@
     "MLU1531862020": {
       "titulo": "Educar A Un Niño En El Feminismo - Iria Marañon",
       "precio_original": 2840,
-      "precio_aplicado": 2664,
+      "precio_aplicado": 2576,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -54995,9 +54950,9 @@
     "MLU1531861392": {
       "titulo": "An Eagle In The Snow - Michael Morpurgo",
       "precio_original": 1600,
-      "precio_aplicado": 1538,
+      "precio_aplicado": 1479,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -55364,9 +55319,9 @@
     "MLU1531859638": {
       "titulo": "Las Dos Marías - Loqueleo",
       "precio_original": 1800,
-      "precio_aplicado": 1742,
+      "precio_aplicado": 1675,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -55859,9 +55814,9 @@
     "MLU1531852588": {
       "titulo": "Libro Érase Una Vez Un Corazón Roto - Stephanie Garber",
       "precio_original": 2740,
-      "precio_aplicado": 2475,
+      "precio_aplicado": 2400,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -55931,9 +55886,9 @@
     "MLU1531852358": {
       "titulo": "¡epa! Ese Miedo No Es Mío - L. Saracino - Cuenta Conmigo",
       "precio_original": 1600,
-      "precio_aplicado": 1306,
+      "precio_aplicado": 1254,
       "fecha_primera_baja": "2026-11-07T16:52:08.948Z",
-      "fecha": "2026-11-07T18:23:52.183Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -57551,9 +57506,9 @@
     "MLU1531858714": {
       "titulo": "Discapacidad Y Universidad - Seda Juan Antonio",
       "precio_original": 1600,
-      "precio_aplicado": 1376,
+      "precio_aplicado": 1322,
       "fecha_primera_baja": "2026-11-07T18:23:52.183Z",
-      "fecha": "2026-11-07T20:25:40.687Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -57632,9 +57587,9 @@
     "MLU703615573": {
       "titulo": "Cuentos De La Selva - Horacio Quiroga - Aique",
       "precio_original": 1600,
-      "precio_aplicado": 1346,
+      "precio_aplicado": 1292,
       "fecha_primera_baja": "2026-11-07T18:23:52.183Z",
-      "fecha": "2026-11-07T20:25:40.687Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "stock_original": 1,
       "dias_demanda": 18
     },
@@ -57830,30 +57785,498 @@
     "MLU703631943": {
       "titulo": "Declic 1 - Cahier D'exercices + A/cd*, De Blanc, Jacques. Editorial Cle En Franc",
       "precio_original": 2470,
-      "precio_aplicado": 2390,
+      "precio_aplicado": 2415,
       "fecha_primera_baja": "2026-11-07T22:45:44.158Z",
-      "fecha": "2026-11-07T22:45:44.158Z",
-      "dias_demanda": 18,
-      "stock_original": 1
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "stock_original": 1,
+      "dias_demanda": 18
     },
     "MLU1531961928": {
       "titulo": "Libro Los Dos Hemisferios De Lucca - Bárbara Anderson",
       "precio_original": 2550,
-      "precio_aplicado": 2469,
+      "precio_aplicado": 2494,
       "fecha_primera_baja": "2026-11-07T22:45:44.158Z",
-      "fecha": "2026-11-07T22:45:44.158Z",
-      "dias_demanda": 18,
-      "stock_original": 1
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "stock_original": 1,
+      "dias_demanda": 18
     },
     "MLU1531863078": {
       "titulo": "En Corea Del Norte - Grieco, Florencia",
       "precio_original": 2410,
-      "precio_aplicado": 2331,
+      "precio_aplicado": 2356,
       "fecha_primera_baja": "2026-11-07T22:45:44.158Z",
-      "fecha": "2026-11-07T22:45:44.158Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "stock_original": 1,
+      "dias_demanda": 18
+    },
+    "MLU1523105928": {
+      "titulo": "Libro Aprende Ajedrez - Nunn John",
+      "precio_original": 1539,
+      "precio_aplicado": 1479,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703084411": {
+      "titulo": "The Cake Machine - Oxford",
+      "precio_original": 1445,
+      "precio_aplicado": 1390,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1524941792": {
+      "titulo": "Changing Places - Dominoes 2e Starter - Mp3 Pack - Oxford",
+      "precio_original": 1610,
+      "precio_aplicado": 1547,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531961358": {
+      "titulo": "Doce Años De Esclavitud - Solomon Northup",
+      "precio_original": 1600,
+      "precio_aplicado": 1537,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531960800": {
+      "titulo": "Diminuto Y El Gol De Oro - Loqueleo",
+      "precio_original": 1600,
+      "precio_aplicado": 1537,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531871670": {
+      "titulo": "Dioses Y Héroes De La Mitología Griega Editorial Loqueleo Tapa Blanda En Español",
+      "precio_original": 1720,
+      "precio_aplicado": 1655,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531845966": {
+      "titulo": "Discurso Sobre El Arte De La Guerra",
+      "precio_original": 2010,
+      "precio_aplicado": 1939,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531844910": {
+      "titulo": "Libro Dibu Martínez - Pasión Por El Fútbol - Montena",
+      "precio_original": 1910,
+      "precio_aplicado": 1841,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531179966": {
+      "titulo": "Cuatro Cuentos Cándidos - Azulejitos - Ferro, Beatriz",
+      "precio_original": 1600,
+      "precio_aplicado": 1537,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531150190": {
+      "titulo": "Cornelia - Etchevez, Florencia",
+      "precio_original": 3030,
+      "precio_aplicado": 2940,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531128148": {
+      "titulo": "Cronica De La Resistencia - Azulejos Rojo",
+      "precio_original": 1600,
+      "precio_aplicado": 1537,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703637487": {
+      "titulo": "Diario De Un Amor A Destiempo - Loqueleo",
+      "precio_original": 1740,
+      "precio_aplicado": 1675,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703632351": {
+      "titulo": "Libro El Delirio De La Ciencia",
+      "precio_original": 2790,
+      "precio_aplicado": 2704,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703632089": {
+      "titulo": "Deidades Menores - Haghenbeck F.g",
+      "precio_original": 1940,
+      "precio_aplicado": 1871,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703630233": {
+      "titulo": "Libro La Dama De Blanco - Guillermo Barrantes",
+      "precio_original": 1600,
+      "precio_aplicado": 1537,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703629073": {
+      "titulo": "Cuidado Que Hay Trampa - Ana Maria Shua",
+      "precio_original": 1600,
+      "precio_aplicado": 1537,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703628421": {
+      "titulo": "Libro Cuentos Para Chiquitines Antroposófica Papel Local",
+      "precio_original": 2280,
+      "precio_aplicado": 2204,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703625583": {
+      "titulo": "Libro Diana :princesa De Las Amazonas De Hale - Ying",
+      "precio_original": 1700,
+      "precio_aplicado": 1635,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703624745": {
+      "titulo": "Detectives En Palermo Viejo - Loqueleo",
+      "precio_original": 1600,
+      "precio_aplicado": 1537,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703607347": {
+      "titulo": "Libro: La Decadencia Económica De Los Imperios. Cipolla, Car",
+      "precio_original": 2380,
+      "precio_aplicado": 2302,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703606297": {
+      "titulo": "Libro Libro Super Hero Girls: En Metrópolis High. Jove /650",
+      "precio_original": 1690,
+      "precio_aplicado": 1625,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703603925": {
+      "titulo": "Cuentos Para Salir Al Recreo - Margarita Mainé",
+      "precio_original": 1600,
+      "precio_aplicado": 1537,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703601963": {
+      "titulo": "Libro Cuentos Clasicos Para Leer En 5 Minutos Chicos Audaces",
+      "precio_original": 1670,
+      "precio_aplicado": 1606,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703598887": {
+      "titulo": "Detectives En Mar Del Plata - Loqueleo",
+      "precio_original": 1600,
+      "precio_aplicado": 1537,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703593373": {
+      "titulo": "Libro De Cada Quinientos Un Alma - Ana Paula Maia",
+      "precio_original": 1830,
+      "precio_aplicado": 1763,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU703589017": {
+      "titulo": "Cuentos Adaptados Para Curiosas Y Curiosos 2 - Maggio, Veron",
+      "precio_original": 2450,
+      "precio_aplicado": 2371,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531968096": {
+      "titulo": "Libro Esa Cuchara - Sandra Siemens Y Bea Lozano - Limonero",
+      "precio_original": 1720,
+      "precio_aplicado": 1645,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531967106": {
+      "titulo": "Ensayo Sobre El Lugar Silencioso, De Handke, Peter. El Libro De Bolsillo - Bibli",
+      "precio_original": 1780,
+      "precio_aplicado": 1714,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531966954": {
+      "titulo": "El Enigma Brandon - Azulejos Rojos - Franco Vaccarini Estrad",
+      "precio_original": 1600,
+      "precio_aplicado": 1537,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531964858": {
+      "titulo": "Elemental Querido Stilton - Geronimo Stilton - Destino Libro",
+      "precio_original": 1740,
+      "precio_aplicado": 1675,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531963964": {
+      "titulo": "Libro La Economia Argentina En El Siglo Xxi De Aldo Ferrer",
+      "precio_original": 1860,
+      "precio_aplicado": 1792,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531962008": {
+      "titulo": "Dos Pequeñas Gatas Japonesas - Torre De Papel Azul",
+      "precio_original": 1620,
+      "precio_aplicado": 1558,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531961848": {
+      "titulo": "Dorotea Y Miguel - Buenas Noches - Norma - Kasza, Keiko",
+      "precio_original": 1660,
+      "precio_aplicado": 1596,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531876652": {
+      "titulo": "En Las Montañas De La Locura, De H.p. Lovecraft. Editorial Alianza, Tapa Blanda ",
+      "precio_original": 2230,
+      "precio_aplicado": 2155,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531872592": {
+      "titulo": "Los Dos Gimenez - Loqueleo Azul",
+      "precio_original": 1670,
+      "precio_aplicado": 1606,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531864642": {
+      "titulo": "El Entorno Digital - Pablo Boczkowski Y Eugenia Mitchelstein",
+      "precio_original": 1820,
+      "precio_aplicado": 1754,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531864552": {
+      "titulo": "Enseñanza Filosófica, La - Alejandro Cerletti Y Ana Couló",
+      "precio_original": 1700,
+      "precio_aplicado": 1635,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531862984": {
+      "titulo": "Libro En Busca De Chaplin De Kevin Brownlow",
+      "precio_original": 1740,
+      "precio_aplicado": 1675,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531862710": {
+      "titulo": "Emilio O La Educación - J. J. Rousseau",
+      "precio_original": 2470,
+      "precio_aplicado": 2390,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531861836": {
+      "titulo": "Edmund Dulac - Edmund Dulac",
+      "precio_original": 2090,
+      "precio_aplicado": 2018,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531861428": {
+      "titulo": "Eatclean Comer Simple Y Saludable - Rocío Engstfeld",
+      "precio_original": 2000,
+      "precio_aplicado": 1930,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531859670": {
+      "titulo": "Libro Dos O Tres Dias De Fiesta - Nachon Andi",
+      "precio_original": 1600,
+      "precio_aplicado": 1537,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531859552": {
+      "titulo": "Dos Almas Gemelas",
+      "precio_original": 1600,
+      "precio_aplicado": 1537,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531852914": {
+      "titulo": "Escalera Del Miedo, La - Maria Laura Dede",
+      "precio_original": 1600,
+      "precio_aplicado": 1537,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531851062": {
+      "titulo": "Libro Los Enamorados - Alfred Hayes - La Bestia Equilatera",
+      "precio_original": 1650,
+      "precio_aplicado": 1586,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531850912": {
+      "titulo": "En Medio De Extrañas Víctimas - Saldaña París, Daniel",
+      "precio_original": 1920,
+      "precio_aplicado": 1852,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531850778": {
+      "titulo": "Libro En La Memoria Habito - Karen Zarate",
+      "precio_original": 1600,
+      "precio_aplicado": 1537,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531850650": {
+      "titulo": "En El Ultimo Planeta - Loqueleo Naranja",
+      "precio_original": 1710,
+      "precio_aplicado": 1646,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531849918": {
+      "titulo": "Libro Elogio De Las Vagabundas",
+      "precio_original": 2690,
+      "precio_aplicado": 2606,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531849080": {
+      "titulo": "Edipo Rey / Hamlet - Azulejos Rojo - Shakespeare, William",
+      "precio_original": 1600,
+      "precio_aplicado": 1537,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531848248": {
+      "titulo": "Conversations With Friends - Sally Rooney",
+      "precio_original": 1740,
+      "precio_aplicado": 1675,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
+      "dias_demanda": 18,
+      "stock_original": 1
+    },
+    "MLU1531846474": {
+      "titulo": "Donde La Justicia No Llega: Cuando El Proceso Judicial No Acompaña, De Calvo Sol",
+      "precio_original": 1600,
+      "precio_aplicado": 1528,
+      "fecha_primera_baja": "2026-11-08T00:15:10.129Z",
+      "fecha": "2026-11-08T00:15:10.129Z",
       "dias_demanda": 18,
       "stock_original": 1
     }
   },
-  "actualizado": "2026-11-07T22:45:55.212Z"
+  "actualizado": "2026-11-08T00:16:07.166Z"
 }
