@@ -1,0 +1,41 @@
+name: Vintage moderadas (solo lectura)
+
+# Diagnóstico de las publicaciones de Amado Vintage (2341378249) moderadas por Mercado Libre.
+# Sólo GET a Mercado Libre y SELECT a D1: no cambia ninguna publicación.
+# Ver scripts/vintage-cloud/moderadas.mjs.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vintage-moderadas
+  cancel-in-progress: false
+
+jobs:
+  leer:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Leer publicaciones moderadas
+        run: node scripts/vintage-cloud/moderadas.mjs --salida "$RUNNER_TEMP/moderadas"
+      - name: Reporte
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vintage-moderadas-${{ github.run_id }}
+          path: ${{ runner.temp }}/moderadas/
+          retention-days: 30
+          if-no-files-found: ignore
