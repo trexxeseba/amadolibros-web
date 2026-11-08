@@ -49,6 +49,8 @@ async function main(){
  const args=process.argv.slice(2),get=n=>args.includes(n)?args[args.indexOf(n)+1]:undefined;
  const out=get('--salida')??'.',mailLocal=get('--mail-local')??'newisalo25';
  const cuentas=[await accountStatus(CUENTAS.vintage,mailLocal),await accountStatus(CUENTAS.libros,mailLocal)];
+ // Cupo de publicaciones de Vintage (sólo lectura).
+ try{const cap=await crearCliente(fuenteTokenD1(CUENTAS.vintage),{concurrencia:1}).get('/marketplace/users/cap');console.log(JSON.stringify({cupo:cap}));}catch(e){console.log(JSON.stringify({cupo:'error',error:e.code??String(e),status:e.status??null}));}
  console.log(JSON.stringify({cuentas}));
  const ml=crearCliente(fuenteTokenD1(CUENTAS.vintage),{concurrencia:2});
  const infractions=[];
@@ -78,12 +80,12 @@ async function main(){
  const rows=items.map(it=>({id:it.id,title:it.title,status:it.status,sub_status:it.sub_status??[],catalogo:it.catalog_listing===true,dia_creada:String(it.date_created??'').slice(0,10),origen:origin(receipts.get(it.id)),sku:it.seller_custom_field??null,precio:it.price??null}));
  const byId=new Map(rows.map(r=>[r.id,r]));
  // Las de propiedad intelectual (copias/réplicas y falsificaciones), con su publicación.
- const pi=infractions.filter(i=>/COPIAS|PI_|FAKE/i.test(i.filter_subgroup??'')).map(i=>({subgrupo:i.filter_subgroup,fecha:String(i.date_created??'').slice(0,16),motivo:i.reason,publicacion:byId.get(i.element_id)??{id:i.element_id},filtro_actual:ipRisk(byId.get(i.element_id)?.title)}));
+ const pi=infractions.filter(i=>/COPIAS|PI_|FAKE/i.test(i.filter_subgroup??'')).map(i=>({subgrupo:i.filter_subgroup,fecha:String(i.date_created??'').slice(0,16),motivo:i.reason,publicacion:byId.get(i.element_id)??{id:i.element_id},filtro_actual:ipRisk(byId.get(i.element_id)?.title),evidencias:i.evidences??null,texto_detectado:JSON.stringify(i).match(/"text_matched":"([^"]{0,200})"/)?.[1]??null}));
  console.log('=== PROPIEDAD INTELECTUAL ===');console.log(JSON.stringify(pi));
  const resumen={infracciones:infractions.length,publicaciones_citadas:ids.length,leidas:rows.length,por_campo:porCampo,por_dia_infraccion:count(fechas,x=>x),por_catalogo:count(rows,r=>r.catalogo),por_origen:count(rows,r=>r.origen),por_dia_creada:count(rows,r=>r.dia_creada),por_estado:count(rows,r=>r.status)};
  // Auditoría: todas las publicaciones de la cuenta contra el filtro de propiedad intelectual.
  let auditoria=null;
- if(!args.includes('--sin-auditoria')){
+ if(!args.includes('--sin-auditoria')&&process.env.VINTAGE_AUDITORIA!=='no'){
   const all=[];let scroll=null;
   for(let page=0;page<1000;page++){
    const q=new URLSearchParams({search_type:'scan',limit:'100'});if(scroll)q.set('scroll_id',scroll);

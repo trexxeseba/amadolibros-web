@@ -5,6 +5,11 @@ name: Vintage moderadas (solo lectura)
 # Ver scripts/vintage-cloud/moderadas.mjs.
 on:
   workflow_dispatch:
+    inputs:
+      auditoria:
+        description: 'Recorrer todas las publicaciones contra el filtro (tarda ~15 min)'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -30,6 +35,8 @@ jobs:
         with:
           node-version: '22'
       - name: Leer publicaciones moderadas
+        env:
+          VINTAGE_AUDITORIA: ${{ inputs.auditoria == false && 'no' || 'si' }}
         run: node scripts/vintage-cloud/moderadas.mjs --salida "$RUNNER_TEMP/moderadas"
       - name: Reporte
         if: always()
