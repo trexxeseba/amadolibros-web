@@ -34,16 +34,25 @@ export const IP_RISK_PATTERNS=[
  // Marcas de entretenimiento y juguetes que denuncian (Disney y Marvel aparecieron en la moderación
  // de la cuenta el 08/11/2026). Los libros sobre esas marcas también se dejan afuera.
  ['marca','\\bdisney\\b|\\bmarvel\\b|\\bpixar\\b|\\bstar wars\\b|\\bdc comics\\b|\\bbatman\\b|\\bsuperman\\b|\\bspider ?man\\b|\\bavengers\\b|\\bpokemon\\b|\\bnintendo\\b|\\bmario bros\\b|\\blego\\b|\\bbarbie\\b|\\bmattel\\b|\\bhasbro\\b|\\bhello kitty\\b|\\bsanrio\\b|\\bpeppa\\b|\\bpaw patrol\\b|\\bfrozen\\b|\\bminecraft\\b|\\bfortnite\\b|\\broblox\\b|\\bnaruto\\b|\\bdragon ball\\b|\\bone piece\\b|\\bfunko\\b|\\bwarner\\b|\\bnetflix\\b'],
+ // Editoriales de texto escolar e idiomas: las cinco infracciones de libros de la campaña fueron de
+ // Hodder Education, Alma Edizioni y Eli Edizioni (Arriviamo! 3 no tenía ninguna palabra de riesgo).
+ ['editorial_educativa','\\bhodder\\b|\\balma edizioni\\b|\\beli edizioni\\b|\\bloescher\\b|\\bzanichelli\\b|\\bedilingua\\b|\\bedelsa\\b|\\bsgel\\b|\\bdifusion\\b|\\bedinumen\\b|\\banaya ele\\b|\\bhueber\\b|\\bklett\\b|\\bcornelsen\\b|\\bhachette fle\\b|\\bcle international\\b|\\bmaison des langues\\b|\\bcambridge university press\\b|\\bcambridge english\\b|\\boxford university press\\b|\\bmacmillan education\\b|\\bnational geographic learning\\b|\\bcengage\\b|\\bmcgraw\\b|\\bexpress publishing\\b|\\bhelbling\\b|\\bsantillana\\b|\\bedebe\\b|\\bsm ediciones\\b|\\bkapelusz\\b|\\bpuerto de palos\\b|\\btinta fresca\\b|\\bmaipue\\b|\\bwiley\\b|\\belsevier\\b|\\bpanamericana\\b|\\bmarban\\b|\\bharcourt\\b|\\bsavvas\\b|\\bhoughton\\b'],
 ];
 const COMPILED=IP_RISK_PATTERNS.map(([name,re])=>[name,new RegExp(re)]);
+// Nombres cortos de editoriales educativas que también son palabras comunes ("alma", "eli"): sólo se
+// buscan en el campo editorial, nunca en el título.
+const SHORT_PUBLISHERS=/^(alma|eli|oup|richmond|estrada|mandioca|didier)(\s|$)/;
 
 export function normalizeText(text){
  return String(text??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 }
 // Devuelve el nombre del grupo de riesgo que coincide, o null si el texto está limpio.
-export function ipRisk(...texts){
- const text=normalizeText(texts.filter(Boolean).join(' '));
+// ipRisk(título, editorial): el título y la editorial se revisan juntos; los nombres cortos de
+// editoriales educativas, sólo en la editorial.
+export function ipRisk(title,publisher){
+ const text=normalizeText([title,publisher].filter(Boolean).join(' '));
  if(!text)return null;
  for(const [name,re] of COMPILED)if(re.test(text))return name;
+ if(SHORT_PUBLISHERS.test(normalizeText(publisher)))return 'editorial_educativa';
  return null;
 }
