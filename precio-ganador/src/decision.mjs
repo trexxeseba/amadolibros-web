@@ -19,7 +19,7 @@ export const entero = n => Math.floor(Number(n) + 1e-9);
 
 // umbralInclusivo: la diferencia igual al umbral también se baja (Vintage: <= 400).
 // descuento: fracción por debajo del ganador (Vintage 0.01 = 99 % del ganador).
-export function decidir({ item, comp, promo = false, previo, piso = null, tocarStock = false, stockDemanda = STOCK_DEMANDA_DEFAULT, umbral = UMBRAL_UYU, topePct = TOPE_PCT, umbralInclusivo = false, descuento = 0, pasoMinimoSubida = 1, seguir = false }) {
+export function decidir({ item, comp, promo = false, previo, piso = null, tocarStock = false, stockDemanda = STOCK_DEMANDA_DEFAULT, umbral = UMBRAL_UYU, topePct = TOPE_PCT, umbralInclusivo = false, descuento = 0, pasoMinimoSubida = 1, seguir = false, confirmarSubida = 2, fraccionSubida = 0.5, memoriaDias = 3, ahora = Date.now() }) {
   const precio = Number(item.price);
   if (comp?.error) return { accion: 'error_consulta', motivo: comp.error };
   if (item.currency_id !== 'UYU') return { accion: 'saltear_moneda', motivo: item.currency_id };
@@ -33,7 +33,7 @@ export function decidir({ item, comp, promo = false, previo, piso = null, tocarS
   // Ya la bajamos antes, pero alguien le cambió el precio a mano: queda fuera del sistema.
   if (previo && Number(previo.precio_aplicado) !== precio) return { accion: 'liberar_editada', motivo: `precio actual ${precio}, aplicado ${previo.precio_aplicado}` };
 
-  const reglas = { umbral, topePct, umbralInclusivo, descuento, pasoMinimoSubida };
+  const reglas = { umbral, topePct, umbralInclusivo, descuento, pasoMinimoSubida, confirmarSubida, fraccionSubida, memoriaDias, ahora };
   const r = previo ? decidirConEstado({ precio, comp, previo, piso, seguir, ...reglas }) : decidirNueva({ precio, comp, piso, ...reglas });
   if (!CAMBIA.has(r.accion)) return r;
   // Precio administrado por Mercado Libre (tag dynamic_standard_price): el PUT a
@@ -70,29 +70,51 @@ const MOTIVO_BLOQUEO = { ganador_inmediato: 'el ganador entrega de inmediato', g
 // Precio objetivo: el ganador menos el descuento, hacia abajo al peso.
 export const objetivoDe = (ganador, descuento = 0) => entero(ganador * (1 - (descuento || 0)));
 
-function decidirConEstado({ precio, comp, previo, piso, seguir = false, umbral, topePct, umbralInclusivo, descuento, pasoMinimoSubida }) {
+// Subida con memoria (Seba, 07/11/2026: los precios iban y venían en cada corrida).
+// ML no elige sólo por precio: subir hasta un peso abajo del competidor volvía a
+// perder en la corrida siguiente. Ahora, para una publicación que el sistema bajó:
+//   - sube sólo después de ganar `confirmarSubida` corridas seguidas;
+//   - sube una fracción (`fraccionSubida`) de lo que falta hasta el techo, no todo;
+//   - si después de subir vuelve a perder, recuerda ese precio (`perdio_en`) durante
+//     `memoriaDias` días y no vuelve a subir hasta ahí.
+// Así el precio se acerca de a poco al máximo con el que todavía gana y se queda ahí.
+// La memoria viaja en el estado: { ganando, perdio_en, perdio_fecha }.
+function decidirConEstado({ precio, comp, previo, piso, seguir = false, umbral, topePct, umbralInclusivo, descuento, pasoMinimoSubida, confirmarSubida, fraccionSubida, memoriaDias, ahora }) {
   const original = Number(previo.precio_original);
+  const fecha = new Date(ahora).toISOString();
   // Marcada contra un ganador a demanda (o sin filtro de plazo): seguirlo.
   if (comp?.marcada && !comp?.bloqueo && fin(comp.ganador)) {
     const ganador = entero(comp.ganador), diferencia = original - ganador;
     const objetivo = Math.min(objetivoDe(ganador, descuento), original);
-    // Más que el umbral contra el precio original: no se sigue bajando, se mantiene lo aplicado.
+    // Perdió con el precio actual: se recuerda para no volver a subir hasta acá.
+    const memoria = objetivo < precio ? { ganando: 0, perdio_en: precio, perdio_fecha: fecha } : { ganando: 0 };
+    const con = r => ({ ...r, memoria });
     // seguir: excepción por publicación (precio-ganador/seguir/<cuenta>.json, pedida por Seba): sigue al
     // ganador aunque quede a más del umbral del original. El tope de porcentaje y el piso siguen.
-    if ((!seguir && (umbralInclusivo ? diferencia > umbral : diferencia >= umbral)) || (topePct !== null && diferencia / original > topePct)) return { accion: 'mantener_umbral', motivo: `ganador ${ganador}, original ${original}` };
-    if (fin(piso) && objetivo < piso) return { accion: 'mantener_piso', motivo: `piso ${piso}` };
-    if (objetivo === precio) return { accion: 'mantener', motivo: 'sigue al ganador' };
-    if (objetivo >= original) return { accion: 'restaurar', precio: original, motivo: 'el ganador llegó al original' };
-    return { accion: 'ajustar', precio: objetivo, motivo: objetivo > precio ? 'el ganador subió' : 'el ganador bajó' };
+    if ((!seguir && (umbralInclusivo ? diferencia > umbral : diferencia >= umbral)) || (topePct !== null && diferencia / original > topePct)) return con({ accion: 'mantener_umbral', motivo: `ganador ${ganador}, original ${original}` });
+    if (fin(piso) && objetivo < piso) return con({ accion: 'mantener_piso', motivo: `piso ${piso}` });
+    if (objetivo === precio) return con({ accion: 'mantener', motivo: 'sigue al ganador' });
+    if (objetivo >= original) return con({ accion: 'restaurar', precio: original, motivo: 'el ganador llegó al original' });
+    return con({ accion: 'ajustar', precio: objetivo, motivo: objetivo > precio ? 'el ganador subió' : 'el ganador bajó' });
   }
-  // Ya no marcada (o el ganador es de entrega inmediata, contra el que no se compite):
+  // Ya no marcada (gana, o el ganador es de entrega inmediata, contra el que no se compite):
   // subir hacia el original sin pasarlo, hasta donde siga ganándole al competidor
-  // a demanda más barato (techo, ya con el descuento aplicado).
-  const techo = fin(comp?.techo) ? entero(comp.techo) : original;
-  const objetivo = Math.min(original, techo);
+  // a demanda más barato (techo, ya con el descuento aplicado), con la subida con memoria.
+  const ganando = Number(previo.ganando ?? 0) + 1;
+  const memoriaVigente = fin(previo.perdio_en) && ahora - Date.parse(previo.perdio_fecha ?? '') < memoriaDias * 86400_000;
+  let techo = Math.min(original, fin(comp?.techo) ? entero(comp.techo) : original);
+  if (memoriaVigente) techo = Math.min(techo, entero(previo.perdio_en) - pasoMinimoSubida);
   const motivo = comp?.bloqueo ? `ganador de entrega inmediata, no se compite` : null;
-  if (objetivo <= precio) return { accion: 'mantener', motivo: motivo ?? 'gana con el precio aplicado' };
-  if (objetivo >= original) return { accion: 'restaurar', precio: original, motivo: motivo ?? 'sin competidor más barato' };
-  if (objetivo - precio < pasoMinimoSubida) return { accion: 'mantener', motivo: `subiría ${objetivo - precio}, menos de ${pasoMinimoSubida}` };
-  return { accion: 'subir', precio: objetivo, motivo: motivo ?? `competidor a demanda más barato en ${comp?.techo_de ?? '?'}` };
+  const queda = r => ({ ...r, memoria: { ganando } });
+  if (techo <= precio) return queda({ accion: 'mantener', motivo: motivo ?? (memoriaVigente && techo < Math.min(original, fin(comp?.techo) ? entero(comp.techo) : original) ? `perdió en ${previo.perdio_en}, no sube hasta ahí` : 'gana con el precio aplicado') });
+  if (ganando < confirmarSubida) return queda({ accion: 'mantener', motivo: `gana ${ganando} de ${confirmarSubida} corridas antes de subir` });
+  // Una fracción de lo que falta; si lo que falta es poco, todo.
+  const falta = techo - precio;
+  const paso = falta <= 2 * pasoMinimoSubida ? falta : Math.max(pasoMinimoSubida, entero(falta * fraccionSubida));
+  const objetivo = precio + paso;
+  if (paso < pasoMinimoSubida) return queda({ accion: 'mantener', motivo: `subiría ${paso}, menos de ${pasoMinimoSubida}` });
+  // Después de subir vuelve a contar desde cero: la próxima subida espera otra confirmación.
+  const sube = r => ({ ...r, memoria: { ganando: 0 } });
+  if (objetivo >= original) return sube({ accion: 'restaurar', precio: original, motivo: motivo ?? 'sin competidor más barato' });
+  return sube({ accion: 'subir', precio: objetivo, motivo: motivo ?? `sube ${paso} de ${falta} hacia ${techo}${comp?.techo_de ? ` (competidor en ${comp.techo_de})` : ''}` });
 }

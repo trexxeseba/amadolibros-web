@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { decidir } from '../src/decision.mjs';
 
 const item = (o = {}) => ({ id: 'MLU1', price: 1000, currency_id: 'UYU', variaciones: false, demanda: false, available_quantity: 1, ...o });
+// Subida directa: estos tests miran hasta dónde sube (la subida con memoria tiene sus tests).
+const DIRECTA = { confirmarSubida: 1, fraccionSubida: 1 };
 const marcada = ganador => ({ marcada: true, ganador, estado: 'competing' });
 
 test('baja al ganador si la diferencia es menor a 360', () => {
@@ -46,15 +48,15 @@ test('reversión: el ganador bajó más de 360 desde el original, se mantiene', 
   assert.equal(decidir({ item: item({ price: 800 }), comp: marcada(600), previo }).accion, 'mantener_umbral');
 });
 test('reversión: ya no marcada, sube hasta un peso abajo del competidor', () => {
-  const d = decidir({ item: item({ price: 800 }), comp: { marcada: false, techo: 949 }, previo });
+  const d = decidir({ item: item({ price: 800 }), comp: { marcada: false, techo: 949 }, previo, ...DIRECTA });
   assert.deepEqual([d.accion, d.precio], ['subir', 949]);
 });
 test('reversión: sin competidor vuelve al original y restaura stock', () => {
-  const d = decidir({ item: item({ price: 800, demanda: true, available_quantity: 5 }), comp: { marcada: false, techo: null }, previo, tocarStock: true });
+  const d = decidir({ item: item({ price: 800, demanda: true, available_quantity: 5 }), comp: { marcada: false, techo: null }, previo, tocarStock: true, ...DIRECTA });
   assert.deepEqual([d.accion, d.precio, d.stock], ['restaurar', 1000, 50]);
 });
 test('reversión: nunca pasa el original', () => {
-  const d = decidir({ item: item({ price: 800 }), comp: { marcada: false, techo: 5000 }, previo });
+  const d = decidir({ item: item({ price: 800 }), comp: { marcada: false, techo: 5000 }, previo, ...DIRECTA });
   assert.equal(d.precio, 1000);
 });
 test('editada a mano: se libera sin tocar', () => {
