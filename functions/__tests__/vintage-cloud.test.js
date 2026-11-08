@@ -309,3 +309,16 @@ test('reviews with a requeued code go back to pending; other reviews and listing
  assert.deepEqual({...await state(301)},{state:'pending',error_code:null});
  assert.deepEqual({...await state(302)},{state:'review',error_code:'ml_http_403'});
 });
+
+test('a risky title is dropped before any Mercado Libre call and is never prepared nor created',async t=>{
+ const {run}=await import('../../scripts/vintage-local/engine.mjs');
+ const rows=[{isbn:isbnN(401),title:'Libro Digital Society For The Ib Diploma',listArs:40000,weightKg:.5,stock:'2'},{isbn:isbnN(402),title:'Cien años de soledad',listArs:40000,weightKg:.5,stock:'2'}];
+ const f=await freshEngine(t,{rows});
+ const touched=[];
+ const api={async account(){return {id:2341378249};},async call(env,p){if(p.includes('seller_sku='))return {results:[]};throw new Error('unexpected');},
+  async skuItems(env,isbn){touched.push(isbn);return [];},async competitorPrice(env,isbn){touched.push(isbn);return null;},
+  async prepare(env,row,pol,price){touched.push(row.isbn);return {title:row.title,price,currency_id:'UYU',condition:'new',catalog_listing:false};},async create(){throw new Error('must_not_create');}};
+ const result=await run({excel:'x',connection:f.connection,directory:f.dir,readWorkbook:f.readWorkbook,classifiers:2,classifyOnly:true,maxMs:60000,apiFactory:()=>api,brokerFactory:()=>async()=>({}),waitFor:ms=>new Promise(r=>setTimeout(r,Math.min(ms,5)))});
+ assert.equal(result.classified.skipped_ip_risk,1);assert.equal(result.classified.validated,1);
+ assert.ok(!touched.includes(isbnN(401)),'no ML call for the risky book');
+});
