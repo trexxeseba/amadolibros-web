@@ -190,23 +190,31 @@ export function isEligibleForFeed(item) {
     // No se infiere moneda: un precio sin currency_id es ambiguo y Merchant
     // no debe recibirlo como UYU por defecto.
     if (currency !== 'UYU') return false;
-    if (!isBookProduct(item)) return false;
+    if (!isBookProduct(item) && !isCardDeckProduct(item)) return false;
     return true;
 }
 
 // Mazos de tarot y oráculos, y barajas: Mercado Libre los clasifica en estos
 // dominios. Con ISBN válido tienen un identificador real (lo trae cerca del
 // 95 % de los mazos) aunque no traigan autor ni páginas, así que el ISBN solo
-// alcanza. Sin ISBN válido no entran: Merchant exige un identificador.
+// alcanza para el feed. Sin ISBN válido no entran: Merchant exige un identificador.
 // Decisión de Seba (8/11/2026): que aparezcan mazos, tarot, oráculo, cartas y baraja.
 const CARD_DECK_DOMAIN = /(?:^|[-_])(?:TAROT_CARDS|BOARD_AND_CARD_GAMES)(?:$|[-_])/;
+
+/**
+ * Mazo o baraja publicable en el feed. Es una regla SOLO del feed: la ficha del
+ * producto sigue sin declararlo libro (isBookProduct no cambia).
+ */
+export function isCardDeckProduct(item) {
+    const domain = String(item?.domain_id || '').trim().toUpperCase();
+    return CARD_DECK_DOMAIN.test(domain) && normalizeIsbnToGtin(item?.isbn).valid;
+}
 
 /**
  * Merchant no debe recibir un SSD, un candelabro u otra antigüedad como si
  * fuera un libro. El dominio BOOKS es una señal suficiente; un dominio de
  * otra familia no invalida por sí solo un ISBN de libro acompañado por otra
  * señal bibliográfica. Sin dominio se exige ISBN o dos señales independientes.
- * Los mazos y barajas (CARD_DECK_DOMAIN) entran con ISBN válido solo.
  */
 export function isBookProduct(item) {
     const domain = String(item?.domain_id || '').trim().toUpperCase();
@@ -223,7 +231,6 @@ export function isBookProduct(item) {
     ].filter(Boolean).length;
 
     if (/(?:^|[-_])BOOKS(?:$|[-_])/.test(domain)) return true;
-    if (CARD_DECK_DOMAIN.test(domain)) return hasIsbn;
     if (domain) return hasIsbn && supportingSignals >= 1;
     return hasIsbn || supportingSignals >= 2;
 }

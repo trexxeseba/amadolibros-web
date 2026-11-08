@@ -10,6 +10,7 @@ import {
     onRequest,
     isEligibleForFeed,
     isBookProduct,
+    isCardDeckProduct,
     cleanIsbnRaw,
     isValidIsbn13,
     isValidIsbn10,
@@ -348,16 +349,20 @@ test('17d2. Mazos de tarot y barajas entran con ISBN válido aunque no tengan au
     const deck = (extra = {}) => book({
         domain_id: 'MLU-TAROT_CARDS', isbn: '9788499809991', author: null, pages: null, bibliographic: null, ...extra,
     });
-    assert.equal(isBookProduct(deck()), true);
+    assert.equal(isCardDeckProduct(deck()), true);
     assert.equal(isEligibleForFeed(deck()), true);
-    assert.equal(isBookProduct(deck({ domain_id: 'MLU-BOARD_AND_CARD_GAMES' })), true);
+    assert.equal(isEligibleForFeed(deck({ domain_id: 'MLU-BOARD_AND_CARD_GAMES' })), true);
+    // La ficha del producto NO lo declara libro: la regla de mazos es solo del feed.
+    assert.equal(isBookProduct(deck()), false);
     // Sin ISBN válido no entran: Merchant exige un identificador real.
-    assert.equal(isBookProduct(deck({ isbn: null })), false);
-    assert.equal(isBookProduct(deck({ isbn: '1234567890123' })), false);
+    assert.equal(isEligibleForFeed(deck({ isbn: null })), false);
+    assert.equal(isEligibleForFeed(deck({ isbn: '1234567890123' })), false);
     // El ISBN solo no alcanza para otros rubros.
-    assert.equal(isBookProduct(book({
+    const otro = book({
         domain_id: 'MLU-COMPUTER_COMPONENTS', isbn: '9788499809991', author: null, pages: null, bibliographic: null,
-    })), false);
+    });
+    assert.equal(isCardDeckProduct(otro), false);
+    assert.equal(isEligibleForFeed(otro), false);
     // Un mazo publicado lleva su código de barras y no inventa autor ni marca.
     const xml = renderFeedItem(deck({ id: 'MLU999', title: 'Oráculo de prueba' }));
     assert.match(xml, /<g:gtin>9788499809991<\/g:gtin>/);
