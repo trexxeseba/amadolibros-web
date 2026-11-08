@@ -38,13 +38,14 @@ const TRANSIENT_MS=300000,LONG_MS=86400000;
 // nunca las reactiva, aunque el proveedor vuelva a tener el ISBN con stock.
 export const PAUSADAS_IP_FILE=new URL('../vintage-cloud/pausar-2026-11-09.txt',import.meta.url);
 let pausadasIp=null;
-export async function pausadasIpSet(){
+export async function pausadasIpSet(extra=null){
  if(!pausadasIp){const text=await fs.readFile(PAUSADAS_IP_FILE,'utf8');pausadasIp=new Set(text.split('\n').map(l=>l.trim()).filter(l=>/^MLU\d+$/.test(l)));}
+ if(extra)for(const id of extra)pausadasIp.add(String(id));
  return pausadasIp;
 }
 function competitorOf(row){try{const value=JSON.parse(row?.competitor_json??'null');return value&&typeof value==='object'?value:null;}catch{return null;}}
 
-export async function syncStock({connection,excel,directory,mode='pause_and_reactivate',graceHours=0,maxMissingPct=30,batch=500,budgetMs=18*60000,intervalMs=2000,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,now=Date.now,onStatus=()=>{}}){
+export async function syncStock({connection,excel,directory,mode='pause_and_reactivate',graceHours=0,maxMissingPct=30,batch=500,budgetMs=18*60000,intervalMs=2000,blockedIds=null,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,now=Date.now,onStatus=()=>{}}){
  if(!MODES.includes(mode))throw new Error('invalid_stock_sync_mode');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c,now());
  const input=await readWorkbook(excel);
@@ -109,7 +110,7 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
     if(!['active','paused'].includes(item.status)){await failed(row,`item_status_${/^[a-z_]{1,30}$/.test(String(item.status))?item.status:'unknown'}`,LONG_MS);summary.skipped++;continue;}
     const quantity=Number(item.available_quantity);
     if(item.status===row.desired_status&&(row.desired_status==='paused'||quantity>0)){await applied(row,item.status);summary.unchanged++;continue;}
-    if(row.desired_status==='active'&&(await pausadasIpSet()).has(String(row.item_id))){await failed(row,'pausada_por_propiedad_intelectual',LONG_MS);summary.skipped++;continue;}
+    if(row.desired_status==='active'&&(await pausadasIpSet(blockedIds)).has(String(row.item_id))){await failed(row,'pausada_por_propiedad_intelectual',LONG_MS);summary.skipped++;continue;}
     if(row.desired_status==='active'&&item.status==='paused'&&row.applied_status!=='paused'&&quantity!==0){await failed(row,'paused_externally',LONG_MS);summary.skipped++;continue;}
     const body=row.desired_status==='paused'?{status:'paused'}:{status:'active',available_quantity:1};
     try{await api.call(env,`/items/${row.item_id}`,{method:'PUT',body});}

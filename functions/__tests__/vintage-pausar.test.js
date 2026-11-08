@@ -42,5 +42,6 @@ test('la sincronización de stock de Vintage no puede reactivar una publicación
  const set=await pausadasIpSet();
  assert.equal(set.size,2725);
  const src=await (await import('node:fs/promises')).readFile(new URL('../../scripts/vintage-local/stock-sync.mjs',import.meta.url),'utf8');
- assert.match(src,/desired_status==='active'&&\(await pausadasIpSet\(\)\)\.has\(String\(row\.item_id\)\)/);
+ // Acepta el conjunto del archivo solo o ampliado con las bloqueadas en D1 (pausadasIpSet(blockedIds)).
+ assert.match(src,/desired_status==='active'&&\(await pausadasIpSet\([^)]*\)\)\.has\(String\(row\.item_id\)\)/);
 });
