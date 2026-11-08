@@ -24,6 +24,8 @@ export const CUENTAS = {
     umbral: 360,
     topePct: 0.30,
     minimo: null,
+    // Subir sólo si el salto es de 10 pesos o más (con la subida con memoria, 07/11/2026).
+    pasoMinimoSubida: 10,
     habilitada: true,
   },
   // Vintage corre acá desde el 05/11/2026 (Seba): el motor de la PC no está andando.
