@@ -30,7 +30,9 @@ export const HARD_MAX_PER_RUN=1000,HARD_MAX_PER_DAY=10000;
 // Ajustes del motor en la nube: lecturas cortadas a los 15 s (crear sigue en 60 s), estado del
 // servidor cada 10 vueltas y el recorrido del inventario se conserva hasta 3 días.
 // Además: no repite en create lo que validó prepare hace menos de 2 h, ni espera la descarga de fotos.
-export const CLOUD_ENGINE={requestTimeoutMs:15000,statusEvery:10,keepIndexDays:3,trustPreparedMs:2*3600000,deferPictures:true};
+// Ficha de catálogo que da 404: se publica sin catálogo (Seba, 08/11/2026), y las que habían
+// quedado en revisión por eso vuelven a la cola.
+export const CLOUD_ENGINE={requestTimeoutMs:15000,statusEvery:10,keepIndexDays:3,trustPreparedMs:2*3600000,deferPictures:true,productNotFoundAsMissing:true,requeueReviewCodes:['ml_http_404']};
 const CAMPAIGN=path.join(path.dirname(fileURLToPath(import.meta.url)),'..','vintage-local','campaign.json');
 const problem=(code,detail={})=>Object.assign(new Error(code),{code,detail});
 

@@ -66,7 +66,7 @@ export async function inspectWorkbook(file){
  const bytes=await fs.readFile(file),input=readFullStock(bytes);
  return {...input,source_sha256:await sha256('vintage-bulk-positive-v1:'+await sha256(bytes))};
 }
-export async function run({excel,connection,directory,target=1000,raiseTargetTo=0,intervalMs=2000,requestTimeoutMs=60000,statusEvery=1,keepIndexDays=0,classifiers=0,classifyOnly=false,maxValidated=300,trustPreparedMs=0,deferPictures=false,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
+export async function run({excel,connection,directory,target=1000,raiseTargetTo=0,intervalMs=2000,requestTimeoutMs=60000,statusEvery=1,keepIndexDays=0,classifiers=0,classifyOnly=false,maxValidated=300,trustPreparedMs=0,deferPictures=false,productNotFoundAsMissing=false,requeueReviewCodes=[],validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
  if(!Number.isInteger(target)||target<5||target>MAX_TARGET_TOTAL||!Number.isInteger(validateOnly)||validateOnly<0||validateOnly>5)throw new Error('invalid_local_limits');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
  if(await policyHash(policy)!==c.policy_hash)throw new Error('connection_policy_changed');
@@ -85,7 +85,7 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
   }catch{}
   return response;
  };
- api=apiFactory({sellerId:SELLER,timeouts:{request:requestTimeoutMs,create:60000},trustPreparedMs,tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>watched(url,options)});
+ api=apiFactory({sellerId:SELLER,timeouts:{request:requestTimeoutMs,create:60000},trustPreparedMs,productNotFoundAsMissing,tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>watched(url,options)});
  const inFlight=new Set();
  class LocalStore extends VintageBulkStore{
   async reserve(seller,isbn,runId,now,cap,lease){
@@ -206,6 +206,9 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
   },async skuItems(e,isbn){const ids=new Set(await api.skuItems(e,isbn)),q=new URLSearchParams({seller_sku:'AMADO-AR-'+isbn,limit:'100'}),result=await api.call(e,`/users/${SELLER}/items/search?${q}`);if(!Array.isArray(result.results)||result.results.some(x=>!/^MLU\d+$/.test(x)))throw new Error('sku_lookup_invalid');result.results.forEach(x=>ids.add(x));return [...ids];}};
   const service=createPublicationService({sellerId:SELLER,api:localApi,storeFactory:()=>s,maxJobsPerTick:1,maxIndexSlicesPerTick:1,stockMaxHours:VINTAGE_STOCK_MAX_HOURS});
   const identity=await api.account(env);if(String(identity.id)!==SELLER)throw new Error('seller_mismatch');
+  // Revisiones que con la configuración actual se pueden volver a intentar (p. ej. ficha 404 que
+  // ahora se publica sin catálogo): vuelven a pendiente. Nunca toca altas hechas ni dudosas.
+  for(const code of requeueReviewCodes)if(/^[a-z0-9_]{1,60}$/.test(code))await s.stmt("UPDATE ml_pub_jobs SET state='pending',error_code=NULL,payload_json=NULL,next_at=0 WHERE run_id=? AND state='review' AND error_code=? AND item_id IS NULL",BULK_RUN,code).run();
   // Clasificadores: revisan candidatos pendientes en paralelo (sólo lecturas a Mercado Libre) y los
   // dejan 'validated' o descartados. Nunca reservan ni crean: las altas las hace sólo el publicador,
   // de a una, con la reserva por ISBN del servidor.
