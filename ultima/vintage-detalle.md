@@ -2,7 +2,7 @@
 
 ```json
 {
-  "fecha": "2026-11-08T17:56:34.703Z",
+  "fecha": "2026-11-08T20:07:11.861Z",
   "modo": "real",
   "activas": 0,
   "revisadas": 6797,
@@ -3593,7 +3593,7 @@
 | [MLU1531141180](https://articulo.mercadolibre.com.uy/MLU-1531141180-libro-crocs-cooking-day-nicola-kent-de-kent-nicola-editorial-little-tiger-press-tapa-dura-en-ingles-internacional-2025-_JM) Libro Crocs Cooking Day - Nicola Kent, De Kent, Ni |   | 1512 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531141142](https://articulo.mercadolibre.com.uy/MLU-1531141142-critica-de-la-razon-practica-de-immanuel-kant-editorial-colihue-edicion-1-en-espanol-_JM) Crítica De La Razón Práctica, De Immanuel Kant. Ed |   | 1498 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531141134](https://articulo.mercadolibre.com.uy/MLU-1531141134-libro-critica-de-la-obra-plastica-precolombina-cesar-son-de-cesar-sondereguer-editorial-corregidor-_JM) Libro Critica De La Obra Plastica Precolombina - C |   | 2560 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU1531141132](https://articulo.mercadolibre.com.uy/MLU-1531141132-cristobal-colon-la-historieta-americana-_JM) Cristóbal Colón: La Historieta Americana |   | 1852 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU1531141132](https://articulo.mercadolibre.com.uy/MLU-1531141132-libro-cristobal-colon-la-historieta-americana-de-pigna-felipe-editorial-planeta-_JM) Libro Cristóbal Colón: La Historieta Americana, De |   | 1852 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531141128](https://articulo.mercadolibre.com.uy/MLU-1531141128-cristiano-de-mario-torrejon-editorial-al-poste-ediciones-tapa-blanda-en-espanol-_JM) Cristiano, De Mario Torrejon. Editorial Al Poste E |   | 1955 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531141126](https://articulo.mercadolibre.com.uy/MLU-1531141126-cristianismo-y-revolucion-el-origen-de-los-montoneros-est-_JM) Cristianismo Y Revolucion. El Origen De Los Monton |   | 1733 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531141116](https://articulo.mercadolibre.com.uy/MLU-1531141116-cristal-de-las-mujeres-el-relato-y-fotografia-en-la-obra-de-elena-poniatowska-de-alejandra-torres-editorial-beatriz-viterbo-editora-edicion-1-en-espanol-_JM) Cristal De Las Mujeres, El: Relato Y Fotografía En |   | 1356 |  |  | Inactiva | a demanda (18 d) |  |
@@ -4123,7 +4123,7 @@
 | [MLU703588633](https://articulo.mercadolibre.com.uy/MLU-703588633-el-cubo-magico-azulejos-rojos-_JM) El Cubo Magico - Azulejos Rojos |   | 1395 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU703588623](https://articulo.mercadolibre.com.uy/MLU-703588623-cub-jonty-howley-de-howley-jonty-editorial-flying-eye-books-tapa-dura-en-ingles-internacional-_JM) Cub - Jonty Howley, De Howley, Jonty. Editorial Fl |   | 2499 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU703588563](https://articulo.mercadolibre.com.uy/MLU-703588563-cuatro-historias-de-las-mil-y-una-noches-ed-rios-de-tinta-_JM) Cuatro Historias De Las Mil Y Una Noches. Ed. Ríos |   | 1584 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU703588541](https://articulo.mercadolibre.com.uy/MLU-703588541-libro-las-cuatro-estaciones-adela-basch-de-basch-adela-vol-1-editorial-comunicarte-tapa-blanda-2014-_JM) Libro Las Cuatro Estaciones - Adela Basch, De Basc |   | 1409 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU703588541](https://articulo.mercadolibre.com.uy/MLU-703588541-libro-las-cuatro-estaciones-adela-basch-de-basch-adela-editorial-comunicarte-_JM) Libro Las Cuatro Estaciones - Adela Basch, De Basc |   | 1409 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU703588499](https://articulo.mercadolibre.com.uy/MLU-703588499-cuatro-cuentos-con-magia-_JM) Cuatro Cuentos Con Magia |   | 1488 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU703588427](https://articulo.mercadolibre.com.uy/MLU-703588427-la-cuarta-ola-ariel-goldstein-de-goldstein-ariel-editorial-marea-tapa-blanda-en-espanol-_JM) La Cuarta Ola - Ariel Goldstein, De Goldstein, Ari |   | 1586 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU703588425](https://articulo.mercadolibre.com.uy/MLU-703588425-la-cuarta-dimension-rudolf-steiner-_JM) La Cuarta Dimension - Rudolf Steiner |   | 2474 |  |  | Inactiva | a demanda (18 d) |  |
@@ -4273,9 +4273,9 @@
 | [MLU1531961104](https://articulo.mercadolibre.com.uy/MLU-1531961104-discursos-para-actos-escolares-erbiti-y-sevilla-basch-_JM) Discursos Para Actos Escolares - Erbiti Y Sevilla  |   | 1450 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961102](https://articulo.mercadolibre.com.uy/MLU-1531961102-los-discursos-de-cordoba-sobre-los-70-maria-paulin-de-maria-paulinelli-comunicarte-editorial-en-espanol-_JM) Los Discursos De Cordoba Sobre Los 70 - Maria Paul |   | 1332 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961094](https://articulo.mercadolibre.com.uy/MLU-1531961094-discurso-sobre-la-servidumbre-voluntaria-etienne-de-la-boe-_JM) Discurso Sobre La Servidumbre Voluntaria - Etienne |   | 1322 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU1531961084](https://articulo.mercadolibre.com.uy/MLU-1531961084-discurso-del-yo-soy-saint-germain-valkiria-del-fondo-_JM) Discurso Del Yo Soy - Saint Germain - Valkiria Del |   | 1863 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU1531961084](https://articulo.mercadolibre.com.uy/MLU-1531961084-libro-discurso-del-yo-soy-de-saint-germain-editorial-valkiria-_JM) Libro Discurso Del Yo Soy, De Saint Germain. Edito |   | 1863 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961070](https://articulo.mercadolibre.com.uy/MLU-1531961070-discurso-de-la-servidumbre-voluntaria-de-de-la-boetie-etienne-editorial-colihue-tapa-blanda-en-espanol-2014-_JM) Discurso De La Servidumbre Voluntaria, De De La Bo |   | 1672 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU1531961062](https://articulo.mercadolibre.com.uy/MLU-1531961062-the-discovery-dive-1-gordon-korman-_JM) The Discovery - Dive 1 - Gordon Korman |   | 1448 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU1531961062](https://articulo.mercadolibre.com.uy/MLU-1531961062-libro-the-discovery-dive-1-gordon-korman-de-korman-gordon-editorial-scholastic-en-ingles-_JM) Libro The Discovery - Dive 1 - Gordon Korman, De K |   | 1448 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961026](https://articulo.mercadolibre.com.uy/MLU-1531961026-diques-los-irene-sola-_JM) Diques, Los - Irene Sola |   | 1479 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531960944](https://articulo.mercadolibre.com.uy/MLU-1531960944-libro-por-que-los-dinosaurios-de-los-editores-de-yoyo-editorial-yoyo-_JM) Libro Por Qué?: Los Dinosaurios, De Los Editores D |   | 1782 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531960922](https://articulo.mercadolibre.com.uy/MLU-1531960922-dinosaurios-asombrosos-libro-rompecabezas-de-no-aplica-vol-1-editorial-sigmar-tapa-blanda-en-espanol-_JM) Dinosaurios Asombrosos - Libro + Rompecabezas, De  |   | 1283 |  |  | Inactiva | a demanda (18 d) |  |
@@ -4323,7 +4323,7 @@
 | [MLU1531871720](https://articulo.mercadolibre.com.uy/MLU-1531871720-discreet-hero-mario-vargas-llosa-de-vargas-llosa-mario-editorial-faber-faber-tapa-blanda-en-espanol-2016-_JM) Discreet Hero - Mario Vargas Llosa, De Vargas Llos |   | 1704 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531871716](https://articulo.mercadolibre.com.uy/MLU-1531871716-discover-sri-lanka-with-us-young-hub-readers-stage-4-a2-de-tarsetti-anna-hub-editorial-tapa-blanda-en-ingles-internacional-_JM) Discover Sri Lanka With Us - Young Hub Readers Sta |   | 1401 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531871704](https://articulo.mercadolibre.com.uy/MLU-1531871704-libro-discapacidad-reflexiones-psicoanaliticas-e-intervenc-_JM) Libro Discapacidad : Reflexiones Psicoanaliticas E |   | 1724 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU1531871700](https://articulo.mercadolibre.com.uy/MLU-1531871700-dirk-gentlys-holistic-detective-agency-de-douglas-adams-editorial-pan-macmillan-tapa-blanda-en-ingles-_JM) Dirk Gently's Holistic Detective Agency, De Dougla |   | 1495 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU1531871700](https://articulo.mercadolibre.com.uy/MLU-1531871700-libro-dirk-gentlys-holistic-detective-agency-de-douglas-adams-editorial-pan-macmillan-en-ingles-_JM) Libro Dirk Gently's Holistic Detective Agency, De  |   | 1495 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531871696](https://articulo.mercadolibre.com.uy/MLU-1531871696-libro-la-dirigencia-politica-argentina-beatriz-bragoni-edhasa-_JM) Libro La Dirigencia Política Argentina - Beatriz B |   | 2234 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531871676](https://articulo.mercadolibre.com.uy/MLU-1531871676-diplodoco-dino-historias-oceano-_JM) Diplodoco - Dino Historias - Oceano |   | 1712 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531871666](https://articulo.mercadolibre.com.uy/MLU-1531871666-diosas-y-dioses-del-olimpo-de-rose-marin-editorial-albatros-infantil-infantiles-y-juveniles-tapa-blanda-en-espanol-2023-_JM) Diosas Y Dioses Del Olimpo, De Rose Marin. Editori |   | 1488 |  |  | Inactiva | a demanda (18 d) |  |
@@ -6674,7 +6674,7 @@
 | [MLU1531859106](https://articulo.mercadolibre.com.uy/MLU-1531859106-doing-nothing-band-3-big-cat-de-horacek-petr-editorial-harper-collins-publishers-uk-en-ingles-0-_JM) Doing Nothing - Band 3 - Big Cat, De Horacek, Petr |   | 1316 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531858956](https://articulo.mercadolibre.com.uy/MLU-1531858956-corazon-de-carton-diversion-en-la-construccion-de-varios-autores-editorial-latinbooks-_JM) Corazon De Carton: Diversion En La Construccion, D |   | 1881 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531858838](https://articulo.mercadolibre.com.uy/MLU-1531858838-diseno-y-organizacion-de-tesis-de-cataldi-zulma-editorial-nueva-libreria-tapa-blanda-en-espanol-2004-_JM) Diseño Y Organizacion De Tesis, De Cataldi, Zulma. |   | 2008 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU1531858774](https://articulo.mercadolibre.com.uy/MLU-1531858774-diseno-de-estructuras-de-madera-de-lea-plaza-jose-rodrigo-editorial-nueva-libreria-tapa-blanda-en-espanol-2011-_JM) Diseño De Estructuras De Madera, De Lea Plaza, Jos |   | 1949 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU1531858774](https://articulo.mercadolibre.com.uy/MLU-1531858774-libro-diseno-de-estructuras-de-madera-de-lea-plaza-jose-rodrigo-editorial-nueva-libreria-_JM) Libro Diseño De Estructuras De Madera, De Lea Plaz |   | 1949 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531858696](https://articulo.mercadolibre.com.uy/MLU-1531858696-libro-dirige-con-eficacia-de-henry-ranchon-editorial-malinka-libros-tapa-blanda-2017-_JM) Libro Dirige Con Eficacia, De Henry Ranchon. Edito |   | 1537 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531846340](https://articulo.mercadolibre.com.uy/MLU-1531846340-don-ramon-de-alberto-sobrino-cecilia-moreno-editorial-as-ediciones-tapa-dura-edicion-2016-en-espanol-_JM) Don Ramón, De Alberto Sobrino, Cecilia Moreno. Edi |   | 2488 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531846258](https://articulo.mercadolibre.com.uy/MLU-1531846258-la-doce-gustavo-grabia-la-verdadera-historia-de-la-barra-brava-de-boca-de-gustavo-grabia-vol-1-editorial-planeta-tapa-blanda-en-espanol-2025-_JM) La Doce - Gustavo Grabia: La Verdadera Historia De |   | 2782 |  |  | Inactiva | a demanda (18 d) |  |

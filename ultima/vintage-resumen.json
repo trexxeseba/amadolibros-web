@@ -3,9 +3,9 @@
   "umbral": 400,
   "causas_perdida": {},
   "ejemplos_error": [],
-  "duracion_s": 7,
+  "duracion_s": 8,
   "contadores": {
-    "fecha": "2026-11-08T17:56:34.703Z",
+    "fecha": "2026-11-08T20:07:11.861Z",
     "modo": "real",
     "activas": 0,
     "revisadas": 6797,
