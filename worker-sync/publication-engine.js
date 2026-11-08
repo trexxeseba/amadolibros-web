@@ -14,6 +14,7 @@ export function candidateSkipState(error){
  if(CATEGORY_SKIP.has(code))return 'skipped_category';
  if(STOCK_SKIP.has(code))return 'skipped_stock_uncertain';
  if(ML_REQUIREMENT_SKIP.has(code))return 'skipped_ml_requirement';
+ if(/^ip_risk_[a-z_]+$/.test(code))return 'skipped_ip_risk';
  return null;
 }
 // Sobrescrituras de precio competitivo para un lote clonado: forman parte de la
