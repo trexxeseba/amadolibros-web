@@ -17,9 +17,9 @@ on:
   workflow_dispatch:
     inputs:
       accion:
-        description: 'clasificar = revisa candidatos en paralelo sin publicar · auto = lo mismo que la programada (la lanza el Worker cada hora) · prueba = números + qué pausaría + 5 altas preparadas sin enviar · numeros = sólo lista y conteo · publicar = real (exige las dos llaves) · keepalive = sólo el token'
+        description: 'liberar_freno = vuelve a permitir publicar después de una alarma de propiedad intelectual · clasificar = revisa candidatos en paralelo sin publicar · auto = lo mismo que la programada (la lanza el Worker cada hora) · prueba = números + qué pausaría + 5 altas preparadas sin enviar · numeros = sólo lista y conteo · publicar = real (exige las dos llaves) · keepalive = sólo el token'
         type: choice
-        options: [prueba, numeros, clasificar, publicar, keepalive, auto]
+        options: [prueba, numeros, clasificar, publicar, keepalive, auto, liberar_freno]
         default: prueba
       tanda:
         description: 'Altas máximas en esta corrida (vacío = la de campaign.json)'
@@ -75,7 +75,7 @@ jobs:
             ACCION="$IN_ACCION"
           fi
           if [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then echo "Faltan los secretos de Cloudflare"; exit 1; fi
-          if [ "$ACCION" != "keepalive" ] && { [ -z "$SBS_EMAIL" ] || [ -z "$SBS_PASSWORD" ]; }; then
+          if [ "$ACCION" != "keepalive" ] && [ "$ACCION" != "liberar_freno" ] && { [ -z "$SBS_EMAIL" ] || [ -z "$SBS_PASSWORD" ]; }; then
             echo "Faltan los secretos SBS_EMAIL y SBS_PASSWORD en GitHub (ver docs/vintage-nube.md): esta vuelta sólo cuida el token."
             if [ "$EVENTO" != "schedule" ]; then exit 1; fi
             ACCION=keepalive
@@ -106,6 +106,9 @@ jobs:
         id: correr
         env:
           ACCION: ${{ steps.decidir.outputs.accion }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           IN_TANDA: ${{ inputs.tanda }}
           IN_TOPE: ${{ inputs.tope }}
         shell: bash
