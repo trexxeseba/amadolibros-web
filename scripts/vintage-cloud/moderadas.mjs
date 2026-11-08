@@ -13,9 +13,10 @@ import {CUENTAS} from '../../precio-ganador/src/config.mjs';
 import {fuenteTokenD1} from '../../precio-ganador/src/token.mjs';
 import {crearCliente} from '../../precio-ganador/src/ml.mjs';
 import {d1Client} from './d1.mjs';
+import {ipRisk} from '../../worker-sync/ip-risk.js';
 
 const VINTAGE='2341378249';
-const FIELDS='id,title,status,sub_status,catalog_listing,catalog_product_id,date_created,seller_custom_field,tags';
+const FIELDS='id,title,status,sub_status,catalog_listing,catalog_product_id,date_created,seller_custom_field,tags,price,original_price';
 
 // Campos escalares de una infracción, aplanados (para agrupar sin saber de antemano la forma exacta).
 export function flatten(obj,prefix='',out={}){
@@ -74,10 +75,32 @@ async function main(){
   const group=ids.slice(i,i+80);
   for(const r of await query(`SELECT item_id,isbn,created_at FROM ml_vintage_pub_receipts WHERE seller_id=? AND item_id IN (${group.map(()=>'?').join(',')})`,[VINTAGE,...group]))receipts.set(r.item_id,r);
  }
- const rows=items.map(it=>({id:it.id,title:it.title,status:it.status,sub_status:it.sub_status??[],catalogo:it.catalog_listing===true,dia_creada:String(it.date_created??'').slice(0,10),origen:origin(receipts.get(it.id)),sku:it.seller_custom_field??null}));
+ const rows=items.map(it=>({id:it.id,title:it.title,status:it.status,sub_status:it.sub_status??[],catalogo:it.catalog_listing===true,dia_creada:String(it.date_created??'').slice(0,10),origen:origin(receipts.get(it.id)),sku:it.seller_custom_field??null,precio:it.price??null}));
+ const byId=new Map(rows.map(r=>[r.id,r]));
+ // Las de propiedad intelectual (copias/réplicas y falsificaciones), con su publicación.
+ const pi=infractions.filter(i=>/COPIAS|PI_|FAKE/i.test(i.filter_subgroup??'')).map(i=>({subgrupo:i.filter_subgroup,fecha:String(i.date_created??'').slice(0,16),motivo:i.reason,publicacion:byId.get(i.element_id)??{id:i.element_id},filtro_actual:ipRisk(byId.get(i.element_id)?.title)}));
+ console.log('=== PROPIEDAD INTELECTUAL ===');console.log(JSON.stringify(pi));
  const resumen={infracciones:infractions.length,publicaciones_citadas:ids.length,leidas:rows.length,por_campo:porCampo,por_dia_infraccion:count(fechas,x=>x),por_catalogo:count(rows,r=>r.catalogo),por_origen:count(rows,r=>r.origen),por_dia_creada:count(rows,r=>r.dia_creada),por_estado:count(rows,r=>r.status)};
+ // Auditoría: todas las publicaciones de la cuenta contra el filtro de propiedad intelectual.
+ let auditoria=null;
+ if(!args.includes('--sin-auditoria')){
+  const all=[];let scroll=null;
+  for(let page=0;page<1000;page++){
+   const q=new URLSearchParams({search_type:'scan',limit:'100'});if(scroll)q.set('scroll_id',scroll);
+   let r;try{r=await ml.get(`/users/${VINTAGE}/items/search?${q}`);}catch(e){console.log(JSON.stringify({auditoria:'error_busqueda',error:e.code??String(e)}));break;}
+   if(!Array.isArray(r?.results)||!r.results.length)break;all.push(...r.results);scroll=r.scroll_id??null;if(!scroll)break;
+  }
+  const risky=[];
+  for(let i=0;i<all.length;i+=20){
+   const group=all.slice(i,i+20);
+   try{const r=await ml.get(`/items?ids=${group.join(',')}&attributes=id,title,status,catalog_listing,seller_custom_field`);for(const e of r??[]){const it=e?.body;if(e?.code!==200||!it)continue;const risk=ipRisk(it.title);if(risk)risky.push({id:it.id,title:it.title,status:it.status,grupo:risk,catalogo:it.catalog_listing===true,campaña:/^AMADO-AR-/.test(it.seller_custom_field??'')});}}
+   catch(e){console.log(JSON.stringify({auditoria:'error_detalle',error:e.code??String(e)}));}
+  }
+  auditoria={revisadas:all.length,riesgosas:risky.length,activas:risky.filter(r=>r.status==='active').length,por_grupo:count(risky,r=>r.grupo),por_estado:count(risky,r=>r.status),de_la_campaña:risky.filter(r=>r.campaña).length,lista:risky};
+  console.log('=== AUDITORIA ===');console.log(JSON.stringify({...auditoria,lista:risky.slice(0,150)}));
+ }
  await fs.mkdir(out,{recursive:true});
- await fs.writeFile(path.join(out,'moderadas.json'),JSON.stringify({cuentas,resumen,infracciones:infractions,publicaciones:rows},null,2));
+ await fs.writeFile(path.join(out,'moderadas.json'),JSON.stringify({cuentas,resumen,infracciones:infractions,publicaciones:rows,auditoria},null,2));
  console.log('=== MODERADAS ===');
  console.log(JSON.stringify({cuentas,resumen,muestra:rows.slice(0,60)}));
 }
