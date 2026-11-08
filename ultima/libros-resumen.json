@@ -3,27 +3,27 @@
   "umbral": 360,
   "causas_perdida": {
     "reputacion_entrega": 1,
-    "precio": 31
+    "precio": 32
   },
   "ejemplos_error": [],
-  "duracion_s": 133,
+  "duracion_s": 136,
   "contadores": {
-    "fecha": "2026-11-08T14:03:18.388Z",
+    "fecha": "2026-11-08T16:03:23.646Z",
     "modo": "real",
     "activas": 6889,
     "revisadas": 6889,
-    "compiten": 32,
-    "marcadas": 32,
+    "compiten": 33,
+    "marcadas": 33,
     "precio_dinamico": 0,
     "ganador_inmediato": 0,
     "ganador_sin_dato": 0,
     "bajadas": 0,
     "ajustadas": 1,
-    "subidas": 3,
-    "restauradas": 0,
-    "sin_tocar_umbral": 30,
+    "subidas": 17,
+    "restauradas": 8,
+    "sin_tocar_umbral": 31,
     "sin_tocar_pct": 1,
-    "verificadas": 4,
+    "verificadas": 26,
     "no_verificadas": 0,
     "promo": 0,
     "bajo_piso": 0,
@@ -35,9 +35,9 @@
   },
   "catalogo": {
     "estados": {
-      "winning": 3011,
-      "sharing_first_place": 29,
-      "competing": 32,
+      "winning": 3009,
+      "sharing_first_place": 30,
+      "competing": 33,
       "not_listed": 3817
     },
     "publicaciones_con_alguna_sugerencia": 3072,
@@ -49,16 +49,16 @@
       "not_listed:item_not_opted_in": 3817
     },
     "por_tipo": {
-      "catalogo:winning:con_stock": 3011,
-      "catalogo:sharing_first_place:con_stock": 29,
-      "catalogo:competing:con_stock": 32,
+      "catalogo:winning:con_stock": 3009,
+      "catalogo:sharing_first_place:con_stock": 30,
+      "catalogo:competing:con_stock": 33,
       "tradicional:not_listed:con_stock": 3817
     },
     "errores_por_tipo": {}
   },
   "errores": {},
-  "llamadas": 7421,
+  "llamadas": 7468,
   "por_status": {
-    "200": 7421
+    "200": 7468
   }
 }
