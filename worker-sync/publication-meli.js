@@ -91,7 +91,10 @@ export function payloadPolicyMismatch(payload,policy){
 // preparada hace menos de ese tiempo ya pasó listing_prices y /items/validate en prepare(), así que
 // create() no los repite, y un token cuya cuenta se verificó hace menos de 10 minutos no vuelve a
 // pedir /users/me. El POST /items sigue validando del lado de Mercado Libre.
-export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>globalThis.fetch(...args),tokenProvider=getAccessToken,tokenInvalidator=invalidateAccessToken,now=Date.now,timeouts={},trustPreparedMs=0}={}){
+// productNotFoundAsMissing (sólo Vintage en la nube; false = como siempre): si la búsqueda por ISBN
+// devuelve una ficha pero /products/{id} responde 404, el libro se trata como sin ficha: alta
+// tradicional con los datos verificados del proveedor y sin ganador para comparar.
+export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>globalThis.fetch(...args),tokenProvider=getAccessToken,tokenInvalidator=invalidateAccessToken,now=Date.now,timeouts={},trustPreparedMs=0,productNotFoundAsMissing=false}={}){
  const verifiedTokens=new Map();
  if(!['440298103','2341378249'].includes(sellerId))throw new PublicationError('unsupported_seller',403);
  if(sellerId!==SELLER_ID&&tokenProvider===getAccessToken)throw new PublicationError('seller_token_provider_required',503);
@@ -264,15 +267,23 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
   const seller=await account(env);
   const found=await call(env,'/products/search?'+new URLSearchParams({site_id:'MLU',status:'active',product_identifier:row.isbn}));
   if(!Array.isArray(found.results))throw new PublicationError('product_search_invalid',502);
-  const missing=found.results.length===0&&(found.paging?.total===undefined||found.paging.total===0);
+  let missing=found.results.length===0&&(found.paging?.total===undefined||found.paging.total===0),fellBack=false;
   if(!missing&&((typeof found.paging?.total==='number'&&found.paging.total!==1)||found.results.length!==1))throw new PublicationError('ambiguous_product_metadata',422);
   let product,productId=null;
   if(missing)product=await supplierBookMetadata(row,{fetcher});
-  else{productId=found.results[0].id;if(!/^MLU\d+$/.test(productId))throw new PublicationError('product_id_invalid',422);product=await call(env,`/products/${productId}`);}
+  else{
+   productId=found.results[0].id;if(!/^MLU\d+$/.test(productId))throw new PublicationError('product_id_invalid',422);
+   try{product=await call(env,`/products/${productId}`);}
+   catch(error){
+    if(!productNotFoundAsMissing||!(error instanceof MercadoLibreError)||error.status!==404)throw error;
+    // La ficha que dio la búsqueda no existe: alta tradicional con los datos del proveedor.
+    productId=null;missing=true;fellBack=true;product=await supplierBookMetadata(row,{fetcher});
+   }
+  }
   // The detail endpoint can omit GTIN even when the exact-identifier search returns it.
   const detailIsbn=itemIsbns(product),searchIsbn=found.results[0]?itemIsbns(found.results[0]):null;
   if(product.domain_id!=='MLU-BOOKS'||(detailIsbn&&detailIsbn!==row.isbn)||(searchIsbn&&searchIsbn!==row.isbn)||(!detailIsbn&&!searchIsbn))throw new PublicationError('product_identity_mismatch',422);
-  const strategy=product.settings?.listing_strategy??found.results[0]?.settings?.listing_strategy??null;
+  const strategy=fellBack?null:product.settings?.listing_strategy??found.results[0]?.settings?.listing_strategy??null;
   const catalogRequired=strategy==='catalog_required';
   let catalogProductId=null;
   if(catalogRequired){
@@ -380,7 +391,9 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
   if(found.results.length===0)return {price:null,at:now(),days:null};
   if(found.results.length!==1||(typeof found.paging?.total==='number'&&found.paging.total!==1))throw new PublicationError('ambiguous_product_metadata',422);
   const productId=found.results[0].id;if(!/^MLU\d+$/.test(productId??''))throw new PublicationError('product_id_invalid',422);
-  const product=await call(env,`/products/${productId}`);
+  let product;
+  try{product=await call(env,`/products/${productId}`);}
+  catch(error){if(productNotFoundAsMissing&&error instanceof MercadoLibreError&&error.status===404)return {price:null,at:now(),days:null};throw error;}
   const valid=x=>typeof x==='number'&&Number.isFinite(x)&&x>0;
   const win=product.buy_box_winner;
   if(win&&String(win.seller_id??'')===sellerId)return {price:null,at:now(),days:null};

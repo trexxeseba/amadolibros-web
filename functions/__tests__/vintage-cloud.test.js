@@ -289,3 +289,23 @@ test('a run that crosses midnight counts its altas with the campaign total, not 
  }});
  assert.equal(r.publicacion.altas_de_esta_corrida,372);
 });
+
+test('reviews with a requeued code go back to pending; other reviews and listings are left alone',async t=>{
+ const {run}=await import('../../scripts/vintage-local/engine.mjs');
+ const {openDatabase}=await import('../../scripts/vintage-local/db.mjs');
+ const rows=[1,2,3].map(i=>({isbn:isbnN(300+i),title:'L'+i,listArs:40000,weightKg:.5,stock:'2'}));
+ const f=await freshEngine(t,{rows});
+ const stop=Object.assign(new Error('stop_here'),{code:'stop_here'});let calls=0;
+ const api={async account(){if(++calls===1)return {id:2341378249};throw stop;}};
+ // Primera corrida: crea la base. Después se marcan las revisiones a mano.
+ await assert.rejects(()=>run({excel:'x',connection:f.connection,directory:f.dir,readWorkbook:f.readWorkbook,classifiers:1,classifyOnly:true,maxMs:1,apiFactory:()=>({account:async()=>{throw stop;}}),brokerFactory:()=>async()=>({})}),/stop_here/);
+ const db=openDatabase(path.join(f.dir,'publisher.sqlite'));
+ await db.prepare("UPDATE ml_vintage_pub_jobs SET state='review',error_code='ml_http_404' WHERE isbn=?").bind(isbnN(301)).run();
+ await db.prepare("UPDATE ml_vintage_pub_jobs SET state='review',error_code='ml_http_403' WHERE isbn=?").bind(isbnN(302)).run();
+ db.close();
+ try{await run({excel:'x',connection:f.connection,directory:f.dir,readWorkbook:f.readWorkbook,requeueReviewCodes:['ml_http_404'],apiFactory:()=>api,brokerFactory:()=>async()=>{throw stop;},maxMs:60000});}catch{}
+ const db2=openDatabase(path.join(f.dir,'publisher.sqlite'));t.after(()=>db2.close());
+ const state=async n=>(await db2.prepare('SELECT state,error_code FROM ml_vintage_pub_jobs WHERE isbn=?').bind(isbnN(n)).first());
+ assert.deepEqual({...await state(301)},{state:'pending',error_code:null});
+ assert.deepEqual({...await state(302)},{state:'review',error_code:'ml_http_403'});
+});
