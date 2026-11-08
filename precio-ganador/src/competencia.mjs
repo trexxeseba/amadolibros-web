@@ -55,7 +55,8 @@ async function catalogo(ml, item, { necesitaTecho, sellerId, soloContraDemanda =
   const ganador = num(p?.price_to_win);
   const compite = estado === 'competing' && ganador !== null && ganador < Number(item.price);
   const r = { tipo: 'catalogo', estado, ganador, compite, marcada: compite, ganadorItem: p?.winner?.item_id ?? null, motivos: Array.isArray(p?.reason) ? p.reason : [],
-    oportunidades: (Array.isArray(p?.boosts) ? p.boosts : []).filter(b => b?.status === 'opportunity').map(b => String(b.id)) };
+    oportunidades: (Array.isArray(p?.boosts) ? p.boosts : []).filter(b => b?.status === 'opportunity').map(b => String(b.id)),
+    boosts: Object.fromEntries((Array.isArray(p?.boosts) ? p.boosts : []).filter(b => b?.id).map(b => [String(b.id), String(b.status ?? '')])) };
   // Sólo contra ganadores a demanda: si el que gana entrega de inmediato, bajar el
   // precio no sirve (ML lo prefiere igual) y se regalaría margen. Sin dato, no se toca.
   if (soloContraDemanda && compite) {
@@ -133,3 +134,63 @@ export async function promocionActiva(ml, itemId) {
 
 const num = v => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v))) ? null : Number(v);
 const codigo = e => (e instanceof MlError ? e.code : (e?.code ?? 'error'));
+
+// Por qué pierde una publicación (sólo lectura, para el informe; no cambia ninguna decisión).
+// Seba, 08/11/2026: a veces no perdemos por precio sino por el envío gratis o por la
+// reputación y el plazo del ganador; bajar el precio ahí regala margen.
+//   causa 'precio'        hay otro vendedor más barato que nosotros en la ficha
+//   causa 'envio_gratis'  nadie es más barato y ML marca el envío gratis como oportunidad
+//   causa 'reputacion_entrega'  nadie es más barato y el ganador es MercadoLíder o ML
+//                         marca Full / envío en el día como oportunidad
+//   causa 'otro'          nadie es más barato y no hay una oportunidad marcada
+export async function porQuePierde(ml, item, comp, { sellerId, cacheVendedores = new Map() } = {}) {
+  if (!item?.catalog_product_id) return { causa: 'sin_ficha' };
+  let ofertas;
+  try { ofertas = await ofertasCatalogo(ml, item.catalog_product_id); }
+  catch (e) { if (e?.status === 429) throw e; return { causa: 'error', error: codigo(e) }; }
+  const otros = ofertas.filter(o => String(o.seller_id) !== String(sellerId) && o.item_id !== item.id && num(o.price) !== null)
+    .map(o => ({ item_id: o.item_id, price: Number(o.price), seller_id: String(o.seller_id) })).sort((a, b) => a.price - b.price);
+  const masBarato = otros[0] ?? null;
+  const ganador = otros.find(o => o.item_id === comp?.ganadorItem) ?? null;
+  let nivelGanador = null;
+  if (ganador) {
+    if (!cacheVendedores.has(ganador.seller_id)) {
+      let nivel = null;
+      try { const u = await ml.get(`/users/${ganador.seller_id}`); nivel = u?.seller_reputation?.power_seller_status ?? 'ninguno'; } catch (e) { if (e?.status === 429) throw e; }
+      cacheVendedores.set(ganador.seller_id, nivel);
+    }
+    nivelGanador = cacheVendedores.get(ganador.seller_id);
+  }
+  const boosts = comp?.boosts ?? {};
+  // Nuestro nivel de MercadoLíder (una lectura por corrida).
+  if (!cacheVendedores.has('yo')) {
+    let nivel = null;
+    try { const u = await ml.get(`/users/${sellerId}`); nivel = u?.seller_reputation?.power_seller_status ?? 'ninguno'; } catch (e) { if (e?.status === 429) throw e; }
+    cacheVendedores.set('yo', nivel);
+  }
+  const falta = Object.entries(boosts).filter(([, st]) => st === 'opportunity').map(([id]) => id);
+  const precio = Number(item.price);
+  const causa = masBarato && masBarato.price < precio ? 'precio'
+    : boosts.free_shipping === 'opportunity' ? 'envio_gratis'
+    : (nivelGanador && nivelGanador !== 'ninguno') || falta.some(b => b === 'fulfillment' || b === 'same_day_shipping') ? 'reputacion_entrega'
+    : 'otro';
+  // Envío gratis: lo que nos costaría por venta (sólo lectura). Si ML no lo informa, null.
+  let costoEnvioGratis = null, palanca = null;
+  if (causa === 'envio_gratis') {
+    try {
+      const o = await ml.get(`/users/${sellerId}/shipping_options/free?item_id=${item.id}`);
+      const c = num(o?.coverage?.all_country?.list_cost ?? o?.coverage?.all_country?.cost);
+      costoEnvioGratis = c;
+    } catch (e) { if (e?.status === 429) throw e; }
+    // Criterio de Seba (08/11/2026): "siempre que sirva, activarlo". Si perdemos por el
+    // envío gratis, la palanca es el envío gratis, cueste lo que cueste; el costo se informa.
+    palanca = 'envio_gratis';
+  } else if (causa === 'precio' || causa === 'reputacion_entrega') palanca = 'bajar';
+  return {
+    causa, palanca, costo_envio_gratis: costoEnvioGratis, nuestro_nivel: cacheVendedores.get('yo') ?? null, competidores: otros.length,
+    mas_barato: masBarato?.price ?? null, mas_barato_item: masBarato?.item_id ?? null,
+    ganador_precio: ganador?.price ?? null, ganador_nivel: nivelGanador,
+    envio_gratis_propio: boosts.free_shipping === 'boosted' ? true : boosts.free_shipping === 'opportunity' ? false : null,
+    le_falta: falta,
+  };
+}
