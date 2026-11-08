@@ -1,0 +1,61 @@
+name: Vintage pausar riesgosas
+
+# Pausa (no elimina) las publicaciones de Amado Vintage (2341378249) de la lista aprobada por Seba
+# el 08/11/2026 (scripts/vintage-cloud/pausar-2026-11-09.txt), por riesgo de propiedad intelectual.
+# Guarda un respaldo completo de cada una antes de pausarla y al final vuelve a leer el estado:
+# la corrida falla si alguna sigue activa. Sin "real" sólo lee e informa. Nunca toca Amado Libros.
+on:
+  workflow_dispatch:
+    inputs:
+      real:
+        description: 'Pausar de verdad (sin tildar: sólo informa)'
+        type: boolean
+        default: false
+      confirmar:
+        description: 'Para pausar de verdad escribí PAUSAR'
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vintage-pausar
+  cancel-in-progress: false
+
+jobs:
+  pausar:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests
+        run: node --experimental-sqlite --test functions/__tests__/vintage-pausar.test.js
+      - name: Pausar
+        env:
+          REAL: ${{ inputs.real }}
+          CONFIRMAR: ${{ inputs.confirmar }}
+        shell: bash
+        run: |
+          ARGS=(--lista scripts/vintage-cloud/pausar-2026-11-09.txt)
+          if [ "$REAL" = "true" ]; then
+            if [ "$CONFIRMAR" != "PAUSAR" ]; then echo "Para pausar de verdad hay que escribir PAUSAR"; exit 1; fi
+            ARGS+=(--real)
+          fi
+          node scripts/vintage-cloud/pausar.mjs "${ARGS[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Respaldo
+        if: always() && inputs.real
+        uses: actions/upload-artifact@v4
+        with:
+          name: vintage-respaldo-pausa
+          path: artifacts/vintage/respaldo-pausa.jsonl
+          retention-days: 90
