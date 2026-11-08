@@ -41,3 +41,17 @@ test('with productNotFoundAsMissing it becomes a traditional listing with verifi
  const competitor=await api.competitorPrice({},isbn);
  assert.equal(competitor.price,null);assert.equal(competitor.days,null);
 });
+
+test('with the option a sheet nobody sells (items 404) means no competitor, so the book is not sent to review',async()=>{
+ const seen=[];
+ const fetcher=async url=>{const p=new URL(String(url)).pathname;seen.push(p);
+  if(p==='/products/search')return Response.json({paging:{total:1},results:[{id:'MLU777',attributes:[{id:'GTIN',value_name:isbn}]}]});
+  if(p==='/products/MLU777')return Response.json({id:'MLU777',domain_id:'MLU-BOOKS',buy_box_winner:null});
+  if(p==='/products/MLU777/items')return Response.json({message:'No winners found',status:404},{status:404});
+  throw new Error('unexpected '+p);};
+ const off=createPublicationMeli({sellerId:'2341378249',fetcher,tokenProvider:async()=>'tok',tokenInvalidator:async()=>{}});
+ await assert.rejects(()=>off.competitorPrice({},isbn),e=>e.status===404);
+ const on=createPublicationMeli({sellerId:'2341378249',fetcher,tokenProvider:async()=>'tok',tokenInvalidator:async()=>{},productNotFoundAsMissing:true});
+ const c=await on.competitorPrice({},isbn);
+ assert.equal(c.price,null);assert.equal(c.days,null);
+});
