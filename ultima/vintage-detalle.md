@@ -2,7 +2,7 @@
 
 ```json
 {
-  "fecha": "2026-11-08T14:03:51.546Z",
+  "fecha": "2026-11-08T16:03:52.912Z",
   "modo": "real",
   "activas": 0,
   "revisadas": 6797,
@@ -3413,7 +3413,7 @@
 | [MLU1531151342](https://articulo.mercadolibre.com.uy/MLU-1531151342-coser-y-contar-angels-navarro-_JM) Coser Y Contar - Angels Navarro |   | 1831 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531151138](https://articulo.mercadolibre.com.uy/MLU-1531151138-cosas-que-me-gustan-anthony-browne-libro-tapa-dura-fce-_JM) Cosas Que Me Gustan - Anthony Browne - Libro Tapa  |   | 1752 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531150718](https://articulo.mercadolibre.com.uy/MLU-1531150718-las-cosas-del-cielo-de-horacio-tignanelli-editorial-ediciones-cuentahilos-tapa-blanda-edicion-1-en-espanol-2022-_JM) Las Cosas Del Cielo, De Horacio Tignanelli. Editor |   | 1724 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU1531150642](https://articulo.mercadolibre.com.uy/MLU-1531150642-las-cosas-de-la-familia-claroscuro-_JM) Las Cosas De La Familia Claroscuro |   | 1488 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU1531150642](https://articulo.mercadolibre.com.uy/MLU-1531150642-libro-las-cosas-de-la-familia-claroscuro-de-doumerc-beatriz-editorial-colihue-_JM) Libro Las Cosas De La Familia Claroscuro, De Doume |   | 1488 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531150630](https://articulo.mercadolibre.com.uy/MLU-1531150630-cosas-de-hombres-de-gabriela-polit-dueas-de-gabriela-polit-dueas-editorial-beatriz-viterbo-en-espanol-_JM) Cosas De Hombres De Gabriela Polit Due¤as, De Gabr |   | 1444 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531150518](https://articulo.mercadolibre.com.uy/MLU-1531150518-la-cosa-john-w-campbell-_JM) La Cosa - John W. Campbell |   | 1564 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531150484](https://articulo.mercadolibre.com.uy/MLU-1531150484-la-cosa-y-la-cruz-de-rozitchner-leon-editorial-losada-tapa-blanda-en-espanol-2001-_JM) La Cosa Y La Cruz, De Rozitchner, Leon. Editorial  |   | 1744 |  |  | Inactiva | a demanda (18 d) |  |
@@ -4282,7 +4282,7 @@
 | [MLU1531960898](https://articulo.mercadolibre.com.uy/MLU-1531960898-dinosaurios-pop-up-con-relieve-pluton-kids-2019-_JM) Dinosaurios ¡pop Up! Con Relieve Plutón Kids 2019 |   | 1362 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531960892](https://articulo.mercadolibre.com.uy/MLU-1531960892-dinosaurios-pinto-con-acuarelas-de-vol-1-editorial-el-gato-de-hojalata-tapa-blanda-en-espanol-_JM) Dinosaurios - Pinto Con Acuarelas, De ., Vol. 1. E |   | 1225 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531960870](https://articulo.mercadolibre.com.uy/MLU-1531960870-libro-diversion-sorpresa-dinosaurios-de-varios-editorial-el-gato-de-hojalata-tapa-blanda-2023-_JM) Libro Diversion Sorpresa - Dinosaurios, De Varios. |   | 1811 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU1531960854](https://articulo.mercadolibre.com.uy/MLU-1531960854-libro-dinosaurios-a-jugar-con-agua-magica-de-el-gato-de-hojalata-editorial-guadal-tapa-blanda-2025-_JM) Libro Dinosaurios A Jugar Con Agua Magica, De El G |   | 1263 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU1531960854](https://articulo.mercadolibre.com.uy/MLU-1531960854-libro-dinosaurios-a-jugar-con-agua-magica-de-el-gato-de-hojalata-editorial-guadal-_JM) Libro Dinosaurios A Jugar Con Agua Magica, De El G |   | 1263 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531960848](https://articulo.mercadolibre.com.uy/MLU-1531960848-dinosaurio-pisoteador-el-sonidos-payne-jan-manolito-book-_JM) Dinosaurio Pisoteador, El - Sonidos-payne, Jan-man |   | 1437 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531960828](https://articulo.mercadolibre.com.uy/MLU-1531960828-dinosaur-who-lost-his-roar-usborne-first-reading-le-three-de-punter-russell-editorial-usborne-publishing-tapa-blanda-en-ingles-_JM) Dinosaur Who Lost His Roar - Usborne First Reading |   | 1438 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531960824](https://articulo.mercadolibre.com.uy/MLU-1531960824-fieltromania-dino-diversion-pd-con-20-figuras-de-fieltro-de-silver-dolphin-editorial-silver-dolphin-infantil-tapa-dura-en-espanol-1-_JM) Fieltromanía. Dino-diversión / Pd. (con 20 Figuras |   | 1867 |  |  | Inactiva | a demanda (18 d) |  |
@@ -4343,7 +4343,7 @@
 | [MLU1531871434](https://articulo.mercadolibre.com.uy/MLU-1531871434-dino-extraviado-el-_JM) Dino Extraviado, El |   | 2011 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531871430](https://articulo.mercadolibre.com.uy/MLU-1531871430-libro-dinero-codicia-y-dios-jay-richards-de-richards-jay-editorial-union-tapa-blanda-en-espanol-2016-_JM) Libro Dinero, Codicia Y Dios - Jay Richards, De Ri |   | 1551 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531871412](https://articulo.mercadolibre.com.uy/MLU-1531871412-libro-dinero-en-juego-gonzalo-pereyra-saez-planeta-_JM) Libro Dinero En Juego - Gonzalo Pereyra Saez - Pla |   | 1564 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU1531871402](https://articulo.mercadolibre.com.uy/MLU-1531871402-la-dinamica-del-inconsciente-howards-sasportas-liz-greene-_JM) La Dinamica Del Inconsciente - Howards Sasportas;  |   | 1633 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU1531871402](https://articulo.mercadolibre.com.uy/MLU-1531871402-libro-la-dinamica-del-inconsciente-de-howards-sasportas-liz-greene-editorial-kepler-_JM) Libro La Dinamica Del Inconsciente, De Howards Sas |   | 1633 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531871398](https://articulo.mercadolibre.com.uy/MLU-1531871398-dimensiones-de-la-radionica-de-tansley-david-editorial-carcamo-tapa-blanda-en-espanol-1900-_JM) Dimensiones De La Radionica, De Tansley David. Edi |   | 1989 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531871334](https://articulo.mercadolibre.com.uy/MLU-1531871334-a-different-sort-of-normal-balfe-de-balfe-abigail-editorial-penguin-tapa-blanda-en-ingles-internacional-2021-_JM) A Different Sort Of Normal - Balfe, De Balfe, Abig |   | 1592 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531871328](https://articulo.mercadolibre.com.uy/MLU-1531871328-diferencias-petrovic-goran-de-petrovic-goran-editorial-sexto-piso-en-espanol-_JM) Diferencias - Petrovic, Goran, De Petrovic, Goran. |   | 1488 |  |  | Inactiva | a demanda (18 d) |  |
