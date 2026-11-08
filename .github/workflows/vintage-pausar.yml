@@ -14,6 +14,10 @@ on:
       confirmar:
         description: 'Para pausar de verdad escribí PAUSAR'
         required: false
+      barrido:
+        description: 'Antes de pausar, revisar todas las activas de la cuenta y listar las riesgosas que no están en la lista (p. ej. gemelas de catálogo). Tarda ~15 min.'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -47,6 +51,7 @@ jobs:
         shell: bash
         run: |
           ARGS=(--lista scripts/vintage-cloud/pausar-2026-11-09.txt)
+          if [ "${{ inputs.barrido }}" = "true" ]; then ARGS+=(--barrido); fi
           if [ "$REAL" = "true" ]; then
             if [ "$CONFIRMAR" != "PAUSAR" ]; then echo "Para pausar de verdad hay que escribir PAUSAR"; exit 1; fi
             ARGS+=(--real)

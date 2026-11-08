@@ -13,6 +13,7 @@ import fs from 'node:fs/promises';
 import {CUENTAS} from '../../precio-ganador/src/config.mjs';
 import {fuenteTokenD1} from '../../precio-ganador/src/token.mjs';
 import {crearCliente} from '../../precio-ganador/src/ml.mjs';
+import {ipRisk} from '../../worker-sync/ip-risk.js';
 
 export const SELLER='2341378249';
 
@@ -40,6 +41,30 @@ export async function processOne(ml,id,{real,respaldo=async()=>{}}){
  }catch(e){return {...base,resultado:'error',error:e.code??String(e),status:e.status??null};}
 }
 
+// Barrido previo (sólo lectura): todas las publicaciones ACTIVAS de la cuenta contra el filtro de
+// propiedad intelectual. Devuelve las riesgosas que están activas y NO están en la lista aprobada
+// (por ejemplo, la publicación de catálogo gemela de una tradicional que sí está en la lista).
+export async function sweepActive(ml,approved,{log=console.log}={}){
+ const all=[];let scroll=null;
+ for(let page=0;page<400;page++){
+  const q=new URLSearchParams({search_type:'scan',limit:'100',status:'active'});if(scroll)q.set('scroll_id',scroll);
+  let r;try{r=await ml.get(`/users/${SELLER}/items/search?${q}`);}catch(e){log(JSON.stringify({barrido:'error_busqueda',error:e.code??String(e)}));break;}
+  if(!Array.isArray(r?.results)||!r.results.length)break;all.push(...r.results);scroll=r.scroll_id??null;if(!scroll)break;
+ }
+ const fuera=[];
+ for(let i=0;i<all.length;i+=20){
+  const group=all.slice(i,i+20);
+  let r;try{r=await ml.get(`/items?ids=${group.join(',')}&attributes=id,title,status,catalog_listing,catalog_product_id,seller_custom_field,attributes`);}catch(e){log(JSON.stringify({barrido:'error_detalle',error:e.code??String(e)}));continue;}
+  for(const e of r??[]){
+   const it=e?.body;if(e?.code!==200||!it||it.status!=='active')continue;
+   const publisher=(it.attributes??[]).find(a=>['BOOK_PUBLISHER','PUBLISHER'].includes(a?.id))?.value_name??null;
+   const risk=ipRisk(it.title,publisher);
+   if(risk&&!approved.has(it.id)){fuera.push({id:it.id,title:it.title,grupo:risk,catalogo:it.catalog_listing===true,ficha:it.catalog_product_id??null,isbn:isbnOf(it)});log('FUERA_DE_LISTA\t'+[it.id,risk,it.catalog_listing===true?'catalogo':'tradicional',it.catalog_product_id??'',isbnOf(it),String(it.title??'').replace(/[\t\n]/g,' ')].join('\t'));}
+  }
+ }
+ return {activas_revisadas:all.length,riesgosas_fuera_de_lista:fuera};
+}
+
 export async function run({ids,ml,real,respaldo,log=console.log,concurrency=2}){
  const out=[];let next=0;
  await Promise.all(Array.from({length:concurrency},async()=>{for(;;){const id=ids[next++];if(!id)return;const r=await processOne(ml,id,{real,respaldo});out.push(r);log('PAUSA\t'+[r.id,r.resultado,r.isbn??'',r.a_demanda?'a_demanda':'stock',r.catalogo?'catalogo':'',r.stock??'',r.precio??'',r.estado_antes??'',String(r.titulo??'').replace(/[\t\n]/g,' '),r.error??''].join('\t'));}}));
@@ -56,8 +81,11 @@ async function main(){
  if(real){await fs.mkdir(archivo.replace(/[^/]*$/,'')||'.',{recursive:true});await fs.writeFile(archivo,'');}
  const respaldo=async item=>{await fs.appendFile(archivo,JSON.stringify(item)+'\n');};
  const ml=crearCliente(fuenteTokenD1(CUENTAS.vintage),{concurrencia:2});
+ // Barrido de catálogo antes de pausar: riesgosas activas que no están en la lista aprobada.
+ let barrido=null;
+ if(args.includes('--barrido')){barrido=await sweepActive(ml,new Set(ids));console.log('=== BARRIDO ===');console.log(JSON.stringify({...barrido,riesgosas_fuera_de_lista:barrido.riesgosas_fuera_de_lista.slice(0,200)}));}
  const summary=await run({ids,ml,real,respaldo});
- console.log('=== PAUSA ===');console.log(JSON.stringify(summary));
+ console.log('=== PAUSA ===');console.log(JSON.stringify({...summary,fuera_de_lista:barrido?barrido.riesgosas_fuera_de_lista.length:null}));
  if(real&&summary.sin_resolver.length)process.exitCode=1;
 }
 if(process.argv[1]?.endsWith('pausar.mjs'))await main();

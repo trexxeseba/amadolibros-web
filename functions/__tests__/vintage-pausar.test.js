@@ -45,3 +45,20 @@ test('la sincronización de stock de Vintage no puede reactivar una publicación
  // Acepta el conjunto del archivo solo o ampliado con las bloqueadas en D1 (pausadasIpSet(blockedIds)).
  assert.match(src,/desired_status==='active'&&\(await pausadasIpSet\([^)]*\)\)\.has\(String\(row\.item_id\)\)/);
 });
+
+test('el barrido previo encuentra riesgosas activas fuera de la lista (p. ej. la gemela de catálogo) y no cuenta las de la lista ni las inactivas',async()=>{
+ const {sweepActive}=await import('../../scripts/vintage-cloud/pausar.mjs');
+ const items={
+  MLU1:{id:'MLU1',status:'active',title:'Dieci A1 - Libro + Ebook',catalog_listing:true,catalog_product_id:'MLU555',seller_custom_field:'AMADO-AR-9788861826885',attributes:[]},
+  MLU2:{id:'MLU2',status:'active',title:'Dieci A1 - Libro + Ebook',catalog_listing:false,seller_custom_field:'AMADO-AR-9788861826885',attributes:[]},
+  MLU3:{id:'MLU3',status:'active',title:'Rayuela',catalog_listing:true,seller_custom_field:'AMADO-AR-9789500000000',attributes:[{id:'BOOK_PUBLISHER',value_name:'Sudamericana'}]},
+  MLU4:{id:'MLU4',status:'paused',title:'Libro Digital X',catalog_listing:false,seller_custom_field:'',attributes:[]},
+  MLU5:{id:'MLU5',status:'active',title:'Arriviamo 3',catalog_listing:true,seller_custom_field:'AMADO-AR-9788853600000',attributes:[{id:'BOOK_PUBLISHER',value_name:'Eli Edizioni'}]},
+ };
+ const ml={get:async p=>{if(p.includes('/items/search'))return {results:Object.keys(items)};const ids=new URL('https://x'+p).searchParams.get('ids').split(',');return ids.map(id=>({code:200,body:items[id]}));}};
+ const lines=[];
+ const r=await sweepActive(ml,new Set(['MLU2']),{log:l=>lines.push(l)});
+ assert.equal(r.activas_revisadas,5);
+ assert.deepEqual(r.riesgosas_fuera_de_lista.map(x=>x.id).sort(),['MLU1','MLU5']);
+ assert.ok(lines.some(l=>l.startsWith('FUERA_DE_LISTA\tMLU1\tebook\tcatalogo\tMLU555')));
+});
