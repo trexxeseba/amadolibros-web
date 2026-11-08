@@ -23,8 +23,9 @@ import {syncStock} from '../vintage-local/stock-sync.mjs';
 import {openDatabase} from '../vintage-local/db.mjs';
 import {campaignNumbers} from './numbers.mjs';
 import {d1Client,loadStockState,saveStockState,STOCK_COLUMNS} from './d1.mjs';
+import {watch,mlReaders,brakeOn,releaseBrake} from './vigia-pi.mjs';
 
-export const ACTIONS=['keepalive','numeros','prueba','clasificar','publicar'];
+export const ACTIONS=['keepalive','numeros','prueba','clasificar','publicar','liberar_freno'];
 // Techo duro del día: el mismo VINTAGE_DAILY_CAP del servidor (functions/_shared/meli-vintage-bulk.js).
 export const HARD_MAX_PER_RUN=1000,HARD_MAX_PER_DAY=10000;
 // Ajustes del motor en la nube: lecturas cortadas a los 15 s (crear sigue en 60 s), estado del
@@ -85,6 +86,19 @@ async function cloudRunInner({action,directory,campaign,overrides={},env=process
  const post=(deps.renewClient??makeRenewClient)(secret);
  // El token se mantiene vivo siempre, aun con el publicador apagado: Precio Ganador lo necesita.
  state.fase='keepalive';report.token=await post('keepalive');
+ // Vigía de propiedad intelectual: en toda corrida (aun apagado). Una infracción nueva pone el freno.
+ state.fase='vigia_pi';
+ const dq=query??d1Client();
+ if(action==='liberar_freno'){await releaseBrake(dq);return {...report,estado:'freno_liberado'};}
+ let vigiaOk=true;
+ try{report.vigia_pi=await (deps.vigia??(()=>watch({query:dq,...mlReaders(),runUrl:env.RUN_URL??null})))();}
+ catch(error){vigiaOk=false;report.vigia_pi={error:[error.code,error.message].find(x=>/^[a-z0-9_]{1,100}$/.test(x??''))??'vigia_fallo'};}
+ if(action==='publicar'){
+  // Freno puesto, o no se pudo mirar: no se publica (falla cerrada).
+  const brake=await brakeOn(dq);
+  if(brake)return {...report,estado:'frenado_por_infraccion_pi',freno:brake};
+  if(!vigiaOk)return {...report,estado:'vigia_sin_datos'};
+ }
  if(action==='keepalive')return {...report,estado:'token_vigente'};
  if(settings.modo==='apagado')return {...report,estado:'apagado'};
  const sbs=env.SBS_EMAIL&&env.SBS_PASSWORD?{email:env.SBS_EMAIL,password:env.SBS_PASSWORD}:null;
