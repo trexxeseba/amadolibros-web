@@ -98,6 +98,8 @@ async function main(){
   }
   auditoria={revisadas:all.length,riesgosas:risky.length,activas:risky.filter(r=>r.status==='active').length,por_grupo:count(risky,r=>r.grupo),por_estado:count(risky,r=>r.status),de_la_campaña:risky.filter(r=>r.campaña).length,lista:risky};
   console.log('=== AUDITORIA ===');console.log(JSON.stringify({...auditoria,lista:risky.slice(0,150)}));
+  // Lista completa, una por línea, para armar la planilla desde el registro (el artefacto no siempre se puede bajar).
+  for(const r of risky)console.log('AUD\t'+[r.id,r.grupo,r.campaña?'campaña':'otra_linea',r.catalogo?'catalogo':'tradicional',r.status,String(r.title??'').replace(/[\t\n]/g,' ')].join('\t'));
  }
  await fs.mkdir(out,{recursive:true});
  await fs.writeFile(path.join(out,'moderadas.json'),JSON.stringify({cuentas,resumen,infracciones:infractions,publicaciones:rows,auditoria},null,2));
