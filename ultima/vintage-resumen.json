@@ -2,38 +2,38 @@
   "cuenta": "vintage",
   "umbral": 400,
   "ejemplos_error": [],
-  "duracion_s": 1942,
+  "duracion_s": 2832,
   "contadores": {
-    "fecha": "2026-11-08T00:54:14.197Z",
+    "fecha": "2026-11-08T02:00:18.982Z",
     "modo": "real",
     "activas": 29140,
     "revisadas": 29156,
-    "compiten": 6845,
-    "marcadas": 6046,
+    "compiten": 6888,
+    "marcadas": 6080,
     "precio_dinamico": 0,
-    "ganador_inmediato": 794,
-    "ganador_sin_dato": 4,
-    "bajadas": 52,
-    "ajustadas": 197,
-    "subidas": 142,
-    "restauradas": 0,
-    "sin_tocar_umbral": 5234,
+    "ganador_inmediato": 793,
+    "ganador_sin_dato": 14,
+    "bajadas": 51,
+    "ajustadas": 225,
+    "subidas": 250,
+    "restauradas": 1,
+    "sin_tocar_umbral": 5225,
     "sin_tocar_pct": 0,
-    "verificadas": 391,
+    "verificadas": 527,
     "no_verificadas": 0,
-    "promo": 404,
+    "promo": 406,
     "bajo_piso": 57,
     "sin_costo": 0,
     "otras_salteadas": 0,
     "editadas_a_mano": 0,
     "errores": 0,
-    "cambios_stock": 52
+    "cambios_stock": 51
   },
   "catalogo": {
     "estados": {
-      "sharing_first_place": 1484,
-      "winning": 11442,
-      "competing": 6845,
+      "sharing_first_place": 1509,
+      "winning": 11373,
+      "competing": 6889,
       "listed": 8767,
       "not_listed": 602
     },
@@ -44,16 +44,16 @@
       "free_shipping": 4
     },
     "motivos": {
-      "sharing_first_place:temporarily_competing_manufacturing_time": 1484,
-      "winning:temporarily_competing_manufacturing_time": 11434,
-      "competing:temporarily_competing_manufacturing_time": 6839,
+      "sharing_first_place:temporarily_competing_manufacturing_time": 1509,
+      "winning:temporarily_competing_manufacturing_time": 11365,
+      "competing:temporarily_competing_manufacturing_time": 6883,
       "listed:manufacturing_time": 8767,
       "not_listed:item_not_opted_in": 602
     },
     "por_tipo": {
-      "catalogo:sharing_first_place:a_demanda": 1484,
-      "catalogo:winning:a_demanda": 11434,
-      "catalogo:competing:a_demanda": 6839,
+      "catalogo:sharing_first_place:a_demanda": 1509,
+      "catalogo:winning:a_demanda": 11365,
+      "catalogo:competing:a_demanda": 6883,
       "catalogo:listed:a_demanda": 8767,
       "tradicional:not_listed:con_stock": 197,
       "catalogo:winning:con_stock": 8,
@@ -63,11 +63,11 @@
     "errores_por_tipo": {}
   },
   "errores": {},
-  "llamadas": 51453,
+  "llamadas": 51798,
   "por_status": {
-    "200": 51420,
+    "200": 51765,
     "404": 12,
-    "424": 16,
-    "500": 5
+    "424": 20,
+    "500": 1
   }
 }
