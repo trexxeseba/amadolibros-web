@@ -2,7 +2,7 @@
 
 ```json
 {
-  "fecha": "2026-11-08T20:07:11.861Z",
+  "fecha": "2026-11-08T21:41:10.616Z",
   "modo": "real",
   "activas": 0,
   "revisadas": 6797,
@@ -3178,7 +3178,7 @@
 | [MLU1531179710](https://articulo.mercadolibre.com.uy/MLU-1531179710-cuando-sea-grande-melanie-joyce-lizzie-walkley-_JM) Cuando Sea Grande - Melanie Joyce / Lizzie Walkley |   | 1472 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531179526](https://articulo.mercadolibre.com.uy/MLU-1531179526-cuando-los-economistas-alcanzaron-el-poder-mariana-heredia-_JM) Cuando Los Economistas Alcanzaron El Poder - Maria |   | 1831 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531179522](https://articulo.mercadolibre.com.uy/MLU-1531179522-cuando-lo-pierdes-todo-ava-dellaira-de-dellaira-ava-editorial-plata-argentina-tapa-blanda-en-espanol-2024-_JM) Cuando Lo Pierdes Todo - Ava Dellaira, De Dellaira |   | 2120 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU1531179516](https://articulo.mercadolibre.com.uy/MLU-1531179516-cuando-llegamos-pequeletra-_JM) Cuándo Llegamos? - Pequeletra |   | 1465 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU1531179516](https://articulo.mercadolibre.com.uy/MLU-1531179516-libro-cuando-llegamos-pequeletra-de-tosi-carolina-editorial-edelvives-_JM) Libro Cuándo Llegamos? - Pequeletra, De Tosi, Caro |   | 1465 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531179416](https://articulo.mercadolibre.com.uy/MLU-1531179416-libro-cuando-era-divertido-de-moreno-eloy-editorial-ediciones-b-tapa-blanda-2023-_JM) Libro Cuando Era Divertido, De Moreno, Eloy. Edito |   | 2366 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531179376](https://articulo.mercadolibre.com.uy/MLU-1531179376-cuando-dios-era-un-conejo-de-sarah-winman-editorial-letras-de-plata-tapa-blanda-edicion-1-en-espanol-_JM) Cuando Dios Era Un Conejo, De Sarah Winman. Editor |   | 1694 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531179354](https://articulo.mercadolibre.com.uy/MLU-1531179354-cuando-bailo-con-mi-abuela-de-liliana-cinetto-vol-1-editorial-riderchail-tapa-blanda-en-espanol-2024-_JM) Cuando Bailo Con Mi Abuela, De Liliana Cinetto., V |   | 1453 |  |  | Inactiva | a demanda (18 d) |  |
@@ -4082,7 +4082,7 @@
 | [MLU703601973](https://articulo.mercadolibre.com.uy/MLU-703601973-cuentos-como-pulgas-de-oses-beatriz-editorial-kalandraka-andalucia-en-espanol-_JM) Cuentos Como Pulgas, De Osés, Beatriz. Editorial K |   | 2049 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU703601883](https://articulo.mercadolibre.com.uy/MLU-703601883-cuentos-bajo-la-lupa-literatubers-de-chesterton-gilbert-keith-editorial-letra-impresa-grupo-editor-tapa-blanda-en-espanol-2025-_JM) Cuentos Bajo La Lupa - Literatubers, De Chesterton |   | 1469 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU703601871](https://articulo.mercadolibre.com.uy/MLU-703601871-cuentos-argentinos-de-antologia-editorial-siruela-en-espanol-_JM) Cuentos Argentinos, De Antología. Editorial Siruel |   | 2645 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU703601821](https://articulo.mercadolibre.com.uy/MLU-703601821-cuento-con-piojo-y-picaflor-g-roldan-bambali-ediciones-_JM) Cuento Con Piojo Y Picaflor - G. Roldán - Bambalí  |   | 1488 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU703601821](https://articulo.mercadolibre.com.uy/MLU-703601821-libro-cuento-con-piojo-y-picaflor-de-gustavo-roldan-editorial-bambali-ediciones-_JM) Libro Cuento Con Piojo Y Picaflor, De Gustavo Rold |   | 1488 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU703601811](https://articulo.mercadolibre.com.uy/MLU-703601811-cuento-del-retintin-devetach-laura-_JM) Cuento Del Retintin - Devetach, Laura |   | 1567 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU703601679](https://articulo.mercadolibre.com.uy/MLU-703601679-cuento-de-navidad-de-susy-zanella-editorial-manolito-books-tapa-blanda-en-espanol-2023-_JM) Cuento De Navidad, De Susy Zanella. Editorial Mano |   | 1773 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU703601625](https://articulo.mercadolibre.com.uy/MLU-703601625-cuento-con-jesus-2-_JM) Cuento Con Jesus 2 |   | 2096 |  |  | Inactiva | a demanda (18 d) |  |
@@ -4265,7 +4265,7 @@
 | [MLU1531961292](https://articulo.mercadolibre.com.uy/MLU-1531961292-libro-diverse-words-and-voices-rollercoasters-de-varios-autores-vol-1-editorial-oxford-university-press-tapa-blanda-en-ingles-2024-_JM) Libro Diverse Words And Voices - Rollercoasters, D |   | 1400 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961278](https://articulo.mercadolibre.com.uy/MLU-1531961278-disparadores-emocionales-para-la-clinica-leon-benasayag-_JM) Disparadores Emocionales Para La Clínica - León Be |   | 1926 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961274](https://articulo.mercadolibre.com.uy/MLU-1531961274-distopia-volumen-1-agrimbau-santullo-y-otros-_JM) Distopia. Volumen 1 - Agrimbau, Santullo Y Otros |   | 1772 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU1531961230](https://articulo.mercadolibre.com.uy/MLU-1531961230-disparates-de-una-bruja-letras-animadas-cinetto-aranda-_JM) Disparates De Una Bruja - Letras Animadas - Cinett |   | 1420 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU1531961230](https://articulo.mercadolibre.com.uy/MLU-1531961230-libro-disparates-de-una-bruja-letras-animadas-cinetto-aranda-de-cinetto-liliana-editorial-riderchail-_JM) Libro Disparates De Una Bruja - Letras Animadas -  |   | 1420 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961214](https://articulo.mercadolibre.com.uy/MLU-1531961214-disney-princesa-beginnings-mi-primer-libro-de-rompecabezas-de-phidal-editorial-phidal-inc-2022-_JM) Disney Princesa Beginnings -mi Primer Libro De Rom |   | 1726 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961184](https://articulo.mercadolibre.com.uy/MLU-1531961184-dishonestly-yours-krista-ritchie-becca-ritchie-_JM) Dishonestly Yours - Krista Ritchie - Becca Ritchie |   | 1704 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961180](https://articulo.mercadolibre.com.uy/MLU-1531961180-disfruta-de-tu-embarazo-en-el-agua-_JM) Disfruta De Tu Embarazo En El Agua |   | 2626 |  |  | Inactiva | a demanda (18 d) |  |
@@ -4408,7 +4408,7 @@
 | [MLU1531858588](https://articulo.mercadolibre.com.uy/MLU-1531858588-dios-camina-entre-nosotros-libro-del-nino-1-de-diocesis-avellaneda-lanus-editorial-ppc-tapa-blanda-en-espanol-2012-_JM) Dios Camina Entre Nosotros. Libro Del Niño. 1, De  |   | 1386 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531858584](https://articulo.mercadolibre.com.uy/MLU-1531858584-dinosaurs-scratch-and-draw-_JM) Dinosaurs - Scratch And Draw |   | 1592 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531858574](https://articulo.mercadolibre.com.uy/MLU-1531858574-los-dinosaurios-paso-a-paso-yoyo-libro-infantil-te-enteraras-de-60-hechos-fascinantes-de-vvaa-vol-1-editorial-yoyo-books-tapa-dura-en-espanol-_JM) Los Dinosaurios - Paso A Paso - Yoyo - Libro Infan |   | 1679 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU1531858542](https://articulo.mercadolibre.com.uy/MLU-1531858542-libro-dinosaurios-td-de-batic-leo-vol-volumen-unico-editorial-beascoa-_JM) Libro Dinosaurios (td), De Batic Leo, Vol. Volumen |   | 1488 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU1531858542](https://articulo.mercadolibre.com.uy/MLU-1531858542-libro-dinosaurios-td-de-batic-leo-editorial-beascoa-_JM) Libro Dinosaurios (td), De Batic Leo. Editorial Be |   | 1488 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531858484](https://articulo.mercadolibre.com.uy/MLU-1531858484-dinosaurios-carnivoros-terribles-libro-con-3-rompecabezas-_JM) Dinosaurios - Carnivoros Terribles Libro Con 3 Rom |   | 1445 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531858466](https://articulo.mercadolibre.com.uy/MLU-1531858466-the-dinosaur-s-diary-de-donaldson-julia-editorial-penguin-books-ltd-en-ingles-_JM) The Dinosaur S Diary, De Donaldson, Julia. Editori |   | 1368 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531858454](https://articulo.mercadolibre.com.uy/MLU-1531858454-dinos-feroces-cande-y-nico-florencia-esses-mayuscula-_JM) Dinos Feroces - Cande Y Nico - Florencia Esses (ma |   | 1292 |  |  | Inactiva | a demanda (18 d) |  |
