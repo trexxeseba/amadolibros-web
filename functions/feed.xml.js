@@ -195,9 +195,10 @@ export function isEligibleForFeed(item) {
 }
 
 // Mazos de tarot y oráculos, y barajas: Mercado Libre los clasifica en estos
-// dominios. Con ISBN válido tienen un identificador real (lo trae cerca del
-// 95 % de los mazos) aunque no traigan autor ni páginas, así que el ISBN solo
-// alcanza para el feed. Sin ISBN válido no entran: Merchant exige un identificador.
+// dominios. Cerca del 95 % trae un código de barras real (ISBN, EAN o UPC) en el
+// campo isbn; ese código se manda como GTIN. Los que no tienen ninguno válido
+// entran igual, declarados sin código (identifier_exists=no) y con la marca real
+// cuando existe: no se inventa ningún código.
 // Decisión de Seba (8/11/2026): que aparezcan mazos, tarot, oráculo, cartas y baraja.
 const CARD_DECK_DOMAIN = /(?:^|[-_])(?:TAROT_CARDS|BOARD_AND_CARD_GAMES)(?:$|[-_])/;
 
@@ -207,7 +208,38 @@ const CARD_DECK_DOMAIN = /(?:^|[-_])(?:TAROT_CARDS|BOARD_AND_CARD_GAMES)(?:$|[-_
  */
 export function isCardDeckProduct(item) {
     const domain = String(item?.domain_id || '').trim().toUpperCase();
-    return CARD_DECK_DOMAIN.test(domain) && normalizeIsbnToGtin(item?.isbn).valid;
+    return CARD_DECK_DOMAIN.test(domain);
+}
+
+function isValidGtinCheckDigit(digits) {
+    if (!/^\d+$/.test(digits) || ![8, 12, 13, 14].includes(digits.length)) return false;
+    const nums = digits.split('').map(Number);
+    const check = nums.pop();
+    const sum = nums.reverse().reduce((acc, n, i) => acc + n * (i % 2 === 0 ? 3 : 1), 0);
+    return (10 - (sum % 10)) % 10 === check;
+}
+
+/**
+ * GTIN que se manda al feed. Para libros es el ISBN. Para mazos y barajas se
+ * acepta además un EAN/UPC con dígito verificador correcto. Nunca se inventa
+ * ni se corrige un dígito.
+ */
+export function feedGtin(item) {
+    const isbn = normalizeIsbnToGtin(item?.isbn);
+    if (isbn.valid) return isbn;
+    if (isCardDeckProduct(item)) {
+        const cleaned = cleanIsbnRaw(item?.isbn);
+        if (isValidGtinCheckDigit(cleaned)) return { gtin: cleaned, hadValue: true, valid: true };
+    }
+    return isbn;
+}
+
+// Marca de un mazo sin código de barras: solo si es una editorial real.
+function deckBrand(item) {
+    if (!isCardDeckProduct(item)) return null;
+    const p = String(item?.publisher || '').trim();
+    if (!p || /^(gen[eé]rica|amado libros)$/i.test(p)) return null;
+    return p;
 }
 
 /**
@@ -338,7 +370,7 @@ export function dedupeByGtinAndCondition(eligibleItems) {
     const groups = new Map();
 
     for (const item of eligibleItems) {
-        const gtinResult = normalizeIsbnToGtin(item.isbn);
+        const gtinResult = feedGtin(item);
         if (!gtinResult.valid) {
             noGtinItems.push(item);
             continue;
@@ -574,7 +606,10 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
         .map(link => `\n        <g:additional_image_link>${escapeXml(link)}</g:additional_image_link>`)
         .join('');
 
-    const isbnResult = normalizeIsbnToGtin(item.isbn);
+    const isbnResult = feedGtin(item);
+    const brandTag = !isbnResult.valid && deckBrand(item)
+        ? `\n        <g:brand>${escapeXml(deckBrand(item))}</g:brand>`
+        : '';
     // GTIN válido: se omite identifier_exists (default = yes, según spec de
     // Google). Sin GTIN válido: identifier_exists=no, sin inventar uno.
     const gtinTag = isbnResult.valid
@@ -603,7 +638,7 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
         <g:availability>${availability}</g:availability>
         <g:price>${escapeXml(price)}</g:price>
         <g:condition>${escapeXml(cond)}</g:condition>
-        <g:google_product_category>${GOOGLE_PRODUCT_CATEGORY_BOOKS}</g:google_product_category>${gtinTag}${identifierExistsTag}${productTypeTags}${customLabelTag}
+        <g:google_product_category>${GOOGLE_PRODUCT_CATEGORY_BOOKS}</g:google_product_category>${gtinTag}${brandTag}${identifierExistsTag}${productTypeTags}${customLabelTag}
     </item>`;
 }
 

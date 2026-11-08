@@ -11,6 +11,7 @@ import {
     isEligibleForFeed,
     isBookProduct,
     isCardDeckProduct,
+    feedGtin,
     cleanIsbnRaw,
     isValidIsbn13,
     isValidIsbn10,
@@ -354,9 +355,9 @@ test('17d2. Mazos de tarot y barajas entran con ISBN válido aunque no tengan au
     assert.equal(isEligibleForFeed(deck({ domain_id: 'MLU-BOARD_AND_CARD_GAMES' })), true);
     // La ficha del producto NO lo declara libro: la regla de mazos es solo del feed.
     assert.equal(isBookProduct(deck()), false);
-    // Sin ISBN válido no entran: Merchant exige un identificador real.
-    assert.equal(isEligibleForFeed(deck({ isbn: null })), false);
-    assert.equal(isEligibleForFeed(deck({ isbn: '1234567890123' })), false);
+    // Sin código válido entran igual, pero declarados sin código (ver 17d3).
+    assert.equal(isEligibleForFeed(deck({ isbn: null })), true);
+    assert.equal(isEligibleForFeed(deck({ isbn: '1234567890123' })), true);
     // El ISBN solo no alcanza para otros rubros.
     const otro = book({
         domain_id: 'MLU-COMPUTER_COMPONENTS', isbn: '9788499809991', author: null, pages: null, bibliographic: null,
@@ -368,6 +369,32 @@ test('17d2. Mazos de tarot y barajas entran con ISBN válido aunque no tengan au
     assert.match(xml, /<g:gtin>9788499809991<\/g:gtin>/);
     assert.doesNotMatch(xml, /identifier_exists/);
     assert.doesNotMatch(xml, /<g:brand>/);
+});
+
+test('17d3. Mazos: EAN/UPC real como GTIN; sin código, identifier_exists=no y marca real', () => {
+    const deck = (extra = {}) => book({
+        domain_id: 'MLU-TAROT_CARDS', isbn: null, author: null, pages: null, bibliographic: null, ...extra,
+    });
+    // UPC-12 y EAN-13 con dígito verificador correcto.
+    assert.equal(feedGtin(deck({ isbn: '850006058358' })).gtin, '850006058358');
+    assert.equal(feedGtin(deck({ isbn: '8001097400072' })).gtin, '8001097400072');
+    // Dígito verificador roto: no se acepta ni se corrige.
+    assert.equal(feedGtin(deck({ isbn: '850006058359' })).valid, false);
+    // Un libro no acepta EAN que no sea ISBN.
+    assert.equal(feedGtin(book({ isbn: '850006058358' })).valid, false);
+    let xml = renderFeedItem(deck({ id: 'MLU1', isbn: '850006058358', publisher: 'Da Brigh' }));
+    assert.match(xml, /<g:gtin>850006058358<\/g:gtin>/);
+    assert.doesNotMatch(xml, /identifier_exists|<g:brand>/);
+    // Sin código: identifier_exists=no y marca solo si es editorial real.
+    xml = renderFeedItem(deck({ id: 'MLU2', publisher: 'Luciernaga' }));
+    assert.doesNotMatch(xml, /<g:gtin>/);
+    assert.match(xml, /<g:brand>Luciernaga<\/g:brand>/);
+    assert.match(xml, /<g:identifier_exists>no<\/g:identifier_exists>/);
+    xml = renderFeedItem(deck({ id: 'MLU3', publisher: 'Genérica' }));
+    assert.doesNotMatch(xml, /<g:brand>/);
+    assert.match(xml, /<g:identifier_exists>no<\/g:identifier_exists>/);
+    // Un libro sin ISBN nunca lleva marca.
+    assert.doesNotMatch(renderFeedItem(book({ id: 'MLU4', publisher: 'Luciernaga' })), /<g:brand>/);
 });
 
 test('17e. Producción publica sólo portadas primarias válidas y vigentes en R2', () => {
