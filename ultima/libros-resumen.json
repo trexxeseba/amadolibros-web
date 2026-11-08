@@ -2,28 +2,27 @@
   "cuenta": "libros",
   "umbral": 360,
   "causas_perdida": {
-    "reputacion_entrega": 1,
-    "precio": 32
+    "precio": 34
   },
   "ejemplos_error": [],
-  "duracion_s": 136,
+  "duracion_s": 215,
   "contadores": {
-    "fecha": "2026-11-08T16:03:23.646Z",
+    "fecha": "2026-11-08T17:55:43.924Z",
     "modo": "real",
     "activas": 6889,
     "revisadas": 6889,
-    "compiten": 33,
-    "marcadas": 33,
+    "compiten": 34,
+    "marcadas": 34,
     "precio_dinamico": 0,
     "ganador_inmediato": 0,
     "ganador_sin_dato": 0,
     "bajadas": 0,
-    "ajustadas": 1,
-    "subidas": 17,
-    "restauradas": 8,
-    "sin_tocar_umbral": 31,
+    "ajustadas": 0,
+    "subidas": 3,
+    "restauradas": 0,
+    "sin_tocar_umbral": 33,
     "sin_tocar_pct": 1,
-    "verificadas": 26,
+    "verificadas": 3,
     "no_verificadas": 0,
     "promo": 0,
     "bajo_piso": 0,
@@ -35,10 +34,10 @@
   },
   "catalogo": {
     "estados": {
-      "winning": 3009,
-      "sharing_first_place": 30,
-      "competing": 33,
-      "not_listed": 3817
+      "sharing_first_place": 53,
+      "winning": 2985,
+      "not_listed": 3817,
+      "competing": 34
     },
     "publicaciones_con_alguna_sugerencia": 3072,
     "sugerencias": {
@@ -49,16 +48,16 @@
       "not_listed:item_not_opted_in": 3817
     },
     "por_tipo": {
-      "catalogo:winning:con_stock": 3009,
-      "catalogo:sharing_first_place:con_stock": 30,
-      "catalogo:competing:con_stock": 33,
-      "tradicional:not_listed:con_stock": 3817
+      "catalogo:sharing_first_place:con_stock": 53,
+      "catalogo:winning:con_stock": 2985,
+      "tradicional:not_listed:con_stock": 3817,
+      "catalogo:competing:con_stock": 34
     },
     "errores_por_tipo": {}
   },
   "errores": {},
-  "llamadas": 7468,
+  "llamadas": 7414,
   "por_status": {
-    "200": 7468
+    "200": 7414
   }
 }

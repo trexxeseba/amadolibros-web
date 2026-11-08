@@ -1,54 +1,12 @@
 {
-  "fecha": "2026-11-08T16:03:36.083Z",
+  "fecha": "2026-11-08T17:56:12.842Z",
   "muestra": [
     {
-      "id": "MLU668336627",
-      "titulo": "Mosaico Humano - Rodriguez Olaizola, Jose María",
-      "precio": 1372,
+      "id": "MLU694591921",
+      "titulo": "Disney Princess Moana Barco De Aventura",
+      "precio": 3202,
       "estado": "winning",
-      "precio_para_ganar": 1372,
-      "competidor_mas_barato": 1460,
-      "otras_ofertas": 2,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana: el competidor más barato está en 1460",
-      "ok": true
-    },
-    {
-      "id": "MLU712938804",
-      "titulo": "Solo Para Tus Ojos - Benitez,j J",
-      "precio": 1869,
-      "estado": "winning",
-      "precio_para_ganar": 1869,
-      "competidor_mas_barato": 1850,
-      "otras_ofertas": 4,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (1850): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU1243832142",
-      "titulo": "Juego Cartas Robo Histórico Curiosea Historia Trivia Box",
-      "precio": 1650,
-      "estado": "winning",
-      "precio_para_ganar": 1650,
-      "competidor_mas_barato": 1246,
-      "otras_ofertas": 3,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (1246): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU724228530",
-      "titulo": "Pack Narnia 6 Libros, De C. S. Lewis., Vol. 1,2,3,4,5 Y 6. E",
-      "precio": 12000,
-      "estado": "winning",
-      "precio_para_ganar": 12000,
+      "precio_para_ganar": 3202,
       "competidor_mas_barato": null,
       "otras_ofertas": 0,
       "sugerencias_ml": [
@@ -58,88 +16,129 @@
       "ok": true
     },
     {
-      "id": "MLU690299040",
-      "titulo": "Cartas Oráculo Amado Libros 54 Cartas Físico Con Instruccion",
-      "precio": 2650,
+      "id": "MLU667847543",
+      "titulo": "Europa En Guerra 1939-1945, De Davies, Norman. Editorial Pla",
+      "precio": 2300,
       "estado": "winning",
-      "precio_para_ganar": 2056,
-      "competidor_mas_barato": 2298,
+      "precio_para_ganar": 2300,
+      "competidor_mas_barato": null,
+      "otras_ofertas": 0,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: no hay otros vendedores",
+      "ok": true
+    },
+    {
+      "id": "MLU893426504",
+      "titulo": "De Quien Es La Musica ? - Experiencias Y Propuestas Para La",
+      "precio": 1650,
+      "estado": "winning",
+      "precio_para_ganar": 1650,
+      "competidor_mas_barato": 540,
       "otras_ofertas": 3,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana aunque hay uno más barato (2298): ML pesa envío y reputación",
+      "conclusion": "Gana aunque hay uno más barato (540): ML pesa envío y reputación",
       "ok": true
     },
     {
-      "id": "MLU682945164",
-      "titulo": "Emociones, Aprendizaje Y El Cerebro",
-      "precio": 1572,
+      "id": "MLU730247434",
+      "titulo": "Manual De Terapia Breve Sexual, De Green, Shelley. Fuera De ",
+      "precio": 4700,
       "estado": "winning",
-      "precio_para_ganar": 1572,
-      "competidor_mas_barato": 1712,
+      "precio_para_ganar": 4700,
+      "competidor_mas_barato": 8900,
+      "otras_ofertas": 1,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 8900",
+      "ok": true
+    },
+    {
+      "id": "MLU1297559746",
+      "titulo": "Diagnóstico Físico Basado Evidencia Mcgee Medicina Familiar",
+      "precio": 7900,
+      "estado": "winning",
+      "precio_para_ganar": 7900,
+      "competidor_mas_barato": 4828,
+      "otras_ofertas": 2,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (4828): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU1034086562",
+      "titulo": "Atlas De Anatomia: Órganos Internos: 2 (atlas De Anatomía), ",
+      "precio": 7500,
+      "estado": "winning",
+      "precio_para_ganar": 7500,
+      "competidor_mas_barato": 2930,
       "otras_ofertas": 4,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana: el competidor más barato está en 1712",
+      "conclusion": "Gana aunque hay uno más barato (2930): ML pesa envío y reputación",
       "ok": true
     },
     {
-      "id": "MLU886146536",
-      "titulo": "Santa Biblia Para Regalos Y Premios, De Vários. Editorial Ho",
-      "precio": 1790,
+      "id": "MLU659699009",
+      "titulo": "El Legado De La Villa De La Seda ( La Villa De La Seda 3)",
+      "precio": 1592,
       "estado": "winning",
-      "precio_para_ganar": 1790,
-      "competidor_mas_barato": 1530,
-      "otras_ofertas": 3,
+      "precio_para_ganar": 1592,
+      "competidor_mas_barato": 1576,
+      "otras_ofertas": 6,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana aunque hay uno más barato (1530): ML pesa envío y reputación",
+      "conclusion": "Gana aunque hay uno más barato (1576): ML pesa envío y reputación",
       "ok": true
     },
     {
-      "id": "MLU693687666",
-      "titulo": "Libro Tarot De Maria Celia, De Lynyrd-jym Narciso. Editorial",
-      "precio": 1244,
+      "id": "MLU645200957",
+      "titulo": "La Cuna Vacía, De Mónica Álvarez., Vol. 1.0. Editorial Esfer",
+      "precio": 2650,
       "estado": "winning",
-      "precio_para_ganar": 1049,
-      "competidor_mas_barato": 1990,
-      "otras_ofertas": 3,
+      "precio_para_ganar": 2650,
+      "competidor_mas_barato": 1880,
+      "otras_ofertas": 2,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana: el competidor más barato está en 1990",
+      "conclusion": "Gana aunque hay uno más barato (1880): ML pesa envío y reputación",
       "ok": true
     },
     {
-      "id": "MLU679908308",
-      "titulo": "Limpia Tu Enredo Mental - Leaf, Caroline",
-      "precio": 685,
+      "id": "MLU645527595",
+      "titulo": "El Yermo, De Sergi Llauger., Vol. Volumen Similar Al Titulo.",
+      "precio": 1600,
       "estado": "winning",
-      "precio_para_ganar": 685,
-      "competidor_mas_barato": 847,
-      "otras_ofertas": 12,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envío gratis"
-      ],
-      "conclusion": "Gana: el competidor más barato está en 847",
-      "ok": true
-    },
-    {
-      "id": "MLU631908825",
-      "titulo": "La Casa De Javier - Torre De Papel Naranja, De Devetach, Lau",
-      "precio": 995,
-      "estado": "winning",
-      "precio_para_ganar": 995,
-      "competidor_mas_barato": 1648,
-      "otras_ofertas": 3,
+      "precio_para_ganar": 1600,
+      "competidor_mas_barato": 1570,
+      "otras_ofertas": 2,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana: el competidor más barato está en 1648",
+      "conclusion": "Gana aunque hay uno más barato (1570): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU717551920",
+      "titulo": "Rohen Yokochi Atlas De Anatomía Humana 9 Ed S",
+      "precio": 15098,
+      "estado": "winning",
+      "precio_para_ganar": 15098,
+      "competidor_mas_barato": 13930,
+      "otras_ofertas": 5,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (13930): ML pesa envío y reputación",
       "ok": true
     }
   ],
@@ -310,8 +309,8 @@
       "id": "MLU1505128778",
       "titulo": "International Primary Science Workbook: Stage 2 - Unknown - Collins - Blanda",
       "original": 1790,
-      "aplicado": 1694,
-      "en_ml": 1694,
+      "aplicado": 1742,
+      "en_ml": 1742,
       "ok": true,
       "problemas": []
     },
@@ -517,8 +516,8 @@
       "id": "MLU833600900",
       "titulo": "Dos Perros Y Una Abuela - Loqueleo Verde",
       "original": 1650,
-      "aplicado": 1619,
-      "en_ml": 1619,
+      "aplicado": 1639,
+      "en_ml": 1639,
       "ok": true,
       "problemas": []
     },
@@ -535,8 +534,8 @@
       "id": "MLU827082652",
       "titulo": "Libro El Estofado Del Lobo - Keiko Kasza",
       "original": 1950,
-      "aplicado": 1744,
-      "en_ml": 1744,
+      "aplicado": 1786,
+      "en_ml": 1786,
       "ok": true,
       "problemas": []
     },
@@ -662,6 +661,28 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2114,
+      "ok": true
+    },
+    {
+      "id": "MLU663124878",
+      "precio": 2010,
+      "ganador": 1434,
+      "diferencia": 576,
+      "objetivo": 1434,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1434,
+      "ok": true
+    },
+    {
+      "id": "MLU664579166",
+      "precio": 2610,
+      "ganador": 1633,
+      "diferencia": 977,
+      "objetivo": 1633,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1633,
       "ok": true
     },
     {
@@ -941,5 +962,5 @@
     }
   ],
   "discrepancias": [],
-  "llamadas": 439
+  "llamadas": 440
 }

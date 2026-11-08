@@ -1,4 +1,4 @@
-# Auditoría Precio Ganador · Amado Libros · 2026-11-08T16:03:36.083Z
+# Auditoría Precio Ganador · Amado Libros · 2026-11-08T17:56:12.842Z
 
 Discrepancias: **0**
 
@@ -6,16 +6,16 @@ Discrepancias: **0**
 
 | Publicación | Precio | Estado ML | Para ganar | Competidor más barato | Sugerencias de ML | Conclusión | OK |
 |---|---:|---|---:|---:|---|---|---|
-| MLU668336627 Mosaico Humano - Rodriguez Olaizola, Jose María | 1372 | winning | 1372 | 1460 | Envíos Full | Gana: el competidor más barato está en 1460 | sí |
-| MLU712938804 Solo Para Tus Ojos - Benitez,j J | 1869 | winning | 1869 | 1850 | Envíos Full | Gana aunque hay uno más barato (1850): ML pesa envío y reputación | sí |
-| MLU1243832142 Juego Cartas Robo Histórico Curiosea Historia Trivia Box | 1650 | winning | 1650 | 1246 | Envíos Full | Gana aunque hay uno más barato (1246): ML pesa envío y reputación | sí |
-| MLU724228530 Pack Narnia 6 Libros, De C. S. Lewis., Vol. 1,2,3,4,5 Y 6. E | 12000 | winning | 12000 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
-| MLU690299040 Cartas Oráculo Amado Libros 54 Cartas Físico Con Instruccion | 2650 | winning | 2056 | 2298 | Envíos Full | Gana aunque hay uno más barato (2298): ML pesa envío y reputación | sí |
-| MLU682945164 Emociones, Aprendizaje Y El Cerebro | 1572 | winning | 1572 | 1712 | Envíos Full | Gana: el competidor más barato está en 1712 | sí |
-| MLU886146536 Santa Biblia Para Regalos Y Premios, De Vários. Editorial Ho | 1790 | winning | 1790 | 1530 | Envíos Full | Gana aunque hay uno más barato (1530): ML pesa envío y reputación | sí |
-| MLU693687666 Libro Tarot De Maria Celia, De Lynyrd-jym Narciso. Editorial | 1244 | winning | 1049 | 1990 | Envíos Full | Gana: el competidor más barato está en 1990 | sí |
-| MLU679908308 Limpia Tu Enredo Mental - Leaf, Caroline | 685 | winning | 685 | 847 | Envíos Full, Envío gratis | Gana: el competidor más barato está en 847 | sí |
-| MLU631908825 La Casa De Javier - Torre De Papel Naranja, De Devetach, Lau | 995 | winning | 995 | 1648 | Envíos Full | Gana: el competidor más barato está en 1648 | sí |
+| MLU694591921 Disney Princess Moana Barco De Aventura | 3202 | winning | 3202 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
+| MLU667847543 Europa En Guerra 1939-1945, De Davies, Norman. Editorial Pla | 2300 | winning | 2300 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
+| MLU893426504 De Quien Es La Musica ? - Experiencias Y Propuestas Para La | 1650 | winning | 1650 | 540 | Envíos Full | Gana aunque hay uno más barato (540): ML pesa envío y reputación | sí |
+| MLU730247434 Manual De Terapia Breve Sexual, De Green, Shelley. Fuera De  | 4700 | winning | 4700 | 8900 | Envíos Full | Gana: el competidor más barato está en 8900 | sí |
+| MLU1297559746 Diagnóstico Físico Basado Evidencia Mcgee Medicina Familiar | 7900 | winning | 7900 | 4828 | Envíos Full | Gana aunque hay uno más barato (4828): ML pesa envío y reputación | sí |
+| MLU1034086562 Atlas De Anatomia: Órganos Internos: 2 (atlas De Anatomía),  | 7500 | winning | 7500 | 2930 | Envíos Full | Gana aunque hay uno más barato (2930): ML pesa envío y reputación | sí |
+| MLU659699009 El Legado De La Villa De La Seda ( La Villa De La Seda 3) | 1592 | winning | 1592 | 1576 | Envíos Full | Gana aunque hay uno más barato (1576): ML pesa envío y reputación | sí |
+| MLU645200957 La Cuna Vacía, De Mónica Álvarez., Vol. 1.0. Editorial Esfer | 2650 | winning | 2650 | 1880 | Envíos Full | Gana aunque hay uno más barato (1880): ML pesa envío y reputación | sí |
+| MLU645527595 El Yermo, De Sergi Llauger., Vol. Volumen Similar Al Titulo. | 1600 | winning | 1600 | 1570 | Envíos Full | Gana aunque hay uno más barato (1570): ML pesa envío y reputación | sí |
+| MLU717551920 Rohen Yokochi Atlas De Anatomía Humana 9 Ed S | 15098 | winning | 15098 | 13930 | Envíos Full | Gana aunque hay uno más barato (13930): ML pesa envío y reputación | sí |
 
 ## Publicaciones que el sistema bajó (49)
 
@@ -39,7 +39,7 @@ Discrepancias: **0**
 | MLU886822546 Personal Best B1+ Intermediate - Workbook - Richmo | 1178 | 1153 | 1153 | sí |
 | MLU1496874810 Libro: Privacidad Es Poder. Veliz, Carissa. Debate | 1464 | 1402 | 1402 | sí |
 | MLU663199900 Libro La Última Encrucijada - Jorge Liotti - Plane | 1106 | 1082 | 1082 | sí |
-| MLU1505128778 International Primary Science Workbook: Stage 2 -  | 1790 | 1694 | 1694 | sí |
+| MLU1505128778 International Primary Science Workbook: Stage 2 -  | 1790 | 1742 | 1742 | sí |
 | MLU653960560 Dar El Duelo - Virginia Cano | 1950 | 1593 | 1593 | sí |
 | MLU660998018 Daat: El Conocimiento - Saban, Mario Javier | 3650 | 3336 | 3336 | sí |
 | MLU740027064 Autismo Una Guia Practica: Una Guía Práctica, De P | 629 | 624 | 624 | sí |
@@ -62,16 +62,16 @@ Discrepancias: **0**
 | MLU639571897 Erótica Del Duelo En Tiempos De La Muerte Seca Jea | 3300 | 3088 | 3088 | sí |
 | MLU701173804 Encendidas: Un Viaje Íntimo Por La Menopausia, De  | 2200 | 2088 | 2088 | sí |
 | MLU702932898 El Engaño Populista | 2750 | 2504 | 2504 | sí |
-| MLU833600900 Dos Perros Y Una Abuela - Loqueleo Verde | 1650 | 1619 | 1619 | sí |
+| MLU833600900 Dos Perros Y Una Abuela - Loqueleo Verde | 1650 | 1639 | 1639 | sí |
 | MLU695916883 Gestión Del Talento Humano | 3554 | 3374 | 3374 | sí |
-| MLU827082652 Libro El Estofado Del Lobo - Keiko Kasza | 1950 | 1744 | 1744 | sí |
+| MLU827082652 Libro El Estofado Del Lobo - Keiko Kasza | 1950 | 1786 | 1786 | sí |
 | MLU728418074 Filoenigmas Curiosos: Los 150 Mejores Problemas De | 2200 | 2039 | 2039 | sí |
 | MLU1066586596 Física Universitaria Con Física Moderna Tomo 1 Zem | 10500 | 10286 | 10286 | sí |
 | MLU658066440 Mi Emocionario - Flavia Tomaello | 791 | 774 | 774 | sí |
 | MLU676002408 Mientras Dormiamos El Engaño Maestro, De Nocera Co | 1480 | 1467 | 1467 | sí |
 | MLU653035273 Escritos Sobre Astrología, De Carl Gustav Jung., V | 1659 | 1651 | 1651 | sí |
 
-## Regla recalculada sobre las marcadas de la última corrida (32)
+## Regla recalculada sobre las marcadas de la última corrida (34)
 
 | Publicación | Precio | Ganador | Diferencia | Esperado | Hizo | OK |
 |---|---:|---:|---:|---|---|---|
@@ -82,6 +82,8 @@ Discrepancias: **0**
 | MLU652640572 | 2450 | 825 | 1625 | no_tocar | sin_tocar_umbral → 825 | sí |
 | MLU658014482 | 1950 | 1348 | 602 | no_tocar | sin_tocar_umbral → 1348 | sí |
 | MLU658001214 | 2740 | 2114 | 626 | no_tocar | sin_tocar_umbral → 2114 | sí |
+| MLU663124878 | 2010 | 1434 | 576 | no_tocar | sin_tocar_umbral → 1434 | sí |
+| MLU664579166 | 2610 | 1633 | 977 | no_tocar | sin_tocar_umbral → 1633 | sí |
 | MLU669549988 | 1790 | 998 | 792 | no_tocar | sin_tocar_umbral → 998 | sí |
 | MLU674520846 | 2750 | 1158 | 1592 | no_tocar | sin_tocar_umbral → 1158 | sí |
 | MLU683328768 | 1985 | 930 | 1055 | no_tocar | sin_tocar_umbral → 930 | sí |
