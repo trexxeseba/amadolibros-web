@@ -2,7 +2,7 @@
 
 ```json
 {
-  "fecha": "2026-11-08T21:41:10.616Z",
+  "fecha": "2026-11-08T22:03:35.675Z",
   "modo": "real",
   "activas": 0,
   "revisadas": 6797,
@@ -1088,7 +1088,7 @@
 | [MLU703102069](https://articulo.mercadolibre.com.uy/MLU-703102069-campos-magneticoslos-bretonandre-_JM) Campos Magneticos,los - Breton,andre |   | 1980 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU703101969](https://articulo.mercadolibre.com.uy/MLU-703101969-camping-catastrofe-de-peters-rik-editorial-sd-tapa-tapa-blanda-en-espanol-_JM) Camping Catastrofe, De Peters, Rik. Editorial S/d, |   | 1679 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU703101851](https://articulo.mercadolibre.com.uy/MLU-703101851-libro-la-campana-carlos-fuentes-_JM) Libro La Campaña - Carlos Fuentes |   | 2509 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU703101599](https://articulo.mercadolibre.com.uy/MLU-703101599-libro-el-camino-sufi-del-amor-de-chittick-william-c-editorial-el-hilo-de-ariadna-tapa-blanda-2017-_JM) Libro El Camino Sufi Del Amor, De Chittick, Willia |   | 2438 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU703101599](https://articulo.mercadolibre.com.uy/MLU-703101599-libro-el-camino-sufi-del-amor-de-chittick-william-c-editorial-el-hilo-de-ariadna-_JM) Libro El Camino Sufi Del Amor, De Chittick, Willia |   | 2438 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU703101563](https://articulo.mercadolibre.com.uy/MLU-703101563-el-camino-mas-largo-_JM) El Camino Mas Largo |   | 1450 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU703100961](https://articulo.mercadolibre.com.uy/MLU-703100961-el-camino-de-la-inteligencia-de-krishnamurti-jiddu-na-vol-volumen-unico-editorial-kairos-tapa-blanda-edicion-2-en-espanol-2001-_JM) El Camino De La Inteligencia, De Krishnamurti, Jid |   | 2049 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU703100781](https://articulo.mercadolibre.com.uy/MLU-703100781-cambridge-yle-tests-movers-students-book-exam-2018-de-watson-dawn-editorial-hamilton-house-en-ingles-internacional-_JM) Cambridge Yle Tests Movers - Student's Book (exam  |   | 2627 |  |  | Inactiva | a demanda (18 d) |  |
@@ -4264,7 +4264,7 @@
 | [MLU1531961300](https://articulo.mercadolibre.com.uy/MLU-1531961300-divertidas-aventuras-del-nieto-de-juan-moreira-de-payro-roberto-j-editorial-eudeba-edicion-2012-en-espanol-_JM) Divertidas Aventuras Del Nieto De Juan Moreira, De |   | 1554 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961292](https://articulo.mercadolibre.com.uy/MLU-1531961292-libro-diverse-words-and-voices-rollercoasters-de-varios-autores-vol-1-editorial-oxford-university-press-tapa-blanda-en-ingles-2024-_JM) Libro Diverse Words And Voices - Rollercoasters, D |   | 1400 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961278](https://articulo.mercadolibre.com.uy/MLU-1531961278-disparadores-emocionales-para-la-clinica-leon-benasayag-_JM) Disparadores Emocionales Para La Clínica - León Be |   | 1926 |  |  | Inactiva | a demanda (18 d) |  |
-| [MLU1531961274](https://articulo.mercadolibre.com.uy/MLU-1531961274-distopia-volumen-1-agrimbau-santullo-y-otros-_JM) Distopia. Volumen 1 - Agrimbau, Santullo Y Otros |   | 1772 |  |  | Inactiva | a demanda (18 d) |  |
+| [MLU1531961274](https://articulo.mercadolibre.com.uy/MLU-1531961274-libro-distopia-volumen-1-de-agrimbau-santullo-y-otros-editorial-pictus-_JM) Libro Distopia Volumen 1, De Agrimbau, Santullo Y  |   | 1772 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961230](https://articulo.mercadolibre.com.uy/MLU-1531961230-libro-disparates-de-una-bruja-letras-animadas-cinetto-aranda-de-cinetto-liliana-editorial-riderchail-_JM) Libro Disparates De Una Bruja - Letras Animadas -  |   | 1420 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961214](https://articulo.mercadolibre.com.uy/MLU-1531961214-disney-princesa-beginnings-mi-primer-libro-de-rompecabezas-de-phidal-editorial-phidal-inc-2022-_JM) Disney Princesa Beginnings -mi Primer Libro De Rom |   | 1726 |  |  | Inactiva | a demanda (18 d) |  |
 | [MLU1531961184](https://articulo.mercadolibre.com.uy/MLU-1531961184-dishonestly-yours-krista-ritchie-becca-ritchie-_JM) Dishonestly Yours - Krista Ritchie - Becca Ritchie |   | 1704 |  |  | Inactiva | a demanda (18 d) |  |
