@@ -1,0 +1,53 @@
+name: Vintage eliminar riesgosas
+
+# Elimina (cierra y borra) las publicaciones de Amado Vintage (2341378249) de la lista aprobada por
+# Seba el 08/11/2026 (scripts/vintage-cloud/eliminar-2026-11-09.txt), por riesgo de propiedad
+# intelectual. Sin "real" sólo lee e informa qué eliminaría. Nunca toca Amado Libros.
+on:
+  workflow_dispatch:
+    inputs:
+      real:
+        description: 'Eliminar de verdad (sin tildar: sólo informa)'
+        type: boolean
+        default: false
+      confirmar:
+        description: 'Para eliminar de verdad escribí ELIMINAR'
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vintage-eliminar
+  cancel-in-progress: false
+
+jobs:
+  eliminar:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests
+        run: node --experimental-sqlite --test functions/__tests__/vintage-eliminar.test.js
+      - name: Eliminar
+        env:
+          REAL: ${{ inputs.real }}
+          CONFIRMAR: ${{ inputs.confirmar }}
+        shell: bash
+        run: |
+          ARGS=(--lista scripts/vintage-cloud/eliminar-2026-11-09.txt)
+          if [ "$REAL" = "true" ]; then
+            if [ "$CONFIRMAR" != "ELIMINAR" ]; then echo "Para eliminar de verdad hay que escribir ELIMINAR"; exit 1; fi
+            ARGS+=(--real)
+          fi
+          node scripts/vintage-cloud/eliminar.mjs "${ARGS[@]}"
