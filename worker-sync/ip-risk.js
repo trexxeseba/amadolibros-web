@@ -27,6 +27,8 @@ export const IP_RISK_PATTERNS=[
  // Encuadernación casera / impresión bajo demanda
  ['encuadernacion','\\banillad[oa]s?\\b|\\bespiralad[oa]s?\\b|\\bencuadernad[oa]s?\\b|\\bespiral\\b|\\bspiral\\b|\\bimpreso\\b|\\bimpresion\\b|\\breimpres[oa]\\b|\\bprint on demand\\b|\\bbajo demanda\\b'],
  // Kits y paquetes con componentes no físicos
+ // Ejemplares de muestra o no destinados a la venta (motivo propio en el Brand Protection Program).
+ ['muestra','\\bsaggio\\b|\\bcopia saggio\\b|\\bcampione\\b|\\bcampione gratuito\\b|\\bfuori commercio\\b|\\binspection copy\\b|\\bnot for resale\\b|\\bnot for sale\\b|\\bspecimen\\b|\\bsample copy\\b|\\bmuestra gratis\\b|\\bmuestra gratuita\\b|\\bejemplar de muestra\\b|\\bventa prohibida\\b|\\bprohibida su venta\\b'],
  ['paquete','\\bpack\\b|\\bkit\\b|\\bbundle\\b|\\bcombo\\b'],
  // Material de curso y de estudio (el de IB Diploma fue marcado como "contenido de curso", 08/11/2026):
  // suelen venir con códigos o plataformas y las editoriales los denuncian.

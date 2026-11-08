@@ -1,4 +1,5 @@
 import { getAccessToken, invalidateAccessToken, MeliAuthError } from './meli-auth.js';
+import {ipRisk} from './ip-risk.js';
 import {SELLER_ID,PublicationError,canonicalIsbn,normalizedTitle} from './publication-policy.js';
 import {supplierBookMetadata} from './publication-book-metadata.js';
 import {requireVintagePrice,vintageMinimumFor} from './vintage-pricing.js';
@@ -290,6 +291,14 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
    if(policy.catalogListing!=='required_only')throw new PublicationError('catalog_required_needs_review',422);
    const resolved=await resolveCatalogProduct(env,row,productId,product);
    catalogProductId=resolved.id;product=resolved.product;
+  }
+  // Vintage: en catálogo el título que se muestra es el de la ficha, no el de SBS ("Dieci A1" en SBS
+  // era "Dieci A1 - Libro + Ebook Interattivo" en la ficha). El filtro de propiedad intelectual
+  // revisa también el nombre de la ficha y su editorial antes de asociarse.
+  if(sellerId==='2341378249'){
+   const publisherAttr=(product.attributes??[]).find(a=>['BOOK_PUBLISHER','PUBLISHER'].includes(a.id))?.value_name;
+   const risk=ipRisk([product.name,product.family_name,found.results[0]?.name].filter(Boolean).join(' '),publisherAttr);
+   if(risk)throw new PublicationError('ip_risk_'+risk,422);
   }
   const binding=/(?:-|–)\s*(HB|PB)\s*$/i.exec(row.title)?.[1]?.toUpperCase();
   const cover=String((product.attributes??[]).find(a=>a.id==='BOOK_COVER')?.value_name??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
