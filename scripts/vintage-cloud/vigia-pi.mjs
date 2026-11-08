@@ -21,7 +21,8 @@ const SEEN='ml_vintage_cloud_infractions_seen',FLAGS='ml_vintage_cloud_flags';
 export function isIp(infraction){
  const sub=String(infraction?.filter_subgroup??'');
  const reason=String(infraction?.reason??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
- return /COPIAS|REPLICA|PI_|FAKE|COUNTERFEIT|INTELLECTUAL|PPPI/i.test(sub)||/propiedad intelectual|falsific|no era original|originalidad|replica|copia no autorizada/.test(reason);
+ // PPPI1..PPPI6 son los motivos de denuncia de propiedad intelectual (PPPI6: derechos sobre imágenes).
+ return /COPIAS|REPLICA|PI_|FAKE|COUNTERFEIT|INTELLECTUAL|PPPI\d?/i.test(sub)||/propiedad intelectual|falsific|no era original|originalidad|replica|copia no autorizada|derechos de autor|imagen(es)? (sin autorizacion|protegida)/.test(reason);
 }
 
 async function schema(query){
@@ -36,7 +37,7 @@ export async function brakeOn(query){
 export async function releaseBrake(query){await schema(query);await query(`DELETE FROM ${FLAGS} WHERE key=?`,[FLAG]);}
 
 // Revisa las infracciones. getInfractions(offset) devuelve una página (10) de las más nuevas primero.
-export async function watch({query,getInfractions,getItemTitle=async()=>null,send=sendMail,now=Date.now(),runUrl=null,maxPages=80}){
+export async function watch({query,getInfractions,getItemTitle=async()=>null,getCases=async()=>[],send=sendMail,now=Date.now(),runUrl=null,maxPages=80}){
  await schema(query);
  const known=(await query(`SELECT COUNT(*) n FROM ${SEEN}`))[0]?.n??0;
  const baseline=Number(known)===0;
@@ -55,14 +56,25 @@ export async function watch({query,getInfractions,getItemTitle=async()=>null,sen
   // Se recorren todas las páginas (no se confía en el orden): son pocas llamadas por hora.
   if(list.length<10)break;
  }
- if(!fresh.length)return {baseline,nuevas_pi:0,freno:await brakeOn(query)};
+ // Denuncias abiertas del Brand Protection Program: tienen plazo (due_date) y las responde el vendedor
+ // en la publicación. Una denuncia abierta nueva frena igual que una infracción.
+ let cases=[];try{cases=await getCases();}catch{cases=null;}
+ const openCases=(cases??[]).filter(c=>!/closed|finished|resolved/i.test(String(c?.current_status??c?.status??'')));
+ for(const c of openCases){
+  const id='case:'+String(c.id??c.case_id??'');if(id==='case:')continue;
+  const seen=(await query(`SELECT id FROM ${SEEN} WHERE id=?`,[id]))[0];
+  if(seen)continue;
+  await query(`INSERT OR IGNORE INTO ${SEEN}(id,item_id,subgroup,ip,created,seen_at) VALUES(?,?,?,?,?,?)`,[id,c.item_id??c.element_id??null,'BPP_'+String(c.current_status??c.status??''),1,c.date_created??c.due_date??null,now]);
+  if(!baseline)fresh.push({id,element_id:c.item_id??c.element_id??null,filter_subgroup:'DENUNCIA_BPP',reason:`Denuncia del Brand Protection Program (${c.current_status??c.status??''}). Vence: ${c.due_date??'sin dato'}. Responder desde la publicación, no por mail.`,date_created:c.date_created??null});
+ }
+ if(!fresh.length)return {baseline,nuevas_pi:0,denuncias_abiertas:cases===null?null:openCases.length,freno:await brakeOn(query)};
  const items=[];
  for(const inf of fresh){const item=inf.element_id??inf.related_item_id??null;items.push({id:inf.id,item,title:item?await getItemTitle(item):null,subgroup:inf.filter_subgroup??null,reason:inf.reason??'',fecha:inf.date_created??null});}
  const value={motivo:'infraccion_pi',infracciones:items};
  await query(`INSERT INTO ${FLAGS}(key,value,at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,at=excluded.at`,[FLAG,JSON.stringify(value),now]);
  const lines=items.map(i=>`- ${i.title??i.item??'(sin publicación)'}${i.item?` (${i.item})`:''}\n  ${i.subgroup??''}: ${i.reason}\n  ${i.fecha??''}`).join('\n');
  const mail=await send({asunto:`ALARMA: ${items.length} infracción${items.length>1?'es':''} de propiedad intelectual. Publicador FRENADO`,texto:`Mercado Libre marcó ${items.length===1?'una publicación':`${items.length} publicaciones`} de Amado Vintage por propiedad intelectual. El publicador quedó frenado y no publica más hasta que lo liberes.\n\n${lines}\n\nPara volver a publicar: pedile a Claude que libere el freno, o corré el workflow "Vintage publicador (nube)" con la acción liberar_freno.${runUrl?`\n\nCorrida: ${runUrl}`:''}`});
- return {baseline,nuevas_pi:items.length,freno:value,mail};
+ return {baseline,nuevas_pi:items.length,denuncias_abiertas:cases===null?null:openCases.length,freno:value,mail};
 }
 
 // Cliente real (sólo GET): infracciones y título de una publicación.
@@ -71,5 +83,6 @@ export function mlReaders(){
  return {
   getInfractions:async offset=>{const r=await ml.get(`/moderations/infractions/${SELLER}?offset=${offset}&limit=10`);return Array.isArray(r?.infractions)?r.infractions:[];},
   getItemTitle:async id=>{try{return (await ml.get(`/items/${id}?attributes=title`))?.title??null;}catch{return null;}},
+  getCases:async()=>{const r=await ml.get('/moderations/pppi/cases');const list=Array.isArray(r?.results)?r.results:Array.isArray(r?.cases)?r.cases:Array.isArray(r)?r:[];return list;},
  };
 }
