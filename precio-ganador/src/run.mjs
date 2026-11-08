@@ -41,6 +41,8 @@ async function leerEstado(f, d) {
   catch { throw Object.assign(new Error('estado_corrupto'), { fatal: true }); }
 }
 
+const memoriaDe = e => Object.fromEntries(['ganando', 'perdio_en', 'perdio_fecha'].filter(k => e?.[k] !== undefined).map(k => [k, e[k]]));
+
 async function main() {
   const inicio = new Date();
   const archivoEstado = join(dirEstado, `${cuenta.clave}.json`);
@@ -92,7 +94,7 @@ async function main() {
     const candidatos = [num(pisos[id]), num(cuenta.minimo), pisoCosto ? (pisoCosto(items.get(id)) ?? SIN_COSTO) : null].filter(v => v !== null);
     return candidatos.length ? Math.max(...candidatos) : null;
   };
-  const reglas = { umbral: cuenta.umbral ?? UMBRAL_UYU, topePct: cuenta.topePct === undefined ? undefined : cuenta.topePct, umbralInclusivo: cuenta.umbralInclusivo === true, descuento: cuenta.descuento ?? 0, pasoMinimoSubida: cuenta.pasoMinimoSubida ?? 1 };
+  const reglas = { umbral: cuenta.umbral ?? UMBRAL_UYU, topePct: cuenta.topePct === undefined ? undefined : cuenta.topePct, umbralInclusivo: cuenta.umbralInclusivo === true, descuento: cuenta.descuento ?? 0, pasoMinimoSubida: cuenta.pasoMinimoSubida ?? 1, ahora: inicio.getTime() };
   const cacheEntrega = new Map();
   const filas = []; let marcadas = 0;
   const lote = 40;
@@ -120,6 +122,16 @@ async function main() {
   // Publicaciones del estado que ya no están activas: se conservan, no se tocan.
   for (const id of enEstado) if (!items.has(id) || items.get(id).status !== 'active') filas.push({ item: items.get(id) ?? { id }, comp: null, d: { accion: 'inactiva', motivo: 'no está activa' }, previo: estado.publicaciones[id] });
 
+  // Memoria de subida (ganando, perdio_en): se guarda para las publicaciones del estado.
+  if (real) {
+    let tocado = false;
+    for (const f of filas) {
+      const e = estado.publicaciones[f.item.id];
+      if (!e || !f.d.memoria) continue;
+      Object.assign(e, f.d.memoria); tocado = true;
+    }
+    if (tocado) guardarEstado();
+  }
   const cambios = filas.filter(f => CAMBIA.has(f.d.accion));
   const maxCambios = cuenta.maxCambios ?? MAX_CAMBIOS_POR_CORRIDA;
   if (real && cambios.length > maxCambios) throw Object.assign(new Error(`freno: ${cambios.length} cambios planeados (máximo ${maxCambios})`), { fatal: true });
@@ -149,6 +161,7 @@ async function main() {
       fecha_primera_baja: previo?.fecha_primera_baja ?? ahora,
       fecha: previo?.fecha ?? ahora,
       ...(previo?.stock_original !== undefined ? { stock_original: previo.stock_original } : {}),
+      ...memoriaDe(previo),
       ...(f.item.demanda ? { dias_demanda: f.item.dias_demanda } : {}),
       pendiente: { precio: f.d.precio, desde: ahora, restaurar: f.d.accion === 'restaurar', ...(stockOriginal !== undefined ? { stock_original: stockOriginal } : {}) },
     };
