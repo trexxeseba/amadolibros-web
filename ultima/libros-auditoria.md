@@ -1,4 +1,4 @@
-# Auditoría Precio Ganador · Amado Libros · 2026-11-08T17:56:12.842Z
+# Auditoría Precio Ganador · Amado Libros · 2026-11-08T20:06:45.545Z
 
 Discrepancias: **0**
 
@@ -6,23 +6,23 @@ Discrepancias: **0**
 
 | Publicación | Precio | Estado ML | Para ganar | Competidor más barato | Sugerencias de ML | Conclusión | OK |
 |---|---:|---|---:|---:|---|---|---|
-| MLU694591921 Disney Princess Moana Barco De Aventura | 3202 | winning | 3202 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
-| MLU667847543 Europa En Guerra 1939-1945, De Davies, Norman. Editorial Pla | 2300 | winning | 2300 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
-| MLU893426504 De Quien Es La Musica ? - Experiencias Y Propuestas Para La | 1650 | winning | 1650 | 540 | Envíos Full | Gana aunque hay uno más barato (540): ML pesa envío y reputación | sí |
-| MLU730247434 Manual De Terapia Breve Sexual, De Green, Shelley. Fuera De  | 4700 | winning | 4700 | 8900 | Envíos Full | Gana: el competidor más barato está en 8900 | sí |
-| MLU1297559746 Diagnóstico Físico Basado Evidencia Mcgee Medicina Familiar | 7900 | winning | 7900 | 4828 | Envíos Full | Gana aunque hay uno más barato (4828): ML pesa envío y reputación | sí |
-| MLU1034086562 Atlas De Anatomia: Órganos Internos: 2 (atlas De Anatomía),  | 7500 | winning | 7500 | 2930 | Envíos Full | Gana aunque hay uno más barato (2930): ML pesa envío y reputación | sí |
-| MLU659699009 El Legado De La Villa De La Seda ( La Villa De La Seda 3) | 1592 | winning | 1592 | 1576 | Envíos Full | Gana aunque hay uno más barato (1576): ML pesa envío y reputación | sí |
-| MLU645200957 La Cuna Vacía, De Mónica Álvarez., Vol. 1.0. Editorial Esfer | 2650 | winning | 2650 | 1880 | Envíos Full | Gana aunque hay uno más barato (1880): ML pesa envío y reputación | sí |
-| MLU645527595 El Yermo, De Sergi Llauger., Vol. Volumen Similar Al Titulo. | 1600 | winning | 1600 | 1570 | Envíos Full | Gana aunque hay uno más barato (1570): ML pesa envío y reputación | sí |
-| MLU717551920 Rohen Yokochi Atlas De Anatomía Humana 9 Ed S | 15098 | winning | 15098 | 13930 | Envíos Full | Gana aunque hay uno más barato (13930): ML pesa envío y reputación | sí |
+| MLU652084864 El Archivo De La Magia- Los Crímenes De Grindelwald- | 3600 | winning | 3600 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
+| MLU651470726 Nacimientos Bajo Control: El Parto En Las Edades Moderna Y C | 1053 | winning | 1053 | 1350 | Envíos Full | Gana: el competidor más barato está en 1350 | sí |
+| MLU687686666 Un Saber Que No Se Sabe, Mannoni, Ed. Gedisa | 2300 | winning | 2300 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
+| MLU710364416 Pedrosa Radiología En Traumatología Ortopedia Y Reum, De Ped | 7500 | winning | 7500 | 3276 | Envíos Full | Gana aunque hay uno más barato (3276): ML pesa envío y reputación | sí |
+| MLU658092434 Las Propuestas Educativas Y Las Secuencias Didacticas En El | 2850 | winning | 2850 | 3200 | Envíos Full | Gana: el competidor más barato está en 3200 | sí |
+| MLU890137504 Contabilidad De Costos Un Enfoque Gerencial 14/e, De Datar S | 3300 | winning | 3300 | 6230 | Envíos Full | Gana: el competidor más barato está en 6230 | sí |
+| MLU1438405132 El Gran Si - Un Camino De Integracion, Rendicion Y Devocion, | 2131 | winning | 2131 | 1820 | Envíos Full | Gana aunque hay uno más barato (1820): ML pesa envío y reputación | sí |
+| MLU659606906 Libro El Futuro Del Homo - Michel Odent - Creavida | 1600 | winning | 1600 | 1886 | Envíos Full | Gana: el competidor más barato está en 1886 | sí |
+| MLU653299830 Manual De Supervivencia Urbana: Técnicas Y Tácticas De Super | 3150 | winning | 3150 | 2003 | Envíos Full | Gana aunque hay uno más barato (2003): ML pesa envío y reputación | sí |
+| MLU1515164692 Querido Dexter | 2650 | winning | 2650 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
 
 ## Publicaciones que el sistema bajó (49)
 
 | Publicación | Original | Registrado | En ML hoy | OK |
 |---|---:|---:|---:|---|
-| MLU637065821 The adidas Archive. The Footwear Collection, De Ch | 1944 | 1837 | 1837 | sí |
-| MLU757785172 Instrumentación Quirúrgica Principios Y Práctica D | 6775 | 6272 | 6272 | sí |
+| MLU637065821 The adidas Archive. The Footwear Collection, De Ch | 1944 | 1851 | 1851 | sí |
+| MLU757785172 Instrumentación Quirúrgica Principios Y Práctica D | 6775 | 6296 | 6296 | sí |
 | MLU862968034 Granja, La Libro De Juegos Y Puzzle, De Anónimo. E | 415 | 367 | 367 | sí |
 | MLU1240815646 El Pequeño Gran Libro Del Crochet, De Marie Noelle | 1250 | 1173 | 1173 | sí |
 | MLU1248458670 Libro La Montaña Eres Tú [ Brianna Wiest ] Origina | 725 | 683 | 683 | sí |
@@ -46,12 +46,12 @@ Discrepancias: **0**
 | MLU766245318 Cartas Para La Manada Cecilia Solá Sudestada | 1450 | 1289 | 1289 | sí |
 | MLU692647026 Libro Mi Viaje Sin Ti - Alejandro Sequera | 764 | 654 | 654 | sí |
 | MLU889968514 Actitud Mental Positiva - Napoleon Hill Y W. Cleme | 910 | 846 | 846 | sí |
-| MLU888292642 Netter Flashcards De Histología | 2694 | 2399 | 2399 | sí |
+| MLU888292642 Netter Flashcards De Histología | 2694 | 2417 | 2417 | sí |
 | MLU669860318 Cómo Te Sientes, De Anthony Browne. Editorial Kala | 825 | 791 | 791 | sí |
 | MLU884651706 El Ascendente: Tu Gps Existencial. Descubrí La Lla | 571 | 562 | 562 | sí |
-| MLU884315176 Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Edit | 2899 | 2847 | 2847 | sí |
+| MLU884315176 Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Edit | 2899 | 2858 | 2858 | sí |
 | MLU655257859 Respeto Por La Interpretacion - Uta, Frankel | 767 | 755 | 755 | sí |
-| MLU625745211 Cartas 72 Angeles, Las - Christiane Muller, Kaya | 2210 | 2181 | 2181 | sí |
+| MLU625745211 Cartas 72 Angeles, Las - Christiane Muller, Kaya | 2210 | 2198 | 2198 | sí |
 | MLU957971524 Libro No Es Un Monstruo, Es Una Herida, De López P | 1105 | 1099 | 1099 | sí |
 | MLU1444639912 Luz De Tungsteno: La Respuesta A Tu Problema Está  | 1155 | 1146 | 1146 | sí |
 | MLU643295539 El Desafio De Evaluar...procesos De Lectura Y Escr | 1650 | 1583 | 1583 | sí |
@@ -63,7 +63,7 @@ Discrepancias: **0**
 | MLU701173804 Encendidas: Un Viaje Íntimo Por La Menopausia, De  | 2200 | 2088 | 2088 | sí |
 | MLU702932898 El Engaño Populista | 2750 | 2504 | 2504 | sí |
 | MLU833600900 Dos Perros Y Una Abuela - Loqueleo Verde | 1650 | 1639 | 1639 | sí |
-| MLU695916883 Gestión Del Talento Humano | 3554 | 3374 | 3374 | sí |
+| MLU695916883 Gestión Del Talento Humano | 3554 | 3403 | 3403 | sí |
 | MLU827082652 Libro El Estofado Del Lobo - Keiko Kasza | 1950 | 1786 | 1786 | sí |
 | MLU728418074 Filoenigmas Curiosos: Los 150 Mejores Problemas De | 2200 | 2039 | 2039 | sí |
 | MLU1066586596 Física Universitaria Con Física Moderna Tomo 1 Zem | 10500 | 10286 | 10286 | sí |

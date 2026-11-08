@@ -1,12 +1,12 @@
 {
-  "fecha": "2026-11-08T17:56:12.842Z",
+  "fecha": "2026-11-08T20:06:45.545Z",
   "muestra": [
     {
-      "id": "MLU694591921",
-      "titulo": "Disney Princess Moana Barco De Aventura",
-      "precio": 3202,
+      "id": "MLU652084864",
+      "titulo": "El Archivo De La Magia- Los Crímenes De Grindelwald-",
+      "precio": 3600,
       "estado": "winning",
-      "precio_para_ganar": 3202,
+      "precio_para_ganar": 3600,
       "competidor_mas_barato": null,
       "otras_ofertas": 0,
       "sugerencias_ml": [
@@ -16,8 +16,22 @@
       "ok": true
     },
     {
-      "id": "MLU667847543",
-      "titulo": "Europa En Guerra 1939-1945, De Davies, Norman. Editorial Pla",
+      "id": "MLU651470726",
+      "titulo": "Nacimientos Bajo Control: El Parto En Las Edades Moderna Y C",
+      "precio": 1053,
+      "estado": "winning",
+      "precio_para_ganar": 1053,
+      "competidor_mas_barato": 1350,
+      "otras_ofertas": 3,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 1350",
+      "ok": true
+    },
+    {
+      "id": "MLU687686666",
+      "titulo": "Un Saber Que No Se Sabe, Mannoni, Ed. Gedisa",
       "precio": 2300,
       "estado": "winning",
       "precio_para_ganar": 2300,
@@ -30,115 +44,101 @@
       "ok": true
     },
     {
-      "id": "MLU893426504",
-      "titulo": "De Quien Es La Musica ? - Experiencias Y Propuestas Para La",
-      "precio": 1650,
+      "id": "MLU710364416",
+      "titulo": "Pedrosa Radiología En Traumatología Ortopedia Y Reum, De Ped",
+      "precio": 7500,
       "estado": "winning",
-      "precio_para_ganar": 1650,
-      "competidor_mas_barato": 540,
+      "precio_para_ganar": 7500,
+      "competidor_mas_barato": 3276,
       "otras_ofertas": 3,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana aunque hay uno más barato (540): ML pesa envío y reputación",
+      "conclusion": "Gana aunque hay uno más barato (3276): ML pesa envío y reputación",
       "ok": true
     },
     {
-      "id": "MLU730247434",
-      "titulo": "Manual De Terapia Breve Sexual, De Green, Shelley. Fuera De ",
-      "precio": 4700,
+      "id": "MLU658092434",
+      "titulo": "Las Propuestas Educativas Y Las Secuencias Didacticas En El",
+      "precio": 2850,
       "estado": "winning",
-      "precio_para_ganar": 4700,
-      "competidor_mas_barato": 8900,
-      "otras_ofertas": 1,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana: el competidor más barato está en 8900",
-      "ok": true
-    },
-    {
-      "id": "MLU1297559746",
-      "titulo": "Diagnóstico Físico Basado Evidencia Mcgee Medicina Familiar",
-      "precio": 7900,
-      "estado": "winning",
-      "precio_para_ganar": 7900,
-      "competidor_mas_barato": 4828,
+      "precio_para_ganar": 2850,
+      "competidor_mas_barato": 3200,
       "otras_ofertas": 2,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana aunque hay uno más barato (4828): ML pesa envío y reputación",
+      "conclusion": "Gana: el competidor más barato está en 3200",
       "ok": true
     },
     {
-      "id": "MLU1034086562",
-      "titulo": "Atlas De Anatomia: Órganos Internos: 2 (atlas De Anatomía), ",
-      "precio": 7500,
+      "id": "MLU890137504",
+      "titulo": "Contabilidad De Costos Un Enfoque Gerencial 14/e, De Datar S",
+      "precio": 3300,
       "estado": "winning",
-      "precio_para_ganar": 7500,
-      "competidor_mas_barato": 2930,
+      "precio_para_ganar": 3300,
+      "competidor_mas_barato": 6230,
       "otras_ofertas": 4,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana aunque hay uno más barato (2930): ML pesa envío y reputación",
+      "conclusion": "Gana: el competidor más barato está en 6230",
       "ok": true
     },
     {
-      "id": "MLU659699009",
-      "titulo": "El Legado De La Villa De La Seda ( La Villa De La Seda 3)",
-      "precio": 1592,
+      "id": "MLU1438405132",
+      "titulo": "El Gran Si - Un Camino De Integracion, Rendicion Y Devocion,",
+      "precio": 2131,
       "estado": "winning",
-      "precio_para_ganar": 1592,
-      "competidor_mas_barato": 1576,
-      "otras_ofertas": 6,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (1576): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU645200957",
-      "titulo": "La Cuna Vacía, De Mónica Álvarez., Vol. 1.0. Editorial Esfer",
-      "precio": 2650,
-      "estado": "winning",
-      "precio_para_ganar": 2650,
-      "competidor_mas_barato": 1880,
-      "otras_ofertas": 2,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (1880): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU645527595",
-      "titulo": "El Yermo, De Sergi Llauger., Vol. Volumen Similar Al Titulo.",
-      "precio": 1600,
-      "estado": "winning",
-      "precio_para_ganar": 1600,
-      "competidor_mas_barato": 1570,
-      "otras_ofertas": 2,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (1570): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU717551920",
-      "titulo": "Rohen Yokochi Atlas De Anatomía Humana 9 Ed S",
-      "precio": 15098,
-      "estado": "winning",
-      "precio_para_ganar": 15098,
-      "competidor_mas_barato": 13930,
+      "precio_para_ganar": 2131,
+      "competidor_mas_barato": 1820,
       "otras_ofertas": 5,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana aunque hay uno más barato (13930): ML pesa envío y reputación",
+      "conclusion": "Gana aunque hay uno más barato (1820): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU659606906",
+      "titulo": "Libro El Futuro Del Homo - Michel Odent - Creavida",
+      "precio": 1600,
+      "estado": "winning",
+      "precio_para_ganar": 1600,
+      "competidor_mas_barato": 1886,
+      "otras_ofertas": 1,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 1886",
+      "ok": true
+    },
+    {
+      "id": "MLU653299830",
+      "titulo": "Manual De Supervivencia Urbana: Técnicas Y Tácticas De Super",
+      "precio": 3150,
+      "estado": "winning",
+      "precio_para_ganar": 3150,
+      "competidor_mas_barato": 2003,
+      "otras_ofertas": 2,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (2003): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU1515164692",
+      "titulo": "Querido Dexter",
+      "precio": 2650,
+      "estado": "winning",
+      "precio_para_ganar": 2650,
+      "competidor_mas_barato": null,
+      "otras_ofertas": 0,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana: no hay otros vendedores",
       "ok": true
     }
   ],
@@ -147,8 +147,8 @@
       "id": "MLU637065821",
       "titulo": "The adidas Archive. The Footwear Collection, De Christian Habermeier. Editorial ",
       "original": 1944,
-      "aplicado": 1837,
-      "en_ml": 1837,
+      "aplicado": 1851,
+      "en_ml": 1851,
       "ok": true,
       "problemas": []
     },
@@ -156,8 +156,8 @@
       "id": "MLU757785172",
       "titulo": "Instrumentación Quirúrgica Principios Y Práctica De Joanna Kotcher Fuller Vol 1 ",
       "original": 6775,
-      "aplicado": 6272,
-      "en_ml": 6272,
+      "aplicado": 6296,
+      "en_ml": 6296,
       "ok": true,
       "problemas": []
     },
@@ -372,8 +372,8 @@
       "id": "MLU888292642",
       "titulo": "Netter Flashcards De Histología",
       "original": 2694,
-      "aplicado": 2399,
-      "en_ml": 2399,
+      "aplicado": 2417,
+      "en_ml": 2417,
       "ok": true,
       "problemas": []
     },
@@ -399,8 +399,8 @@
       "id": "MLU884315176",
       "titulo": "Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Editorial Siruela Tapa Dura En Esp",
       "original": 2899,
-      "aplicado": 2847,
-      "en_ml": 2847,
+      "aplicado": 2858,
+      "en_ml": 2858,
       "ok": true,
       "problemas": []
     },
@@ -417,8 +417,8 @@
       "id": "MLU625745211",
       "titulo": "Cartas 72 Angeles, Las - Christiane Muller, Kaya",
       "original": 2210,
-      "aplicado": 2181,
-      "en_ml": 2181,
+      "aplicado": 2198,
+      "en_ml": 2198,
       "ok": true,
       "problemas": []
     },
@@ -525,8 +525,8 @@
       "id": "MLU695916883",
       "titulo": "Gestión Del Talento Humano",
       "original": 3554,
-      "aplicado": 3374,
-      "en_ml": 3374,
+      "aplicado": 3403,
+      "en_ml": 3403,
       "ok": true,
       "problemas": []
     },
@@ -962,5 +962,5 @@
     }
   ],
   "discrepancias": [],
-  "llamadas": 440
+  "llamadas": 439
 }

@@ -5,9 +5,9 @@
     "precio": 34
   },
   "ejemplos_error": [],
-  "duracion_s": 215,
+  "duracion_s": 328,
   "contadores": {
-    "fecha": "2026-11-08T17:55:43.924Z",
+    "fecha": "2026-11-08T20:06:17.405Z",
     "modo": "real",
     "activas": 6889,
     "revisadas": 6889,
@@ -18,11 +18,11 @@
     "ganador_sin_dato": 0,
     "bajadas": 0,
     "ajustadas": 0,
-    "subidas": 3,
+    "subidas": 6,
     "restauradas": 0,
     "sin_tocar_umbral": 33,
     "sin_tocar_pct": 1,
-    "verificadas": 3,
+    "verificadas": 6,
     "no_verificadas": 0,
     "promo": 0,
     "bajo_piso": 0,
@@ -34,8 +34,8 @@
   },
   "catalogo": {
     "estados": {
-      "sharing_first_place": 53,
-      "winning": 2985,
+      "sharing_first_place": 54,
+      "winning": 2984,
       "not_listed": 3817,
       "competing": 34
     },
@@ -48,16 +48,17 @@
       "not_listed:item_not_opted_in": 3817
     },
     "por_tipo": {
-      "catalogo:sharing_first_place:con_stock": 53,
-      "catalogo:winning:con_stock": 2985,
+      "catalogo:sharing_first_place:con_stock": 54,
+      "catalogo:winning:con_stock": 2984,
       "tradicional:not_listed:con_stock": 3817,
       "catalogo:competing:con_stock": 34
     },
     "errores_por_tipo": {}
   },
   "errores": {},
-  "llamadas": 7414,
+  "llamadas": 7425,
   "por_status": {
-    "200": 7414
+    "200": 7420,
+    "429": 5
   }
 }
