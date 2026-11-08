@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { decidir, objetivoDe } from '../src/decision.mjs';
 
 // Regla de Vintage (Seba, 05/11/2026): <= 400, 99 % del ganador, piso 1.200, sólo contra a demanda.
-const V = { umbral: 400, umbralInclusivo: true, descuento: 0.01, topePct: null, piso: 1200 };
+// Subida directa (confirmarSubida 1, fracción 1): estos tests miran hasta dónde sube.
+// La subida con memoria tiene sus propios tests (subida-memoria.test.mjs).
+const V = { confirmarSubida: 1, fraccionSubida: 1, umbral: 400, umbralInclusivo: true, descuento: 0.01, topePct: null, piso: 1200 };
 const item = (o = {}) => ({ id: 'MLU1', price: 2000, currency_id: 'UYU', variaciones: false, demanda: true, available_quantity: 1, ...o });
 const demanda = ganador => ({ marcada: true, compite: true, ganador, estado: 'competing', entrega_ganador: 'demanda' });
 const inmediato = ganador => ({ marcada: false, compite: true, ganador, estado: 'competing', entrega_ganador: 'inmediato', bloqueo: 'ganador_inmediato' });
@@ -58,7 +60,7 @@ test('Libros sigue igual: < 360, 30 %, un peso abajo', () => {
   assert.equal(decidir({ item: item({ price: 1000, demanda: false }), comp: { marcada: true, ganador: 701 } }).precio, 701);
   assert.equal(decidir({ item: item({ price: 1000, demanda: false }), comp: { marcada: true, ganador: 699 } }).accion, 'sin_tocar_pct');
   assert.equal(decidir({ item: item({ price: 1000, demanda: false }), comp: { marcada: true, ganador: 640 } }).accion, 'sin_tocar_umbral');
-  assert.equal(decidir({ item: item({ price: 800, demanda: false }), comp: { marcada: false, techo: 949 }, previo: { precio_original: 1000, precio_aplicado: 800 } }).precio, 949);
+  assert.equal(decidir({ item: item({ price: 800, demanda: false }), comp: { marcada: false, techo: 949 }, previo: { precio_original: 1000, precio_aplicado: 800 }, confirmarSubida: 1, fraccionSubida: 1 }).precio, 949);
 });
 
 test('subida mínima de 10 pesos: 1 peso no se mueve, 15 sí', () => {
