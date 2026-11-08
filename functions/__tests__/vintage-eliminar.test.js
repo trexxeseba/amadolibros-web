@@ -12,13 +12,20 @@ const vintage=(id,extra={})=>({id,seller_id:2341378249,status:'active',title:'Li
 test('without --real nothing is written; another seller is never touched',async()=>{
  const ml=fakeMl({MLU1:vintage('MLU1'),MLU2:vintage('MLU2',{seller_id:440298103})});
  const s=await run({ids:['MLU1','MLU2'],ml,real:false,log:()=>{}});
- assert.deepEqual(s.resultados,{se_eliminaria:1,otra_cuenta_no_se_toca:1});assert.equal(ml.puts.length,0);
+ assert.deepEqual(s.resultados,{se_pausaria:1,otra_cuenta_no_se_toca:1});assert.equal(ml.puts.length,0);
 });
 
-test('with --real each Vintage listing is closed and then deleted, and the ISBN is kept for selling elsewhere',async()=>{
+test('by default --real PAUSES (reversible): active ones get paused, paused or closed ones are left alone',async()=>{
+ const ml=fakeMl({MLU1:vintage('MLU1'),MLU2:vintage('MLU2',{status:'paused'}),MLU3:vintage('MLU3',{status:'closed'}),MLU4:vintage('MLU4',{seller_id:440298103})});
+ const s=await run({ids:['MLU1','MLU2','MLU3','MLU4'],ml,real:true,log:()=>{}});
+ assert.deepEqual(ml.puts,[['MLU1',{status:'paused'}]]);
+ assert.deepEqual(s.resultados,{pausada:1,ya_pausada:1,no_activa_no_se_toca:1,otra_cuenta_no_se_toca:1});
+});
+
+test('with --real --eliminar each Vintage listing is closed and then deleted, and the ISBN is kept for selling elsewhere',async()=>{
  const ml=fakeMl({MLU1:vintage('MLU1'),MLU3:vintage('MLU3',{status:'closed'}),MLU4:vintage('MLU4',{seller_id:440298103})});
  const lines=[];
- const s=await run({ids:['MLU1','MLU3','MLU4','MLU9'],ml,real:true,log:l=>lines.push(l)});
+ const s=await run({ids:['MLU1','MLU3','MLU4','MLU9'],ml,real:true,eliminar:true,log:l=>lines.push(l)});
  const puts=ml.puts.map(([id,b])=>id+':'+JSON.stringify(b)).sort();
  assert.deepEqual(puts,['MLU1:{"deleted":"true"}','MLU1:{"status":"closed"}','MLU3:{"deleted":"true"}']);
  assert.ok(!ml.puts.some(([id])=>id==='MLU4'),'Amado Libros is never touched');

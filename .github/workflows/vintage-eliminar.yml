@@ -1,13 +1,18 @@
-name: Vintage eliminar riesgosas
+name: Vintage pausar riesgosas
 
-# Elimina (cierra y borra) las publicaciones de Amado Vintage (2341378249) de la lista aprobada por
-# Seba el 08/11/2026 (scripts/vintage-cloud/eliminar-2026-11-09.txt), por riesgo de propiedad
-# intelectual. Sin "real" sólo lee e informa qué eliminaría. Nunca toca Amado Libros.
+# Pausa las publicaciones de Amado Vintage (2341378249) de la lista aprobada por Seba el 08/11/2026
+# (scripts/vintage-cloud/eliminar-2026-11-09.txt), por riesgo de propiedad intelectual. Pausar es
+# reversible y conserva el historial. Con "eliminar" las cierra y borra (irreversible). Sin "real"
+# sólo lee e informa. Nunca toca Amado Libros.
 on:
   workflow_dispatch:
     inputs:
       real:
-        description: 'Eliminar de verdad (sin tildar: sólo informa)'
+        description: 'Hacerlo de verdad (sin tildar: sólo informa)'
+        type: boolean
+        default: false
+      eliminar:
+        description: 'Eliminar en vez de pausar (irreversible; exige escribir ELIMINAR)'
         type: boolean
         default: false
       confirmar:
@@ -39,15 +44,17 @@ jobs:
           node-version: '22'
       - name: Tests
         run: node --experimental-sqlite --test functions/__tests__/vintage-eliminar.test.js
-      - name: Eliminar
+      - name: Pausar o eliminar
         env:
           REAL: ${{ inputs.real }}
+          ELIMINAR: ${{ inputs.eliminar }}
           CONFIRMAR: ${{ inputs.confirmar }}
         shell: bash
         run: |
           ARGS=(--lista scripts/vintage-cloud/eliminar-2026-11-09.txt)
-          if [ "$REAL" = "true" ]; then
+          if [ "$REAL" = "true" ]; then ARGS+=(--real); fi
+          if [ "$ELIMINAR" = "true" ]; then
             if [ "$CONFIRMAR" != "ELIMINAR" ]; then echo "Para eliminar de verdad hay que escribir ELIMINAR"; exit 1; fi
-            ARGS+=(--real)
+            ARGS+=(--eliminar)
           fi
           node scripts/vintage-cloud/eliminar.mjs "${ARGS[@]}"
