@@ -95,7 +95,9 @@ export function payloadPolicyMismatch(payload,policy){
 // productNotFoundAsMissing (sólo Vintage en la nube; false = como siempre): si la búsqueda por ISBN
 // devuelve una ficha pero /products/{id} responde 404, el libro se trata como sin ficha: alta
 // tradicional con los datos verificados del proveedor y sin ganador para comparar.
-export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>globalThis.fetch(...args),tokenProvider=getAccessToken,tokenInvalidator=invalidateAccessToken,now=Date.now,timeouts={},trustPreparedMs=0,productNotFoundAsMissing=false}={}){
+// catalogOnly (Vintage en la nube, decisión de Seba 08/11/2026): sin ficha de catálogo no se publica.
+// Las altas tradicionales usaban la foto y los datos de SBS y generaron cientos de moderaciones.
+export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>globalThis.fetch(...args),tokenProvider=getAccessToken,tokenInvalidator=invalidateAccessToken,now=Date.now,timeouts={},trustPreparedMs=0,productNotFoundAsMissing=false,catalogOnly=false}={}){
  const verifiedTokens=new Map();
  if(!['440298103','2341378249'].includes(sellerId))throw new PublicationError('unsupported_seller',403);
  if(sellerId!==SELLER_ID&&tokenProvider===getAccessToken)throw new PublicationError('seller_token_provider_required',503);
@@ -271,6 +273,7 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
   let missing=found.results.length===0&&(found.paging?.total===undefined||found.paging.total===0),fellBack=false;
   if(!missing&&((typeof found.paging?.total==='number'&&found.paging.total!==1)||found.results.length!==1))throw new PublicationError('ambiguous_product_metadata',422);
   let product,productId=null;
+  if(missing&&catalogOnly)throw new PublicationError('catalog_required_no_product',422);
   if(missing)product=await supplierBookMetadata(row,{fetcher});
   else{
    productId=found.results[0].id;if(!/^MLU\d+$/.test(productId))throw new PublicationError('product_id_invalid',422);
@@ -278,6 +281,7 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
    catch(error){
     if(!productNotFoundAsMissing||!(error instanceof MercadoLibreError)||error.status!==404)throw error;
     // La ficha que dio la búsqueda no existe: alta tradicional con los datos del proveedor.
+    if(catalogOnly)throw new PublicationError('catalog_required_no_product',422);
     productId=null;missing=true;fellBack=true;product=await supplierBookMetadata(row,{fetcher});
    }
   }

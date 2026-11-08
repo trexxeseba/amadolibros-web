@@ -33,7 +33,9 @@ export const HARD_MAX_PER_RUN=1000,HARD_MAX_PER_DAY=10000;
 // Además: no repite en create lo que validó prepare hace menos de 2 h, ni espera la descarga de fotos.
 // Ficha de catálogo que da 404: se publica sin catálogo (Seba, 08/11/2026), y las que habían
 // quedado en revisión por eso vuelven a la cola.
-export const CLOUD_ENGINE={requestTimeoutMs:15000,statusEvery:10,keepIndexDays:3,trustPreparedMs:2*3600000,deferPictures:true,productNotFoundAsMissing:false,requeueReviewCodes:[]};
+export const CLOUD_ENGINE={requestTimeoutMs:15000,statusEvery:10,keepIndexDays:3,trustPreparedMs:2*3600000,deferPictures:true,productNotFoundAsMissing:false,requeueReviewCodes:[],catalogOnly:true};
+// Plan de retorno (Seba, 08/11/2026): sólo catálogo con ISBN, 25 altas por día, revisión diaria de
+// infracciones. El publicador sigue apagado hasta el OK de Seba después de una semana limpia.
 const CAMPAIGN=path.join(path.dirname(fileURLToPath(import.meta.url)),'..','vintage-local','campaign.json');
 const problem=(code,detail={})=>Object.assign(new Error(code),{code,detail});
 

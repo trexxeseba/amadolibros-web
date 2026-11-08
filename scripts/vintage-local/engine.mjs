@@ -66,7 +66,7 @@ export async function inspectWorkbook(file){
  const bytes=await fs.readFile(file),input=readFullStock(bytes);
  return {...input,source_sha256:await sha256('vintage-bulk-positive-v1:'+await sha256(bytes))};
 }
-export async function run({excel,connection,directory,target=1000,raiseTargetTo=0,intervalMs=2000,requestTimeoutMs=60000,statusEvery=1,keepIndexDays=0,classifiers=0,classifyOnly=false,maxValidated=300,trustPreparedMs=0,deferPictures=false,productNotFoundAsMissing=false,requeueReviewCodes=[],blockedIsbns=null,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
+export async function run({excel,connection,directory,target=1000,raiseTargetTo=0,intervalMs=2000,requestTimeoutMs=60000,statusEvery=1,keepIndexDays=0,classifiers=0,classifyOnly=false,maxValidated=300,trustPreparedMs=0,deferPictures=false,productNotFoundAsMissing=false,requeueReviewCodes=[],blockedIsbns=null,catalogOnly=false,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
  if(!Number.isInteger(target)||target<5||target>MAX_TARGET_TOTAL||!Number.isInteger(validateOnly)||validateOnly<0||validateOnly>5)throw new Error('invalid_local_limits');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
  if(await policyHash(policy)!==c.policy_hash)throw new Error('connection_policy_changed');
@@ -85,7 +85,7 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
   }catch{}
   return response;
  };
- api=apiFactory({sellerId:SELLER,timeouts:{request:requestTimeoutMs,create:60000},trustPreparedMs,productNotFoundAsMissing,tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>watched(url,options)});
+ api=apiFactory({sellerId:SELLER,timeouts:{request:requestTimeoutMs,create:60000},trustPreparedMs,productNotFoundAsMissing,catalogOnly,tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>watched(url,options)});
  const inFlight=new Set();
  class LocalStore extends VintageBulkStore{
   async reserve(seller,isbn,runId,now,cap,lease){

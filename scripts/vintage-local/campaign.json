@@ -4,11 +4,11 @@
   "ejecutor": "nube",
   "nube": {
     "modo": "apagado",
-    "tanda": 1000,
-    "tope_diario": 8000,
+    "tanda": 25,
+    "tope_diario": 25,
     "minutos": 50,
-    "intervalo_ms": 250,
-    "clasificadores": 4,
+    "intervalo_ms": 500,
+    "clasificadores": 1,
     "clasificar": {
       "clasificadores": 4,
       "intervalo_ms": 250
