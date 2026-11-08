@@ -2,7 +2,7 @@
   {
     "id": "MLU637065821",
     "titulo": "The adidas Archive. The Footwear Collection, De Christian Ha",
-    "precio": 1837,
+    "precio": 1851,
     "moneda": "UYU",
     "variaciones": false,
     "precio_dinamico": false,
@@ -17,18 +17,18 @@
     "piso": null,
     "en_estado_antes": true,
     "precio_original": 1944,
-    "promo": false,
-    "accion": "subir",
-    "motivo": "sube 14 de 14 hacia 1851 (competidor en 1852.6)",
+    "promo": null,
+    "accion": "mantener",
+    "motivo": "gana con el precio aplicado",
     "detalle": null,
-    "precio_nuevo": 1851,
+    "precio_nuevo": null,
     "stock_nuevo": null,
-    "aplicado": true
+    "aplicado": null
   },
   {
     "id": "MLU757785172",
     "titulo": "Instrumentación Quirúrgica Principios Y Práctica De Joanna K",
-    "precio": 6272,
+    "precio": 6296,
     "moneda": "UYU",
     "variaciones": false,
     "precio_dinamico": false,
@@ -43,13 +43,13 @@
     "piso": null,
     "en_estado_antes": true,
     "precio_original": 6775,
-    "promo": false,
-    "accion": "subir",
-    "motivo": "sube 24 de 48 hacia 6320 (competidor en 6321.2)",
+    "promo": null,
+    "accion": "mantener",
+    "motivo": "gana 1 de 2 corridas antes de subir",
     "detalle": null,
-    "precio_nuevo": 6296,
+    "precio_nuevo": null,
     "stock_nuevo": null,
-    "aplicado": true
+    "aplicado": null
   },
   {
     "id": "MLU862968034",
@@ -485,13 +485,13 @@
     "piso": null,
     "en_estado_antes": true,
     "precio_original": 1790,
-    "promo": null,
-    "accion": "mantener",
-    "motivo": "gana 1 de 2 corridas antes de subir",
+    "promo": false,
+    "accion": "subir",
+    "motivo": "sube 24 de 48 hacia 1790",
     "detalle": null,
-    "precio_nuevo": null,
+    "precio_nuevo": 1766,
     "stock_nuevo": null,
-    "aplicado": null
+    "aplicado": true
   },
   {
     "id": "MLU653960560",
@@ -652,7 +652,7 @@
   {
     "id": "MLU888292642",
     "titulo": "Netter Flashcards De Histología",
-    "precio": 2399,
+    "precio": 2417,
     "moneda": "UYU",
     "variaciones": false,
     "precio_dinamico": false,
@@ -667,13 +667,13 @@
     "piso": null,
     "en_estado_antes": true,
     "precio_original": 2694,
-    "promo": false,
-    "accion": "subir",
-    "motivo": "sube 18 de 18 hacia 2417 (competidor en 2418)",
+    "promo": null,
+    "accion": "mantener",
+    "motivo": "gana con el precio aplicado",
     "detalle": null,
-    "precio_nuevo": 2417,
+    "precio_nuevo": null,
     "stock_nuevo": null,
-    "aplicado": true
+    "aplicado": null
   },
   {
     "id": "MLU669860318",
@@ -730,7 +730,7 @@
   {
     "id": "MLU884315176",
     "titulo": "Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Editorial Siru",
-    "precio": 2847,
+    "precio": 2858,
     "moneda": "UYU",
     "variaciones": false,
     "precio_dinamico": false,
@@ -745,13 +745,13 @@
     "piso": null,
     "en_estado_antes": true,
     "precio_original": 2899,
-    "promo": false,
-    "accion": "subir",
-    "motivo": "sube 11 de 22 hacia 2869 (competidor en 2870)",
+    "promo": null,
+    "accion": "mantener",
+    "motivo": "gana 1 de 2 corridas antes de subir",
     "detalle": null,
-    "precio_nuevo": 2858,
+    "precio_nuevo": null,
     "stock_nuevo": null,
-    "aplicado": true
+    "aplicado": null
   },
   {
     "id": "MLU655257859",
@@ -782,7 +782,7 @@
   {
     "id": "MLU625745211",
     "titulo": "Cartas 72 Angeles, Las - Christiane Muller, Kaya",
-    "precio": 2181,
+    "precio": 2198,
     "moneda": "UYU",
     "variaciones": false,
     "precio_dinamico": false,
@@ -797,13 +797,13 @@
     "piso": null,
     "en_estado_antes": true,
     "precio_original": 2210,
-    "promo": false,
-    "accion": "subir",
-    "motivo": "sube 17 de 17 hacia 2198 (competidor en 2199)",
+    "promo": null,
+    "accion": "mantener",
+    "motivo": "gana con el precio aplicado",
     "detalle": null,
-    "precio_nuevo": 2198,
+    "precio_nuevo": null,
     "stock_nuevo": null,
-    "aplicado": true
+    "aplicado": null
   },
   {
     "id": "MLU957971524",
@@ -1094,13 +1094,13 @@
   {
     "id": "MLU695916883",
     "titulo": "Gestión Del Talento Humano",
-    "precio": 3374,
+    "precio": 3403,
     "moneda": "UYU",
     "variaciones": false,
     "precio_dinamico": false,
     "marcada": false,
     "compite": false,
-    "ganador": 3374,
+    "ganador": 3403,
     "perdida": null,
     "bloqueo": null,
     "entrega_ganador": null,
@@ -1109,13 +1109,13 @@
     "piso": null,
     "en_estado_antes": true,
     "precio_original": 3554,
-    "promo": false,
-    "accion": "subir",
-    "motivo": "sube 29 de 59 hacia 3433 (competidor en 3518)",
+    "promo": null,
+    "accion": "mantener",
+    "motivo": "gana 1 de 2 corridas antes de subir",
     "detalle": null,
-    "precio_nuevo": 3403,
+    "precio_nuevo": null,
     "stock_nuevo": null,
-    "aplicado": true
+    "aplicado": null
   },
   {
     "id": "MLU827082652",
@@ -1135,13 +1135,13 @@
     "piso": null,
     "en_estado_antes": true,
     "precio_original": 1950,
-    "promo": null,
-    "accion": "mantener",
-    "motivo": "gana 1 de 2 corridas antes de subir",
+    "promo": false,
+    "accion": "subir",
+    "motivo": "sube 21 de 43 hacia 1829 (competidor en 1830)",
     "detalle": null,
-    "precio_nuevo": null,
+    "precio_nuevo": 1807,
     "stock_nuevo": null,
-    "aplicado": null
+    "aplicado": true
   },
   {
     "id": "MLU728418074",

@@ -1,4 +1,4 @@
-# Auditoría Precio Ganador · Amado Libros · 2026-11-08T20:06:45.545Z
+# Auditoría Precio Ganador · Amado Libros · 2026-11-08T21:40:49.485Z
 
 Discrepancias: **0**
 
@@ -6,16 +6,16 @@ Discrepancias: **0**
 
 | Publicación | Precio | Estado ML | Para ganar | Competidor más barato | Sugerencias de ML | Conclusión | OK |
 |---|---:|---|---:|---:|---|---|---|
-| MLU652084864 El Archivo De La Magia- Los Crímenes De Grindelwald- | 3600 | winning | 3600 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
-| MLU651470726 Nacimientos Bajo Control: El Parto En Las Edades Moderna Y C | 1053 | winning | 1053 | 1350 | Envíos Full | Gana: el competidor más barato está en 1350 | sí |
-| MLU687686666 Un Saber Que No Se Sabe, Mannoni, Ed. Gedisa | 2300 | winning | 2300 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
-| MLU710364416 Pedrosa Radiología En Traumatología Ortopedia Y Reum, De Ped | 7500 | winning | 7500 | 3276 | Envíos Full | Gana aunque hay uno más barato (3276): ML pesa envío y reputación | sí |
-| MLU658092434 Las Propuestas Educativas Y Las Secuencias Didacticas En El | 2850 | winning | 2850 | 3200 | Envíos Full | Gana: el competidor más barato está en 3200 | sí |
-| MLU890137504 Contabilidad De Costos Un Enfoque Gerencial 14/e, De Datar S | 3300 | winning | 3300 | 6230 | Envíos Full | Gana: el competidor más barato está en 6230 | sí |
-| MLU1438405132 El Gran Si - Un Camino De Integracion, Rendicion Y Devocion, | 2131 | winning | 2131 | 1820 | Envíos Full | Gana aunque hay uno más barato (1820): ML pesa envío y reputación | sí |
-| MLU659606906 Libro El Futuro Del Homo - Michel Odent - Creavida | 1600 | winning | 1600 | 1886 | Envíos Full | Gana: el competidor más barato está en 1886 | sí |
-| MLU653299830 Manual De Supervivencia Urbana: Técnicas Y Tácticas De Super | 3150 | winning | 3150 | 2003 | Envíos Full | Gana aunque hay uno más barato (2003): ML pesa envío y reputación | sí |
-| MLU1515164692 Querido Dexter | 2650 | winning | 2650 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
+| MLU643247327 English File Elementary (3rd.edition) - Multipack B + Itutor | 3850 | winning | 3850 | 2814 | Envíos Full | Gana aunque hay uno más barato (2814): ML pesa envío y reputación | sí |
+| MLU730410534 Libro Peppa Pig Pequeña Biblioteca De Buenas Noches Original | 1400 | winning | 1400 | 747 | Envíos Full | Gana aunque hay uno más barato (747): ML pesa envío y reputación | sí |
+| MLU1299647170 Oxford Essential Dictionary For Elementary And Pre-intermedi | 3102 | winning | 3102 | 2590 | Envíos Full | Gana aunque hay uno más barato (2590): ML pesa envío y reputación | sí |
+| MLU681840474 Libro La Globalización China - Rios, Xulio | 2300 | winning | 2300 | 3030 | Envíos Full | Gana: el competidor más barato está en 3030 | sí |
+| MLU1505128778 International Primary Science Workbook: Stage 2 - Unknown -  | 1766 | winning | 1766 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
+| MLU652098124 Itinerarios De La Modernidad - Casullo, Forster, Y Otros | 1212 | winning | 1212 | 1612 | Envíos Full | Gana: el competidor más barato está en 1612 | sí |
+| MLU732345398 Producciãâ³n De Vacuno De Carne En Praderas, De Wilkinson, J | 1550 | winning | 1550 | 1520 | Envíos Full | Gana aunque hay uno más barato (1520): ML pesa envío y reputación | sí |
+| MLU636445625 Destroza Este Diario. Azul - Keri Smith | 1126 | winning | 1126 | 885 | Envíos Full | Gana aunque hay uno más barato (885): ML pesa envío y reputación | sí |
+| MLU675411972 María Montessori Le Habla A Los Padres, Sp15, De María Monte | 1567 | winning | 1567 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
+| MLU757396208 Libro Historia De Rusia. Desde La Antigã¼edad Hasta Nuest | 3133 | winning | 3133 | 3117 | Envíos Full | Gana aunque hay uno más barato (3117): ML pesa envío y reputación | sí |
 
 ## Publicaciones que el sistema bajó (49)
 
@@ -39,7 +39,7 @@ Discrepancias: **0**
 | MLU886822546 Personal Best B1+ Intermediate - Workbook - Richmo | 1178 | 1153 | 1153 | sí |
 | MLU1496874810 Libro: Privacidad Es Poder. Veliz, Carissa. Debate | 1464 | 1402 | 1402 | sí |
 | MLU663199900 Libro La Última Encrucijada - Jorge Liotti - Plane | 1106 | 1082 | 1082 | sí |
-| MLU1505128778 International Primary Science Workbook: Stage 2 -  | 1790 | 1742 | 1742 | sí |
+| MLU1505128778 International Primary Science Workbook: Stage 2 -  | 1790 | 1766 | 1766 | sí |
 | MLU653960560 Dar El Duelo - Virginia Cano | 1950 | 1593 | 1593 | sí |
 | MLU660998018 Daat: El Conocimiento - Saban, Mario Javier | 3650 | 3336 | 3336 | sí |
 | MLU740027064 Autismo Una Guia Practica: Una Guía Práctica, De P | 629 | 624 | 624 | sí |
@@ -64,7 +64,7 @@ Discrepancias: **0**
 | MLU702932898 El Engaño Populista | 2750 | 2504 | 2504 | sí |
 | MLU833600900 Dos Perros Y Una Abuela - Loqueleo Verde | 1650 | 1639 | 1639 | sí |
 | MLU695916883 Gestión Del Talento Humano | 3554 | 3403 | 3403 | sí |
-| MLU827082652 Libro El Estofado Del Lobo - Keiko Kasza | 1950 | 1786 | 1786 | sí |
+| MLU827082652 Libro El Estofado Del Lobo - Keiko Kasza | 1950 | 1807 | 1807 | sí |
 | MLU728418074 Filoenigmas Curiosos: Los 150 Mejores Problemas De | 2200 | 2039 | 2039 | sí |
 | MLU1066586596 Física Universitaria Con Física Moderna Tomo 1 Zem | 10500 | 10286 | 10286 | sí |
 | MLU658066440 Mi Emocionario - Flavia Tomaello | 791 | 774 | 774 | sí |
