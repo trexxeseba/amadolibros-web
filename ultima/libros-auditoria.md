@@ -1,4 +1,4 @@
-# Auditoría Precio Ganador · Amado Libros · 2026-11-08T21:40:49.485Z
+# Auditoría Precio Ganador · Amado Libros · 2026-11-08T22:03:14.666Z
 
 Discrepancias: **0**
 
@@ -6,23 +6,23 @@ Discrepancias: **0**
 
 | Publicación | Precio | Estado ML | Para ganar | Competidor más barato | Sugerencias de ML | Conclusión | OK |
 |---|---:|---|---:|---:|---|---|---|
-| MLU643247327 English File Elementary (3rd.edition) - Multipack B + Itutor | 3850 | winning | 3850 | 2814 | Envíos Full | Gana aunque hay uno más barato (2814): ML pesa envío y reputación | sí |
-| MLU730410534 Libro Peppa Pig Pequeña Biblioteca De Buenas Noches Original | 1400 | winning | 1400 | 747 | Envíos Full | Gana aunque hay uno más barato (747): ML pesa envío y reputación | sí |
-| MLU1299647170 Oxford Essential Dictionary For Elementary And Pre-intermedi | 3102 | winning | 3102 | 2590 | Envíos Full | Gana aunque hay uno más barato (2590): ML pesa envío y reputación | sí |
-| MLU681840474 Libro La Globalización China - Rios, Xulio | 2300 | winning | 2300 | 3030 | Envíos Full | Gana: el competidor más barato está en 3030 | sí |
-| MLU1505128778 International Primary Science Workbook: Stage 2 - Unknown -  | 1766 | winning | 1766 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
-| MLU652098124 Itinerarios De La Modernidad - Casullo, Forster, Y Otros | 1212 | winning | 1212 | 1612 | Envíos Full | Gana: el competidor más barato está en 1612 | sí |
+| MLU740312654 Falacias Libertarias - Guido Agostinelli: Cómo Evitar Caer E | 662 | winning | 662 | 690 | Envíos Full, Envío gratis | Gana: el competidor más barato está en 690 | sí |
+| MLU646484971 Sola Busca Tarot Oraculo | 3600 | winning | 3038 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
+| MLU692750694 Abc Del Discurso Audiovisual Alberto Harari Tapa Del Libro B | 2517 | winning | 2517 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
+| MLU709363578 Libro Oxford First Dictionary, De Oxford Dictionaries. Edito | 2100 | winning | 2100 | 4620 | Envíos Full | Gana: el competidor más barato está en 4620 | sí |
+| MLU959284888 Juego De Mesa Worm Up Carreras De Gusanos 7+ | 1870 | sharing_first_place | 1860 | 1890 | Envíos Full | Comparte el primer lugar (1 más) | sí |
+| MLU692879872 3d Coloring Vehículos: Líneas En Relieve. ¡dibuja, Colorea,  | 1502 | winning | 1502 | 1196 | Envíos Full | Gana aunque hay uno más barato (1196): ML pesa envío y reputación | sí |
 | MLU732345398 Producciãâ³n De Vacuno De Carne En Praderas, De Wilkinson, J | 1550 | winning | 1550 | 1520 | Envíos Full | Gana aunque hay uno más barato (1520): ML pesa envío y reputación | sí |
-| MLU636445625 Destroza Este Diario. Azul - Keri Smith | 1126 | winning | 1126 | 885 | Envíos Full | Gana aunque hay uno más barato (885): ML pesa envío y reputación | sí |
-| MLU675411972 María Montessori Le Habla A Los Padres, Sp15, De María Monte | 1567 | winning | 1567 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
-| MLU757396208 Libro Historia De Rusia. Desde La Antigã¼edad Hasta Nuest | 3133 | winning | 3133 | 3117 | Envíos Full | Gana aunque hay uno más barato (3117): ML pesa envío y reputación | sí |
+| MLU1435969286 Libro Hijos Amados De Dios, De Lourdes Varela, Vol. 1. Edito | 2250 | winning | 2250 | 1211 | Envíos Full | Gana aunque hay uno más barato (1211): ML pesa envío y reputación | sí |
+| MLU674455430 Longman Diccionario Pocket Latinoamericano + Cd-rom (2da.edi | 2400 | winning | 2400 | 4810 | Envíos Full | Gana: el competidor más barato está en 4810 | sí |
+| MLU951562644 Green Book Black Edition. Tomo 2, De Vv.aa. Editorial Marban | 4700 | winning | 4700 | 3200 | Envíos Full | Gana aunque hay uno más barato (3200): ML pesa envío y reputación | sí |
 
 ## Publicaciones que el sistema bajó (49)
 
 | Publicación | Original | Registrado | En ML hoy | OK |
 |---|---:|---:|---:|---|
 | MLU637065821 The adidas Archive. The Footwear Collection, De Ch | 1944 | 1851 | 1851 | sí |
-| MLU757785172 Instrumentación Quirúrgica Principios Y Práctica D | 6775 | 6296 | 6296 | sí |
+| MLU757785172 Instrumentación Quirúrgica Principios Y Práctica D | 6775 | 6308 | 6308 | sí |
 | MLU862968034 Granja, La Libro De Juegos Y Puzzle, De Anónimo. E | 415 | 367 | 367 | sí |
 | MLU1240815646 El Pequeño Gran Libro Del Crochet, De Marie Noelle | 1250 | 1173 | 1173 | sí |
 | MLU1248458670 Libro La Montaña Eres Tú [ Brianna Wiest ] Origina | 725 | 683 | 683 | sí |
@@ -49,7 +49,7 @@ Discrepancias: **0**
 | MLU888292642 Netter Flashcards De Histología | 2694 | 2417 | 2417 | sí |
 | MLU669860318 Cómo Te Sientes, De Anthony Browne. Editorial Kala | 825 | 791 | 791 | sí |
 | MLU884651706 El Ascendente: Tu Gps Existencial. Descubrí La Lla | 571 | 562 | 562 | sí |
-| MLU884315176 Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Edit | 2899 | 2858 | 2858 | sí |
+| MLU884315176 Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Edit | 2899 | 2869 | 2869 | sí |
 | MLU655257859 Respeto Por La Interpretacion - Uta, Frankel | 767 | 755 | 755 | sí |
 | MLU625745211 Cartas 72 Angeles, Las - Christiane Muller, Kaya | 2210 | 2198 | 2198 | sí |
 | MLU957971524 Libro No Es Un Monstruo, Es Una Herida, De López P | 1105 | 1099 | 1099 | sí |
@@ -63,7 +63,7 @@ Discrepancias: **0**
 | MLU701173804 Encendidas: Un Viaje Íntimo Por La Menopausia, De  | 2200 | 2088 | 2088 | sí |
 | MLU702932898 El Engaño Populista | 2750 | 2504 | 2504 | sí |
 | MLU833600900 Dos Perros Y Una Abuela - Loqueleo Verde | 1650 | 1639 | 1639 | sí |
-| MLU695916883 Gestión Del Talento Humano | 3554 | 3403 | 3403 | sí |
+| MLU695916883 Gestión Del Talento Humano | 3554 | 3418 | 3418 | sí |
 | MLU827082652 Libro El Estofado Del Lobo - Keiko Kasza | 1950 | 1807 | 1807 | sí |
 | MLU728418074 Filoenigmas Curiosos: Los 150 Mejores Problemas De | 2200 | 2039 | 2039 | sí |
 | MLU1066586596 Física Universitaria Con Física Moderna Tomo 1 Zem | 10500 | 10286 | 10286 | sí |

@@ -2,7 +2,7 @@
 
 ```json
 {
-  "fecha": "2026-11-08T21:40:37.339Z",
+  "fecha": "2026-11-08T22:03:02.122Z",
   "modo": "real",
   "activas": 6889,
   "revisadas": 6889,
@@ -13,11 +13,11 @@
   "ganador_sin_dato": 0,
   "bajadas": 0,
   "ajustadas": 0,
-  "subidas": 2,
+  "subidas": 3,
   "restauradas": 0,
   "sin_tocar_umbral": 33,
   "sin_tocar_pct": 1,
-  "verificadas": 2,
+  "verificadas": 3,
   "no_verificadas": 0,
   "promo": 0,
   "bajo_piso": 0,
@@ -32,7 +32,7 @@
 | Publicación | Tipo | Mi precio | Precio ganador | Diferencia | Qué haría | Stock | Motivo ML |
 |---|---|---:|---:|---:|---|---|---|
 | [MLU637065821](https://articulo.mercadolibre.com.uy/MLU-637065821-the-adidas-archive-the-footwear-collection-de-christian-habermeier-editorial-taschen-america-llc-en-ingles-_JM) The adidas Archive. The Footwear Collection, De Ch | catalogo sharing_first_place | 1851 | 1833 | 18 | Mantener |  |  |
-| [MLU757785172](https://articulo.mercadolibre.com.uy/MLU-757785172-instrumentacion-quirurgica-principios-y-practica-de-joanna-kotcher-fuller-vol-1-editorial-medica-panamericana-tapa-blanda-edicion-8a-en-espanol-2023-_JM) Instrumentación Quirúrgica Principios Y Práctica D | catalogo sharing_first_place | 6296 | 6258 | 38 | Mantener |  |  |
+| [MLU757785172](https://articulo.mercadolibre.com.uy/MLU-757785172-instrumentacion-quirurgica-principios-y-practica-de-joanna-kotcher-fuller-vol-1-editorial-medica-panamericana-tapa-blanda-edicion-8a-en-espanol-2023-_JM) Instrumentación Quirúrgica Principios Y Práctica D | catalogo sharing_first_place | 6296 | 6258 | 38 | Subir (sigue ganando) → 6308 (aplicado y verificado) |  |  |
 | [MLU862968034](https://articulo.mercadolibre.com.uy/MLU-862968034-granja-la-libro-de-juegos-y-puzzle-de-anonimo-editorial-el-gato-de-hojalata-tapa-blanda-en-espanol-_JM) Granja, La Libro De Juegos Y Puzzle, De Anónimo. E | catalogo winning | 367 | 367 | 0 | Mantener |  |  |
 | [MLU1240815646](https://articulo.mercadolibre.com.uy/MLU-1240815646-el-pequeno-gran-libro-del-crochet-de-marie-noelle-bayard-editorial-hoaki-tapa-blanda-edicion-1-en-espanol-2024-_JM) El Pequeño Gran Libro Del Crochet, De Marie Noelle | catalogo winning | 1173 | 1173 | 0 | Mantener |  |  |
 | [MLU1248458670](https://articulo.mercadolibre.com.uy/MLU-1248458670-libro-la-montana-eres-tu-brianna-wiest-original-de-brianna-wiest-editorial-booket-tapa-blanda-en-espanol-2024-_JM) Libro La Montaña Eres Tú [ Brianna Wiest ] Origina | catalogo sharing_first_place | 683 | 674 | 9 | Mantener |  |  |
@@ -49,7 +49,7 @@
 | [MLU886822546](https://articulo.mercadolibre.com.uy/MLU-886822546-personal-best-b1-intermediate-workbook-richmond-_JM) Personal Best B1+ Intermediate - Workbook - Richmo | catalogo winning | 1153 | 1153 | 0 | Mantener |  |  |
 | [MLU1496874810](https://articulo.mercadolibre.com.uy/MLU-1496874810-libro-privacidad-es-poder-veliz-carissa-debate-_JM) Libro: Privacidad Es Poder. Veliz, Carissa. Debate | catalogo winning | 1402 | 1402 | 0 | Mantener |  |  |
 | [MLU663199900](https://articulo.mercadolibre.com.uy/MLU-663199900-libro-la-ultima-encrucijada-jorge-liotti-planeta-_JM) Libro La Última Encrucijada - Jorge Liotti - Plane | catalogo sharing_first_place | 1082 | 1072 | 10 | Mantener |  |  |
-| [MLU1505128778](https://articulo.mercadolibre.com.uy/MLU-1505128778-international-primary-science-workbook-stage-2-unknown-collins-blanda-_JM) International Primary Science Workbook: Stage 2 -  | catalogo winning | 1742 | 1742 | 0 | Subir (sigue ganando) → 1766 (aplicado y verificado) |  |  |
+| [MLU1505128778](https://articulo.mercadolibre.com.uy/MLU-1505128778-international-primary-science-workbook-stage-2-unknown-collins-blanda-_JM) International Primary Science Workbook: Stage 2 -  | catalogo winning | 1766 | 1766 | 0 | Mantener |  |  |
 | [MLU653960560](https://articulo.mercadolibre.com.uy/MLU-653960560-dar-el-duelo-virginia-cano-_JM) Dar El Duelo - Virginia Cano | catalogo winning | 1593 | 1593 | 0 | Mantener |  |  |
 | [MLU660998018](https://articulo.mercadolibre.com.uy/MLU-660998018-daat-el-conocimiento-saban-mario-javier-_JM) Daat: El Conocimiento - Saban, Mario Javier | catalogo winning | 3336 | 3336 | 0 | Mantener |  |  |
 | [MLU740027064](https://articulo.mercadolibre.com.uy/MLU-740027064-autismo-una-guia-practica-una-guia-practica-de-pontis-marco-vol-1-editorial-az-tapa-blanda-en-espanol-_JM) Autismo Una Guia Practica: Una Guía Práctica, De P | catalogo sharing_first_place | 624 | 616 | 8 | Mantener |  |  |
@@ -59,7 +59,7 @@
 | [MLU888292642](https://articulo.mercadolibre.com.uy/MLU-888292642-netter-flashcards-de-histologia-_JM) Netter Flashcards De Histología | catalogo sharing_first_place | 2417 | 2381 | 36 | Mantener |  |  |
 | [MLU669860318](https://articulo.mercadolibre.com.uy/MLU-669860318-como-te-sientes-de-anthony-browne-editorial-kalandraka-tapa-dura-en-espanol-_JM) Cómo Te Sientes, De Anthony Browne. Editorial Kala | catalogo sharing_first_place | 791 | 776 | 15 | Mantener |  |  |
 | [MLU884651706](https://articulo.mercadolibre.com.uy/MLU-884651706-el-ascendente-tu-gps-existencial-descubri-la-llave-de-tu-destino-de-beatriz-leveratto-vol-1-editorial-aguilar-tapa-blanda-edicion-1-en-espanol-2019-_JM) El Ascendente: Tu Gps Existencial. Descubrí La Lla | catalogo sharing_first_place | 562 | 551 | 11 | Mantener |  |  |
-| [MLU884315176](https://articulo.mercadolibre.com.uy/MLU-884315176-viaje-al-oeste-de-anonimo-chino-del-siglo-xvi-editorial-siruela-tapa-dura-en-espanol-_JM) Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Edit | catalogo sharing_first_place | 2858 | 2826 | 32 | Mantener |  |  |
+| [MLU884315176](https://articulo.mercadolibre.com.uy/MLU-884315176-viaje-al-oeste-de-anonimo-chino-del-siglo-xvi-editorial-siruela-tapa-dura-en-espanol-_JM) Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Edit | catalogo sharing_first_place | 2858 | 2826 | 32 | Subir (sigue ganando) → 2869 (aplicado y verificado) |  |  |
 | [MLU655257859](https://articulo.mercadolibre.com.uy/MLU-655257859-respeto-por-la-interpretacion-uta-frankel-_JM) Respeto Por La Interpretacion - Uta, Frankel | catalogo sharing_first_place | 755 | 740 | 15 | Mantener |  |  |
 | [MLU625745211](https://articulo.mercadolibre.com.uy/MLU-625745211-cartas-72-angeles-las-christiane-muller-kaya-_JM) Cartas 72 Angeles, Las - Christiane Muller, Kaya | catalogo sharing_first_place | 2198 | 2165 | 33 | Mantener |  |  |
 | [MLU957971524](https://articulo.mercadolibre.com.uy/MLU-957971524-libro-no-es-un-monstruo-es-una-herida-de-lopez-pavon-raquel-vol-1-editorial-kitaeru-libros-tapa-blanda-2025-_JM) Libro No Es Un Monstruo, Es Una Herida, De López P | catalogo sharing_first_place | 1099 | 1088 | 11 | Mantener |  |  |
@@ -73,8 +73,8 @@
 | [MLU701173804](https://articulo.mercadolibre.com.uy/MLU-701173804-encendidas-un-viaje-intimo-por-la-menopausia-de-mariana-carbajal-editorial-grijalbo-tapa-blanda-en-espanol-2024-_JM) Encendidas: Un Viaje Íntimo Por La Menopausia, De  | catalogo winning | 2088 | 2088 | 0 | Mantener |  |  |
 | [MLU702932898](https://articulo.mercadolibre.com.uy/MLU-702932898-el-engano-populista-_JM) El Engaño Populista | catalogo winning | 2504 | 2504 | 0 | Mantener |  |  |
 | [MLU833600900](https://articulo.mercadolibre.com.uy/MLU-833600900-dos-perros-y-una-abuela-loqueleo-verde-_JM) Dos Perros Y Una Abuela - Loqueleo Verde | catalogo winning | 1639 | 1639 | 0 | Mantener |  |  |
-| [MLU695916883](https://articulo.mercadolibre.com.uy/MLU-695916883-gestion-del-talento-humano-_JM) Gestión Del Talento Humano | catalogo winning | 3403 | 3403 | 0 | Mantener |  |  |
-| [MLU827082652](https://articulo.mercadolibre.com.uy/MLU-827082652-libro-el-estofado-del-lobo-keiko-kasza-_JM) Libro El Estofado Del Lobo - Keiko Kasza | catalogo winning | 1786 | 1786 | 0 | Subir (sigue ganando) → 1807 (aplicado y verificado) |  |  |
+| [MLU695916883](https://articulo.mercadolibre.com.uy/MLU-695916883-gestion-del-talento-humano-_JM) Gestión Del Talento Humano | catalogo winning | 3403 | 3403 | 0 | Subir (sigue ganando) → 3418 (aplicado y verificado) |  |  |
+| [MLU827082652](https://articulo.mercadolibre.com.uy/MLU-827082652-libro-el-estofado-del-lobo-keiko-kasza-_JM) Libro El Estofado Del Lobo - Keiko Kasza | catalogo winning | 1807 | 1807 | 0 | Mantener |  |  |
 | [MLU728418074](https://articulo.mercadolibre.com.uy/MLU-728418074-filoenigmas-curiosos-los-150-mejores-problemas-de-ingenio-de-todas-las-epocas-de-pastor-petitjordi-vol-1-editorial-gedisa-tapa-blanda-en-espanol-_JM) Filoenigmas Curiosos: Los 150 Mejores Problemas De | catalogo winning | 2039 | 2039 | 0 | Mantener |  |  |
 | [MLU1066586596](https://articulo.mercadolibre.com.uy/MLU-1066586596-fisica-universitaria-con-fisica-moderna-tomo-1-zemansky-_JM) Física Universitaria Con Física Moderna Tomo 1 Zem | catalogo winning | 10286 | 10286 | 0 | Mantener |  |  |
 | [MLU658066440](https://articulo.mercadolibre.com.uy/MLU-658066440-mi-emocionario-flavia-tomaello-_JM) Mi Emocionario - Flavia Tomaello | catalogo winning | 774 | 774 | 0 | Mantener |  |  |

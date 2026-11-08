@@ -5,9 +5,9 @@
     "precio": 34
   },
   "ejemplos_error": [],
-  "duracion_s": 126,
+  "duracion_s": 128,
   "contadores": {
-    "fecha": "2026-11-08T21:40:37.339Z",
+    "fecha": "2026-11-08T22:03:02.122Z",
     "modo": "real",
     "activas": 6889,
     "revisadas": 6889,
@@ -18,11 +18,11 @@
     "ganador_sin_dato": 0,
     "bajadas": 0,
     "ajustadas": 0,
-    "subidas": 2,
+    "subidas": 3,
     "restauradas": 0,
     "sin_tocar_umbral": 33,
     "sin_tocar_pct": 1,
-    "verificadas": 2,
+    "verificadas": 3,
     "no_verificadas": 0,
     "promo": 0,
     "bajo_piso": 0,
@@ -56,8 +56,8 @@
     "errores_por_tipo": {}
   },
   "errores": {},
-  "llamadas": 7412,
+  "llamadas": 7414,
   "por_status": {
-    "200": 7412
+    "200": 7414
   }
 }

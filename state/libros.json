@@ -8,15 +8,15 @@
       "precio_aplicado": 1851,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
       "fecha": "2026-11-08T20:06:09.866Z",
-      "ganando": 1
+      "ganando": 2
     },
     "MLU757785172": {
       "titulo": "Instrumentación Quirúrgica Principios Y Práctica De Joanna Kotcher Fuller Vol 1 ",
       "precio_original": 6775,
-      "precio_aplicado": 6296,
+      "precio_aplicado": 6308,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
-      "fecha": "2026-11-08T20:06:09.866Z",
-      "ganando": 1
+      "fecha": "2026-11-08T22:02:56.119Z",
+      "ganando": 0
     },
     "MLU862968034": {
       "titulo": "Granja, La Libro De Juegos Y Puzzle, De Anónimo. Editorial El Gato De Hojalata, ",
@@ -24,7 +24,7 @@
       "precio_aplicado": 367,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
       "fecha": "2026-11-06T12:04:30.213Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU1240815646": {
       "titulo": "El Pequeño Gran Libro Del Crochet, De Marie Noelle Bayard. Editorial Hoaki, Tapa",
@@ -32,7 +32,7 @@
       "precio_aplicado": 1173,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
       "fecha": "2026-11-04T18:12:08.928Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU1248458670": {
       "titulo": "Libro La Montaña Eres Tú [ Brianna Wiest ] Original, De Brianna Wiest. Editorial",
@@ -40,7 +40,7 @@
       "precio_aplicado": 683,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
       "fecha": "2026-11-08T16:03:11.533Z",
-      "ganando": 3
+      "ganando": 4
     },
     "MLU636406403": {
       "titulo": "El Libro Perdido - Cassandra Clare - Destino",
@@ -48,7 +48,7 @@
       "precio_aplicado": 637,
       "fecha_primera_baja": "2026-11-05T00:52:11.447Z",
       "fecha": "2026-11-05T00:52:11.447Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU728203732": {
       "titulo": "Sé Amable Contigo Mismo El Arte De La Compasión Hacia Uno Mismo Kristin Neff Edi",
@@ -56,7 +56,7 @@
       "precio_aplicado": 1899,
       "fecha_primera_baja": "2026-11-05T00:52:11.447Z",
       "fecha": "2026-11-05T04:32:18.148Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU631748561": {
       "titulo": "Libro Secuencias Didacticas - 30 Preguntas Y Respuestas - Taboada, De Taboada, M",
@@ -64,7 +64,7 @@
       "precio_aplicado": 406,
       "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
       "fecha": "2026-11-08T12:03:32.799Z",
-      "ganando": 5
+      "ganando": 6
     },
     "MLU669640600": {
       "titulo": "Cress - Crónicas Lunares Libro 3, De Marissa Meyer., Vol. 3. Editorial V&r, Tapa",
@@ -72,7 +72,7 @@
       "precio_aplicado": 705,
       "fecha_primera_baja": "2026-11-05T18:05:10.031Z",
       "fecha": "2026-11-08T16:03:11.533Z",
-      "ganando": 3
+      "ganando": 4
     },
     "MLU648468395": {
       "titulo": "Todas Aquellas Veces Y Otros Asuntos Pendientes - Alejand...",
@@ -80,7 +80,7 @@
       "precio_aplicado": 1182,
       "fecha_primera_baja": "2026-11-05T18:05:10.031Z",
       "fecha": "2026-11-05T18:05:10.031Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU651526224": {
       "titulo": "Libro La Sexuación En La Infancia - Eric Laurent - Paidós",
@@ -88,7 +88,7 @@
       "precio_aplicado": 558,
       "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
       "fecha": "2026-11-06T04:33:11.662Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU693373346": {
       "titulo": "La Última Invitación: Un Mensaje De Esperanza, De Clifford Goldstein. Editorial ",
@@ -96,7 +96,7 @@
       "precio_aplicado": 870,
       "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
       "fecha": "2026-11-06T04:33:11.662Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU647354923": {
       "titulo": "System Of A Down Hypnotize Importado Cd Nuevo Standar",
@@ -104,7 +104,7 @@
       "precio_aplicado": 1199,
       "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
       "fecha": "2026-11-06T12:04:30.213Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU650471169": {
       "titulo": "Un Año De Conexión Con La Naturaleza: Calendario Para Crear Hábitos Saludables Y",
@@ -112,7 +112,7 @@
       "precio_aplicado": 1345,
       "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
       "fecha": "2026-11-06T04:33:11.662Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU863973534": {
       "titulo": "Libro Perderte Para Encontrarme - Elizabeth Clapés - Montena",
@@ -120,7 +120,7 @@
       "precio_aplicado": 649,
       "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
       "fecha": "2026-11-08T01:12:06.955Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU886822546": {
       "titulo": "Personal Best B1+ Intermediate - Workbook - Richmond",
@@ -128,7 +128,7 @@
       "precio_aplicado": 1153,
       "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
       "fecha": "2026-11-06T04:33:11.662Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU1496874810": {
       "titulo": "Libro: Privacidad Es Poder. Veliz, Carissa. Debate",
@@ -136,7 +136,7 @@
       "precio_aplicado": 1402,
       "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
       "fecha": "2026-11-07T21:26:31.057Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU663199900": {
       "titulo": "Libro La Última Encrucijada - Jorge Liotti - Planeta",
@@ -144,7 +144,7 @@
       "precio_aplicado": 1082,
       "fecha_primera_baja": "2026-11-06T12:04:30.213Z",
       "fecha": "2026-11-08T16:03:11.533Z",
-      "ganando": 3
+      "ganando": 4
     },
     "MLU1505128778": {
       "titulo": "International Primary Science Workbook: Stage 2 - Unknown - Collins - Blanda",
@@ -152,7 +152,7 @@
       "precio_aplicado": 1766,
       "fecha_primera_baja": "2026-11-06T12:04:30.213Z",
       "fecha": "2026-11-08T21:40:31.683Z",
-      "ganando": 0
+      "ganando": 1
     },
     "MLU653960560": {
       "titulo": "Dar El Duelo - Virginia Cano",
@@ -160,7 +160,7 @@
       "precio_aplicado": 1593,
       "fecha_primera_baja": "2026-11-06T18:04:19.240Z",
       "fecha": "2026-11-06T18:04:19.240Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU660998018": {
       "titulo": "Daat: El Conocimiento - Saban, Mario Javier",
@@ -168,7 +168,7 @@
       "precio_aplicado": 3336,
       "fecha_primera_baja": "2026-11-06T18:04:19.240Z",
       "fecha": "2026-11-06T18:04:19.240Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU740027064": {
       "titulo": "Autismo Una Guia Practica: Una Guía Práctica, De Pontis, Marco., Vol. 1. Editori",
@@ -176,7 +176,7 @@
       "precio_aplicado": 624,
       "fecha_primera_baja": "2026-11-06T18:04:19.240Z",
       "fecha": "2026-11-07T01:42:46.828Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU766245318": {
       "titulo": "Cartas Para La Manada Cecilia Solá Sudestada",
@@ -184,7 +184,7 @@
       "precio_aplicado": 1289,
       "fecha_primera_baja": "2026-11-06T18:04:19.240Z",
       "fecha": "2026-11-07T01:42:46.828Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU692647026": {
       "titulo": "Libro Mi Viaje Sin Ti - Alejandro Sequera",
@@ -192,7 +192,7 @@
       "precio_aplicado": 654,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
       "fecha": "2026-11-07T01:42:46.828Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU889968514": {
       "titulo": "Actitud Mental Positiva - Napoleon Hill Y W. Clement Stone",
@@ -200,7 +200,7 @@
       "precio_aplicado": 846,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
       "fecha": "2026-11-08T16:03:11.533Z",
-      "ganando": 3
+      "ganando": 4
     },
     "MLU888292642": {
       "titulo": "Netter Flashcards De Histología",
@@ -208,7 +208,7 @@
       "precio_aplicado": 2417,
       "fecha_primera_baja": "2026-11-04T18:12:08.928Z",
       "fecha": "2026-11-08T20:06:09.866Z",
-      "ganando": 1
+      "ganando": 2
     },
     "MLU669860318": {
       "titulo": "Cómo Te Sientes, De Anthony Browne. Editorial Kalandraka, Tapa Dura En Español",
@@ -216,7 +216,7 @@
       "precio_aplicado": 791,
       "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
       "fecha": "2026-11-08T16:03:11.533Z",
-      "ganando": 3
+      "ganando": 4
     },
     "MLU884651706": {
       "titulo": "El Ascendente: Tu Gps Existencial. Descubrí La Llave De Tu Destino, De Beatriz L",
@@ -224,15 +224,15 @@
       "precio_aplicado": 562,
       "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
       "fecha": "2026-11-08T16:03:11.533Z",
-      "ganando": 3
+      "ganando": 4
     },
     "MLU884315176": {
       "titulo": "Viaje Al Oeste De Anonimo Chino Del Siglo Xvi Editorial Siruela Tapa Dura En Esp",
       "precio_original": 2899,
-      "precio_aplicado": 2858,
+      "precio_aplicado": 2869,
       "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
-      "fecha": "2026-11-08T20:06:09.866Z",
-      "ganando": 1
+      "fecha": "2026-11-08T22:02:56.119Z",
+      "ganando": 0
     },
     "MLU655257859": {
       "titulo": "Respeto Por La Interpretacion - Uta, Frankel",
@@ -240,7 +240,7 @@
       "precio_aplicado": 755,
       "fecha_primera_baja": "2026-11-05T04:32:18.148Z",
       "fecha": "2026-11-08T16:03:11.533Z",
-      "ganando": 3
+      "ganando": 4
     },
     "MLU625745211": {
       "titulo": "Cartas 72 Angeles, Las - Christiane Muller, Kaya",
@@ -248,7 +248,7 @@
       "precio_aplicado": 2198,
       "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
       "fecha": "2026-11-08T20:06:09.866Z",
-      "ganando": 1
+      "ganando": 2
     },
     "MLU957971524": {
       "titulo": "Libro No Es Un Monstruo, Es Una Herida, De López Pavón, Raquel, Vol. 1. Editoria",
@@ -256,7 +256,7 @@
       "precio_aplicado": 1099,
       "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
       "fecha": "2026-11-08T16:03:11.533Z",
-      "ganando": 3
+      "ganando": 4
     },
     "MLU1444639912": {
       "titulo": "Luz De Tungsteno: La Respuesta A Tu Problema Está En El Interior, De Jj Benítez.",
@@ -264,7 +264,7 @@
       "precio_aplicado": 1146,
       "fecha_primera_baja": "2026-11-06T04:33:11.662Z",
       "fecha": "2026-11-08T16:03:11.533Z",
-      "ganando": 3
+      "ganando": 4
     },
     "MLU643295539": {
       "titulo": "El Desafio De Evaluar...procesos De Lectura Y Escritura, De Kaufman, Ana Maria. ",
@@ -272,7 +272,7 @@
       "precio_aplicado": 1583,
       "fecha_primera_baja": "2026-11-06T22:04:54.089Z",
       "fecha": "2026-11-06T22:04:54.089Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU691609938": {
       "titulo": "La Nobleza Negra Génesis Del Imperio Veneciano De Jorge Guerra Editorial Indepen",
@@ -280,7 +280,7 @@
       "precio_aplicado": 1190,
       "fecha_primera_baja": "2026-11-06T22:04:54.089Z",
       "fecha": "2026-11-08T16:03:11.533Z",
-      "ganando": 3
+      "ganando": 4
     },
     "MLU646433323": {
       "titulo": "El Desafio De Aprender A Leer:los Prerrequisitos De Acceso",
@@ -288,7 +288,7 @@
       "precio_aplicado": 1583,
       "fecha_primera_baja": "2026-11-06T22:04:54.089Z",
       "fecha": "2026-11-06T22:04:54.089Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU767547738": {
       "titulo": "Demasiadas Leyes, De Spencer, Herbert., Vol. 1. Editorial Sequitur Ediciones,s.l",
@@ -296,7 +296,7 @@
       "precio_aplicado": 1583,
       "fecha_primera_baja": "2026-11-06T22:04:54.089Z",
       "fecha": "2026-11-06T22:04:54.089Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU925905782": {
       "titulo": "Didactica De La Gestion-conduccion. Pedagogia Del Territorio, De Sanchez, Sandra",
@@ -304,7 +304,7 @@
       "precio_aplicado": 2138,
       "fecha_primera_baja": "2026-11-07T01:42:46.828Z",
       "fecha": "2026-11-07T01:42:46.828Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU639571897": {
       "titulo": "Erótica Del Duelo En Tiempos De La Muerte Seca Jean Allouch",
@@ -312,7 +312,7 @@
       "precio_aplicado": 3088,
       "fecha_primera_baja": "2026-11-07T12:05:39.376Z",
       "fecha": "2026-11-07T12:05:39.376Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU701173804": {
       "titulo": "Encendidas: Un Viaje Íntimo Por La Menopausia, De Mariana Carbajal (. Editorial ",
@@ -320,7 +320,7 @@
       "precio_aplicado": 2088,
       "fecha_primera_baja": "2026-11-07T12:05:39.376Z",
       "fecha": "2026-11-07T12:05:39.376Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU702932898": {
       "titulo": "El Engaño Populista",
@@ -328,7 +328,7 @@
       "precio_aplicado": 2504,
       "fecha_primera_baja": "2026-11-07T12:05:39.376Z",
       "fecha": "2026-11-07T12:05:39.376Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU833600900": {
       "titulo": "Dos Perros Y Una Abuela - Loqueleo Verde",
@@ -336,15 +336,15 @@
       "precio_aplicado": 1639,
       "fecha_primera_baja": "2026-11-07T12:05:39.376Z",
       "fecha": "2026-11-08T17:55:37.719Z",
-      "ganando": 2
+      "ganando": 3
     },
     "MLU695916883": {
       "titulo": "Gestión Del Talento Humano",
       "precio_original": 3554,
-      "precio_aplicado": 3403,
+      "precio_aplicado": 3418,
       "fecha_primera_baja": "2026-11-07T12:05:39.376Z",
-      "fecha": "2026-11-08T20:06:09.866Z",
-      "ganando": 1,
+      "fecha": "2026-11-08T22:02:56.119Z",
+      "ganando": 0,
       "perdio_en": 3443,
       "perdio_fecha": "2026-11-08T16:01:07.665Z"
     },
@@ -354,7 +354,7 @@
       "precio_aplicado": 1807,
       "fecha_primera_baja": "2026-11-07T16:05:43.364Z",
       "fecha": "2026-11-08T21:40:31.683Z",
-      "ganando": 0
+      "ganando": 1
     },
     "MLU728418074": {
       "titulo": "Filoenigmas Curiosos: Los 150 Mejores Problemas De Ingenio De Todas Las Épocas, ",
@@ -362,7 +362,7 @@
       "precio_aplicado": 2039,
       "fecha_primera_baja": "2026-11-07T21:26:31.057Z",
       "fecha": "2026-11-07T21:26:31.057Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU1066586596": {
       "titulo": "Física Universitaria Con Física Moderna Tomo 1 Zemansky.",
@@ -370,7 +370,7 @@
       "precio_aplicado": 10286,
       "fecha_primera_baja": "2026-11-07T21:26:31.057Z",
       "fecha": "2026-11-07T21:26:31.057Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU658066440": {
       "titulo": "Mi Emocionario - Flavia Tomaello",
@@ -378,7 +378,7 @@
       "precio_aplicado": 774,
       "fecha_primera_baja": "2026-11-08T01:12:06.955Z",
       "fecha": "2026-11-08T01:12:06.955Z",
-      "ganando": 7
+      "ganando": 8
     },
     "MLU676002408": {
       "titulo": "Mientras Dormiamos El Engaño Maestro, De Nocera Costabile, Giuseppe. Editorial C",
@@ -386,7 +386,7 @@
       "precio_aplicado": 1467,
       "fecha_primera_baja": "2026-11-08T01:12:06.955Z",
       "fecha": "2026-11-08T16:03:11.533Z",
-      "ganando": 3
+      "ganando": 4
     },
     "MLU653035273": {
       "titulo": "Escritos Sobre Astrología, De Carl Gustav Jung., Vol. 1. Editorial Trotta, Tapa ",
@@ -394,8 +394,8 @@
       "precio_aplicado": 1651,
       "fecha_primera_baja": "2026-11-08T01:12:06.955Z",
       "fecha": "2026-11-08T16:03:11.533Z",
-      "ganando": 3
+      "ganando": 4
     }
   },
-  "actualizado": "2026-11-08T21:40:37.356Z"
+  "actualizado": "2026-11-08T22:03:02.140Z"
 }
