@@ -1,144 +1,144 @@
 {
-  "fecha": "2026-11-08T12:04:05.476Z",
+  "fecha": "2026-11-08T14:03:30.879Z",
   "muestra": [
     {
-      "id": "MLU629965029",
-      "titulo": "Oxford English For Cambridge Primary Student Book 4",
-      "precio": 1400,
-      "estado": "winning",
-      "precio_para_ganar": 1400,
-      "competidor_mas_barato": 1415,
-      "otras_ofertas": 3,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana: el competidor más barato está en 1415",
-      "ok": true
-    },
-    {
-      "id": "MLU1412504112",
-      "titulo": "Mamiferos-anatomia, Comportamiento, Habitat",
-      "precio": 1200,
-      "estado": "winning",
-      "precio_para_ganar": 1200,
-      "competidor_mas_barato": null,
-      "otras_ofertas": 0,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana: no hay otros vendedores",
-      "ok": true
-    },
-    {
-      "id": "MLU633348703",
-      "titulo": "Libro Poder Milagroso De Los Salmos Por Stella Rozo [ Dhl ]",
-      "precio": 2650,
-      "estado": "winning",
-      "precio_para_ganar": 2650,
-      "competidor_mas_barato": 2280,
-      "otras_ofertas": 3,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (2280): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU646277609",
-      "titulo": "Ultrasonografia En Obstetricia Y Diagnostico Prenatal 2da Ed",
-      "precio": 12500,
-      "estado": "winning",
-      "precio_para_ganar": 12500,
-      "competidor_mas_barato": 8193,
-      "otras_ofertas": 1,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (8193): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU695192667",
-      "titulo": "Principales Enfermedades Infecciosa Parasitaria Ganado Ovino",
-      "precio": 2600,
-      "estado": "winning",
-      "precio_para_ganar": 2600,
-      "competidor_mas_barato": 2570,
-      "otras_ofertas": 2,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (2570): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU669972586",
-      "titulo": "Anatomía Del Espíritu, De La Curación Del Cuerpo Llega A Tra",
-      "precio": 1277,
-      "estado": "sharing_first_place",
-      "precio_para_ganar": 1270,
-      "competidor_mas_barato": 1258,
+      "id": "MLU884307200",
+      "titulo": "Cerebro Equino Cerebro Humano: La Neurociencia De La Equitac",
+      "precio": 2450,
+      "estado": "competing",
+      "precio_para_ganar": 1890,
+      "competidor_mas_barato": 1910,
       "otras_ofertas": 6,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Comparte el primer lugar (1 más)",
+      "conclusion": "Pierde: para ganar, 1890. Ganador MLU1462668270 a 1910",
       "ok": true
     },
     {
-      "id": "MLU1017638608",
-      "titulo": "Después Del Genocidio",
-      "precio": 859,
+      "id": "MLU658092438",
+      "titulo": "Economia Humanista - Humanist Economy, De Jose Luis Sampedro",
+      "precio": 1709,
       "estado": "winning",
-      "precio_para_ganar": 859,
-      "competidor_mas_barato": 685.3,
-      "otras_ofertas": 17,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (685.3): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU690810640",
-      "titulo": "Tezcatlipoca. Burlas Y Metamorfosis De Un Dios Azteca | Guil",
-      "precio": 2600,
-      "estado": "winning",
-      "precio_para_ganar": 2600,
-      "competidor_mas_barato": 2450,
-      "otras_ofertas": 5,
-      "sugerencias_ml": [
-        "Envíos Full"
-      ],
-      "conclusion": "Gana aunque hay uno más barato (2450): ML pesa envío y reputación",
-      "ok": true
-    },
-    {
-      "id": "MLU886822546",
-      "titulo": "Personal Best B1+ Intermediate - Workbook - Richmond",
-      "precio": 1153,
-      "estado": "winning",
-      "precio_para_ganar": 1153,
-      "competidor_mas_barato": 700,
+      "precio_para_ganar": 1709,
+      "competidor_mas_barato": 1650,
       "otras_ofertas": 3,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana aunque hay uno más barato (700): ML pesa envío y reputación",
+      "conclusion": "Gana aunque hay uno más barato (1650): ML pesa envío y reputación",
       "ok": true
     },
     {
-      "id": "MLU695442826",
-      "titulo": "La Afectividad Masculina",
-      "precio": 1567,
+      "id": "MLU669887136",
+      "titulo": "Imaginar Un País. España En 2050, De Instituto Cervantes. Ed",
+      "precio": 1804,
       "estado": "winning",
-      "precio_para_ganar": 1567,
-      "competidor_mas_barato": 1433,
+      "precio_para_ganar": 1804,
+      "competidor_mas_barato": 1540,
+      "otras_ofertas": 2,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (1540): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU748326142",
+      "titulo": "Calma Tu Puta Cabeza (ed Española), De Harper, Faith., Vol. ",
+      "precio": 1936,
+      "estado": "winning",
+      "precio_para_ganar": 1936,
+      "competidor_mas_barato": 1527,
       "otras_ofertas": 4,
       "sugerencias_ml": [
         "Envíos Full"
       ],
-      "conclusion": "Gana aunque hay uno más barato (1433): ML pesa envío y reputación",
+      "conclusion": "Gana aunque hay uno más barato (1527): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU801803092",
+      "titulo": "La Trampa De La Felicidad: Libérate De La Ansiedad. Empieza ",
+      "precio": 1491,
+      "estado": "winning",
+      "precio_para_ganar": 1491,
+      "competidor_mas_barato": 885,
+      "otras_ofertas": 7,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (885): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU681921118",
+      "titulo": "Manual De Farmacología Y Terapéutica. Goodman & Gilman 2a Ed",
+      "precio": 9500,
+      "estado": "winning",
+      "precio_para_ganar": 9500,
+      "competidor_mas_barato": 8273,
+      "otras_ofertas": 2,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (8273): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU628844867",
+      "titulo": "Outlet : A Cabalgar !. Metodo De Iniciaci N Para Jinet",
+      "precio": 1663,
+      "estado": "winning",
+      "precio_para_ganar": 1663,
+      "competidor_mas_barato": 1340,
+      "otras_ofertas": 3,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (1340): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU652188510",
+      "titulo": "Libro Industrial Design From A To Z, De Vv. Aa.. Editorial T",
+      "precio": 4450,
+      "estado": "winning",
+      "precio_para_ganar": 4450,
+      "competidor_mas_barato": 1940,
+      "otras_ofertas": 2,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (1940): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU658001398",
+      "titulo": "Libro Todo Makoki, De Gallardo, M.. Editorial Debolsillo",
+      "precio": 1600,
+      "estado": "winning",
+      "precio_para_ganar": 1600,
+      "competidor_mas_barato": 1347,
+      "otras_ofertas": 3,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (1347): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU674037194",
+      "titulo": "Ignite 2 - Student´s Book",
+      "precio": 2650,
+      "estado": "winning",
+      "precio_para_ganar": 2650,
+      "competidor_mas_barato": 2395,
+      "otras_ofertas": 1,
+      "sugerencias_ml": [
+        "Envíos Full"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (2395): ML pesa envío y reputación",
       "ok": true
     }
   ],
@@ -309,8 +309,8 @@
       "id": "MLU1505128778",
       "titulo": "International Primary Science Workbook: Stage 2 - Unknown - Collins - Blanda",
       "original": 1790,
-      "aplicado": 1599,
-      "en_ml": 1599,
+      "aplicado": 1694,
+      "en_ml": 1694,
       "ok": true,
       "problemas": []
     },
@@ -516,8 +516,8 @@
       "id": "MLU833600900",
       "titulo": "Dos Perros Y Una Abuela - Loqueleo Verde",
       "original": 1650,
-      "aplicado": 1599,
-      "en_ml": 1599,
+      "aplicado": 1619,
+      "en_ml": 1619,
       "ok": true,
       "problemas": []
     },
@@ -525,8 +525,8 @@
       "id": "MLU695916883",
       "titulo": "Gestión Del Talento Humano",
       "original": 3554,
-      "aplicado": 3515,
-      "en_ml": 3515,
+      "aplicado": 3443,
+      "en_ml": 3443,
       "ok": true,
       "problemas": []
     },
@@ -534,8 +534,8 @@
       "id": "MLU827082652",
       "titulo": "Libro El Estofado Del Lobo - Keiko Kasza",
       "original": 1950,
-      "aplicado": 1659,
-      "en_ml": 1659,
+      "aplicado": 1744,
+      "en_ml": 1744,
       "ok": true,
       "problemas": []
     },
@@ -703,17 +703,6 @@
       "ok": true
     },
     {
-      "id": "MLU631813403",
-      "precio": 2850,
-      "ganador": 1607,
-      "diferencia": 1243,
-      "objetivo": 1607,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1607,
-      "ok": true
-    },
-    {
       "id": "MLU652640572",
       "precio": 2450,
       "ganador": 825,
@@ -722,17 +711,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 825,
-      "ok": true
-    },
-    {
-      "id": "MLU655245898",
-      "precio": 4300,
-      "ganador": 3126,
-      "diferencia": 1174,
-      "objetivo": 3126,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 3126,
       "ok": true
     },
     {
@@ -791,17 +769,6 @@
       "ok": true
     },
     {
-      "id": "MLU706318418",
-      "precio": 9500,
-      "ganador": 4493,
-      "diferencia": 5007,
-      "objetivo": 4493,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 4493,
-      "ok": true
-    },
-    {
       "id": "MLU706364386",
       "precio": 2137,
       "ganador": 1296,
@@ -854,17 +821,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1277,
-      "ok": true
-    },
-    {
-      "id": "MLU826991156",
-      "precio": 2750,
-      "ganador": 1608,
-      "diferencia": 1142,
-      "objetivo": 1608,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1608,
       "ok": true
     },
     {

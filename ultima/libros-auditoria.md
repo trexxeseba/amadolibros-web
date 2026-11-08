@@ -1,4 +1,4 @@
-# Auditoría Precio Ganador · Amado Libros · 2026-11-08T12:04:05.476Z
+# Auditoría Precio Ganador · Amado Libros · 2026-11-08T14:03:30.879Z
 
 Discrepancias: **0**
 
@@ -6,16 +6,16 @@ Discrepancias: **0**
 
 | Publicación | Precio | Estado ML | Para ganar | Competidor más barato | Sugerencias de ML | Conclusión | OK |
 |---|---:|---|---:|---:|---|---|---|
-| MLU629965029 Oxford English For Cambridge Primary Student Book 4 | 1400 | winning | 1400 | 1415 | Envíos Full | Gana: el competidor más barato está en 1415 | sí |
-| MLU1412504112 Mamiferos-anatomia, Comportamiento, Habitat | 1200 | winning | 1200 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
-| MLU633348703 Libro Poder Milagroso De Los Salmos Por Stella Rozo [ Dhl ] | 2650 | winning | 2650 | 2280 | Envíos Full | Gana aunque hay uno más barato (2280): ML pesa envío y reputación | sí |
-| MLU646277609 Ultrasonografia En Obstetricia Y Diagnostico Prenatal 2da Ed | 12500 | winning | 12500 | 8193 | Envíos Full | Gana aunque hay uno más barato (8193): ML pesa envío y reputación | sí |
-| MLU695192667 Principales Enfermedades Infecciosa Parasitaria Ganado Ovino | 2600 | winning | 2600 | 2570 | Envíos Full | Gana aunque hay uno más barato (2570): ML pesa envío y reputación | sí |
-| MLU669972586 Anatomía Del Espíritu, De La Curación Del Cuerpo Llega A Tra | 1277 | sharing_first_place | 1270 | 1258 | Envíos Full | Comparte el primer lugar (1 más) | sí |
-| MLU1017638608 Después Del Genocidio | 859 | winning | 859 | 685.3 | Envíos Full | Gana aunque hay uno más barato (685.3): ML pesa envío y reputación | sí |
-| MLU690810640 Tezcatlipoca. Burlas Y Metamorfosis De Un Dios Azteca / Guil | 2600 | winning | 2600 | 2450 | Envíos Full | Gana aunque hay uno más barato (2450): ML pesa envío y reputación | sí |
-| MLU886822546 Personal Best B1+ Intermediate - Workbook - Richmond | 1153 | winning | 1153 | 700 | Envíos Full | Gana aunque hay uno más barato (700): ML pesa envío y reputación | sí |
-| MLU695442826 La Afectividad Masculina | 1567 | winning | 1567 | 1433 | Envíos Full | Gana aunque hay uno más barato (1433): ML pesa envío y reputación | sí |
+| MLU884307200 Cerebro Equino Cerebro Humano: La Neurociencia De La Equitac | 2450 | competing | 1890 | 1910 | Envíos Full | Pierde: para ganar, 1890. Ganador MLU1462668270 a 1910 | sí |
+| MLU658092438 Economia Humanista - Humanist Economy, De Jose Luis Sampedro | 1709 | winning | 1709 | 1650 | Envíos Full | Gana aunque hay uno más barato (1650): ML pesa envío y reputación | sí |
+| MLU669887136 Imaginar Un País. España En 2050, De Instituto Cervantes. Ed | 1804 | winning | 1804 | 1540 | Envíos Full | Gana aunque hay uno más barato (1540): ML pesa envío y reputación | sí |
+| MLU748326142 Calma Tu Puta Cabeza (ed Española), De Harper, Faith., Vol.  | 1936 | winning | 1936 | 1527 | Envíos Full | Gana aunque hay uno más barato (1527): ML pesa envío y reputación | sí |
+| MLU801803092 La Trampa De La Felicidad: Libérate De La Ansiedad. Empieza  | 1491 | winning | 1491 | 885 | Envíos Full | Gana aunque hay uno más barato (885): ML pesa envío y reputación | sí |
+| MLU681921118 Manual De Farmacología Y Terapéutica. Goodman & Gilman 2a Ed | 9500 | winning | 9500 | 8273 | Envíos Full | Gana aunque hay uno más barato (8273): ML pesa envío y reputación | sí |
+| MLU628844867 Outlet : A Cabalgar !. Metodo De Iniciaci N Para Jinet | 1663 | winning | 1663 | 1340 | Envíos Full | Gana aunque hay uno más barato (1340): ML pesa envío y reputación | sí |
+| MLU652188510 Libro Industrial Design From A To Z, De Vv. Aa.. Editorial T | 4450 | winning | 4450 | 1940 | Envíos Full | Gana aunque hay uno más barato (1940): ML pesa envío y reputación | sí |
+| MLU658001398 Libro Todo Makoki, De Gallardo, M.. Editorial Debolsillo | 1600 | winning | 1600 | 1347 | Envíos Full | Gana aunque hay uno más barato (1347): ML pesa envío y reputación | sí |
+| MLU674037194 Ignite 2 - Student´s Book | 2650 | winning | 2650 | 2395 | Envíos Full | Gana aunque hay uno más barato (2395): ML pesa envío y reputación | sí |
 
 ## Publicaciones que el sistema bajó (57)
 
@@ -39,7 +39,7 @@ Discrepancias: **0**
 | MLU886822546 Personal Best B1+ Intermediate - Workbook - Richmo | 1178 | 1153 | 1153 | sí |
 | MLU1496874810 Libro: Privacidad Es Poder. Veliz, Carissa. Debate | 1464 | 1402 | 1402 | sí |
 | MLU663199900 Libro La Última Encrucijada - Jorge Liotti - Plane | 1106 | 1066 | 1066 | sí |
-| MLU1505128778 International Primary Science Workbook: Stage 2 -  | 1790 | 1599 | 1599 | sí |
+| MLU1505128778 International Primary Science Workbook: Stage 2 -  | 1790 | 1694 | 1694 | sí |
 | MLU653960560 Dar El Duelo - Virginia Cano | 1950 | 1593 | 1593 | sí |
 | MLU660998018 Daat: El Conocimiento - Saban, Mario Javier | 3650 | 3336 | 3336 | sí |
 | MLU740027064 Autismo Una Guia Practica: Una Guía Práctica, De P | 629 | 624 | 624 | sí |
@@ -62,9 +62,9 @@ Discrepancias: **0**
 | MLU639571897 Erótica Del Duelo En Tiempos De La Muerte Seca Jea | 3300 | 3088 | 3088 | sí |
 | MLU701173804 Encendidas: Un Viaje Íntimo Por La Menopausia, De  | 2200 | 2088 | 2088 | sí |
 | MLU702932898 El Engaño Populista | 2750 | 2504 | 2504 | sí |
-| MLU833600900 Dos Perros Y Una Abuela - Loqueleo Verde | 1650 | 1599 | 1599 | sí |
-| MLU695916883 Gestión Del Talento Humano | 3554 | 3515 | 3515 | sí |
-| MLU827082652 Libro El Estofado Del Lobo - Keiko Kasza | 1950 | 1659 | 1659 | sí |
+| MLU833600900 Dos Perros Y Una Abuela - Loqueleo Verde | 1650 | 1619 | 1619 | sí |
+| MLU695916883 Gestión Del Talento Humano | 3554 | 3443 | 3443 | sí |
+| MLU827082652 Libro El Estofado Del Lobo - Keiko Kasza | 1950 | 1744 | 1744 | sí |
 | MLU728418074 Filoenigmas Curiosos: Los 150 Mejores Problemas De | 2200 | 2039 | 2039 | sí |
 | MLU1066586596 Física Universitaria Con Física Moderna Tomo 1 Zem | 10500 | 10286 | 10286 | sí |
 | MLU658141576 Trilogía Hermanos Hidalgo, De Ariana Godoy. Editor | 1200 | 1187 | 1187 | sí |
@@ -79,7 +79,7 @@ Discrepancias: **0**
 | MLU653035273 Escritos Sobre Astrología, De Carl Gustav Jung., V | 1659 | 1633 | 1633 | sí |
 | MLU893400508 Teoría De La Justicia - John Rawls | 1087 | 1075 | 1075 | sí |
 
-## Regla recalculada sobre las marcadas de la última corrida (35)
+## Regla recalculada sobre las marcadas de la última corrida (31)
 
 | Publicación | Precio | Ganador | Diferencia | Esperado | Hizo | OK |
 |---|---:|---:|---:|---|---|---|
@@ -87,21 +87,17 @@ Discrepancias: **0**
 | MLU636005026 | 2550 | 1369 | 1181 | no_tocar | sin_tocar_umbral → 1369 | sí |
 | MLU651058026 | 2850 | 1157 | 1693 | no_tocar | sin_tocar_umbral → 1157 | sí |
 | MLU651009706 | 1400 | 754 | 646 | no_tocar | sin_tocar_umbral → 754 | sí |
-| MLU631813403 | 2850 | 1607 | 1243 | no_tocar | sin_tocar_umbral → 1607 | sí |
 | MLU652640572 | 2450 | 825 | 1625 | no_tocar | sin_tocar_umbral → 825 | sí |
-| MLU655245898 | 4300 | 3126 | 1174 | no_tocar | sin_tocar_umbral → 3126 | sí |
 | MLU658014482 | 1950 | 1348 | 602 | no_tocar | sin_tocar_umbral → 1348 | sí |
 | MLU669549988 | 1790 | 998 | 792 | no_tocar | sin_tocar_umbral → 998 | sí |
 | MLU674520846 | 2750 | 1158 | 1592 | no_tocar | sin_tocar_umbral → 1158 | sí |
 | MLU683328768 | 1985 | 930 | 1055 | no_tocar | sin_tocar_umbral → 930 | sí |
 | MLU691295954 | 1990 | 989 | 1001 | no_tocar | sin_tocar_umbral → 989 | sí |
-| MLU706318418 | 9500 | 4493 | 5007 | no_tocar | sin_tocar_umbral → 4493 | sí |
 | MLU706364386 | 2137 | 1296 | 841 | no_tocar | sin_tocar_umbral → 1296 | sí |
 | MLU648669567 | 1450 | 1023 | 427 | no_tocar | sin_tocar_umbral → 1023 | sí |
 | MLU728138914 | 2050 | 1089 | 961 | no_tocar | sin_tocar_umbral → 1089 | sí |
 | MLU730247430 | 2550 | 1076 | 1474 | no_tocar | sin_tocar_umbral → 1076 | sí |
 | MLU735608772 | 1995 | 1277 | 718 | no_tocar | sin_tocar_umbral → 1277 | sí |
-| MLU826991156 | 2750 | 1608 | 1142 | no_tocar | sin_tocar_umbral → 1608 | sí |
 | MLU853875712 | 3710 | 2474 | 1236 | no_tocar | sin_tocar_umbral → 2474 | sí |
 | MLU884307200 | 2450 | 1890 | 560 | no_tocar | sin_tocar_umbral → 1890 | sí |
 | MLU912983914 | 2350 | 911 | 1439 | no_tocar | sin_tocar_umbral → 911 | sí |
