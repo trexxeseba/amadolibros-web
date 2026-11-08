@@ -10,7 +10,9 @@ name: Precio Ganador
 # no cambia nada), o desactivar el workflow.
 #
 # Estado (precio original de cada publicación bajada) y reportes en la rama
-# estado/precio-ganador, no en main: así no dispara el deploy del sitio.
+# estado/precio-ganador del repo PRIVADO trexxeseba/amadolibros-privado (Seba,
+# 08/11/2026): precios y estrategia no quedan públicos. Secreto ESTADO_TOKEN: token
+# fine-grained con Contents read/write sólo sobre ese repo.
 on:
   schedule:
     - cron: '0 12 * * *'
@@ -96,8 +98,13 @@ jobs:
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
       ESTADO_RAMA: estado/precio-ganador
+      ESTADO_REPO: trexxeseba/amadolibros-privado
+      ESTADO_TOKEN: ${{ secrets.ESTADO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Sin la credencial del repo público: el estado va al repo privado con ESTADO_TOKEN.
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -110,12 +117,15 @@ jobs:
         run: |
           git config user.name "precio-ganador[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Nunca volver a escribir en la rama pública: sin ESTADO_TOKEN se corta.
+          [ -n "$ESTADO_TOKEN" ] || { echo "Falta el secreto ESTADO_TOKEN (repo privado del estado)"; exit 1; }
+          git remote add privado "https://x-access-token:${ESTADO_TOKEN}@github.com/${ESTADO_REPO}.git"
           # Distinguir "la rama no existe" (2) de cualquier otra falla: en ese caso se
           # corta acá, nunca se arranca con un estado vacío por un error de red.
-          set +e; git ls-remote --exit-code --heads origin "$ESTADO_RAMA" >/dev/null; rc=$?; set -e
+          set +e; git ls-remote --exit-code --heads privado "$ESTADO_RAMA" >/dev/null; rc=$?; set -e
           if [ $rc -eq 0 ]; then
-            git fetch origin "$ESTADO_RAMA"
-            git worktree add estado "origin/$ESTADO_RAMA" -B "$ESTADO_RAMA"
+            git fetch privado "$ESTADO_RAMA"
+            git worktree add estado "privado/$ESTADO_RAMA" -B "$ESTADO_RAMA"
             if [ "${{ matrix.cuenta }}" = "libros" ] && [ ! -f estado/state/libros.json ] && git -C estado log --oneline -- state/libros.json | grep -q .; then
               echo "La rama tuvo state/libros.json y ya no está: se corta"; exit 1
             fi
@@ -172,7 +182,7 @@ jobs:
 
       # Siempre, aunque la corrida haya fallado a mitad: lo que se alcanzó a bajar
       # ya está en state/ y tiene que quedar guardado para poder revertirlo.
-      - name: Guardar estado (rama estado/precio-ganador)
+      - name: Guardar estado (repo privado, rama estado/precio-ganador)
         if: always()
         shell: bash
         run: |
@@ -181,14 +191,14 @@ jobs:
           if git diff --cached --quiet; then echo "Sin cambios de estado"; exit 0; fi
           git commit -q -m "Precio Ganador ${{ matrix.cuenta }}: corrida $GITHUB_RUN_ID [skip ci]"
           for i in 1 2 3 4 5; do
-            if git push -q origin "HEAD:$ESTADO_RAMA"; then
+            if git push -q privado "HEAD:$ESTADO_RAMA"; then
               # Confirmar que lo que quedó en el remoto es este commit.
-              git fetch -q origin "$ESTADO_RAMA"
-              if [ "$(git rev-parse HEAD)" = "$(git rev-parse "origin/$ESTADO_RAMA")" ]; then echo "Estado guardado"; exit 0; fi
+              git fetch -q privado "$ESTADO_RAMA"
+              if [ "$(git rev-parse HEAD)" = "$(git rev-parse "privado/$ESTADO_RAMA")" ]; then echo "Estado guardado"; exit 0; fi
               echo "El remoto no quedó con este commit"; exit 1
             fi
             sleep $((i * 5))
-            git pull -q --rebase origin "$ESTADO_RAMA" || { git rebase --abort || true; echo "Conflicto al integrar el estado: queda en el artefacto"; exit 1; }
+            git pull -q --rebase privado "$ESTADO_RAMA" || { git rebase --abort || true; echo "Conflicto al integrar el estado: queda en el artefacto"; exit 1; }
           done
           echo "No se pudo subir el estado"; exit 1
 
@@ -201,12 +211,13 @@ jobs:
         run: |
           node precio-ganador/src/alarma.mjs "falló la corrida ($CUENTA)" "Falló un paso de Precio Ganador. Detalle en $DETALLE"
 
-      # Respaldo del estado por si el push falló.
+      # Respaldo del estado SÓLO si falló el guardado en el repo privado (los artefactos de
+      # un repo público los puede bajar cualquiera: se guardan 3 días y sólo en ese caso).
       - name: Respaldo del estado
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: estado-${{ matrix.cuenta }}-${{ github.run_id }}
           path: estado/state/
-          retention-days: 30
+          retention-days: 3
           if-no-files-found: ignore

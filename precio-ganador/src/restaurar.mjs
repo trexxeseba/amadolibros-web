@@ -22,18 +22,20 @@ const ml = crearCliente(fuenteTokenD1(cuenta), { concurrencia: 2 });
 
 const yo = await ml.get('/users/me');
 if (String(yo?.id) !== cuenta.sellerId) { console.error('token_de_otra_cuenta'); process.exit(1); }
+// En Actions (repo público) los logs no muestran precios, sólo IDs y conteos.
+const detalle = (id, texto) => console.log(process.env.GITHUB_ACTIONS ? id : `${id}: ${texto}`);
 const cuenta_ = { restauradas: 0, editadas_a_mano: 0, errores: 0, a_restaurar: 0 };
 for (const [id, e] of Object.entries(estado.publicaciones)) {
   try {
     const item = await ml.get(`/items/${id}?attributes=id,price,available_quantity`);
-    if (Number(item.price) !== Number(e.precio_aplicado)) { cuenta_.editadas_a_mano++; console.log(`${id}: precio actual ${item.price}, se deja`); continue; }
+    if (Number(item.price) !== Number(e.precio_aplicado)) { cuenta_.editadas_a_mano++; detalle(id, `precio actual ${item.price}, se deja`); continue; }
     const body = { price: Number(e.precio_original), ...(e.stock_original !== undefined ? { available_quantity: Number(e.stock_original) } : {}) };
     cuenta_.a_restaurar++;
-    console.log(`${id}: ${item.price} → ${body.price}${body.available_quantity !== undefined ? `, stock → ${body.available_quantity}` : ''}`);
+    detalle(id, `${item.price} → ${body.price}${body.available_quantity !== undefined ? `, stock → ${body.available_quantity}` : ''}`);
     if (!real) continue;
     await ml.put(`/items/${id}`, body);
     const leido = await ml.get(`/items/${id}?attributes=id,price`);
-    if (Number(leido?.price) !== body.price) { cuenta_.errores++; console.log(`${id}: no se verificó (ML muestra ${leido?.price})`); continue; }
+    if (Number(leido?.price) !== body.price) { cuenta_.errores++; detalle(id, `no se verificó (ML muestra ${leido?.price})`); continue; }
     delete estado.publicaciones[id]; cuenta_.restauradas++;
     writeFileSync(archivo + '.tmp', JSON.stringify(estado, null, 2) + '\n'); renameSync(archivo + '.tmp', archivo);
   } catch (err) { cuenta_.errores++; console.log(`${id}: error ${err?.code ?? 'error'}`); }

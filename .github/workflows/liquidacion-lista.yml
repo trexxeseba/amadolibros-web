@@ -29,6 +29,8 @@ jobs:
     env:
       WORKER: https://amadolibros-sync.undiaes.workers.dev
       SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+      # Reporte del motor Precio Ganador: vive en el repo privado (Seba, 08/11/2026).
+      ESTADO_TOKEN: ${{ secrets.ESTADO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,7 +44,10 @@ jobs:
         run: |
           set -euo pipefail
           curl -fsS --max-time 120 -o "$RUNNER_TEMP/catalog.json" https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json
-          git fetch origin estado/precio-ganador
+          [ -n "$ESTADO_TOKEN" ] || { echo "Falta el secreto ESTADO_TOKEN (repo privado del estado)"; exit 1; }
+          # Se trae a refs/remotes/origin/estado/precio-ganador para que actualizar-exclusiones.mjs
+          # lo encuentre donde siempre. El extraheader vacío evita que se mande la credencial del repo público.
+          git -c http.https://github.com/.extraheader= fetch "https://x-access-token:${ESTADO_TOKEN}@github.com/trexxeseba/amadolibros-privado.git" "estado/precio-ganador:refs/remotes/origin/estado/precio-ganador"
 
       - name: Verificar que el Worker responde
         run: |

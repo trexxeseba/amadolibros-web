@@ -143,7 +143,7 @@ async function main(argv) {
         const filas = JSON.parse(git(['show', `${ref}:ultima/libros-filas.json`]));
         const estado = JSON.parse(git(['show', `${ref}:state/libros.json`]));
         const ex = buildExclusions({ tsv, filas, estado });
-        const fuente = `motor Precio Ganador, rama estado/precio-ganador: ${snap.path} (${snap.date}), state/libros.json y ultima/libros-filas.json`;
+        const fuente = `motor Precio Ganador, rama estado/precio-ganador (repo privado): ${snap.path} (${snap.date}), state/libros.json y ultima/libros-filas.json`;
         data.excluir = {
             ...data.excluir,
             gana_precio: { fuente, criterio: 'estado winning o sharing_first_place en ML, o precio ya bajado por el motor', ids: ex.gana_precio },

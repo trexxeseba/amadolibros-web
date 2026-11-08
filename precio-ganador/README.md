@@ -60,7 +60,7 @@ algo se rompió. Si una corrida falla entera, GitHub manda su mail de falla.
 
 ## Estado
 
-Está en la rama `estado/precio-ganador`, no en `main`, para no disparar el deploy del sitio:
+Está en el repo **privado** `trexxeseba/amadolibros-privado`, rama `estado/precio-ganador` (desde el 08/11/2026; antes estaba en una rama pública de este repo). El workflow entra con el secreto `ESTADO_TOKEN`, un token fine-grained con Contents read/write sólo sobre ese repo. Si el token vence, la corrida falla al traer el estado y llega la alarma: hay que generar uno nuevo y reemplazar el secreto.
 
 - `state/libros.json`: por cada publicación bajada, el precio original, el precio
   aplicado y las fechas. Se graba después de cada cambio.
@@ -79,6 +79,7 @@ Hoy el sistema actúa sólo sobre las de catálogo ("Precio para ganar").
 - `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ADMIN_API_TOKEN` y `CLOUDFLARE_API_TOKEN`:
   para leer de D1 (`ml_oauth`) el token de Mercado Libre que mantiene el Worker.
 - `RESEND_API_KEY`: para el mail.
+- `ESTADO_TOKEN`: acceso al repo privado del estado (vence; renovarlo una vez por año).
 
 El token **nunca se renueva desde acá**. Lo renueva el Worker cada 5 minutos, y un
 segundo renovador le rompería la conexión. Si el token no está vigente, la corrida
