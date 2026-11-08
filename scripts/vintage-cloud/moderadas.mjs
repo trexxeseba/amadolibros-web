@@ -36,6 +36,9 @@ async function main(){
  const ml=crearCliente(fuenteTokenD1(CUENTAS.vintage),{concurrencia:3});
  const query=d1Client();
  const ids=new Set();
+ // Sondeo: qué contesta cada forma de búscar (sólo totales y claves, nunca el token).
+ const probes=[`/users/${SELLER}/items/search?limit=1`,`/users/${SELLER}/items/search?status=paused&limit=1`,`/users/${SELLER}/items/search?status=under_review&limit=1`,`/users/${SELLER}/items/search?status=inactive&limit=1`,`/users/${SELLER}/items/search?search_type=scan&limit=1&status=paused`,`/users/${SELLER}/items/search?tags=infringement&limit=1`,`/users/${SELLER}`,`/moderations/infractions/${SELLER}`,`/moderations/infractions/${SELLER}?offset=0&limit=10`,`/users/${SELLER}/infractions`];
+ for(const p of probes){try{const r=await ml.get(p);console.log(JSON.stringify({sondeo:p.replace(SELLER,'SELLER'),total:r?.paging?.total??null,resultados:Array.isArray(r?.results)?r.results.length:null,claves:Object.keys(r??{}).slice(0,15),estado:r?.status??null,tags:Array.isArray(r?.tags)?r.tags.slice(0,20):null,filtros:Array.isArray(r?.available_filters)?r.available_filters.map(f=>({id:f.id,valores:(f.values??[]).map(v=>`${v.id}:${v.results}`).slice(0,15)})):null}));}catch(e){console.log(JSON.stringify({sondeo:p.replace(SELLER,'SELLER'),error:e.code??String(e),status:e.status??null,detalle:e.detalle??null}));}}
  for(const status of ['under_review','inactive','paused']){
   let scroll=null;
   for(let page=0;page<400;page++){
