@@ -82,7 +82,7 @@ export function tablaMarkdown(filas, { cuenta, real, resumen }) {
 }
 const esc = s => String(s).replace(/\|/g, '/');
 const CAUSA = { precio: 'por precio', envio_gratis: 'por envío gratis', reputacion_entrega: 'por reputación o entrega', otro: 'otro', error: 'no se pudo leer', sin_ficha: 'sin ficha' };
-const PALANCA = { bajar: 'bajar el precio', envio_gratis: 'poner envío gratis', envio_gratis_sin_costo: 'envío gratis (ML no informó el costo)' };
+const PALANCA = { bajar: 'bajar el precio', envio_gratis: 'poner envío gratis' };
 const FALTA = { free_shipping: 'envío gratis', fulfillment: 'Full', same_day_shipping: 'envío en el día', free_installments: 'cuotas sin interés', shipping_collect: 'colecta' };
 
 export async function enviarResumen({ cuenta, acum, resumen, fetcher = (...a) => globalThis.fetch(...a) }) {

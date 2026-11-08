@@ -182,10 +182,9 @@ export async function porQuePierde(ml, item, comp, { sellerId, cacheVendedores =
       const c = num(o?.coverage?.all_country?.list_cost ?? o?.coverage?.all_country?.cost);
       costoEnvioGratis = c;
     } catch (e) { if (e?.status === 429) throw e; }
-    const baja = num(comp?.ganador) !== null ? precio - entero(comp.ganador) : null;
-    // Criterio (08/11/2026): envío gratis si cuesta hasta 1,5 veces lo que habría que bajar
-    // (además sube en la búsqueda); si no, bajar el precio.
-    palanca = costoEnvioGratis === null ? 'envio_gratis_sin_costo' : baja !== null && costoEnvioGratis <= 1.5 * baja ? 'envio_gratis' : 'bajar';
+    // Criterio de Seba (08/11/2026): "siempre que sirva, activarlo". Si perdemos por el
+    // envío gratis, la palanca es el envío gratis, cueste lo que cueste; el costo se informa.
+    palanca = 'envio_gratis';
   } else if (causa === 'precio' || causa === 'reputacion_entrega') palanca = 'bajar';
   return {
     causa, palanca, costo_envio_gratis: costoEnvioGratis, nuestro_nivel: cacheVendedores.get('yo') ?? null, competidores: otros.length,
