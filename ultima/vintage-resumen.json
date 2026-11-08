@@ -2,39 +2,39 @@
   "cuenta": "vintage",
   "umbral": 400,
   "ejemplos_error": [],
-  "duracion_s": 2399,
+  "duracion_s": 1942,
   "contadores": {
-    "fecha": "2026-11-08T00:16:06.961Z",
+    "fecha": "2026-11-08T00:54:14.197Z",
     "modo": "real",
     "activas": 29140,
     "revisadas": 29156,
-    "compiten": 6726,
-    "marcadas": 5912,
+    "compiten": 6845,
+    "marcadas": 6046,
     "precio_dinamico": 0,
     "ganador_inmediato": 794,
-    "ganador_sin_dato": 19,
+    "ganador_sin_dato": 4,
     "bajadas": 52,
-    "ajustadas": 90,
-    "subidas": 9,
-    "restauradas": 5,
-    "sin_tocar_umbral": 5221,
+    "ajustadas": 197,
+    "subidas": 142,
+    "restauradas": 0,
+    "sin_tocar_umbral": 5234,
     "sin_tocar_pct": 0,
-    "verificadas": 156,
+    "verificadas": 391,
     "no_verificadas": 0,
-    "promo": 400,
+    "promo": 404,
     "bajo_piso": 57,
     "sin_costo": 0,
     "otras_salteadas": 0,
     "editadas_a_mano": 0,
     "errores": 0,
-    "cambios_stock": 57
+    "cambios_stock": 52
   },
   "catalogo": {
     "estados": {
-      "sharing_first_place": 1465,
-      "winning": 11581,
-      "competing": 6726,
-      "listed": 8766,
+      "sharing_first_place": 1484,
+      "winning": 11442,
+      "competing": 6845,
+      "listed": 8767,
       "not_listed": 602
     },
     "publicaciones_con_alguna_sugerencia": 28538,
@@ -44,17 +44,17 @@
       "free_shipping": 4
     },
     "motivos": {
-      "sharing_first_place:temporarily_competing_manufacturing_time": 1465,
-      "winning:temporarily_competing_manufacturing_time": 11573,
-      "competing:temporarily_competing_manufacturing_time": 6720,
-      "listed:manufacturing_time": 8766,
+      "sharing_first_place:temporarily_competing_manufacturing_time": 1484,
+      "winning:temporarily_competing_manufacturing_time": 11434,
+      "competing:temporarily_competing_manufacturing_time": 6839,
+      "listed:manufacturing_time": 8767,
       "not_listed:item_not_opted_in": 602
     },
     "por_tipo": {
-      "catalogo:sharing_first_place:a_demanda": 1465,
-      "catalogo:winning:a_demanda": 11573,
-      "catalogo:competing:a_demanda": 6720,
-      "catalogo:listed:a_demanda": 8766,
+      "catalogo:sharing_first_place:a_demanda": 1484,
+      "catalogo:winning:a_demanda": 11434,
+      "catalogo:competing:a_demanda": 6839,
+      "catalogo:listed:a_demanda": 8767,
       "tradicional:not_listed:con_stock": 197,
       "catalogo:winning:con_stock": 8,
       "tradicional:not_listed:a_demanda": 405,
@@ -63,10 +63,11 @@
     "errores_por_tipo": {}
   },
   "errores": {},
-  "llamadas": 50971,
+  "llamadas": 51453,
   "por_status": {
-    "200": 50926,
+    "200": 51420,
     "404": 12,
-    "424": 33
+    "424": 16,
+    "500": 5
   }
 }

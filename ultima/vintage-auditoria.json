@@ -1,114 +1,39 @@
 {
-  "fecha": "2026-11-08T00:17:45.083Z",
+  "fecha": "2026-11-08T00:55:18.166Z",
   "muestra": [
     {
-      "id": "MLU1531865914",
-      "titulo": "La Escuela De La Mirada",
-      "precio": 1900,
-      "estado": "listed",
-      "precio_para_ganar": 1900,
-      "competidor_mas_barato": 924,
-      "otras_ofertas": 2,
+      "id": "MLU1531845760",
+      "titulo": "Dinosaurios. Los Numeros, De Delgado, Ana. Editorial Susaeta",
+      "precio": 1600,
+      "estado": "competing",
+      "precio_para_ganar": 646,
+      "competidor_mas_barato": 423,
+      "otras_ofertas": 5,
       "sugerencias_ml": [
         "Envíos Full",
         "Envíos en el día"
       ],
-      "conclusion": "Estado listed (no compite)",
+      "conclusion": "Pierde: para ganar, 646. Ganador MLU660153383 a 423",
       "ok": true
     },
     {
-      "id": "MLU1531141142",
-      "titulo": "Crítica De La Razón Práctica, De Immanuel Kant. Editorial Co",
-      "precio": 1564,
+      "id": "MLU1531964368",
+      "titulo": "Libro Educación Global Para Mejorar El Mundo - Reimers, Fer",
+      "precio": 2820,
       "estado": "winning",
-      "precio_para_ganar": 1564,
-      "competidor_mas_barato": 1580,
-      "otras_ofertas": 3,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Gana: el competidor más barato está en 1580",
-      "ok": true
-    },
-    {
-      "id": "MLU703600227",
-      "titulo": "Diario De Una Mama, De Seo,eunyoung., Vol. 1. Editorial Tuti",
-      "precio": 3060,
-      "estado": "listed",
-      "precio_para_ganar": 3060,
-      "competidor_mas_barato": 1192,
-      "otras_ofertas": 19,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Estado listed (no compite)",
-      "ok": true
-    },
-    {
-      "id": "MLU703091025",
-      "titulo": "Caótico Y Hermoso, De Evelyn Cerutti. Editorial Titania, Tap",
-      "precio": 2185,
-      "estado": "sharing_first_place",
-      "precio_para_ganar": 2164,
-      "competidor_mas_barato": 2186,
+      "precio_para_ganar": 2820,
+      "competidor_mas_barato": 2380,
       "otras_ofertas": 1,
       "sugerencias_ml": [
         "Envíos Full",
         "Envíos en el día"
       ],
-      "conclusion": "Comparte el primer lugar (1 más)",
+      "conclusion": "Gana aunque hay uno más barato (2380): ML pesa envío y reputación",
       "ok": true
     },
     {
-      "id": "MLU703038933",
-      "titulo": "La Biblia: Historias Del Antiguo Testamento, De Anónimo. Edi",
-      "precio": 1524,
-      "estado": "winning",
-      "precio_para_ganar": 1524,
-      "competidor_mas_barato": 1540,
-      "otras_ofertas": 4,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Gana: el competidor más barato está en 1540",
-      "ok": true
-    },
-    {
-      "id": "MLU703045933",
-      "titulo": "El Banquete De Severo Arcangelo",
-      "precio": 2562,
-      "estado": "winning",
-      "precio_para_ganar": 2562,
-      "competidor_mas_barato": 2590,
-      "otras_ofertas": 4,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Gana: el competidor más barato está en 2590",
-      "ok": true
-    },
-    {
-      "id": "MLU703121743",
-      "titulo": "C+nto & Otrados Poemas",
-      "precio": 1950,
-      "estado": "winning",
-      "precio_para_ganar": 1950,
-      "competidor_mas_barato": null,
-      "otras_ofertas": 0,
-      "sugerencias_ml": [
-        "Envíos Full",
-        "Envíos en el día"
-      ],
-      "conclusion": "Gana: no hay otros vendedores",
-      "ok": true
-    },
-    {
-      "id": "MLU703085973",
-      "titulo": "Cambridge Igcse And O Level History - Workbook 2a *2nd Editi",
+      "id": "MLU1524202356",
+      "titulo": "Pintemos Bluey - Set Con Blow Pens - Vertice",
       "precio": 1600,
       "estado": "winning",
       "precio_para_ganar": 1600,
@@ -122,33 +47,108 @@
       "ok": true
     },
     {
-      "id": "MLU1521249446",
-      "titulo": "45 Things To Do Before You're 45 - Julia Tuffs - Tuffs, Juli",
-      "precio": 1840,
+      "id": "MLU1531964746",
+      "titulo": "Ejercito Ciego El Premio Alfaguara 26",
+      "precio": 2390,
       "estado": "winning",
-      "precio_para_ganar": 1840,
-      "competidor_mas_barato": null,
-      "otras_ofertas": 0,
+      "precio_para_ganar": 2390,
+      "competidor_mas_barato": 2255,
+      "otras_ofertas": 1,
       "sugerencias_ml": [
         "Envíos Full",
         "Envíos en el día"
       ],
-      "conclusion": "Gana: no hay otros vendedores",
+      "conclusion": "Gana aunque hay uno más barato (2255): ML pesa envío y reputación",
       "ok": true
     },
     {
-      "id": "MLU1531173144",
-      "titulo": "El Conflicto De Las Facultades, De Kant, Immanuel., Vol. 1. ",
-      "precio": 1692,
-      "estado": "winning",
-      "precio_para_ganar": 1692,
-      "competidor_mas_barato": 1710,
+      "id": "MLU1524941816",
+      "titulo": "Channel Your English Beginners - Teacher's Book, De Mitchell",
+      "precio": 2280,
+      "estado": "competing",
+      "precio_para_ganar": 1688,
+      "competidor_mas_barato": 1706,
       "otras_ofertas": 3,
       "sugerencias_ml": [
         "Envíos Full",
         "Envíos en el día"
       ],
-      "conclusion": "Gana: el competidor más barato está en 1710",
+      "conclusion": "Pierde: para ganar, 1688. Ganador MLU1497939804 a 1706",
+      "ok": true
+    },
+    {
+      "id": "MLU1531866004",
+      "titulo": "Libro Ese Día Cayó En Domingo - Sergio Ramírez - Alfaguara",
+      "precio": 2385,
+      "estado": "winning",
+      "precio_para_ganar": 2385,
+      "competidor_mas_barato": 2410,
+      "otras_ofertas": 3,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 2410",
+      "ok": true
+    },
+    {
+      "id": "MLU703599779",
+      "titulo": "El Diario De Ana Frank - Ana Frank",
+      "precio": 1600,
+      "estado": "winning",
+      "precio_para_ganar": 1600,
+      "competidor_mas_barato": 1445,
+      "otras_ofertas": 1,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (1445): ML pesa envío y reputación",
+      "ok": true
+    },
+    {
+      "id": "MLU702336631",
+      "titulo": "Jane Goodall Mis Pequenos Heroes",
+      "precio": 1680,
+      "estado": "listed",
+      "precio_para_ganar": 1680,
+      "competidor_mas_barato": 432,
+      "otras_ofertas": 19,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Estado listed (no compite)",
+      "ok": true
+    },
+    {
+      "id": "MLU1531136840",
+      "titulo": "Cookie And Friends B - Audio Cd, De Reilly, Vanessa. Editori",
+      "precio": 2000,
+      "estado": "winning",
+      "precio_para_ganar": 2000,
+      "competidor_mas_barato": 2068,
+      "otras_ofertas": 1,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Gana: el competidor más barato está en 2068",
+      "ok": true
+    },
+    {
+      "id": "MLU1531864680",
+      "titulo": "Libro Entre Dos Republicas, De Bobbio, Norberto. Editorial S",
+      "precio": 1740,
+      "estado": "winning",
+      "precio_para_ganar": 1740,
+      "competidor_mas_barato": 1200,
+      "otras_ofertas": 3,
+      "sugerencias_ml": [
+        "Envíos Full",
+        "Envíos en el día"
+      ],
+      "conclusion": "Gana aunque hay uno más barato (1200): ML pesa envío y reputación",
       "ok": true
     }
   ],
@@ -238,8 +238,8 @@
       "id": "MLU1521859752",
       "titulo": "Libro El Agua Electrizada - C. E. Feiling - La Parte Maldita",
       "original": 1780,
-      "aplicado": 1557,
-      "en_ml": 1557,
+      "aplicado": 1574,
+      "en_ml": 1574,
       "ok": true,
       "problemas": []
     },
@@ -841,8 +841,8 @@
       "id": "MLU1522912640",
       "titulo": "Amigos Para La Misión 5",
       "original": 1595,
-      "aplicado": 1524,
-      "en_ml": 1524,
+      "aplicado": 1459,
+      "en_ml": 1459,
       "ok": true,
       "problemas": []
     },
@@ -967,8 +967,8 @@
       "id": "MLU1522603376",
       "titulo": "Libro Amar Y Ser Amado - Jim Towey - Debolsillo",
       "original": 2395,
-      "aplicado": 2243,
-      "en_ml": 2243,
+      "aplicado": 2267,
+      "en_ml": 2267,
       "ok": true,
       "problemas": []
     },
@@ -1048,8 +1048,8 @@
       "id": "MLU1522469274",
       "titulo": "Alicia En El Pais De Las Maravillas - Carroll Lewis",
       "original": 2180,
-      "aplicado": 1861,
-      "en_ml": 1861,
+      "aplicado": 1792,
+      "en_ml": 1792,
       "ok": true,
       "problemas": []
     },
@@ -1183,8 +1183,8 @@
       "id": "MLU1522454050",
       "titulo": "El Algoritmo Del Amor . Un Viaje A Las Entrañas De Tinder",
       "original": 2660,
-      "aplicado": 2459,
-      "en_ml": 2459,
+      "aplicado": 2380,
+      "en_ml": 2380,
       "ok": true,
       "problemas": []
     },
@@ -1255,8 +1255,8 @@
       "id": "MLU702971391",
       "titulo": "American Royals 1 - Ember Kel Ediciones",
       "original": 1920,
-      "aplicado": 1791,
-      "en_ml": 1791,
+      "aplicado": 1724,
+      "en_ml": 1724,
       "ok": true,
       "problemas": []
     },
@@ -1948,8 +1948,8 @@
       "id": "MLU702929557",
       "titulo": "Algo Mas - Marcelo Cohen - Sigilo - Libro",
       "original": 1773,
-      "aplicado": 1692,
-      "en_ml": 1692,
+      "aplicado": 1626,
+      "en_ml": 1626,
       "ok": true,
       "problemas": []
     },
@@ -2434,8 +2434,8 @@
       "id": "MLU1523264710",
       "titulo": "El Archivo De Sherlock Holmes - Arthur Conan Doyle",
       "original": 1764,
-      "aplicado": 1683,
-      "en_ml": 1683,
+      "aplicado": 1615,
+      "en_ml": 1615,
       "ok": true,
       "problemas": []
     },
@@ -2524,8 +2524,8 @@
       "id": "MLU1523104052",
       "titulo": "Libro Apariciones - Ariel Dorfman - Fce",
       "original": 1600,
-      "aplicado": 1459,
-      "en_ml": 1459,
+      "aplicado": 1475,
+      "en_ml": 1475,
       "ok": true,
       "problemas": []
     },
@@ -2677,8 +2677,8 @@
       "id": "MLU1523094646",
       "titulo": "Libro Animales, De Unswort, Emma Jane. Editorial Malpaso, Tapa Dura (2017)",
       "original": 2660,
-      "aplicado": 2356,
-      "en_ml": 2356,
+      "aplicado": 2282,
+      "en_ml": 2282,
       "ok": true,
       "problemas": []
     },
@@ -2812,8 +2812,8 @@
       "id": "MLU1522959778",
       "titulo": "Libro Animales Habladores - Eva Meijer - Taurus",
       "original": 2456,
-      "aplicado": 2376,
-      "en_ml": 2376,
+      "aplicado": 2302,
+      "en_ml": 2302,
       "ok": true,
       "problemas": []
     },
@@ -2920,8 +2920,8 @@
       "id": "MLU1522954416",
       "titulo": "Ana Y Su Mejor Amiga",
       "original": 2410,
-      "aplicado": 2296,
-      "en_ml": 2296,
+      "aplicado": 2224,
+      "en_ml": 2224,
       "ok": true,
       "problemas": []
     },
@@ -2983,8 +2983,8 @@
       "id": "MLU1522953282",
       "titulo": "Libro El Amor Es Para Perdedores - Wibke Brueggemann - Puck",
       "original": 1663,
-      "aplicado": 1584,
-      "en_ml": 1584,
+      "aplicado": 1518,
+      "en_ml": 1518,
       "ok": true,
       "problemas": []
     },
@@ -3100,8 +3100,8 @@
       "id": "MLU1522942078",
       "titulo": "Anatomía De Un Escándalo - Vaughan, Sarah",
       "original": 2170,
-      "aplicado": 1871,
-      "en_ml": 1871,
+      "aplicado": 1802,
+      "en_ml": 1802,
       "ok": true,
       "problemas": []
     },
@@ -3253,8 +3253,8 @@
       "id": "MLU1522933488",
       "titulo": "Libro Animales Escondidos - Lola Casas, Gusti",
       "original": 2049,
-      "aplicado": 1899,
-      "en_ml": 1899,
+      "aplicado": 1920,
+      "en_ml": 1920,
       "ok": true,
       "problemas": []
     },
@@ -3532,8 +3532,8 @@
       "id": "MLU703018967",
       "titulo": "Araoz Y La Verdad - Eduardo Sacheri - Libro Alfaguara",
       "original": 2580,
-      "aplicado": 2273,
-      "en_ml": 2273,
+      "aplicado": 2296,
+      "en_ml": 2296,
       "ok": true,
       "problemas": []
     },
@@ -3703,8 +3703,8 @@
       "id": "MLU702997963",
       "titulo": "Libro Apuntes Para La Militancia - John William Cooke",
       "original": 1553,
-      "aplicado": 1475,
-      "en_ml": 1475,
+      "aplicado": 1420,
+      "en_ml": 1420,
       "ok": true,
       "problemas": []
     },
@@ -3829,8 +3829,8 @@
       "id": "MLU702985411",
       "titulo": "Libro Aquella Chica Pelirroja De Jean Amy",
       "original": 2098,
-      "aplicado": 2019,
-      "en_ml": 2019,
+      "aplicado": 1949,
+      "en_ml": 1949,
       "ok": true,
       "problemas": []
     },
@@ -4171,8 +4171,8 @@
       "id": "MLU1523654852",
       "titulo": "Libro Wild Cars 2. Ases En Lo Alto - George R. R. Martin",
       "original": 2240,
-      "aplicado": 1871,
-      "en_ml": 1871,
+      "aplicado": 1890,
+      "en_ml": 1890,
       "ok": true,
       "problemas": []
     },
@@ -4774,8 +4774,8 @@
       "id": "MLU1523487426",
       "titulo": "El Arte Nórdico De La Geometría - Eija Koski",
       "original": 2600,
-      "aplicado": 2332,
-      "en_ml": 2332,
+      "aplicado": 2356,
+      "en_ml": 2356,
       "ok": true,
       "problemas": []
     },
@@ -4792,8 +4792,8 @@
       "id": "MLU1523484406",
       "titulo": "Libro Ya Leo A: Tom Sawyer - Mark Twain",
       "original": 1730,
-      "aplicado": 1586,
-      "en_ml": 1586,
+      "aplicado": 1603,
+      "en_ml": 1603,
       "ok": true,
       "problemas": []
     },
@@ -4882,8 +4882,8 @@
       "id": "MLU1523481276",
       "titulo": "Audaz , Productivo Y Feliz - Robin Sharma",
       "original": 2039,
-      "aplicado": 1960,
-      "en_ml": 1960,
+      "aplicado": 1890,
+      "en_ml": 1890,
       "ok": true,
       "problemas": []
     },
@@ -5071,8 +5071,8 @@
       "id": "MLU1523473790",
       "titulo": "El Arte De Ser Luminosa - Harriet Reuter Hapgood",
       "original": 1821,
-      "aplicado": 1742,
-      "en_ml": 1742,
+      "aplicado": 1675,
+      "en_ml": 1675,
       "ok": true,
       "problemas": []
     },
@@ -5440,8 +5440,8 @@
       "id": "MLU703046691",
       "titulo": "Libro Batalla De Baile - Los Juguetes De Arantx",
       "original": 1559,
-      "aplicado": 1485,
-      "en_ml": 1485,
+      "aplicado": 1430,
+      "en_ml": 1430,
       "ok": true,
       "problemas": []
     },
@@ -5674,8 +5674,8 @@
       "id": "MLU703034497",
       "titulo": "Batu 8 - Tute - Sudamericana - Libro",
       "original": 1637,
-      "aplicado": 1564,
-      "en_ml": 1564,
+      "aplicado": 1498,
+      "en_ml": 1498,
       "ok": true,
       "problemas": []
     },
@@ -5755,8 +5755,8 @@
       "id": "MLU703033021",
       "titulo": "Banquete - Platon - Colihue Clasica",
       "original": 2125,
-      "aplicado": 2049,
-      "en_ml": 2049,
+      "aplicado": 1979,
+      "en_ml": 1979,
       "ok": true,
       "problemas": []
     },
@@ -5827,8 +5827,8 @@
       "id": "MLU703029449",
       "titulo": "Aves Introduccion A La Musica De Concierto (con Cd -cartone)",
       "original": 2750,
-      "aplicado": 2576,
-      "en_ml": 2576,
+      "aplicado": 2603,
+      "en_ml": 2603,
       "ok": true,
       "problemas": []
     },
@@ -6241,8 +6241,8 @@
       "id": "MLU1524213032",
       "titulo": "Biología 1 - Fuera De Serie - Edelvives",
       "original": 2510,
-      "aplicado": 2351,
-      "en_ml": 2351,
+      "aplicado": 2376,
+      "en_ml": 2376,
       "ok": true,
       "problemas": []
     },
@@ -6331,8 +6331,8 @@
       "id": "MLU1524207248",
       "titulo": "Breve Historia De Bizancio, De Hernández De La Fuente, David. Editorial Alianza,",
       "original": 2450,
-      "aplicado": 2277,
-      "en_ml": 2277,
+      "aplicado": 2204,
+      "en_ml": 2204,
       "ok": true,
       "problemas": []
     },
@@ -6475,8 +6475,8 @@
       "id": "MLU1524205952",
       "titulo": "Libro El Bosque De Los Susurros - Greg, Howard",
       "original": 2140,
-      "aplicado": 2059,
-      "en_ml": 2059,
+      "aplicado": 1988,
+      "en_ml": 1988,
       "ok": true,
       "problemas": []
     },
@@ -6943,8 +6943,8 @@
       "id": "MLU1524193420",
       "titulo": "Botes, Aviones Y Trenes - Col. Huellitas - Latinbooks",
       "original": 1734,
-      "aplicado": 1653,
-      "en_ml": 1653,
+      "aplicado": 1586,
+      "en_ml": 1586,
       "ok": true,
       "problemas": []
     },
@@ -7690,8 +7690,8 @@
       "id": "MLU703077813",
       "titulo": "Libro De Ejercicios Big English 4, De Herrera, Mario. Big English Editora Pearso",
       "original": 2700,
-      "aplicado": 2371,
-      "en_ml": 2371,
+      "aplicado": 2395,
+      "en_ml": 2395,
       "ok": true,
       "problemas": []
     },
@@ -7798,8 +7798,8 @@
       "id": "MLU703073201",
       "titulo": "Libro La Bella Y La Bestia - Los Editores De Auzou - Auzou",
       "original": 1793,
-      "aplicado": 1645,
-      "en_ml": 1645,
+      "aplicado": 1663,
+      "en_ml": 1663,
       "ok": true,
       "problemas": []
     },
@@ -8356,8 +8356,8 @@
       "id": "MLU703040805",
       "titulo": "Increíble Enciclopedia Bienvenidos Al Circo, De Lahoreau, Gaël. Editorial Larous",
       "original": 2080,
-      "aplicado": 1871,
-      "en_ml": 1871,
+      "aplicado": 1802,
+      "en_ml": 1802,
       "ok": true,
       "problemas": []
     },
@@ -8419,8 +8419,8 @@
       "id": "MLU703037193",
       "titulo": "Guia De Turismo - Berlin De Cerca - Lonely Planet",
       "original": 2150,
-      "aplicado": 2069,
-      "en_ml": 2069,
+      "aplicado": 1998,
+      "en_ml": 1998,
       "ok": true,
       "problemas": []
     },
@@ -8437,8 +8437,8 @@
       "id": "MLU703037129",
       "titulo": "Benteveo Palabras 3 - Leo Y Escribo",
       "original": 1578,
-      "aplicado": 1504,
-      "en_ml": 1504,
+      "aplicado": 1439,
+      "en_ml": 1439,
       "ok": true,
       "problemas": []
     },
@@ -8464,8 +8464,8 @@
       "id": "MLU703036953",
       "titulo": "Belzebubs (negro) - Jp Ahonen, De Jp Ahonen. Editorial Océano En Español",
       "original": 2220,
-      "aplicado": 1881,
-      "en_ml": 1881,
+      "aplicado": 1812,
+      "en_ml": 1812,
       "ok": true,
       "problemas": []
     },
@@ -8509,8 +8509,8 @@
       "id": "MLU703036843",
       "titulo": "Bella Y Oscura - Rosa Montero",
       "original": 2500,
-      "aplicado": 2286,
-      "en_ml": 2286,
+      "aplicado": 2214,
+      "en_ml": 2214,
       "ok": true,
       "problemas": []
     },
@@ -8635,8 +8635,8 @@
       "id": "MLU1524224210",
       "titulo": "La Bruja En La Casa - Arin Murphy Hiscock - Arkano - Libro",
       "original": 2427,
-      "aplicado": 2346,
-      "en_ml": 2346,
+      "aplicado": 2273,
+      "en_ml": 2273,
       "ok": true,
       "problemas": []
     },
@@ -8734,8 +8734,8 @@
       "id": "MLU703129893",
       "titulo": "Caos - El Manual De Accidentes Y Errores - Smith Keri",
       "original": 2450,
-      "aplicado": 2148,
-      "en_ml": 2148,
+      "aplicado": 2077,
+      "en_ml": 2077,
       "ok": true,
       "problemas": []
     },
@@ -9004,8 +9004,8 @@
       "id": "MLU703122197",
       "titulo": "Libro Cacería De Niños - Taeko Kno",
       "original": 1871,
-      "aplicado": 1724,
-      "en_ml": 1724,
+      "aplicado": 1742,
+      "en_ml": 1742,
       "ok": true,
       "problemas": []
     },
@@ -9013,8 +9013,8 @@
       "id": "MLU703122025",
       "titulo": "Cabellos Revueltos, De Akiko Yosano. Editorial El Hilo De Ariadna, Tapa Blanda, ",
       "original": 1608,
-      "aplicado": 1534,
-      "en_ml": 1534,
+      "aplicado": 1469,
+      "en_ml": 1469,
       "ok": true,
       "problemas": []
     },
@@ -9139,8 +9139,8 @@
       "id": "MLU703119633",
       "titulo": "Libro Bts : Icons Of The K-pop De Adrian Besley",
       "original": 2530,
-      "aplicado": 2204,
-      "en_ml": 2204,
+      "aplicado": 2227,
+      "en_ml": 2227,
       "ok": true,
       "problemas": []
     },
@@ -9652,8 +9652,8 @@
       "id": "MLU703107207",
       "titulo": "Buenisimo Natacha - Loqueleo Narnaja - Santillana",
       "original": 1618,
-      "aplicado": 1544,
-      "en_ml": 1544,
+      "aplicado": 1479,
+      "en_ml": 1479,
       "ok": true,
       "problemas": []
     },
@@ -9724,8 +9724,8 @@
       "id": "MLU703102069",
       "titulo": "Campos Magneticos,los - Breton,andre",
       "original": 2110,
-      "aplicado": 2029,
-      "en_ml": 2029,
+      "aplicado": 1959,
+      "en_ml": 1959,
       "ok": true,
       "problemas": []
     },
@@ -9949,8 +9949,8 @@
       "id": "MLU703096267",
       "titulo": "Cacao - 70 Aniversario",
       "original": 1553,
-      "aplicado": 1420,
-      "en_ml": 1420,
+      "aplicado": 1435,
+      "en_ml": 1435,
       "ok": true,
       "problemas": []
     },
@@ -9985,8 +9985,8 @@
       "id": "MLU703096065",
       "titulo": "El Caballo Y El Gaucho - Katchadjian, Pablo",
       "original": 1900,
-      "aplicado": 1821,
-      "en_ml": 1821,
+      "aplicado": 1754,
+      "en_ml": 1754,
       "ok": true,
       "problemas": []
     },
@@ -10084,8 +10084,8 @@
       "id": "MLU703094379",
       "titulo": "Buenos Aires Street Art - Gonzalo Dobleg",
       "original": 2366,
-      "aplicado": 2286,
-      "en_ml": 2286,
+      "aplicado": 2214,
+      "en_ml": 2214,
       "ok": true,
       "problemas": []
     },
@@ -10102,8 +10102,8 @@
       "id": "MLU703094345",
       "titulo": "Buenos Aires By The Way - Guido Indij - La Marca - Libro",
       "original": 2650,
-      "aplicado": 2342,
-      "en_ml": 2342,
+      "aplicado": 2366,
+      "en_ml": 2366,
       "ok": true,
       "problemas": []
     },
@@ -10183,8 +10183,8 @@
       "id": "MLU703089191",
       "titulo": "Libro Can I Play Too ? - Mo Willems",
       "original": 1620,
-      "aplicado": 1488,
-      "en_ml": 1488,
+      "aplicado": 1504,
+      "en_ml": 1504,
       "ok": true,
       "problemas": []
     },
@@ -10210,8 +10210,8 @@
       "id": "MLU703089077",
       "titulo": "Campo De Mayo - Félix Bruzzone",
       "original": 2008,
-      "aplicado": 1930,
-      "en_ml": 1930,
+      "aplicado": 1861,
+      "en_ml": 1861,
       "ok": true,
       "problemas": []
     },
@@ -10705,8 +10705,8 @@
       "id": "MLU1524693972",
       "titulo": "Libro Casi Amor - Chiara F. Citterio - The Orlando Books",
       "original": 1705,
-      "aplicado": 1633,
-      "en_ml": 1633,
+      "aplicado": 1567,
+      "en_ml": 1567,
       "ok": true,
       "problemas": []
     },
@@ -11065,8 +11065,8 @@
       "id": "MLU1524484936",
       "titulo": "Sklar - Los Catorce Cuadernos + Nunca Llegamos A La India",
       "original": 2368,
-      "aplicado": 2286,
-      "en_ml": 2286,
+      "aplicado": 2214,
+      "en_ml": 2214,
       "ok": true,
       "problemas": []
     },
@@ -11578,8 +11578,8 @@
       "id": "MLU1524969668",
       "titulo": "Chat Natacha Chat - Edición Especial Tapa Dura - Loqueleo",
       "original": 1861,
-      "aplicado": 1782,
-      "en_ml": 1782,
+      "aplicado": 1723,
+      "en_ml": 1723,
       "ok": true,
       "problemas": []
     },
@@ -11812,8 +11812,8 @@
       "id": "MLU703258895",
       "titulo": "Las Chicas De Alambre - Loqueleo Roja",
       "original": 1741,
-      "aplicado": 1663,
-      "en_ml": 1663,
+      "aplicado": 1596,
+      "en_ml": 1596,
       "ok": true,
       "problemas": []
     },
@@ -11992,8 +11992,8 @@
       "id": "MLU1525873010",
       "titulo": "La Ciencia De La Seducción - Libro - Martín Rieznik",
       "original": 2009,
-      "aplicado": 1930,
-      "en_ml": 1930,
+      "aplicado": 1861,
+      "en_ml": 1861,
       "ok": true,
       "problemas": []
     },
@@ -12001,8 +12001,8 @@
       "id": "MLU1525871882",
       "titulo": "El Cielo Es Azul, La Tierra Blanca - Hiromi Kawakami",
       "original": 2009,
-      "aplicado": 1930,
-      "en_ml": 1930,
+      "aplicado": 1861,
+      "en_ml": 1861,
       "ok": true,
       "problemas": []
     },
@@ -12028,8 +12028,8 @@
       "id": "MLU1525863372",
       "titulo": "Ciencias Naturales:lineas De Accion Didactica Y Perspectivas",
       "original": 2029,
-      "aplicado": 1950,
-      "en_ml": 1950,
+      "aplicado": 1881,
+      "en_ml": 1881,
       "ok": true,
       "problemas": []
     },
@@ -12163,8 +12163,8 @@
       "id": "MLU1525823912",
       "titulo": "Ciencias Naturales 4 Caba - Sobre Ruedas - Edelvives",
       "original": 2150,
-      "aplicado": 1733,
-      "en_ml": 1733,
+      "aplicado": 1752,
+      "en_ml": 1752,
       "ok": true,
       "problemas": []
     },
@@ -12181,8 +12181,8 @@
       "id": "MLU1525820822",
       "titulo": "Libro Cielo Drive, De Sebastián De Caro. Editorial Reservoir Books",
       "original": 1979,
-      "aplicado": 1842,
-      "en_ml": 1842,
+      "aplicado": 1861,
+      "en_ml": 1861,
       "ok": true,
       "problemas": []
     },
@@ -12190,8 +12190,8 @@
       "id": "MLU1525814934",
       "titulo": "Los Chicos De Mayo - Planeta Azul",
       "original": 1553,
-      "aplicado": 1475,
-      "en_ml": 1475,
+      "aplicado": 1420,
+      "en_ml": 1420,
       "ok": true,
       "problemas": []
     },
@@ -12244,8 +12244,8 @@
       "id": "MLU703296967",
       "titulo": "Libro Julio Verne 5. Cinco Semanas En Globo - Molino",
       "original": 2643,
-      "aplicado": 2534,
-      "en_ml": 2534,
+      "aplicado": 2450,
+      "en_ml": 2450,
       "ok": true,
       "problemas": []
     },
@@ -12271,8 +12271,8 @@
       "id": "MLU703287631",
       "titulo": "El Círculo De La Suerte - Loqueleo",
       "original": 1642,
-      "aplicado": 1498,
-      "en_ml": 1498,
+      "aplicado": 1514,
+      "en_ml": 1514,
       "ok": true,
       "problemas": []
     },
@@ -12289,8 +12289,8 @@
       "id": "MLU703278507",
       "titulo": "Las Cinco Claves De Oro - Helle Heckmann",
       "original": 1652,
-      "aplicado": 1574,
-      "en_ml": 1574,
+      "aplicado": 1508,
+      "en_ml": 1508,
       "ok": true,
       "problemas": []
     },
@@ -12694,8 +12694,8 @@
       "id": "MLU1522961924",
       "titulo": "Anne, La De La Isla - Lucy M. Montgomery",
       "original": 1618,
-      "aplicado": 1524,
-      "en_ml": 1524,
+      "aplicado": 1459,
+      "en_ml": 1459,
       "ok": true,
       "problemas": []
     },
@@ -12883,8 +12883,8 @@
       "id": "MLU1523483628",
       "titulo": "Aventura Zombie En Movydrill, De Robleis. Editorial Alfaguara, Tapa Blanda En Es",
       "original": 2076,
-      "aplicado": 1980,
-      "en_ml": 1980,
+      "aplicado": 1909,
+      "en_ml": 1909,
       "ok": true,
       "problemas": []
     },
@@ -13000,8 +13000,8 @@
       "id": "MLU703029759",
       "titulo": "Libro Ay, William! - Elizabeth Strout",
       "original": 2356,
-      "aplicado": 2257,
-      "en_ml": 2257,
+      "aplicado": 2184,
+      "en_ml": 2184,
       "ok": true,
       "problemas": []
     },
@@ -13045,8 +13045,8 @@
       "id": "MLU1524206336",
       "titulo": "A Boy Called Bat - Elana K. Arnold",
       "original": 1553,
-      "aplicado": 1455,
-      "en_ml": 1455,
+      "aplicado": 1410,
+      "en_ml": 1410,
       "ok": true,
       "problemas": []
     },
@@ -13180,8 +13180,8 @@
       "id": "MLU703036677",
       "titulo": "Belgrano. La Pasión Como Bandera - Torre De Papel Azul",
       "original": 1600,
-      "aplicado": 1504,
-      "en_ml": 1504,
+      "aplicado": 1439,
+      "en_ml": 1439,
       "ok": true,
       "problemas": []
     },
@@ -13693,8 +13693,8 @@
       "id": "MLU1521898800",
       "titulo": "Agua Salada Y Sangre Caliente Historias - Ciencia Que Ladra",
       "original": 1365,
-      "aplicado": 1234,
-      "en_ml": 1234,
+      "aplicado": 1247,
+      "en_ml": 1247,
       "ok": true,
       "problemas": []
     },
@@ -13999,8 +13999,8 @@
       "id": "MLU702854443",
       "titulo": "Las Afinidades Electivas, De Goethe, Johann Wolfgang Von. Letras Universales Edi",
       "original": 2180,
-      "aplicado": 1999,
-      "en_ml": 1999,
+      "aplicado": 1930,
+      "en_ml": 1930,
       "ok": true,
       "problemas": []
     },
@@ -14881,8 +14881,8 @@
       "id": "MLU1522452440",
       "titulo": "¡alerta! La Mano Peluda Ataca, De Perez Sabbi Mercedes. N/a, Vol. Volumen Unico.",
       "original": 1600,
-      "aplicado": 1316,
-      "en_ml": 1316,
+      "aplicado": 1342,
+      "en_ml": 1342,
       "ok": true,
       "problemas": []
     },
@@ -14980,8 +14980,8 @@
       "id": "MLU702964767",
       "titulo": "Libro Almas Nocturnas De Lucila Varise",
       "original": 1530,
-      "aplicado": 1445,
-      "en_ml": 1445,
+      "aplicado": 1390,
+      "en_ml": 1390,
       "ok": true,
       "problemas": []
     },
@@ -15529,8 +15529,8 @@
       "id": "MLU1523289864",
       "titulo": "El Árbol De Los Ruidos Y Las Nueces - Loqueleo",
       "original": 1530,
-      "aplicado": 1390,
-      "en_ml": 1390,
+      "aplicado": 1405,
+      "en_ml": 1405,
       "ok": true,
       "problemas": []
     },
@@ -15880,8 +15880,8 @@
       "id": "MLU1523099046",
       "titulo": "Años Dorados De La Cultura Argentina - Lida Miranda",
       "original": 1530,
-      "aplicado": 1445,
-      "en_ml": 1445,
+      "aplicado": 1390,
+      "en_ml": 1390,
       "ok": true,
       "problemas": []
     },
@@ -16429,8 +16429,8 @@
       "id": "MLU1522943498",
       "titulo": "Angelina Purpurina Levanta El Vuelo",
       "original": 1600,
-      "aplicado": 1277,
-      "en_ml": 1277,
+      "aplicado": 1224,
+      "en_ml": 1224,
       "ok": true,
       "problemas": []
     },
@@ -16708,8 +16708,8 @@
       "id": "MLU1522914760",
       "titulo": "Libro El Amor Y La Peste .una Historia De Amor Y Deseo En Ti",
       "original": 1510,
-      "aplicado": 1425,
-      "en_ml": 1425,
+      "aplicado": 1372,
+      "en_ml": 1372,
       "ok": true,
       "problemas": []
     },
@@ -17185,8 +17185,8 @@
       "id": "MLU1523666228",
       "titulo": "Mochila Gold 4 Sbk Y Cd Rom N_e Pk, De Pinkley, Diane. Serie De Mochilas Educati",
       "original": 1600,
-      "aplicado": 1224,
-      "en_ml": 1224,
+      "aplicado": 1237,
+      "en_ml": 1237,
       "ok": true,
       "problemas": []
     },
@@ -17446,8 +17446,8 @@
       "id": "MLU1523657896",
       "titulo": "At The Zoo - Oxford",
       "original": 1423,
-      "aplicado": 1336,
-      "en_ml": 1336,
+      "aplicado": 1283,
+      "en_ml": 1283,
       "ok": true,
       "problemas": []
     },
@@ -17761,8 +17761,8 @@
       "id": "MLU1523502820",
       "titulo": "Asociaciones Y Secuencias - Educards - Barco De Papel",
       "original": 1530,
-      "aplicado": 1390,
-      "en_ml": 1390,
+      "aplicado": 1405,
+      "en_ml": 1405,
       "ok": true,
       "problemas": []
     },
@@ -18184,8 +18184,8 @@
       "id": "MLU1523481134",
       "titulo": "El Atuendo De Los Libros, De Jhumpa Lahiri. Editorial Gris Tormenta En Español",
       "original": 1600,
-      "aplicado": 1405,
-      "en_ml": 1405,
+      "aplicado": 1351,
+      "en_ml": 1351,
       "ok": true,
       "problemas": []
     },
@@ -18319,8 +18319,8 @@
       "id": "MLU1523473476",
       "titulo": "El Arte De La Paz, De Ueshiba, Morihei. Editorial Kairós Sa, Tapa Blanda En Espa",
       "original": 1620,
-      "aplicado": 1445,
-      "en_ml": 1445,
+      "aplicado": 1400,
+      "en_ml": 1400,
       "ok": true,
       "problemas": []
     },
@@ -19381,8 +19381,8 @@
       "id": "MLU703029343",
       "titulo": "Aventureros Y Enamorados 2/ed. - Azulejos Naranja",
       "original": 1530,
-      "aplicado": 1445,
-      "en_ml": 1445,
+      "aplicado": 1390,
+      "en_ml": 1390,
       "ok": true,
       "problemas": []
     },
@@ -20083,8 +20083,8 @@
       "id": "MLU1524191992",
       "titulo": "Bodas De Sangre - Coleccion Literaria",
       "original": 1530,
-      "aplicado": 1445,
-      "en_ml": 1445,
+      "aplicado": 1390,
+      "en_ml": 1390,
       "ok": true,
       "problemas": []
     },
@@ -21001,8 +21001,8 @@
       "id": "MLU703041007",
       "titulo": "Biff, Chip And Kipper Companion 2 Year - Oxford Reading Tree",
       "original": 1484,
-      "aplicado": 1395,
-      "en_ml": 1395,
+      "aplicado": 1342,
+      "en_ml": 1342,
       "ok": true,
       "problemas": []
     },
@@ -21019,8 +21019,8 @@
       "id": "MLU703039715",
       "titulo": "Biciencias 2 El Arbol Verde Limon Kapelusz",
       "original": 1530,
-      "aplicado": 1445,
-      "en_ml": 1445,
+      "aplicado": 1390,
+      "en_ml": 1390,
       "ok": true,
       "problemas": []
     },
@@ -22126,8 +22126,8 @@
       "id": "MLU703109035",
       "titulo": "El Caballo Que No Sabía Relinchar - G. Gambaro - Loqueleo",
       "original": 1530,
-      "aplicado": 1390,
-      "en_ml": 1390,
+      "aplicado": 1405,
+      "en_ml": 1405,
       "ok": true,
       "problemas": []
     },
@@ -22171,8 +22171,8 @@
       "id": "MLU703108173",
       "titulo": "Buscar Una Frase - Pierre Alferi",
       "original": 1600,
-      "aplicado": 1234,
-      "en_ml": 1234,
+      "aplicado": 1247,
+      "en_ml": 1247,
       "ok": true,
       "problemas": []
     },
@@ -22351,8 +22351,8 @@
       "id": "MLU703103467",
       "titulo": "Canta, Musa Los Mas Fascinantes Episodios De La Guerra De Troya Diego Bentivegna",
       "original": 1530,
-      "aplicado": 1445,
-      "en_ml": 1445,
+      "aplicado": 1390,
+      "en_ml": 1390,
       "ok": true,
       "problemas": []
     },
@@ -22630,8 +22630,8 @@
       "id": "MLU703093885",
       "titulo": "Budismo - Watts, Alan",
       "original": 1600,
-      "aplicado": 1445,
-      "en_ml": 1445,
+      "aplicado": 1390,
+      "en_ml": 1390,
       "ok": true,
       "problemas": []
     },
@@ -22828,8 +22828,8 @@
       "id": "MLU703083543",
       "titulo": "Cabo Fantasma - Loqueleo Azul",
       "original": 1530,
-      "aplicado": 1445,
-      "en_ml": 1445,
+      "aplicado": 1390,
+      "en_ml": 1390,
       "ok": true,
       "problemas": []
     },
@@ -22855,8 +22855,8 @@
       "id": "MLU703083399",
       "titulo": "La Cabaña Del Tío Tom Beecher / Stowe Libro Gradifco",
       "original": 1530,
-      "aplicado": 1390,
-      "en_ml": 1390,
+      "aplicado": 1405,
+      "en_ml": 1405,
       "ok": true,
       "problemas": []
     },
@@ -22891,8 +22891,8 @@
       "id": "MLU703082947",
       "titulo": "Penguin Kids 3 Butterflies And Frogs Reader Clil, De Wilson, Rachel. Editorial P",
       "original": 1600,
-      "aplicado": 1381,
-      "en_ml": 1381,
+      "aplicado": 1395,
+      "en_ml": 1395,
       "ok": true,
       "problemas": []
     },
@@ -23044,8 +23044,8 @@
       "id": "MLU1524698826",
       "titulo": "Celeste Y La Dinosauria En El Jardín - Mempo Giardinelli",
       "original": 1530,
-      "aplicado": 1390,
-      "en_ml": 1390,
+      "aplicado": 1405,
+      "en_ml": 1405,
       "ok": true,
       "problemas": []
     },
@@ -23521,8 +23521,8 @@
       "id": "MLU1524492772",
       "titulo": "La Casa Del Arbol - Del Pajarito Remendado",
       "original": 1530,
-      "aplicado": 1410,
-      "en_ml": 1410,
+      "aplicado": 1351,
+      "en_ml": 1351,
       "ok": true,
       "problemas": []
     },
@@ -23593,8 +23593,8 @@
       "id": "MLU1524487244",
       "titulo": "Carnavales Eran Los De Antes - Edelvives",
       "original": 1435,
-      "aplicado": 1302,
-      "en_ml": 1302,
+      "aplicado": 1316,
+      "en_ml": 1316,
       "ok": true,
       "problemas": []
     },
@@ -23692,8 +23692,8 @@
       "id": "MLU1524482002",
       "titulo": "El Caso Dora - Freud, Sigmund",
       "original": 1530,
-      "aplicado": 1445,
-      "en_ml": 1445,
+      "aplicado": 1390,
+      "en_ml": 1390,
       "ok": true,
       "problemas": []
     },
@@ -24124,8 +24124,8 @@
       "id": "MLU1524332626",
       "titulo": "Capitana Jennifer Aguamala Jones - A La Orilla Del Viento -, De Vivian French. E",
       "original": 1415,
-      "aplicado": 1322,
-      "en_ml": 1322,
+      "aplicado": 1336,
+      "en_ml": 1336,
       "ok": true,
       "problemas": []
     },
@@ -24529,8 +24529,8 @@
       "id": "MLU1524940906",
       "titulo": "Libro Certezas E Ironias De Leonardo Levinas",
       "original": 1504,
-      "aplicado": 1415,
-      "en_ml": 1415,
+      "aplicado": 1361,
+      "en_ml": 1361,
       "ok": true,
       "problemas": []
     },
@@ -25384,8 +25384,8 @@
       "id": "MLU703296383",
       "titulo": "Cinco Ritos Tibetanos De La Eterna Juventud: El Ojo De La Revelación, De Kelder,",
       "original": 1600,
-      "aplicado": 1435,
-      "en_ml": 1435,
+      "aplicado": 1381,
+      "en_ml": 1381,
       "ok": true,
       "problemas": []
     },
@@ -25699,8 +25699,8 @@
       "id": "MLU703266059",
       "titulo": "Libro Los Cinco En El Cerro Del Contrabandista, De Blyton Enid. Juventud Editori",
       "original": 1600,
-      "aplicado": 1445,
-      "en_ml": 1445,
+      "aplicado": 1390,
+      "en_ml": 1390,
       "ok": true,
       "problemas": []
     },
@@ -25771,8 +25771,8 @@
       "id": "MLU1526373424",
       "titulo": "Deleuze - Alain Badiou - Manantial - Libro",
       "original": 1464,
-      "aplicado": 1376,
-      "en_ml": 1376,
+      "aplicado": 1332,
+      "en_ml": 1332,
       "ok": true,
       "problemas": []
     },
@@ -26131,8 +26131,8 @@
       "id": "MLU1522450450",
       "titulo": "Alana, La Bailarina Del Agua, De Cardoso, Alice. Editorial Picarona, Tapa Dura E",
       "original": 1810,
-      "aplicado": 1633,
-      "en_ml": 1633,
+      "aplicado": 1567,
+      "en_ml": 1567,
       "ok": true,
       "problemas": []
     },
@@ -26149,8 +26149,8 @@
       "id": "MLU702964249",
       "titulo": "El Alma Del Samurái, De Cleary, Thomas. Editorial Editorial Kairos, Tapa Blanda ",
       "original": 1700,
-      "aplicado": 1504,
-      "en_ml": 1504,
+      "aplicado": 1450,
+      "en_ml": 1450,
       "ok": true,
       "problemas": []
     },
@@ -26167,8 +26167,8 @@
       "id": "MLU702950059",
       "titulo": "Ambaraba 3 - Quaderni Di Lavoro",
       "original": 2160,
-      "aplicado": 1988,
-      "en_ml": 1988,
+      "aplicado": 2009,
+      "en_ml": 2009,
       "ok": true,
       "problemas": []
     },
@@ -26266,8 +26266,8 @@
       "id": "MLU1523005058",
       "titulo": "Anda Conejito ! - David Ezra Stein",
       "original": 2010,
-      "aplicado": 1722,
-      "en_ml": 1722,
+      "aplicado": 1656,
+      "en_ml": 1656,
       "ok": true,
       "problemas": []
     },
@@ -26446,8 +26446,8 @@
       "id": "MLU1523504000",
       "titulo": "Astrología Y Astronomía En Renacimiento, Vernet, Acantilado",
       "original": 1960,
-      "aplicado": 1782,
-      "en_ml": 1782,
+      "aplicado": 1714,
+      "en_ml": 1714,
       "ok": true,
       "problemas": []
     },
@@ -26455,8 +26455,8 @@
       "id": "MLU1523501908",
       "titulo": "Asesinato En El Savoy - Sjowall Maj",
       "original": 1880,
-      "aplicado": 1613,
-      "en_ml": 1613,
+      "aplicado": 1548,
+      "en_ml": 1548,
       "ok": true,
       "problemas": []
     },
@@ -26482,8 +26482,8 @@
       "id": "MLU1523489434",
       "titulo": "Así Habla La Tierra, De Pigem Jordi. Editorial Kairos, Tapa Blanda En Español, 2",
       "original": 1940,
-      "aplicado": 1851,
-      "en_ml": 1851,
+      "aplicado": 1782,
+      "en_ml": 1782,
       "ok": true,
       "problemas": []
     },
@@ -26878,8 +26878,8 @@
       "id": "MLU703129067",
       "titulo": "Candidiasis , Tu Amiga Del Alma",
       "original": 2050,
-      "aplicado": 1763,
-      "en_ml": 1763,
+      "aplicado": 1782,
+      "en_ml": 1782,
       "ok": true,
       "problemas": []
     },
@@ -26959,8 +26959,8 @@
       "id": "MLU703099231",
       "titulo": "El Cambio Cuántico: Cómo El Nuevo Paradigma Científico Puede Transformar La Soci",
       "original": 2270,
-      "aplicado": 1940,
-      "en_ml": 1940,
+      "aplicado": 1871,
+      "en_ml": 1871,
       "ok": true,
       "problemas": []
     },
@@ -27004,8 +27004,8 @@
       "id": "MLU703093703",
       "titulo": "La Brújula Emocional: Cómo Pensar Mejor En Tus Sentimientos, De Sand, Ilse. Edit",
       "original": 1700,
-      "aplicado": 1534,
-      "en_ml": 1534,
+      "aplicado": 1469,
+      "en_ml": 1469,
       "ok": true,
       "problemas": []
     },
@@ -27031,8 +27031,8 @@
       "id": "MLU703087969",
       "titulo": "Camina Como Un Buda, De Rinzler, Lodro. Editorial Kairos, Tapa Blanda En Español",
       "original": 2110,
-      "aplicado": 1801,
-      "en_ml": 1801,
+      "aplicado": 1733,
+      "en_ml": 1733,
       "ok": true,
       "problemas": []
     },
@@ -27382,8 +27382,8 @@
       "id": "MLU703304127",
       "titulo": "Los Cinco En La Caravana",
       "original": 1620,
-      "aplicado": 1485,
-      "en_ml": 1485,
+      "aplicado": 1430,
+      "en_ml": 1430,
       "ok": true,
       "problemas": []
     },
@@ -27445,8 +27445,8 @@
       "id": "MLU703265891",
       "titulo": "Libro Cinco Ciudades, De Tapinar, Ahmet Hamdi. Editorial Editorial Sexto Piso, T",
       "original": 1830,
-      "aplicado": 1633,
-      "en_ml": 1633,
+      "aplicado": 1567,
+      "en_ml": 1567,
       "ok": true,
       "problemas": []
     },
@@ -27679,8 +27679,8 @@
       "id": "MLU702967739",
       "titulo": "Holtzapfel: Ámbito De Acción De Los Órganos",
       "original": 1800,
-      "aplicado": 1684,
-      "en_ml": 1684,
+      "aplicado": 1702,
+      "en_ml": 1702,
       "ok": true,
       "problemas": []
     },
@@ -28021,8 +28021,8 @@
       "id": "MLU1530819060",
       "titulo": "El Año Del Pensamiento Magico",
       "original": 2150,
-      "aplicado": 1959,
-      "en_ml": 1959,
+      "aplicado": 1980,
+      "en_ml": 1980,
       "ok": true,
       "problemas": []
     },
@@ -28201,8 +28201,8 @@
       "id": "MLU1530644840",
       "titulo": "El Baston De Plata - Zona Libre",
       "original": 1680,
-      "aplicado": 1633,
-      "en_ml": 1633,
+      "aplicado": 1567,
+      "en_ml": 1567,
       "ok": true,
       "problemas": []
     },
@@ -28219,8 +28219,8 @@
       "id": "MLU1530644788",
       "titulo": "Las Aventuras De Facu Y Cafe Con Leche 9 - Chanti Chanti",
       "original": 1600,
-      "aplicado": 1439,
-      "en_ml": 1439,
+      "aplicado": 1455,
+      "en_ml": 1455,
       "ok": true,
       "problemas": []
     },
@@ -28588,8 +28588,8 @@
       "id": "MLU1531179782",
       "titulo": "Cuando Todo Pasa Volando - Colihue Tal Para Cual",
       "original": 1600,
-      "aplicado": 1465,
-      "en_ml": 1465,
+      "aplicado": 1410,
+      "en_ml": 1410,
       "ok": true,
       "problemas": []
     },
@@ -28984,8 +28984,8 @@
       "id": "MLU1531176006",
       "titulo": "Cosas Que Te Pasan Si Estás Vivo - Liniers",
       "original": 2030,
-      "aplicado": 1712,
-      "en_ml": 1712,
+      "aplicado": 1645,
+      "en_ml": 1645,
       "ok": true,
       "problemas": []
     },
@@ -28993,8 +28993,8 @@
       "id": "MLU1531175738",
       "titulo": "Cosas Que Los Papas No Saben - Jorge Accame",
       "original": 1600,
-      "aplicado": 1554,
-      "en_ml": 1554,
+      "aplicado": 1488,
+      "en_ml": 1488,
       "ok": true,
       "problemas": []
     },
@@ -29164,8 +29164,8 @@
       "id": "MLU1531174548",
       "titulo": "Conviértete En Un Escritor Superventas - Javier Cosnava",
       "original": 1600,
-      "aplicado": 1445,
-      "en_ml": 1445,
+      "aplicado": 1390,
+      "en_ml": 1390,
       "ok": true,
       "problemas": []
     },
@@ -29362,8 +29362,8 @@
       "id": "MLU1531173472",
       "titulo": "Conquista, Iris Y Construcción, La - Sergio Bizzio",
       "original": 2070,
-      "aplicado": 2009,
-      "en_ml": 2009,
+      "aplicado": 1939,
+      "en_ml": 1939,
       "ok": true,
       "problemas": []
     },
@@ -29407,8 +29407,8 @@
       "id": "MLU1531173446",
       "titulo": "Conquista Del Cielo Serie Discovery Education De Nicolas Brasch Editorial Larous",
       "original": 2210,
-      "aplicado": 1999,
-      "en_ml": 1999,
+      "aplicado": 1930,
+      "en_ml": 1930,
       "ok": true,
       "problemas": []
     },
@@ -29569,8 +29569,8 @@
       "id": "MLU1531172838",
       "titulo": "Condorito 9° Libro Tapa Dura Pepo 2016",
       "original": 2330,
-      "aplicado": 2204,
-      "en_ml": 2204,
+      "aplicado": 2227,
+      "en_ml": 2227,
       "ok": true,
       "problemas": []
     },
@@ -29650,8 +29650,8 @@
       "id": "MLU1531172552",
       "titulo": "Con Ton Y Con Son Lengua Materna Educ Inicial Stapich (ai), De Stapich. Aique Ed",
       "original": 1600,
-      "aplicado": 1420,
-      "en_ml": 1420,
+      "aplicado": 1435,
+      "en_ml": 1435,
       "ok": true,
       "problemas": []
     },
@@ -29731,8 +29731,8 @@
       "id": "MLU1531172214",
       "titulo": "Comunicacion Y Transformaciones Socioculturales En El Siglo",
       "original": 1920,
-      "aplicado": 1742,
-      "en_ml": 1742,
+      "aplicado": 1675,
+      "en_ml": 1675,
       "ok": true,
       "problemas": []
     },
@@ -29830,8 +29830,8 @@
       "id": "MLU1531171774",
       "titulo": "Compass 5 - Vocabulary And Grammar Log Kel Ediciones",
       "original": 2040,
-      "aplicado": 1900,
-      "en_ml": 1900,
+      "aplicado": 1831,
+      "en_ml": 1831,
       "ok": true,
       "problemas": []
     },
@@ -29848,8 +29848,8 @@
       "id": "MLU1531171728",
       "titulo": "Libro Los Compas 3 Y La Cámara Del Tiempo - Mikecrack",
       "original": 2590,
-      "aplicado": 2435,
-      "en_ml": 2435,
+      "aplicado": 2361,
+      "en_ml": 2361,
       "ok": true,
       "problemas": []
     },
@@ -29857,8 +29857,8 @@
       "id": "MLU1531171710",
       "titulo": "Libro Los Compas Perdidos En El Espacio - Mikecrack",
       "original": 2560,
-      "aplicado": 2361,
-      "en_ml": 2361,
+      "aplicado": 2385,
+      "en_ml": 2385,
       "ok": true,
       "problemas": []
     },
@@ -30019,8 +30019,8 @@
       "id": "MLU1531170638",
       "titulo": "Como Escribir La Novela De Tu Vida - Loqueleo",
       "original": 1840,
-      "aplicado": 1742,
-      "en_ml": 1742,
+      "aplicado": 1675,
+      "en_ml": 1675,
       "ok": true,
       "problemas": []
     },
@@ -30235,8 +30235,8 @@
       "id": "MLU1531169062",
       "titulo": "Libro Colonialismo Y Derechos Humanos De Eugenio Raul Zaffar",
       "original": 2490,
-      "aplicado": 2322,
-      "en_ml": 2322,
+      "aplicado": 2346,
+      "en_ml": 2346,
       "ok": true,
       "problemas": []
     },
@@ -30388,8 +30388,8 @@
       "id": "MLU1531155620",
       "titulo": "Cocina Ayurvedica - Janet Gomez - Amat",
       "original": 1840,
-      "aplicado": 1791,
-      "en_ml": 1791,
+      "aplicado": 1724,
+      "en_ml": 1724,
       "ok": true,
       "problemas": []
     },
@@ -30505,8 +30505,8 @@
       "id": "MLU1531154694",
       "titulo": "Claves De Derecho Del Trabajo - Pablo Salpeter",
       "original": 1600,
-      "aplicado": 1564,
-      "en_ml": 1564,
+      "aplicado": 1498,
+      "en_ml": 1498,
       "ok": true,
       "problemas": []
     },
@@ -30541,8 +30541,8 @@
       "id": "MLU1531154290",
       "titulo": "La Cruz Azul Y Las Estrellas Errantes - Mandioca",
       "original": 1600,
-      "aplicado": 1356,
-      "en_ml": 1356,
+      "aplicado": 1302,
+      "en_ml": 1302,
       "ok": true,
       "problemas": []
     },
@@ -30658,8 +30658,8 @@
       "id": "MLU1531153888",
       "titulo": "Crimen Y Castigo - Fiodor Dostoievski - Colihue Clasica",
       "original": 2900,
-      "aplicado": 2841,
-      "en_ml": 2841,
+      "aplicado": 2754,
+      "en_ml": 2754,
       "ok": true,
       "problemas": []
     },
@@ -30703,8 +30703,8 @@
       "id": "MLU1531153598",
       "titulo": "Libro Creciendo Con Amor Antroposofica Papel Local",
       "original": 2780,
-      "aplicado": 2484,
-      "en_ml": 2484,
+      "aplicado": 2400,
+      "en_ml": 2400,
       "ok": true,
       "problemas": []
     },
@@ -30739,8 +30739,8 @@
       "id": "MLU1531153392",
       "titulo": "Cracks De Los Esports, Los, De Pettman, Kevin. Roca Editorial En Español",
       "original": 1600,
-      "aplicado": 1405,
-      "en_ml": 1405,
+      "aplicado": 1351,
+      "en_ml": 1351,
       "ok": true,
       "problemas": []
     },
@@ -30766,8 +30766,8 @@
       "id": "MLU1531151342",
       "titulo": "Coser Y Contar - Angels Navarro",
       "original": 1960,
-      "aplicado": 1812,
-      "en_ml": 1812,
+      "aplicado": 1831,
+      "en_ml": 1831,
       "ok": true,
       "problemas": []
     },
@@ -30775,8 +30775,8 @@
       "id": "MLU1531151138",
       "titulo": "Cosas Que Me Gustan - Anthony Browne - Libro Tapa Dura - Fce",
       "original": 1850,
-      "aplicado": 1801,
-      "en_ml": 1801,
+      "aplicado": 1733,
+      "en_ml": 1733,
       "ok": true,
       "problemas": []
     },
@@ -30829,8 +30829,8 @@
       "id": "MLU1531150418",
       "titulo": "El Corsario Negro (nueva Edicion) - Azulejos Naranja",
       "original": 1600,
-      "aplicado": 1554,
-      "en_ml": 1554,
+      "aplicado": 1488,
+      "en_ml": 1488,
       "ok": true,
       "problemas": []
     },
@@ -30910,8 +30910,8 @@
       "id": "MLU1531149950",
       "titulo": "Corazon - Edmondo De Amicis",
       "original": 1600,
-      "aplicado": 1306,
-      "en_ml": 1306,
+      "aplicado": 1254,
+      "en_ml": 1254,
       "ok": true,
       "problemas": []
     },
@@ -31063,8 +31063,8 @@
       "id": "MLU1531149218",
       "titulo": "Construir Un Globo Aerostatico - Beniamino Sidoti",
       "original": 1600,
-      "aplicado": 1554,
-      "en_ml": 1554,
+      "aplicado": 1488,
+      "en_ml": 1488,
       "ok": true,
       "problemas": []
     },
@@ -31099,8 +31099,8 @@
       "id": "MLU1531149060",
       "titulo": "Constelaciones Familiares . Acuerdos Que Sanan",
       "original": 2280,
-      "aplicado": 1999,
-      "en_ml": 1999,
+      "aplicado": 1930,
+      "en_ml": 1930,
       "ok": true,
       "problemas": []
     },
@@ -31198,8 +31198,8 @@
       "id": "MLU1531148350",
       "titulo": "La Confesion Del Contador - Hugo Ariel Macchiavelli",
       "original": 1600,
-      "aplicado": 1415,
-      "en_ml": 1415,
+      "aplicado": 1361,
+      "en_ml": 1361,
       "ok": true,
       "problemas": []
     },
@@ -31432,8 +31432,8 @@
       "id": "MLU1531147398",
       "titulo": "La Complicidad De Los Cuerpos - Zarate - Barenhaus - Libro",
       "original": 1600,
-      "aplicado": 1534,
-      "en_ml": 1534,
+      "aplicado": 1469,
+      "en_ml": 1469,
       "ok": true,
       "problemas": []
     },
@@ -31531,8 +31531,8 @@
       "id": "MLU1531147130",
       "titulo": "Los Compas Y La Maldicion De Mikecrack - Mikecrak / Trollino",
       "original": 2560,
-      "aplicado": 2341,
-      "en_ml": 2341,
+      "aplicado": 2366,
+      "en_ml": 2366,
       "ok": true,
       "problemas": []
     },
@@ -31657,8 +31657,8 @@
       "id": "MLU1531146304",
       "titulo": "Como Los Superheroes - Turzi - Capital Intelectual - Libro",
       "original": 1830,
-      "aplicado": 1714,
-      "en_ml": 1714,
+      "aplicado": 1732,
+      "en_ml": 1732,
       "ok": true,
       "problemas": []
     },
@@ -31720,8 +31720,8 @@
       "id": "MLU1531145904",
       "titulo": "Libro Cómo Empezar - Michael Bungay Stanier - Empresa Activa: Empieza A Hacer Al",
       "original": 2150,
-      "aplicado": 2059,
-      "en_ml": 2059,
+      "aplicado": 1988,
+      "en_ml": 1988,
       "ok": true,
       "problemas": []
     },
@@ -32242,8 +32242,8 @@
       "id": "MLU1531142380",
       "titulo": "Clunk´s New Job - Oxford",
       "original": 1600,
-      "aplicado": 1475,
-      "en_ml": 1475,
+      "aplicado": 1420,
+      "en_ml": 1420,
       "ok": true,
       "problemas": []
     },
@@ -32350,8 +32350,8 @@
       "id": "MLU1531141654",
       "titulo": "La Clave Del Bienestar - Ear Mindell",
       "original": 1790,
-      "aplicado": 1742,
-      "en_ml": 1742,
+      "aplicado": 1675,
+      "en_ml": 1675,
       "ok": true,
       "problemas": []
     },
@@ -32359,8 +32359,8 @@
       "id": "MLU1531141642",
       "titulo": "La Clave De Los Numeros 4",
       "original": 2070,
-      "aplicado": 1861,
-      "en_ml": 1861,
+      "aplicado": 1792,
+      "en_ml": 1792,
       "ok": true,
       "problemas": []
     },
@@ -32386,8 +32386,8 @@
       "id": "MLU1531141268",
       "titulo": "Crónicas Marcianas - Planeta Lector",
       "original": 1920,
-      "aplicado": 1763,
-      "en_ml": 1763,
+      "aplicado": 1782,
+      "en_ml": 1782,
       "ok": true,
       "problemas": []
     },
@@ -32440,8 +32440,8 @@
       "id": "MLU1531141204",
       "titulo": "Crónica Narrativa - Tello, Nerio",
       "original": 1960,
-      "aplicado": 1841,
-      "en_ml": 1841,
+      "aplicado": 1773,
+      "en_ml": 1773,
       "ok": true,
       "problemas": []
     },
@@ -32521,8 +32521,8 @@
       "id": "MLU1531141110",
       "titulo": "Crisis Politica Autoritarismo - Figueredo - Clacso - Libro",
       "original": 1940,
-      "aplicado": 1663,
-      "en_ml": 1663,
+      "aplicado": 1596,
+      "en_ml": 1596,
       "ok": true,
       "problemas": []
     },
@@ -32530,8 +32530,8 @@
       "id": "MLU1531141098",
       "titulo": "Crisis Economicas Argentinas De Mitre A Macri: Julian Zicari",
       "original": 2500,
-      "aplicado": 2158,
-      "en_ml": 2158,
+      "aplicado": 2086,
+      "en_ml": 2086,
       "ok": true,
       "problemas": []
     },
@@ -32593,8 +32593,8 @@
       "id": "MLU1531140822",
       "titulo": "El Criador De Dragones, De De Vedia, Fernando. Editorial Sudamericana, Tapa Blan",
       "original": 1800,
-      "aplicado": 1663,
-      "en_ml": 1663,
+      "aplicado": 1596,
+      "en_ml": 1596,
       "ok": true,
       "problemas": []
     },
@@ -32620,8 +32620,8 @@
       "id": "MLU1531140690",
       "titulo": "Libro La Creditocracia Y Los Argumentos Para Resistirse Al P",
       "original": 1750,
-      "aplicado": 1603,
-      "en_ml": 1603,
+      "aplicado": 1537,
+      "en_ml": 1537,
       "ok": true,
       "problemas": []
     },
@@ -32638,8 +32638,8 @@
       "id": "MLU1531140662",
       "titulo": "Creatividad Simple Y Facil",
       "original": 1600,
-      "aplicado": 1514,
-      "en_ml": 1514,
+      "aplicado": 1450,
+      "en_ml": 1450,
       "ok": true,
       "problemas": []
     },
@@ -32863,8 +32863,8 @@
       "id": "MLU1531137002",
       "titulo": "Corazon De Las Tinieblas - Conrad Joseph",
       "original": 1600,
-      "aplicado": 1554,
-      "en_ml": 1554,
+      "aplicado": 1488,
+      "en_ml": 1488,
       "ok": true,
       "problemas": []
     },
@@ -33043,8 +33043,8 @@
       "id": "MLU1531136362",
       "titulo": "Mikeltube 6. Contra El Escuadrón Oscuro De Mikeltube",
       "original": 2080,
-      "aplicado": 1960,
-      "en_ml": 1960,
+      "aplicado": 1890,
+      "en_ml": 1890,
       "ok": true,
       "problemas": []
     },
@@ -33259,8 +33259,8 @@
       "id": "MLU1531135066",
       "titulo": "Los Super Minis 2. El Concurso De Historieta - Ala Delta Roj",
       "original": 1600,
-      "aplicado": 1469,
-      "en_ml": 1469,
+      "aplicado": 1410,
+      "en_ml": 1410,
       "ok": true,
       "problemas": []
     },
@@ -33349,8 +33349,8 @@
       "id": "MLU1531134838",
       "titulo": "Con Mi Voz Y Tus Manos - Sandy Senes - Continente - Libro",
       "original": 1600,
-      "aplicado": 1554,
-      "en_ml": 1554,
+      "aplicado": 1488,
+      "en_ml": 1488,
       "ok": true,
       "problemas": []
     },
@@ -33367,8 +33367,8 @@
       "id": "MLU1531134518",
       "titulo": "Comunicación Gubernamental - Luciano Elizalde Y M. Riorda",
       "original": 2740,
-      "aplicado": 2596,
-      "en_ml": 2596,
+      "aplicado": 2623,
+      "en_ml": 2623,
       "ok": true,
       "problemas": []
     },
@@ -33610,8 +33610,8 @@
       "id": "MLU1531133342",
       "titulo": "Como Pensaron Campo Los Argentinos - Hora - Siglo Xxi Libro",
       "original": 1840,
-      "aplicado": 1762,
-      "en_ml": 1762,
+      "aplicado": 1694,
+      "en_ml": 1694,
       "ok": true,
       "problemas": []
     },
@@ -33637,8 +33637,8 @@
       "id": "MLU1531133294",
       "titulo": "Cómo Meditar: Guía Para El Descubrimiento De Sí Mismo, De Leshan, Lawrence. Edit",
       "original": 1960,
-      "aplicado": 1861,
-      "en_ml": 1861,
+      "aplicado": 1792,
+      "en_ml": 1792,
       "ok": true,
       "problemas": []
     },
@@ -33691,8 +33691,8 @@
       "id": "MLU1531133042",
       "titulo": "Cómo Hacer De Verdad Cosas Con Palabras - Barbara Cassin",
       "original": 2280,
-      "aplicado": 2018,
-      "en_ml": 2018,
+      "aplicado": 2039,
+      "en_ml": 2039,
       "ok": true,
       "problemas": []
     },
@@ -33763,8 +33763,8 @@
       "id": "MLU1531132772",
       "titulo": "Como Dos Extraños - Kleypas, Lisa",
       "original": 2760,
-      "aplicado": 2380,
-      "en_ml": 2380,
+      "aplicado": 2405,
+      "en_ml": 2405,
       "ok": true,
       "problemas": []
     },
@@ -33790,8 +33790,8 @@
       "id": "MLU1531132448",
       "titulo": "Como Conversar Con Dios, Yogananda, Self Realization Fellow",
       "original": 1600,
-      "aplicado": 1504,
-      "en_ml": 1504,
+      "aplicado": 1439,
+      "en_ml": 1439,
       "ok": true,
       "problemas": []
     },
@@ -34933,8 +34933,8 @@
       "id": "MLU1531124042",
       "titulo": "La Copa De Oro / El Río De Las Palabras - Repún ** Cantaro",
       "original": 1600,
-      "aplicado": 1415,
-      "en_ml": 1415,
+      "aplicado": 1441,
+      "en_ml": 1441,
       "ok": true,
       "problemas": []
     },
@@ -34978,8 +34978,8 @@
       "id": "MLU1531123754",
       "titulo": "Control Biológico De Las Plagas En La Casa Y El Jard, De Tom Roberts. Editorial ",
       "original": 1900,
-      "aplicado": 1851,
-      "en_ml": 1851,
+      "aplicado": 1782,
+      "en_ml": 1782,
       "ok": true,
       "problemas": []
     },
@@ -35221,8 +35221,8 @@
       "id": "MLU1531122588",
       "titulo": "Conflictos Socioambientales En America Latina - El Derecho,",
       "original": 1600,
-      "aplicado": 1366,
-      "en_ml": 1366,
+      "aplicado": 1312,
+      "en_ml": 1312,
       "ok": true,
       "problemas": []
     },
@@ -35248,8 +35248,8 @@
       "id": "MLU1531122516",
       "titulo": "Confesiones De Una Editora Poco Mentirosa - Esther Tusquets",
       "original": 2240,
-      "aplicado": 2049,
-      "en_ml": 2049,
+      "aplicado": 1979,
+      "en_ml": 1979,
       "ok": true,
       "problemas": []
     },
@@ -35275,8 +35275,8 @@
       "id": "MLU1531122398",
       "titulo": "Partials: La Conexión, De Wells, Dan. Editorial Vrya, Tapa Blanda En Español, 20",
       "original": 2440,
-      "aplicado": 2385,
-      "en_ml": 2385,
+      "aplicado": 2312,
+      "en_ml": 2312,
       "ok": true,
       "problemas": []
     },
@@ -35293,8 +35293,8 @@
       "id": "MLU1531122384",
       "titulo": "Conexión Alteris - Loqueleo",
       "original": 1600,
-      "aplicado": 1488,
-      "en_ml": 1488,
+      "aplicado": 1504,
+      "en_ml": 1504,
       "ok": true,
       "problemas": []
     },
@@ -35365,8 +35365,8 @@
       "id": "MLU1531122226",
       "titulo": "Condorito 7° Libro",
       "original": 2340,
-      "aplicado": 2214,
-      "en_ml": 2214,
+      "aplicado": 2237,
+      "en_ml": 2237,
       "ok": true,
       "problemas": []
     },
@@ -35500,8 +35500,8 @@
       "id": "MLU1531121794",
       "titulo": "Comunidad Secreta De Los Elfos, Los Faunos Y Las Hadas",
       "original": 1810,
-      "aplicado": 1762,
-      "en_ml": 1762,
+      "aplicado": 1694,
+      "en_ml": 1694,
       "ok": true,
       "problemas": []
     },
@@ -35536,8 +35536,8 @@
       "id": "MLU1531121468",
       "titulo": "Comprender Nuestra Mente (ed.arg.)",
       "original": 2600,
-      "aplicado": 2263,
-      "en_ml": 2263,
+      "aplicado": 2286,
+      "en_ml": 2286,
       "ok": true,
       "problemas": []
     },
@@ -35887,8 +35887,8 @@
       "id": "MLU1531119956",
       "titulo": "Libro Como Estas ? De Ivanke Y Mey",
       "original": 1680,
-      "aplicado": 1633,
-      "en_ml": 1633,
+      "aplicado": 1567,
+      "en_ml": 1567,
       "ok": true,
       "problemas": []
     },
@@ -35977,8 +35977,8 @@
       "id": "MLU1531119452",
       "titulo": "Libro De Ejercicios - Cómo Atraer El Dinero - Lain Garcia",
       "original": 1830,
-      "aplicado": 1782,
-      "en_ml": 1782,
+      "aplicado": 1714,
+      "en_ml": 1714,
       "ok": true,
       "problemas": []
     },
@@ -35986,8 +35986,8 @@
       "id": "MLU1531119414",
       "titulo": "Cómo Amar, De Thich Nhat Hanh. Editorial Kairós En Español",
       "original": 1600,
-      "aplicado": 1524,
-      "en_ml": 1524,
+      "aplicado": 1459,
+      "en_ml": 1459,
       "ok": true,
       "problemas": []
     },
@@ -36085,8 +36085,8 @@
       "id": "MLU1531118942",
       "titulo": "** Colorpedia De Los Animales ** Enciclopedia Para Colorear",
       "original": 2010,
-      "aplicado": 1843,
-      "en_ml": 1843,
+      "aplicado": 1773,
+      "en_ml": 1773,
       "ok": true,
       "problemas": []
     },
@@ -36544,8 +36544,8 @@
       "id": "MLU1531115776",
       "titulo": "Claves Didacticas Para Renovar La Enseñanza - Coronado",
       "original": 2700,
-      "aplicado": 2643,
-      "en_ml": 2643,
+      "aplicado": 2557,
+      "en_ml": 2557,
       "ok": true,
       "problemas": []
     },
@@ -36724,8 +36724,8 @@
       "id": "MLU703614383",
       "titulo": "Libro Torres De Malory 4. Cuarto Curso - Enid Blyton",
       "original": 2240,
-      "aplicado": 1930,
-      "en_ml": 1930,
+      "aplicado": 1950,
+      "en_ml": 1950,
       "ok": true,
       "problemas": []
     },
@@ -36886,8 +36886,8 @@
       "id": "MLU703613733",
       "titulo": "6 - Cuadernos De Entrenamiento De Ajedrez - Combinaciones De",
       "original": 1600,
-      "aplicado": 1302,
-      "en_ml": 1302,
+      "aplicado": 1243,
+      "en_ml": 1243,
       "ok": true,
       "problemas": []
     },
@@ -37147,8 +37147,8 @@
       "id": "MLU703601197",
       "titulo": "Libro Cuando Te Golpeo, De Kandasamy, Meena. Editorial Malpaso, Tapa Dura ( 2018",
       "original": 2410,
-      "aplicado": 2069,
-      "en_ml": 2069,
+      "aplicado": 1998,
+      "en_ml": 1998,
       "ok": true,
       "problemas": []
     },
@@ -37192,8 +37192,8 @@
       "id": "MLU703600927",
       "titulo": "Cuando Floreciãâ³ La Risa, De Belli, Gioconda. Editorial Libros Del Zorro Rojo, ",
       "original": 2110,
-      "aplicado": 1890,
-      "en_ml": 1890,
+      "aplicado": 1822,
+      "en_ml": 1822,
       "ok": true,
       "problemas": []
     },
@@ -37264,8 +37264,8 @@
       "id": "MLU703600629",
       "titulo": "El Cuadernillo Secreto De Swamp Kid- Ovni Press - Viducomics",
       "original": 1600,
-      "aplicado": 1434,
-      "en_ml": 1434,
+      "aplicado": 1371,
+      "en_ml": 1371,
       "ok": true,
       "problemas": []
     },
@@ -37345,8 +37345,8 @@
       "id": "MLU703588707",
       "titulo": "Cuéntalo: No Hay Justicia Para Ella., De Gigl, Robyn. Editorial Motus, Tapa Blan",
       "original": 1920,
-      "aplicado": 1633,
-      "en_ml": 1633,
+      "aplicado": 1567,
+      "en_ml": 1567,
       "ok": true,
       "problemas": []
     },
@@ -37363,8 +37363,8 @@
       "id": "MLU703588633",
       "titulo": "El Cubo Magico - Azulejos Rojos",
       "original": 1600,
-      "aplicado": 1441,
-      "en_ml": 1441,
+      "aplicado": 1381,
+      "en_ml": 1381,
       "ok": true,
       "problemas": []
     },
@@ -37444,8 +37444,8 @@
       "id": "MLU703588329",
       "titulo": "Cuando Te Vi Caer - Sebastian Basualdo",
       "original": 1600,
-      "aplicado": 1475,
-      "en_ml": 1475,
+      "aplicado": 1420,
+      "en_ml": 1420,
       "ok": true,
       "problemas": []
     },
@@ -37471,8 +37471,8 @@
       "id": "MLU703588233",
       "titulo": "Cuando Santa Cayo Del Cielo",
       "original": 1840,
-      "aplicado": 1694,
-      "en_ml": 1694,
+      "aplicado": 1626,
+      "en_ml": 1626,
       "ok": true,
       "problemas": []
     },
@@ -38074,8 +38074,8 @@
       "id": "MLU703094147",
       "titulo": "Buenas Noches Hada - Hadas Brillantes",
       "original": 1530,
-      "aplicado": 1485,
-      "en_ml": 1485,
+      "aplicado": 1430,
+      "en_ml": 1430,
       "ok": true,
       "problemas": []
     },
@@ -38191,8 +38191,8 @@
       "id": "MLU1531170802",
       "titulo": "Como Hacerse Amigo De Un Fantasma - Rebecca Green",
       "original": 2370,
-      "aplicado": 2316,
-      "en_ml": 2316,
+      "aplicado": 2243,
+      "en_ml": 2243,
       "ok": true,
       "problemas": []
     },
@@ -38443,8 +38443,8 @@
       "id": "MLU1531961514",
       "titulo": "Libro Doña Dolores - Verónica Taube",
       "original": 1600,
-      "aplicado": 1336,
-      "en_ml": 1336,
+      "aplicado": 1283,
+      "en_ml": 1283,
       "ok": true,
       "problemas": []
     },
@@ -38785,8 +38785,8 @@
       "id": "MLU1531960944",
       "titulo": "Por Que - Los Dinosaurios - Yoyo - Libro",
       "original": 2160,
-      "aplicado": 1831,
-      "en_ml": 1831,
+      "aplicado": 1763,
+      "en_ml": 1763,
       "ok": true,
       "problemas": []
     },
@@ -39073,8 +39073,8 @@
       "id": "MLU1531872042",
       "titulo": "Libro Doctor Glas - Hjalmar Söderberg - Leteo Edito",
       "original": 1830,
-      "aplicado": 1704,
-      "en_ml": 1704,
+      "aplicado": 1722,
+      "en_ml": 1722,
       "ok": true,
       "problemas": []
     },
@@ -39370,8 +39370,8 @@
       "id": "MLU1531871412",
       "titulo": "Libro Dinero En Juego - Gonzalo Pereyra Saez - Planeta",
       "original": 1710,
-      "aplicado": 1548,
-      "en_ml": 1548,
+      "aplicado": 1564,
+      "en_ml": 1564,
       "ok": true,
       "problemas": []
     },
@@ -39415,8 +39415,8 @@
       "id": "MLU1531871306",
       "titulo": "Libro Diez Mujeres - Serrano, Marcela",
       "original": 2070,
-      "aplicado": 1920,
-      "en_ml": 1920,
+      "aplicado": 1852,
+      "en_ml": 1852,
       "ok": true,
       "problemas": []
     },
@@ -39982,8 +39982,8 @@
       "id": "MLU1531858484",
       "titulo": "Dinosaurios - Carnivoros Terribles Libro Con 3 Rompecabezas",
       "original": 1630,
-      "aplicado": 1488,
-      "en_ml": 1488,
+      "aplicado": 1430,
+      "en_ml": 1430,
       "ok": true,
       "problemas": []
     },
@@ -40072,8 +40072,8 @@
       "id": "MLU1531858374",
       "titulo": "El Dilema Humano - Joan Cwaik - Libro - Galerna",
       "original": 1990,
-      "aplicado": 1831,
-      "en_ml": 1831,
+      "aplicado": 1763,
+      "en_ml": 1763,
       "ok": true,
       "problemas": []
     },
@@ -40207,8 +40207,8 @@
       "id": "MLU1531857604",
       "titulo": "Dias De La Revolucion 1806 1820 - Sacheri - Alfaguara Libro",
       "original": 2720,
-      "aplicado": 2433,
-      "en_ml": 2433,
+      "aplicado": 2351,
+      "en_ml": 2351,
       "ok": true,
       "problemas": []
     },
@@ -40783,8 +40783,8 @@
       "id": "MLU1531845506",
       "titulo": "Los Dientes Del Peine, De Alomar, Osama. Editorial Malpaso, Tapa Dura En Español",
       "original": 2700,
-      "aplicado": 2546,
-      "en_ml": 2546,
+      "aplicado": 2470,
+      "en_ml": 2470,
       "ok": true,
       "problemas": []
     },
@@ -40909,8 +40909,8 @@
       "id": "MLU1531844866",
       "titulo": "Días De Playa - Margarita Mainé",
       "original": 1600,
-      "aplicado": 1544,
-      "en_ml": 1544,
+      "aplicado": 1479,
+      "en_ml": 1479,
       "ok": true,
       "problemas": []
     },
@@ -40999,8 +40999,8 @@
       "id": "MLU703639229",
       "titulo": "Diciembre, Súper Álbum - Bodoc, Liliana",
       "original": 1820,
-      "aplicado": 1626,
-      "en_ml": 1626,
+      "aplicado": 1643,
+      "en_ml": 1643,
       "ok": true,
       "problemas": []
     },
@@ -41062,8 +41062,8 @@
       "id": "MLU703639033",
       "titulo": "Libro Los Días Más Felices - Fernando Iglesias",
       "original": 1930,
-      "aplicado": 1645,
-      "en_ml": 1645,
+      "aplicado": 1663,
+      "en_ml": 1663,
       "ok": true,
       "problemas": []
     },
@@ -41125,8 +41125,8 @@
       "id": "MLU703637847",
       "titulo": "Libro Diarios - Katherine Mansfield - Chai Editora",
       "original": 2130,
-      "aplicado": 1802,
-      "en_ml": 1802,
+      "aplicado": 1821,
+      "en_ml": 1821,
       "ok": true,
       "problemas": []
     },
@@ -41143,8 +41143,8 @@
       "id": "MLU703637615",
       "titulo": "Diario De Un Viaje Imposible - Loqueleo",
       "original": 1800,
-      "aplicado": 1675,
-      "en_ml": 1675,
+      "aplicado": 1692,
+      "en_ml": 1692,
       "ok": true,
       "problemas": []
     },
@@ -41197,8 +41197,8 @@
       "id": "MLU703637197",
       "titulo": "Diario De A Bordo",
       "original": 1600,
-      "aplicado": 1534,
-      "en_ml": 1534,
+      "aplicado": 1469,
+      "en_ml": 1469,
       "ok": true,
       "problemas": []
     },
@@ -41296,8 +41296,8 @@
       "id": "MLU703636579",
       "titulo": "Libro El Día Que Ir A La Escuela Fue Noticia - Soledad Acuña",
       "original": 2260,
-      "aplicado": 1988,
-      "en_ml": 1988,
+      "aplicado": 2009,
+      "en_ml": 2009,
       "ok": true,
       "problemas": []
     },
@@ -41332,8 +41332,8 @@
       "id": "MLU703636467",
       "titulo": "El Dia De Las Cosas Perdidas - Ala Delta Roja (+5 Años)",
       "original": 1600,
-      "aplicado": 1435,
-      "en_ml": 1435,
+      "aplicado": 1381,
+      "en_ml": 1381,
       "ok": true,
       "problemas": []
     },
@@ -41467,8 +41467,8 @@
       "id": "MLU703635823",
       "titulo": "El Despertar Del Conde Drácula",
       "original": 1600,
-      "aplicado": 1475,
-      "en_ml": 1475,
+      "aplicado": 1420,
+      "en_ml": 1420,
       "ok": true,
       "problemas": []
     },
@@ -41629,8 +41629,8 @@
       "id": "MLU703633293",
       "titulo": "Las Descentradas Y Otras Piezas Teatrales",
       "original": 1600,
-      "aplicado": 1485,
-      "en_ml": 1485,
+      "aplicado": 1430,
+      "en_ml": 1430,
       "ok": true,
       "problemas": []
     },
@@ -41683,8 +41683,8 @@
       "id": "MLU703632683",
       "titulo": "Deportista Cientifico - Ciencia Que Ladra",
       "original": 1600,
-      "aplicado": 1420,
-      "en_ml": 1420,
+      "aplicado": 1435,
+      "en_ml": 1435,
       "ok": true,
       "problemas": []
     },
@@ -41764,8 +41764,8 @@
       "id": "MLU703632307",
       "titulo": "Delicado Oficio Argentino De Dar Muerte, El - Ricardo Rojas",
       "original": 2190,
-      "aplicado": 2120,
-      "en_ml": 2120,
+      "aplicado": 2048,
+      "en_ml": 2048,
       "ok": true,
       "problemas": []
     },
@@ -41791,8 +41791,8 @@
       "id": "MLU703632267",
       "titulo": "Libro Deletreo 3 En Cursiva - Sally Johnson",
       "original": 1600,
-      "aplicado": 1292,
-      "en_ml": 1292,
+      "aplicado": 1306,
+      "en_ml": 1306,
       "ok": true,
       "problemas": []
     },
@@ -42052,8 +42052,8 @@
       "id": "MLU703631589",
       "titulo": "De Sol A Sol . Inmigrantes Polacos En La Patagonia",
       "original": 1950,
-      "aplicado": 1801,
-      "en_ml": 1801,
+      "aplicado": 1733,
+      "en_ml": 1733,
       "ok": true,
       "problemas": []
     },
@@ -42655,8 +42655,8 @@
       "id": "MLU703628965",
       "titulo": "El Cuerpo Prohibido - Cynthia Wila - Emece - Libro",
       "original": 2650,
-      "aplicado": 2410,
-      "en_ml": 2410,
+      "aplicado": 2435,
+      "en_ml": 2435,
       "ok": true,
       "problemas": []
     },
@@ -42700,8 +42700,8 @@
       "id": "MLU703628577",
       "titulo": "Cuentos Que Asustan - La Puerta Abierta - Letra Impresa",
       "original": 1600,
-      "aplicado": 1435,
-      "en_ml": 1435,
+      "aplicado": 1381,
+      "en_ml": 1381,
       "ok": true,
       "problemas": []
     },
@@ -42727,8 +42727,8 @@
       "id": "MLU703628443",
       "titulo": "Cuentos Para Entender Mundo - Moreno - B De Bolsillo Libro",
       "original": 1800,
-      "aplicado": 1692,
-      "en_ml": 1692,
+      "aplicado": 1626,
+      "en_ml": 1626,
       "ok": true,
       "problemas": []
     },
@@ -42862,8 +42862,8 @@
       "id": "MLU703627737",
       "titulo": "Cuentos Del Mundo: Asia, De Maine, Margarita. Editorial Hola Chicos, Tapa Blanda",
       "original": 1600,
-      "aplicado": 1455,
-      "en_ml": 1455,
+      "aplicado": 1400,
+      "en_ml": 1400,
       "ok": true,
       "problemas": []
     },
@@ -43006,8 +43006,8 @@
       "id": "MLU703627009",
       "titulo": "Cuentos De Escarnio, De Hilst, Hilda. Editorial Jus, Tapa Blanda En Español, 201",
       "original": 2080,
-      "aplicado": 2009,
-      "en_ml": 2009,
+      "aplicado": 1939,
+      "en_ml": 1939,
       "ok": true,
       "problemas": []
     },
@@ -43267,8 +43267,8 @@
       "id": "MLU703625507",
       "titulo": "Diálogo En La Enseñanza Burbules (am)",
       "original": 2170,
-      "aplicado": 1950,
-      "en_ml": 1950,
+      "aplicado": 1881,
+      "en_ml": 1881,
       "ok": true,
       "problemas": []
     },
@@ -43537,8 +43537,8 @@
       "id": "MLU703622329",
       "titulo": "Desenmascarados - Colores Del Amor 2",
       "original": 1980,
-      "aplicado": 1772,
-      "en_ml": 1772,
+      "aplicado": 1704,
+      "en_ml": 1704,
       "ok": true,
       "problemas": []
     },
@@ -43708,8 +43708,8 @@
       "id": "MLU703621329",
       "titulo": "Libro Derrotero - Antonio Sánchez Gómez - Editorial Sigilo",
       "original": 1980,
-      "aplicado": 1851,
-      "en_ml": 1851,
+      "aplicado": 1782,
+      "en_ml": 1782,
       "ok": true,
       "problemas": []
     },
@@ -44617,8 +44617,8 @@
       "id": "MLU703617681",
       "titulo": "Libro Cultura General Express - Anders Producciones - Alma",
       "original": 1600,
-      "aplicado": 1234,
-      "en_ml": 1234,
+      "aplicado": 1247,
+      "en_ml": 1247,
       "ok": true,
       "problemas": []
     },
@@ -44833,8 +44833,8 @@
       "id": "MLU703616871",
       "titulo": "Cuentos Para Contar - Ballesteros* Letra Impresa Col. Batitú",
       "original": 1600,
-      "aplicado": 1263,
-      "en_ml": 1263,
+      "aplicado": 1277,
+      "en_ml": 1277,
       "ok": true,
       "problemas": []
     },
@@ -45328,8 +45328,8 @@
       "id": "MLU703615187",
       "titulo": "Cuentos Con Humor - Graciela Perriconi - Cántaro",
       "original": 1600,
-      "aplicado": 1361,
-      "en_ml": 1361,
+      "aplicado": 1376,
+      "en_ml": 1376,
       "ok": true,
       "problemas": []
     },
@@ -45337,8 +45337,8 @@
       "id": "MLU703615117",
       "titulo": "Cuentos Completos 2 - Fiodor Dostoievski - Fce - Libro",
       "original": 1750,
-      "aplicado": 1626,
-      "en_ml": 1626,
+      "aplicado": 1643,
+      "en_ml": 1643,
       "ok": true,
       "problemas": []
     },
@@ -45715,8 +45715,8 @@
       "id": "MLU703609745",
       "titulo": "Desigualdad Persistente Charles Tilly Ed. Manantial",
       "original": 2000,
-      "aplicado": 1673,
-      "en_ml": 1673,
+      "aplicado": 1606,
+      "en_ml": 1606,
       "ok": true,
       "problemas": []
     },
@@ -45994,8 +45994,8 @@
       "id": "MLU703608055",
       "titulo": "Demoliendo Papers",
       "original": 1600,
-      "aplicado": 1420,
-      "en_ml": 1420,
+      "aplicado": 1435,
+      "en_ml": 1435,
       "ok": true,
       "problemas": []
     },
@@ -46012,8 +46012,8 @@
       "id": "MLU703608011",
       "titulo": "Libro Demian - Hermann Hesse - Argonauta",
       "original": 1690,
-      "aplicado": 1603,
-      "en_ml": 1603,
+      "aplicado": 1537,
+      "en_ml": 1537,
       "ok": true,
       "problemas": []
     },
@@ -46210,8 +46210,8 @@
       "id": "MLU703607345",
       "titulo": "La Decadencia Del Relato K - Dario Loperfido",
       "original": 1930,
-      "aplicado": 1831,
-      "en_ml": 1831,
+      "aplicado": 1763,
+      "en_ml": 1763,
       "ok": true,
       "problemas": []
     },
@@ -46345,8 +46345,8 @@
       "id": "MLU703606891",
       "titulo": "Libro De Mayor Quiero Ser Feliz - Cuaderno De Actividades",
       "original": 1600,
-      "aplicado": 1366,
-      "en_ml": 1366,
+      "aplicado": 1312,
+      "en_ml": 1312,
       "ok": true,
       "problemas": []
     },
@@ -46435,8 +46435,8 @@
       "id": "MLU703606203",
       "titulo": "Day Of The Dinosaurs + Mp3 Audio - Read And Imagine 5, De Shipton, Paul. Editori",
       "original": 1600,
-      "aplicado": 1485,
-      "en_ml": 1485,
+      "aplicado": 1430,
+      "en_ml": 1430,
       "ok": true,
       "problemas": []
     },
@@ -46525,8 +46525,8 @@
       "id": "MLU703606005",
       "titulo": "Taroppio Daniel Danza Primal Editorial Continente",
       "original": 2250,
-      "aplicado": 2029,
-      "en_ml": 2029,
+      "aplicado": 1959,
+      "en_ml": 1959,
       "ok": true,
       "problemas": []
     },
@@ -47002,8 +47002,8 @@
       "id": "MLU703603903",
       "titulo": "Libro Cuentos Para Niños Y Niñas Que Quieren Salvar El Mundo",
       "original": 2230,
-      "aplicado": 1831,
-      "en_ml": 1831,
+      "aplicado": 1851,
+      "en_ml": 1851,
       "ok": true,
       "problemas": []
     },
@@ -47056,8 +47056,8 @@
       "id": "MLU703603493",
       "titulo": "Libro Cuentos Infantiles Editorial Antroposófica Papel Local",
       "original": 2260,
-      "aplicado": 2079,
-      "en_ml": 2079,
+      "aplicado": 2008,
+      "en_ml": 2008,
       "ok": true,
       "problemas": []
     },
@@ -47155,8 +47155,8 @@
       "id": "MLU703603149",
       "titulo": "Libro Cuentos Del Reino De Los Unicornios - Gato De Hojalata",
       "original": 1790,
-      "aplicado": 1574,
-      "en_ml": 1574,
+      "aplicado": 1508,
+      "en_ml": 1508,
       "ok": true,
       "problemas": []
     },
@@ -47551,8 +47551,8 @@
       "id": "MLU703599503",
       "titulo": "El Diablo En La Botella - Stevenson Robert L",
       "original": 1600,
-      "aplicado": 1372,
-      "en_ml": 1372,
+      "aplicado": 1386,
+      "en_ml": 1386,
       "ok": true,
       "problemas": []
     },
@@ -47650,8 +47650,8 @@
       "id": "MLU703598591",
       "titulo": "Despues Del Oceano - Belen Martinez - Puck - Libro",
       "original": 2190,
-      "aplicado": 1851,
-      "en_ml": 1851,
+      "aplicado": 1782,
+      "en_ml": 1782,
       "ok": true,
       "problemas": []
     },
@@ -47677,8 +47677,8 @@
       "id": "MLU703598457",
       "titulo": "Despierta Al Chaman Interior - Jose Luis Steven",
       "original": 2190,
-      "aplicado": 2110,
-      "en_ml": 2110,
+      "aplicado": 2038,
+      "en_ml": 2038,
       "ok": true,
       "problemas": []
     },
@@ -47812,8 +47812,8 @@
       "id": "MLU703595875",
       "titulo": "Desconocida Buenos Aires - Leandro Vesco",
       "original": 2100,
-      "aplicado": 1861,
-      "en_ml": 1861,
+      "aplicado": 1881,
+      "en_ml": 1881,
       "ok": true,
       "problemas": []
     },
@@ -47866,8 +47866,8 @@
       "id": "MLU703595425",
       "titulo": "Desafios 5",
       "original": 1600,
-      "aplicado": 1316,
-      "en_ml": 1316,
+      "aplicado": 1263,
+      "en_ml": 1263,
       "ok": true,
       "problemas": []
     },
@@ -47902,8 +47902,8 @@
       "id": "MLU703595289",
       "titulo": "Los Derechos De Los Niños De Charlotte Roederer Editorial Oceano Travesía",
       "original": 2060,
-      "aplicado": 1773,
-      "en_ml": 1773,
+      "aplicado": 1791,
+      "en_ml": 1791,
       "ok": true,
       "problemas": []
     },
@@ -48910,8 +48910,8 @@
       "id": "MLU703591237",
       "titulo": "Cuentos Sobre La Esclavitud - J. María - M. De Assis -",
       "original": 1600,
-      "aplicado": 1361,
-      "en_ml": 1361,
+      "aplicado": 1376,
+      "en_ml": 1376,
       "ok": true,
       "problemas": []
     },
@@ -49351,8 +49351,8 @@
       "id": "MLU703589215",
       "titulo": "Mark Twain Cuentos Completos 5 1906 1916 Claridad - Heliasta",
       "original": 1600,
-      "aplicado": 1534,
-      "en_ml": 1534,
+      "aplicado": 1469,
+      "en_ml": 1469,
       "ok": true,
       "problemas": []
     },
@@ -49387,8 +49387,8 @@
       "id": "MLU1531971442",
       "titulo": "Del Espíritu De Las Leyes Montesquieu Alianza Editorial",
       "original": 3150,
-      "aplicado": 2900,
-      "en_ml": 2900,
+      "aplicado": 2812,
+      "en_ml": 2812,
       "ok": true,
       "problemas": []
     },
@@ -49459,8 +49459,8 @@
       "id": "MLU1531968718",
       "titulo": "Esencia Del Zen ,la - Cleary , Thomas - Kairos - #c",
       "original": 1940,
-      "aplicado": 1861,
-      "en_ml": 1861,
+      "aplicado": 1792,
+      "en_ml": 1792,
       "ok": true,
       "problemas": []
     },
@@ -49540,8 +49540,8 @@
       "id": "MLU1531968458",
       "titulo": "Escritos Sobre El Sueño Y La Interpretacion De Los Sueños",
       "original": 1620,
-      "aplicado": 1554,
-      "en_ml": 1554,
+      "aplicado": 1488,
+      "en_ml": 1488,
       "ok": true,
       "problemas": []
     },
@@ -49981,8 +49981,8 @@
       "id": "MLU1531967088",
       "titulo": "El Ensayo Amoroso - Fabio Lacolla",
       "original": 1880,
-      "aplicado": 1831,
-      "en_ml": 1831,
+      "aplicado": 1763,
+      "en_ml": 1763,
       "ok": true,
       "problemas": []
     },
@@ -50017,8 +50017,8 @@
       "id": "MLU1531967016",
       "titulo": "Libro Enigmas Historicos - Anders Producciones - Alma",
       "original": 1600,
-      "aplicado": 1395,
-      "en_ml": 1395,
+      "aplicado": 1342,
+      "en_ml": 1342,
       "ok": true,
       "problemas": []
     },
@@ -50422,8 +50422,8 @@
       "id": "MLU1531966100",
       "titulo": "Libro En Medio De La Muerte - Lawrence Block - Rba",
       "original": 2600,
-      "aplicado": 2263,
-      "en_ml": 2263,
+      "aplicado": 2286,
+      "en_ml": 2286,
       "ok": true,
       "problemas": []
     },
@@ -50485,8 +50485,8 @@
       "id": "MLU1531965862",
       "titulo": "En Estas Hojas Detallo Cmo Lleg El 25 De Mayo - Loqueleo",
       "original": 1600,
-      "aplicado": 1400,
-      "en_ml": 1400,
+      "aplicado": 1415,
+      "en_ml": 1415,
       "ok": true,
       "problemas": []
     },
@@ -50494,8 +50494,8 @@
       "id": "MLU1531965858",
       "titulo": "En Estado De Tesis - Wainerman, Catalina",
       "original": 1820,
-      "aplicado": 1659,
-      "en_ml": 1659,
+      "aplicado": 1596,
+      "en_ml": 1596,
       "ok": true,
       "problemas": []
     },
@@ -50863,8 +50863,8 @@
       "id": "MLU1531965018",
       "titulo": "Elevador - Hyewon Kyung",
       "original": 1920,
-      "aplicado": 1667,
-      "en_ml": 1667,
+      "aplicado": 1606,
+      "en_ml": 1606,
       "ok": true,
       "problemas": []
     },
@@ -51313,8 +51313,8 @@
       "id": "MLU1531963242",
       "titulo": "Adventures Of Sherlock Holmes - Wordsworth Kel Ediciones",
       "original": 1600,
-      "aplicado": 1312,
-      "en_ml": 1312,
+      "aplicado": 1326,
+      "en_ml": 1326,
       "ok": true,
       "problemas": []
     },
@@ -51322,8 +51322,8 @@
       "id": "MLU1531963236",
       "titulo": "Activa Mente 2 - Jorge Loretto",
       "original": 1600,
-      "aplicado": 1331,
-      "en_ml": 1331,
+      "aplicado": 1346,
+      "en_ml": 1346,
       "ok": true,
       "problemas": []
     },
@@ -51394,8 +51394,8 @@
       "id": "MLU1531962644",
       "titulo": "El Druida ( Las Siete Llaves De La Sabiduria)",
       "original": 1600,
-      "aplicado": 1263,
-      "en_ml": 1263,
+      "aplicado": 1277,
+      "en_ml": 1277,
       "ok": true,
       "problemas": []
     },
@@ -51646,8 +51646,8 @@
       "id": "MLU1531961874",
       "titulo": "Libro Los Dos Amores De Mi Vida - Jenkins Reid, Taylor",
       "original": 2740,
-      "aplicado": 2361,
-      "en_ml": 2361,
+      "aplicado": 2385,
+      "en_ml": 2385,
       "ok": true,
       "problemas": []
     },
@@ -51655,8 +51655,8 @@
       "id": "MLU1531961768",
       "titulo": "Libro ¿dormir? No, Gracias, De Lisa Porcelli Piussi. Editorial El Gato De Hojala",
       "original": 1620,
-      "aplicado": 1574,
-      "en_ml": 1574,
+      "aplicado": 1518,
+      "en_ml": 1518,
       "ok": true,
       "problemas": []
     },
@@ -51736,8 +51736,8 @@
       "id": "MLU1531882108",
       "titulo": "Espías Al Descubierto, De Costain, Meredith. Editorial Larousse, Tapa Dura En Es",
       "original": 2220,
-      "aplicado": 1999,
-      "en_ml": 1999,
+      "aplicado": 1930,
+      "en_ml": 1930,
       "ok": true,
       "problemas": []
     },
@@ -52267,8 +52267,8 @@
       "id": "MLU1531878030",
       "titulo": "Entre Numeros 6 - Actividades De Matematica",
       "original": 1600,
-      "aplicado": 1514,
-      "en_ml": 1514,
+      "aplicado": 1450,
+      "en_ml": 1450,
       "ok": true,
       "problemas": []
     },
@@ -52681,8 +52681,8 @@
       "id": "MLU1531876664",
       "titulo": "Libro Profundo Del Océano - Suavez Texturas - Latinbooks",
       "original": 1780,
-      "aplicado": 1670,
-      "en_ml": 1670,
+      "aplicado": 1606,
+      "en_ml": 1606,
       "ok": true,
       "problemas": []
     },
@@ -52780,8 +52780,8 @@
       "id": "MLU1531876250",
       "titulo": "Toco Y Aprendo - Suaves Texturas - Latinbooks",
       "original": 1780,
-      "aplicado": 1643,
-      "en_ml": 1643,
+      "aplicado": 1577,
+      "en_ml": 1577,
       "ok": true,
       "problemas": []
     },
@@ -52879,8 +52879,8 @@
       "id": "MLU1531875796",
       "titulo": "Libro Embalse - César Aira",
       "original": 2790,
-      "aplicado": 2564,
-      "en_ml": 2564,
+      "aplicado": 2478,
+      "en_ml": 2478,
       "ok": true,
       "problemas": []
     },
@@ -52996,8 +52996,8 @@
       "id": "MLU1531875370",
       "titulo": "Él, De González Félix, Alejandro. Tristán Lecoq Editorial Trilce Ediciones, Tapa",
       "original": 2150,
-      "aplicado": 1801,
-      "en_ml": 1801,
+      "aplicado": 1733,
+      "en_ml": 1733,
       "ok": true,
       "problemas": []
     },
@@ -53095,8 +53095,8 @@
       "id": "MLU1531874990",
       "titulo": "Educacion En Pandemia - Mariana Maggio - Paidos - Libro",
       "original": 2170,
-      "aplicado": 1979,
-      "en_ml": 1979,
+      "aplicado": 1999,
+      "en_ml": 1999,
       "ok": true,
       "problemas": []
     },
@@ -53194,8 +53194,8 @@
       "id": "MLU1531874770",
       "titulo": "Libro Ecos - Álex Saldías",
       "original": 1760,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -53383,8 +53383,8 @@
       "id": "MLU1531873996",
       "titulo": "Shadowhunters 2 City Of Ashes - Clare - English Edition",
       "original": 1730,
-      "aplicado": 1633,
-      "en_ml": 1633,
+      "aplicado": 1567,
+      "en_ml": 1567,
       "ok": true,
       "problemas": []
     },
@@ -53716,8 +53716,8 @@
       "id": "MLU1531872270",
       "titulo": "Libro Donde Estoy ? - Bruno Latour - Taurus",
       "original": 2110,
-      "aplicado": 1909,
-      "en_ml": 1909,
+      "aplicado": 1930,
+      "en_ml": 1930,
       "ok": true,
       "problemas": []
     },
@@ -53932,8 +53932,8 @@
       "id": "MLU1531865782",
       "titulo": "Escrito Sobre El Cuerpo - Teresa Zalazar - Grijalbo - Libro",
       "original": 2180,
-      "aplicado": 1949,
-      "en_ml": 1949,
+      "aplicado": 1970,
+      "en_ml": 1970,
       "ok": true,
       "problemas": []
     },
@@ -54679,8 +54679,8 @@
       "id": "MLU1531863064",
       "titulo": "Libro En Cinco Minutos Levantate María - Pablo Ramos",
       "original": 2220,
-      "aplicado": 1969,
-      "en_ml": 1969,
+      "aplicado": 1989,
+      "en_ml": 1989,
       "ok": true,
       "problemas": []
     },
@@ -54724,8 +54724,8 @@
       "id": "MLU1531862954",
       "titulo": "Empresas Que Caen Y Por Que Otras Sobreviven - Collins, De Jim Collins. Editoria",
       "original": 2310,
-      "aplicado": 2148,
-      "en_ml": 2148,
+      "aplicado": 2177,
+      "en_ml": 2177,
       "ok": true,
       "problemas": []
     },
@@ -54796,8 +54796,8 @@
       "id": "MLU1531862768",
       "titulo": "Emma De Jane Austen Editorial Wordsworth En Inglés Tapa Blanda",
       "original": 1600,
-      "aplicado": 1366,
-      "en_ml": 1366,
+      "aplicado": 1312,
+      "en_ml": 1312,
       "ok": true,
       "problemas": []
     },
@@ -54895,8 +54895,8 @@
       "id": "MLU1531862538",
       "titulo": "La Elite Trilogia La Seleccion - Kiera Cass - Libro Original",
       "original": 2400,
-      "aplicado": 2158,
-      "en_ml": 2158,
+      "aplicado": 2086,
+      "en_ml": 2086,
       "ok": true,
       "problemas": []
     },
@@ -54994,8 +54994,8 @@
       "id": "MLU1531862020",
       "titulo": "Educar A Un Niño En El Feminismo - Iria Marañon",
       "original": 2840,
-      "aplicado": 2576,
-      "en_ml": 2576,
+      "aplicado": 2603,
+      "en_ml": 2603,
       "ok": true,
       "problemas": []
     },
@@ -55273,8 +55273,8 @@
       "id": "MLU1531861392",
       "titulo": "An Eagle In The Snow - Michael Morpurgo",
       "original": 1600,
-      "aplicado": 1479,
-      "en_ml": 1479,
+      "aplicado": 1494,
+      "en_ml": 1494,
       "ok": true,
       "problemas": []
     },
@@ -55435,8 +55435,8 @@
       "id": "MLU1531860282",
       "titulo": "The Dreamer",
       "original": 1930,
-      "aplicado": 1855,
-      "en_ml": 1855,
+      "aplicado": 1792,
+      "en_ml": 1792,
       "ok": true,
       "problemas": []
     },
@@ -55642,8 +55642,8 @@
       "id": "MLU1531859638",
       "titulo": "Las Dos Marías - Loqueleo",
       "original": 1800,
-      "aplicado": 1675,
-      "en_ml": 1675,
+      "aplicado": 1692,
+      "en_ml": 1692,
       "ok": true,
       "problemas": []
     },
@@ -55966,8 +55966,8 @@
       "id": "MLU1531853172",
       "titulo": "Libro Escribir Leer Y Aprender En La Universidad De Paula C",
       "original": 1710,
-      "aplicado": 1544,
-      "en_ml": 1544,
+      "aplicado": 1479,
+      "en_ml": 1479,
       "ok": true,
       "problemas": []
     },
@@ -56101,8 +56101,8 @@
       "id": "MLU1531852818",
       "titulo": "Es Mi Mama! - (tipografia Opendyslexic)",
       "original": 1600,
-      "aplicado": 1366,
-      "en_ml": 1366,
+      "aplicado": 1312,
+      "en_ml": 1312,
       "ok": true,
       "problemas": []
     },
@@ -56137,8 +56137,8 @@
       "id": "MLU1531852588",
       "titulo": "Libro Érase Una Vez Un Corazón Roto - Stephanie Garber",
       "original": 2740,
-      "aplicado": 2400,
-      "en_ml": 2400,
+      "aplicado": 2425,
+      "en_ml": 2425,
       "ok": true,
       "problemas": []
     },
@@ -56209,8 +56209,8 @@
       "id": "MLU1531852358",
       "titulo": "¡epa! Ese Miedo No Es Mío - L. Saracino - Cuenta Conmigo",
       "original": 1600,
-      "aplicado": 1254,
-      "en_ml": 1254,
+      "aplicado": 1267,
+      "en_ml": 1267,
       "ok": true,
       "problemas": []
     },
@@ -57604,8 +57604,8 @@
       "id": "MLU1531846996",
       "titulo": "Drácula - Azulejos Rojo - Stoker, Bram",
       "original": 1600,
-      "aplicado": 1415,
-      "en_ml": 1415,
+      "aplicado": 1361,
+      "en_ml": 1361,
       "ok": true,
       "problemas": []
     },
@@ -57802,8 +57802,8 @@
       "id": "MLU1531846476",
       "titulo": "Libro Donde La Luz Se Pierde - Eduardo Álvarez Tuñón",
       "original": 2300,
-      "aplicado": 2148,
-      "en_ml": 2148,
+      "aplicado": 2077,
+      "en_ml": 2077,
       "ok": true,
       "problemas": []
     },
@@ -57829,8 +57829,8 @@
       "id": "MLU1531858714",
       "titulo": "Discapacidad Y Universidad - Seda Juan Antonio",
       "original": 1600,
-      "aplicado": 1322,
-      "en_ml": 1322,
+      "aplicado": 1336,
+      "en_ml": 1336,
       "ok": true,
       "problemas": []
     },
@@ -57910,8 +57910,8 @@
       "id": "MLU703615573",
       "titulo": "Cuentos De La Selva - Horacio Quiroga - Aique",
       "original": 1600,
-      "aplicado": 1292,
-      "en_ml": 1292,
+      "aplicado": 1306,
+      "en_ml": 1306,
       "ok": true,
       "problemas": []
     },
@@ -58135,8 +58135,8 @@
       "id": "MLU1523105928",
       "titulo": "Libro Aprende Ajedrez - Nunn John",
       "original": 1539,
-      "aplicado": 1479,
-      "en_ml": 1479,
+      "aplicado": 1494,
+      "en_ml": 1494,
       "ok": true,
       "problemas": []
     },
@@ -58144,8 +58144,8 @@
       "id": "MLU703084411",
       "titulo": "The Cake Machine - Oxford",
       "original": 1445,
-      "aplicado": 1390,
-      "en_ml": 1390,
+      "aplicado": 1405,
+      "en_ml": 1405,
       "ok": true,
       "problemas": []
     },
@@ -58153,8 +58153,8 @@
       "id": "MLU1524941792",
       "titulo": "Changing Places - Dominoes 2e Starter - Mp3 Pack - Oxford",
       "original": 1610,
-      "aplicado": 1547,
-      "en_ml": 1547,
+      "aplicado": 1564,
+      "en_ml": 1564,
       "ok": true,
       "problemas": []
     },
@@ -58162,8 +58162,8 @@
       "id": "MLU1531961358",
       "titulo": "Doce Años De Esclavitud - Solomon Northup",
       "original": 1600,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -58171,8 +58171,8 @@
       "id": "MLU1531960800",
       "titulo": "Diminuto Y El Gol De Oro - Loqueleo",
       "original": 1600,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -58180,8 +58180,8 @@
       "id": "MLU1531871670",
       "titulo": "Dioses Y Héroes De La Mitología Griega Editorial Loqueleo Tapa Blanda En Español",
       "original": 1720,
-      "aplicado": 1655,
-      "en_ml": 1655,
+      "aplicado": 1673,
+      "en_ml": 1673,
       "ok": true,
       "problemas": []
     },
@@ -58189,8 +58189,8 @@
       "id": "MLU1531845966",
       "titulo": "Discurso Sobre El Arte De La Guerra",
       "original": 2010,
-      "aplicado": 1939,
-      "en_ml": 1939,
+      "aplicado": 1960,
+      "en_ml": 1960,
       "ok": true,
       "problemas": []
     },
@@ -58198,8 +58198,8 @@
       "id": "MLU1531844910",
       "titulo": "Libro Dibu Martínez - Pasión Por El Fútbol - Montena",
       "original": 1910,
-      "aplicado": 1841,
-      "en_ml": 1841,
+      "aplicado": 1861,
+      "en_ml": 1861,
       "ok": true,
       "problemas": []
     },
@@ -58207,8 +58207,8 @@
       "id": "MLU1531179966",
       "titulo": "Cuatro Cuentos Cándidos - Azulejitos - Ferro, Beatriz",
       "original": 1600,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -58225,8 +58225,8 @@
       "id": "MLU1531128148",
       "titulo": "Cronica De La Resistencia - Azulejos Rojo",
       "original": 1600,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -58234,8 +58234,8 @@
       "id": "MLU703637487",
       "titulo": "Diario De Un Amor A Destiempo - Loqueleo",
       "original": 1740,
-      "aplicado": 1675,
-      "en_ml": 1675,
+      "aplicado": 1692,
+      "en_ml": 1692,
       "ok": true,
       "problemas": []
     },
@@ -58243,8 +58243,8 @@
       "id": "MLU703632351",
       "titulo": "Libro El Delirio De La Ciencia",
       "original": 2790,
-      "aplicado": 2704,
-      "en_ml": 2704,
+      "aplicado": 2732,
+      "en_ml": 2732,
       "ok": true,
       "problemas": []
     },
@@ -58252,8 +58252,8 @@
       "id": "MLU703632089",
       "titulo": "Deidades Menores - Haghenbeck F.g",
       "original": 1940,
-      "aplicado": 1871,
-      "en_ml": 1871,
+      "aplicado": 1890,
+      "en_ml": 1890,
       "ok": true,
       "problemas": []
     },
@@ -58261,8 +58261,8 @@
       "id": "MLU703630233",
       "titulo": "Libro La Dama De Blanco - Guillermo Barrantes",
       "original": 1600,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -58270,8 +58270,8 @@
       "id": "MLU703629073",
       "titulo": "Cuidado Que Hay Trampa - Ana Maria Shua",
       "original": 1600,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -58279,8 +58279,8 @@
       "id": "MLU703628421",
       "titulo": "Libro Cuentos Para Chiquitines Antroposófica Papel Local",
       "original": 2280,
-      "aplicado": 2204,
-      "en_ml": 2204,
+      "aplicado": 2227,
+      "en_ml": 2227,
       "ok": true,
       "problemas": []
     },
@@ -58288,8 +58288,8 @@
       "id": "MLU703625583",
       "titulo": "Libro Diana :princesa De Las Amazonas De Hale - Ying",
       "original": 1700,
-      "aplicado": 1635,
-      "en_ml": 1635,
+      "aplicado": 1653,
+      "en_ml": 1653,
       "ok": true,
       "problemas": []
     },
@@ -58297,8 +58297,8 @@
       "id": "MLU703624745",
       "titulo": "Detectives En Palermo Viejo - Loqueleo",
       "original": 1600,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -58306,8 +58306,8 @@
       "id": "MLU703607347",
       "titulo": "Libro: La Decadencia Económica De Los Imperios. Cipolla, Car",
       "original": 2380,
-      "aplicado": 2302,
-      "en_ml": 2302,
+      "aplicado": 2326,
+      "en_ml": 2326,
       "ok": true,
       "problemas": []
     },
@@ -58315,8 +58315,8 @@
       "id": "MLU703606297",
       "titulo": "Libro Libro Super Hero Girls: En Metrópolis High. Jove /650",
       "original": 1690,
-      "aplicado": 1625,
-      "en_ml": 1625,
+      "aplicado": 1643,
+      "en_ml": 1643,
       "ok": true,
       "problemas": []
     },
@@ -58324,8 +58324,8 @@
       "id": "MLU703603925",
       "titulo": "Cuentos Para Salir Al Recreo - Margarita Mainé",
       "original": 1600,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -58333,8 +58333,8 @@
       "id": "MLU703601963",
       "titulo": "Libro Cuentos Clasicos Para Leer En 5 Minutos Chicos Audaces",
       "original": 1670,
-      "aplicado": 1606,
-      "en_ml": 1606,
+      "aplicado": 1623,
+      "en_ml": 1623,
       "ok": true,
       "problemas": []
     },
@@ -58342,8 +58342,8 @@
       "id": "MLU703598887",
       "titulo": "Detectives En Mar Del Plata - Loqueleo",
       "original": 1600,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -58351,8 +58351,8 @@
       "id": "MLU703593373",
       "titulo": "Libro De Cada Quinientos Un Alma - Ana Paula Maia",
       "original": 1830,
-      "aplicado": 1763,
-      "en_ml": 1763,
+      "aplicado": 1782,
+      "en_ml": 1782,
       "ok": true,
       "problemas": []
     },
@@ -58360,8 +58360,8 @@
       "id": "MLU703589017",
       "titulo": "Cuentos Adaptados Para Curiosas Y Curiosos 2 - Maggio, Veron",
       "original": 2450,
-      "aplicado": 2371,
-      "en_ml": 2371,
+      "aplicado": 2395,
+      "en_ml": 2395,
       "ok": true,
       "problemas": []
     },
@@ -58369,8 +58369,8 @@
       "id": "MLU1531968096",
       "titulo": "Libro Esa Cuchara - Sandra Siemens Y Bea Lozano - Limonero",
       "original": 1720,
-      "aplicado": 1645,
-      "en_ml": 1645,
+      "aplicado": 1663,
+      "en_ml": 1663,
       "ok": true,
       "problemas": []
     },
@@ -58378,8 +58378,8 @@
       "id": "MLU1531967106",
       "titulo": "Ensayo Sobre El Lugar Silencioso, De Handke, Peter. El Libro De Bolsillo - Bibli",
       "original": 1780,
-      "aplicado": 1714,
-      "en_ml": 1714,
+      "aplicado": 1732,
+      "en_ml": 1732,
       "ok": true,
       "problemas": []
     },
@@ -58387,8 +58387,8 @@
       "id": "MLU1531966954",
       "titulo": "El Enigma Brandon - Azulejos Rojos - Franco Vaccarini Estrad",
       "original": 1600,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -58396,8 +58396,8 @@
       "id": "MLU1531964858",
       "titulo": "Elemental Querido Stilton - Geronimo Stilton - Destino Libro",
       "original": 1740,
-      "aplicado": 1675,
-      "en_ml": 1675,
+      "aplicado": 1692,
+      "en_ml": 1692,
       "ok": true,
       "problemas": []
     },
@@ -58405,8 +58405,8 @@
       "id": "MLU1531963964",
       "titulo": "Libro La Economia Argentina En El Siglo Xxi De Aldo Ferrer",
       "original": 1860,
-      "aplicado": 1792,
-      "en_ml": 1792,
+      "aplicado": 1811,
+      "en_ml": 1811,
       "ok": true,
       "problemas": []
     },
@@ -58414,8 +58414,8 @@
       "id": "MLU1531962008",
       "titulo": "Dos Pequeñas Gatas Japonesas - Torre De Papel Azul",
       "original": 1620,
-      "aplicado": 1558,
-      "en_ml": 1558,
+      "aplicado": 1574,
+      "en_ml": 1574,
       "ok": true,
       "problemas": []
     },
@@ -58423,8 +58423,8 @@
       "id": "MLU1531961848",
       "titulo": "Dorotea Y Miguel - Buenas Noches - Norma - Kasza, Keiko",
       "original": 1660,
-      "aplicado": 1596,
-      "en_ml": 1596,
+      "aplicado": 1613,
+      "en_ml": 1613,
       "ok": true,
       "problemas": []
     },
@@ -58432,8 +58432,8 @@
       "id": "MLU1531876652",
       "titulo": "En Las Montañas De La Locura, De H.p. Lovecraft. Editorial Alianza, Tapa Blanda ",
       "original": 2230,
-      "aplicado": 2155,
-      "en_ml": 2155,
+      "aplicado": 2178,
+      "en_ml": 2178,
       "ok": true,
       "problemas": []
     },
@@ -58441,8 +58441,8 @@
       "id": "MLU1531872592",
       "titulo": "Los Dos Gimenez - Loqueleo Azul",
       "original": 1670,
-      "aplicado": 1606,
-      "en_ml": 1606,
+      "aplicado": 1623,
+      "en_ml": 1623,
       "ok": true,
       "problemas": []
     },
@@ -58450,8 +58450,8 @@
       "id": "MLU1531864642",
       "titulo": "El Entorno Digital - Pablo Boczkowski Y Eugenia Mitchelstein",
       "original": 1820,
-      "aplicado": 1754,
-      "en_ml": 1754,
+      "aplicado": 1772,
+      "en_ml": 1772,
       "ok": true,
       "problemas": []
     },
@@ -58459,8 +58459,8 @@
       "id": "MLU1531864552",
       "titulo": "Enseñanza Filosófica, La - Alejandro Cerletti Y Ana Couló",
       "original": 1700,
-      "aplicado": 1635,
-      "en_ml": 1635,
+      "aplicado": 1653,
+      "en_ml": 1653,
       "ok": true,
       "problemas": []
     },
@@ -58468,8 +58468,8 @@
       "id": "MLU1531862984",
       "titulo": "Libro En Busca De Chaplin De Kevin Brownlow",
       "original": 1740,
-      "aplicado": 1675,
-      "en_ml": 1675,
+      "aplicado": 1692,
+      "en_ml": 1692,
       "ok": true,
       "problemas": []
     },
@@ -58477,8 +58477,8 @@
       "id": "MLU1531862710",
       "titulo": "Emilio O La Educación - J. J. Rousseau",
       "original": 2470,
-      "aplicado": 2390,
-      "en_ml": 2390,
+      "aplicado": 2415,
+      "en_ml": 2415,
       "ok": true,
       "problemas": []
     },
@@ -58486,8 +58486,8 @@
       "id": "MLU1531861836",
       "titulo": "Edmund Dulac - Edmund Dulac",
       "original": 2090,
-      "aplicado": 2018,
-      "en_ml": 2018,
+      "aplicado": 2039,
+      "en_ml": 2039,
       "ok": true,
       "problemas": []
     },
@@ -58495,8 +58495,8 @@
       "id": "MLU1531861428",
       "titulo": "Eatclean Comer Simple Y Saludable - Rocío Engstfeld",
       "original": 2000,
-      "aplicado": 1930,
-      "en_ml": 1930,
+      "aplicado": 1950,
+      "en_ml": 1950,
       "ok": true,
       "problemas": []
     },
@@ -58504,8 +58504,8 @@
       "id": "MLU1531859670",
       "titulo": "Libro Dos O Tres Dias De Fiesta - Nachon Andi",
       "original": 1600,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -58513,8 +58513,8 @@
       "id": "MLU1531859552",
       "titulo": "Dos Almas Gemelas",
       "original": 1600,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -58522,8 +58522,8 @@
       "id": "MLU1531852914",
       "titulo": "Escalera Del Miedo, La - Maria Laura Dede",
       "original": 1600,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -58531,8 +58531,8 @@
       "id": "MLU1531851062",
       "titulo": "Libro Los Enamorados - Alfred Hayes - La Bestia Equilatera",
       "original": 1650,
-      "aplicado": 1586,
-      "en_ml": 1586,
+      "aplicado": 1603,
+      "en_ml": 1603,
       "ok": true,
       "problemas": []
     },
@@ -58540,8 +58540,8 @@
       "id": "MLU1531850912",
       "titulo": "En Medio De Extrañas Víctimas - Saldaña París, Daniel",
       "original": 1920,
-      "aplicado": 1852,
-      "en_ml": 1852,
+      "aplicado": 1871,
+      "en_ml": 1871,
       "ok": true,
       "problemas": []
     },
@@ -58549,8 +58549,8 @@
       "id": "MLU1531850778",
       "titulo": "Libro En La Memoria Habito - Karen Zarate",
       "original": 1600,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -58558,8 +58558,8 @@
       "id": "MLU1531850650",
       "titulo": "En El Ultimo Planeta - Loqueleo Naranja",
       "original": 1710,
-      "aplicado": 1646,
-      "en_ml": 1646,
+      "aplicado": 1663,
+      "en_ml": 1663,
       "ok": true,
       "problemas": []
     },
@@ -58576,8 +58576,8 @@
       "id": "MLU1531849080",
       "titulo": "Edipo Rey / Hamlet - Azulejos Rojo - Shakespeare, William",
       "original": 1600,
-      "aplicado": 1537,
-      "en_ml": 1537,
+      "aplicado": 1554,
+      "en_ml": 1554,
       "ok": true,
       "problemas": []
     },
@@ -58585,8 +58585,8 @@
       "id": "MLU1531848248",
       "titulo": "Conversations With Friends - Sally Rooney",
       "original": 1740,
-      "aplicado": 1675,
-      "en_ml": 1675,
+      "aplicado": 1692,
+      "en_ml": 1692,
       "ok": true,
       "problemas": []
     },
@@ -58594,8 +58594,476 @@
       "id": "MLU1531846474",
       "titulo": "Donde La Justicia No Llega: Cuando El Proceso Judicial No Acompaña, De Calvo Sol",
       "original": 1600,
-      "aplicado": 1528,
-      "en_ml": 1528,
+      "aplicado": 1544,
+      "en_ml": 1544,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1521718778",
+      "titulo": "Adolescentes E Inclusión Educativa - Krichesky, Duro Y Otros",
+      "original": 1722,
+      "aplicado": 1656,
+      "en_ml": 1656,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1522601122",
+      "titulo": "El Almuerzo Sobre La Hierba De Manet - Warburg Aby",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1523497620",
+      "titulo": "Arte Contemporáneo De América Latina - Carina Santana",
+      "original": 1871,
+      "aplicado": 1802,
+      "en_ml": 1802,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703032975",
+      "titulo": "El Baño De Cenicienta - Los Preguntones - Jacaranda",
+      "original": 1452,
+      "aplicado": 1390,
+      "en_ml": 1390,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703127991",
+      "titulo": "Camus Debe Morir-catelli, Giovanni-barenhaus",
+      "original": 1494,
+      "aplicado": 1430,
+      "en_ml": 1430,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703102203",
+      "titulo": "Can You See Lions? - Oxford",
+      "original": 1445,
+      "aplicado": 1390,
+      "en_ml": 1390,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531871968",
+      "titulo": "La Divina Proporción",
+      "original": 2320,
+      "aplicado": 2244,
+      "en_ml": 2244,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531858268",
+      "titulo": "La Dieta Para El Dolor - Laura Isabel Arranz / Veronica Diaz",
+      "original": 3020,
+      "aplicado": 2930,
+      "en_ml": 2930,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531857906",
+      "titulo": "Didáctica De Las Artes Plásticas En El Nivel Inicial - Cr...",
+      "original": 1620,
+      "aplicado": 1558,
+      "en_ml": 1558,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531845698",
+      "titulo": "Dale Al Parche! - Dinos - Alejandra Bagnasco / G. Equiza",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531845658",
+      "titulo": "Diminuto Contra Los Fantasmas",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531180302",
+      "titulo": "El Cuento Del Otro Día - Roberto Aliaga Y Noemí Villamuza",
+      "original": 2220,
+      "aplicado": 2145,
+      "en_ml": 2145,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531178694",
+      "titulo": "Cronicas De Berlin - Benjamin Walter (libro)",
+      "original": 2380,
+      "aplicado": 2302,
+      "en_ml": 2302,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531135528",
+      "titulo": "Libro Congreso De Futurología, De Lem, Stanislaw. Editorial Alianza, Tapa Blanda",
+      "original": 1880,
+      "aplicado": 1812,
+      "en_ml": 1812,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703637381",
+      "titulo": "Diario De La Peste - Tavares, Goncalo M",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703632805",
+      "titulo": "Desafiar El Sentir - Cecilia Macón",
+      "original": 1970,
+      "aplicado": 1899,
+      "en_ml": 1899,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703628397",
+      "titulo": "Cuentos Mensajeros Con El Picaro Pedro",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703621311",
+      "titulo": "Derrida, Un Egipcio - Peter Sloterdijk",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703619705",
+      "titulo": "De La Etnografía A La Antropología Reflexiva - Ghasarian, Ch",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703619319",
+      "titulo": "Libro De Caperucita A Loba En Solo Seis Tios De Marta Gonzal",
+      "original": 2110,
+      "aplicado": 2038,
+      "en_ml": 2038,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703617515",
+      "titulo": "Cuidado Con El Perro ! - Loqueleo Morada",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703611667",
+      "titulo": "Despues Del Budismo . Repensar El Dharma Para Un Mundo Secul",
+      "original": 2970,
+      "aplicado": 2880,
+      "en_ml": 2880,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703611611",
+      "titulo": "Déspotas, Tiranos Y Otros Hijos De Puta, De Zaragoza, Mario. Editorial Lince, Ta",
+      "original": 2130,
+      "aplicado": 2058,
+      "en_ml": 2058,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703608875",
+      "titulo": "Descolonizar La Universidad - De Sousa Santos, Boaventura",
+      "original": 1690,
+      "aplicado": 1625,
+      "en_ml": 1625,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703608301",
+      "titulo": "Derecho Humano A La Comunicación De Cynthia Ottaviano",
+      "original": 1950,
+      "aplicado": 1881,
+      "en_ml": 1881,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703602219",
+      "titulo": "Cuentos Crueles - Adam Villiers De Iisle - Losada",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703601825",
+      "titulo": "El Cuento Fantastico Argentino",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703601479",
+      "titulo": "Las Cuatro Revelaciones Alberto Villoldo",
+      "original": 2600,
+      "aplicado": 2518,
+      "en_ml": 2518,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703600613",
+      "titulo": "Cu Canguro - Buenas Noches",
+      "original": 1650,
+      "aplicado": 1586,
+      "en_ml": 1586,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703600109",
+      "titulo": "Diario De Un Lobizon - Cecilia Sola - Sudestada",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703599011",
+      "titulo": "Devi-mahatmya-el Canto De La Diosa Suprema.: Devi-mahatmya-el Canto De La Diosa ",
+      "original": 1990,
+      "aplicado": 1909,
+      "en_ml": 1909,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703594381",
+      "titulo": "Decalogo Para Un Casamiento - María Paula Zacharías",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703591951",
+      "titulo": "Libro Cupcakes - Peggy Porschen",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703591351",
+      "titulo": "Cuentos Y Chinventos",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU703589033",
+      "titulo": "Cuentos Argentinos Para Jovenes - Azulejos Rojo",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531966020",
+      "titulo": "Libro Tierra Prehistórica - Suavez Texturas - Latinbooks",
+      "original": 1790,
+      "aplicado": 1723,
+      "en_ml": 1723,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531965902",
+      "titulo": "Howard Phillips Lovecraft En La Cripta Editorial Alianza",
+      "original": 1880,
+      "aplicado": 1812,
+      "en_ml": 1812,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531963418",
+      "titulo": "Diario De Un Viejo Loco - Junichiro Tanizaki - Siruela",
+      "original": 2670,
+      "aplicado": 2586,
+      "en_ml": 2586,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531882154",
+      "titulo": "Espiritu Y La Letra, El. Un Homenaje A Alfonso Gomez-lobo",
+      "original": 1670,
+      "aplicado": 1606,
+      "en_ml": 1606,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531882140",
+      "titulo": "El Espiritu De Roma. Vernon Lee. Linea Del Horizonte",
+      "original": 2090,
+      "aplicado": 2018,
+      "en_ml": 2018,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531878614",
+      "titulo": "Libro Los Errores Mas Comunes Al Escribir Una Tesis - Guia P",
+      "original": 2110,
+      "aplicado": 2038,
+      "en_ml": 2038,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531878274",
+      "titulo": "Epistolario - Baruch Spinoza",
+      "original": 1800,
+      "aplicado": 1733,
+      "en_ml": 1733,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531878162",
+      "titulo": "Envidia,la - Porras Marti,marina",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531877176",
+      "titulo": "Enero En Mar Del Sur - Azulejos Roja",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531876310",
+      "titulo": "En El Fundamento De Las Sociedades Humanas - Maurice Godeli",
+      "original": 2500,
+      "aplicado": 2420,
+      "en_ml": 2420,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531876054",
+      "titulo": "Empresa Emergente La",
+      "original": 2090,
+      "aplicado": 2018,
+      "en_ml": 2018,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531875384",
+      "titulo": "Dino Historias- Elasmosaurio Nadador De Cuello Largo- Oceano",
+      "original": 2080,
+      "aplicado": 2008,
+      "en_ml": 2008,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531874758",
+      "titulo": "Economics For The Ib Diploma + Cd-rom (2nd.edition)",
+      "original": 2470,
+      "aplicado": 2390,
+      "en_ml": 2390,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531862652",
+      "titulo": "Eloisa Y Napoleón, De Florido, Cristina. Editorial Dibbuks, Tapa Dura En Español",
+      "original": 2480,
+      "aplicado": 2400,
+      "en_ml": 2400,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531849984",
+      "titulo": "Emancipación, Educación Y Autoridad - María Beatriz Greco",
+      "original": 1740,
+      "aplicado": 1675,
+      "en_ml": 1675,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531849830",
+      "titulo": "Ella Cantaba (en Tono Menor) - Zona Libre",
+      "original": 1740,
+      "aplicado": 1684,
+      "en_ml": 1684,
+      "ok": true,
+      "problemas": []
+    },
+    {
+      "id": "MLU1531849174",
+      "titulo": "Educacion Fisica En El Jardin De Infantes (tomo 89)",
+      "original": 1600,
+      "aplicado": 1537,
+      "en_ml": 1537,
       "ok": true,
       "problemas": []
     }
@@ -58706,9 +59174,9 @@
       "ganador": 703,
       "diferencia": 503,
       "objetivo": 695,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 703,
       "ok": true
     },
     {
@@ -59542,9 +60010,9 @@
       "ganador": 1109,
       "diferencia": 2079,
       "objetivo": 1097,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1109,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_sin_dato",
+      "precio_nuevo": null,
       "ok": true
     },
     {
@@ -60293,17 +60761,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1342,
-      "ok": true
-    },
-    {
-      "id": "MLU702254457",
-      "precio": 2212,
-      "ganador": 1182,
-      "diferencia": 1030,
-      "objetivo": 1170,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1182,
       "ok": true
     },
     {
@@ -61621,9 +62078,9 @@
       "ganador": 1036,
       "diferencia": 1100,
       "objetivo": 1025,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1036,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_sin_dato",
+      "precio_nuevo": null,
       "ok": true
     },
     {
@@ -64030,9 +64487,9 @@
       "ganador": 1831,
       "diferencia": 637,
       "objetivo": 1812,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1831,
       "ok": true
     },
     {
@@ -67864,6 +68321,17 @@
       "ok": true
     },
     {
+      "id": "MLU1521248800",
+      "precio": 1940,
+      "ganador": 1890,
+      "diferencia": 50,
+      "objetivo": 1871,
+      "esperado": "saltear",
+      "hecho": "saltear_promo",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
       "id": "MLU1521248794",
       "precio": 3100,
       "ganador": 1700,
@@ -67902,9 +68370,9 @@
       "ganador": 2623,
       "diferencia": 747,
       "objetivo": 2596,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 2623,
       "ok": true
     },
     {
@@ -67935,9 +68403,9 @@
       "ganador": 2505,
       "diferencia": 445,
       "objetivo": 2479,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 2505,
       "ok": true
     },
     {
@@ -68035,7 +68503,7 @@
       "diferencia": 314,
       "objetivo": 1273,
       "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
+      "hecho": "saltear_promo",
       "precio_nuevo": null,
       "ok": true
     },
@@ -68757,9 +69225,9 @@
     {
       "id": "MLU1521235532",
       "precio": 1600,
-      "ganador": 1310,
-      "diferencia": 290,
-      "objetivo": 1296,
+      "ganador": 1276,
+      "diferencia": 324,
+      "objetivo": 1263,
       "esperado": "saltear",
       "hecho": "saltear_promo",
       "precio_nuevo": null,
@@ -69530,9 +69998,9 @@
       "ganador": 1867,
       "diferencia": 673,
       "objetivo": 1848,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1867,
       "ok": true
     },
     {
@@ -69588,6 +70056,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1119,
+      "ok": true
+    },
+    {
+      "id": "MLU702807303",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "saltear",
+      "hecho": "saltear_promo",
+      "precio_nuevo": null,
       "ok": true
     },
     {
@@ -70152,6 +70631,17 @@
       "ok": true
     },
     {
+      "id": "MLU702794169",
+      "precio": 2260,
+      "ganador": 2207,
+      "diferencia": 53,
+      "objetivo": 2184,
+      "esperado": "saltear",
+      "hecho": "saltear_promo",
+      "precio_nuevo": null,
+      "ok": true
+    },
+    {
       "id": "MLU702794151",
       "precio": 1730,
       "ganador": 1532,
@@ -70589,6 +71079,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 6577,
+      "ok": true
+    },
+    {
+      "id": "MLU1521718778",
+      "precio": 1722,
+      "ganador": 1673,
+      "diferencia": 49,
+      "objetivo": 1656,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1656,
       "ok": true
     },
     {
@@ -71848,12 +72349,12 @@
     {
       "id": "MLU1521429770",
       "precio": 3430,
-      "ganador": 2488,
-      "diferencia": 942,
-      "objetivo": 2463,
+      "ganador": 2455,
+      "diferencia": 975,
+      "objetivo": 2430,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 2488,
+      "precio_nuevo": 2455,
       "ok": true
     },
     {
@@ -72552,9 +73053,9 @@
     {
       "id": "MLU1521286462",
       "precio": 2670,
-      "ganador": 2403,
-      "diferencia": 267,
-      "objetivo": 2378,
+      "ganador": 2376,
+      "diferencia": 294,
+      "objetivo": 2352,
       "esperado": "saltear",
       "hecho": "saltear_promo",
       "precio_nuevo": null,
@@ -74686,9 +75187,9 @@
     {
       "id": "MLU702833951",
       "precio": 2350,
-      "ganador": 1997,
-      "diferencia": 353,
-      "objetivo": 1977,
+      "ganador": 1970,
+      "diferencia": 380,
+      "objetivo": 1950,
       "esperado": "saltear",
       "hecho": "saltear_promo",
       "precio_nuevo": null,
@@ -75715,6 +76216,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 3547,
+      "ok": true
+    },
+    {
+      "id": "MLU1522601122",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -77450,9 +77962,9 @@
       "ganador": 1178,
       "diferencia": 422,
       "objetivo": 1166,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1178,
       "ok": true
     },
     {
@@ -77629,6 +78141,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1157,
+      "ok": true
+    },
+    {
+      "id": "MLU1523497620",
+      "precio": 1871,
+      "ganador": 1821,
+      "diferencia": 50,
+      "objetivo": 1802,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1802,
       "ok": true
     },
     {
@@ -78234,17 +78757,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1426,
-      "ok": true
-    },
-    {
-      "id": "MLU1523105928",
-      "precio": 1539,
-      "ganador": 1494,
-      "diferencia": 45,
-      "objetivo": 1479,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1479,
       "ok": true
     },
     {
@@ -80395,12 +80907,12 @@
     {
       "id": "MLU703023621",
       "precio": 2240,
-      "ganador": 1655,
-      "diferencia": 585,
-      "objetivo": 1638,
+      "ganador": 1623,
+      "diferencia": 617,
+      "objetivo": 1606,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1655,
+      "precio_nuevo": 1623,
       "ok": true
     },
     {
@@ -84727,6 +85239,17 @@
       "ok": true
     },
     {
+      "id": "MLU703032975",
+      "precio": 1452,
+      "ganador": 1405,
+      "diferencia": 47,
+      "objetivo": 1390,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1390,
+      "ok": true
+    },
+    {
       "id": "MLU703032815",
       "precio": 1600,
       "ganador": 1171,
@@ -88777,12 +89300,12 @@
     {
       "id": "MLU703036859",
       "precio": 4310,
-      "ganador": 3243,
-      "diferencia": 1067,
-      "objetivo": 3210,
+      "ganador": 3217,
+      "diferencia": 1093,
+      "objetivo": 3184,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 3243,
+      "precio_nuevo": 3217,
       "ok": true
     },
     {
@@ -89223,6 +89746,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2703,
+      "ok": true
+    },
+    {
+      "id": "MLU703127991",
+      "precio": 1494,
+      "ganador": 1445,
+      "diferencia": 49,
+      "objetivo": 1430,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1430,
       "ok": true
     },
     {
@@ -90122,9 +90656,9 @@
       "ganador": 4668,
       "diferencia": 642,
       "objetivo": 4621,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 4668,
       "ok": true
     },
     {
@@ -90166,9 +90700,9 @@
       "ganador": 3177,
       "diferencia": 613,
       "objetivo": 3145,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 3177,
       "ok": true
     },
     {
@@ -90686,6 +91220,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1208,
+      "ok": true
+    },
+    {
+      "id": "MLU703102203",
+      "precio": 1445,
+      "ganador": 1405,
+      "diferencia": 40,
+      "objetivo": 1390,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1390,
       "ok": true
     },
     {
@@ -91591,17 +92136,6 @@
       "ok": true
     },
     {
-      "id": "MLU703084411",
-      "precio": 1445,
-      "ganador": 1405,
-      "diferencia": 40,
-      "objetivo": 1390,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1390,
-      "ok": true
-    },
-    {
       "id": "MLU703084397",
       "precio": 2420,
       "ganador": 1591,
@@ -92454,9 +92988,9 @@
       "ganador": 2227,
       "diferencia": 593,
       "objetivo": 2204,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 2227,
       "ok": true
     },
     {
@@ -93958,12 +94492,12 @@
     {
       "id": "MLU1524345606",
       "precio": 2830,
-      "ganador": 2107,
-      "diferencia": 723,
-      "objetivo": 2085,
+      "ganador": 2078,
+      "diferencia": 752,
+      "objetivo": 2057,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 2107,
+      "precio_nuevo": 2078,
       "ok": true
     },
     {
@@ -94580,17 +95114,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1688,
-      "ok": true
-    },
-    {
-      "id": "MLU1524941792",
-      "precio": 1610,
-      "ganador": 1563,
-      "diferencia": 47,
-      "objetivo": 1547,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1547,
       "ok": true
     },
     {
@@ -98136,17 +98659,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531961358",
-      "precio": 1600,
-      "ganador": 1553,
-      "diferencia": 47,
-      "objetivo": 1537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1537,
-      "ok": true
-    },
-    {
       "id": "MLU1531961356",
       "precio": 3310,
       "ganador": 1571,
@@ -98281,12 +98793,12 @@
     {
       "id": "MLU1531961068",
       "precio": 1600,
-      "ganador": 1152,
-      "diferencia": 448,
-      "objetivo": 1140,
+      "ganador": 1118,
+      "diferencia": 482,
+      "objetivo": 1106,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1152,
+      "precio_nuevo": 1118,
       "ok": true
     },
     {
@@ -98306,9 +98818,9 @@
       "ganador": 2052,
       "diferencia": 438,
       "objetivo": 2031,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 2052,
       "ok": true
     },
     {
@@ -98372,9 +98884,9 @@
       "ganador": 1346,
       "diferencia": 594,
       "objetivo": 1332,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1346,
       "ok": true
     },
     {
@@ -98419,17 +98931,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1577,
-      "ok": true
-    },
-    {
-      "id": "MLU1531960800",
-      "precio": 1600,
-      "ganador": 1553,
-      "diferencia": 47,
-      "objetivo": 1537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -98708,6 +99209,17 @@
       "ok": true
     },
     {
+      "id": "MLU1531871968",
+      "precio": 2320,
+      "ganador": 2267,
+      "diferencia": 53,
+      "objetivo": 2244,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2244,
+      "ok": true
+    },
+    {
       "id": "MLU1531871954",
       "precio": 6770,
       "ganador": 5589,
@@ -98881,17 +99393,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 674,
-      "ok": true
-    },
-    {
-      "id": "MLU1531871670",
-      "precio": 1720,
-      "ganador": 1672,
-      "diferencia": 48,
-      "objetivo": 1655,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1655,
       "ok": true
     },
     {
@@ -99700,12 +100201,12 @@
     {
       "id": "MLU1531858672",
       "precio": 3100,
-      "ganador": 2465,
-      "diferencia": 635,
-      "objetivo": 2440,
+      "ganador": 2489,
+      "diferencia": 611,
+      "objetivo": 2464,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 2465,
+      "precio_nuevo": 2489,
       "ok": true
     },
     {
@@ -99885,6 +100386,17 @@
       "ok": true
     },
     {
+      "id": "MLU1531858268",
+      "precio": 3020,
+      "ganador": 2960,
+      "diferencia": 60,
+      "objetivo": 2930,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2930,
+      "ok": true
+    },
+    {
       "id": "MLU1531858240",
       "precio": 2900,
       "ganador": 2177,
@@ -99904,6 +100416,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1757,
+      "ok": true
+    },
+    {
+      "id": "MLU1531857906",
+      "precio": 1620,
+      "ganador": 1574,
+      "diferencia": 46,
+      "objetivo": 1558,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1558,
       "ok": true
     },
     {
@@ -100358,17 +100881,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531845966",
-      "precio": 2010,
-      "ganador": 1959,
-      "diferencia": 51,
-      "objetivo": 1939,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1939,
-      "ok": true
-    },
-    {
       "id": "MLU1531845932",
       "precio": 3060,
       "ganador": 2634,
@@ -100534,6 +101046,17 @@
       "ok": true
     },
     {
+      "id": "MLU1531845698",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1537,
+      "ok": true
+    },
+    {
       "id": "MLU1531845694",
       "precio": 3020,
       "ganador": 2532,
@@ -100553,6 +101076,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2375,
+      "ok": true
+    },
+    {
+      "id": "MLU1531845658",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -100754,17 +101288,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531844910",
-      "precio": 1910,
-      "ganador": 1860,
-      "diferencia": 50,
-      "objetivo": 1841,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1841,
-      "ok": true
-    },
-    {
       "id": "MLU1531844892",
       "precio": 2830,
       "ganador": 2296,
@@ -100842,6 +101365,17 @@
       "ok": true
     },
     {
+      "id": "MLU1531180302",
+      "precio": 2220,
+      "ganador": 2167,
+      "diferencia": 53,
+      "objetivo": 2145,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2145,
+      "ok": true
+    },
+    {
       "id": "MLU1531180278",
       "precio": 1670,
       "ganador": 1098,
@@ -100872,17 +101406,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1981,
-      "ok": true
-    },
-    {
-      "id": "MLU1531179966",
-      "precio": 1600,
-      "ganador": 1553,
-      "diferencia": 47,
-      "objetivo": 1537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -101114,6 +101637,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2215,
+      "ok": true
+    },
+    {
+      "id": "MLU1531178694",
+      "precio": 2380,
+      "ganador": 2326,
+      "diferencia": 54,
+      "objetivo": 2302,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2302,
       "ok": true
     },
     {
@@ -102981,9 +103515,9 @@
       "ganador": 1930,
       "diferencia": 510,
       "objetivo": 1910,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1930,
       "ok": true
     },
     {
@@ -103006,17 +103540,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 975,
-      "ok": true
-    },
-    {
-      "id": "MLU1531150190",
-      "precio": 3030,
-      "ganador": 2970,
-      "diferencia": 60,
-      "objetivo": 2940,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 2940,
       "ok": true
     },
     {
@@ -104353,12 +104876,12 @@
     {
       "id": "MLU1531141024",
       "precio": 3110,
-      "ganador": 2477,
-      "diferencia": 633,
-      "objetivo": 2452,
+      "ganador": 2435,
+      "diferencia": 675,
+      "objetivo": 2410,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 2477,
+      "precio_nuevo": 2435,
       "ok": true
     },
     {
@@ -104760,12 +105283,12 @@
     {
       "id": "MLU1531136146",
       "precio": 3040,
-      "ganador": 2538,
-      "diferencia": 502,
-      "objetivo": 2512,
+      "ganador": 2524,
+      "diferencia": 516,
+      "objetivo": 2498,
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 2538,
+      "precio_nuevo": 2524,
       "ok": true
     },
     {
@@ -104898,6 +105421,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1279,
+      "ok": true
+    },
+    {
+      "id": "MLU1531135528",
+      "precio": 1880,
+      "ganador": 1831,
+      "diferencia": 49,
+      "objetivo": 1812,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1812,
       "ok": true
     },
     {
@@ -106053,17 +106587,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1613,
-      "ok": true
-    },
-    {
-      "id": "MLU1531128148",
-      "precio": 1600,
-      "ganador": 1553,
-      "diferencia": 47,
-      "objetivo": 1537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -107717,14 +108240,14 @@
       "ok": true
     },
     {
-      "id": "MLU703637487",
-      "precio": 1740,
-      "ganador": 1692,
-      "diferencia": 48,
-      "objetivo": 1675,
+      "id": "MLU703637381",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
       "esperado": "bajar",
       "hecho": "bajar",
-      "precio_nuevo": 1675,
+      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -108168,6 +108691,17 @@
       "ok": true
     },
     {
+      "id": "MLU703632805",
+      "precio": 1970,
+      "ganador": 1919,
+      "diferencia": 51,
+      "objetivo": 1899,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1899,
+      "ok": true
+    },
+    {
       "id": "MLU703632717",
       "precio": 2000,
       "ganador": 1278,
@@ -108209,17 +108743,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 3134,
-      "ok": true
-    },
-    {
-      "id": "MLU703632351",
-      "precio": 2790,
-      "ganador": 2732,
-      "diferencia": 58,
-      "objetivo": 2704,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 2704,
       "ok": true
     },
     {
@@ -108297,17 +108820,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1187,
-      "ok": true
-    },
-    {
-      "id": "MLU703632089",
-      "precio": 1940,
-      "ganador": 1890,
-      "diferencia": 50,
-      "objetivo": 1871,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1871,
       "ok": true
     },
     {
@@ -108531,17 +109043,6 @@
       "ok": true
     },
     {
-      "id": "MLU703630233",
-      "precio": 1600,
-      "ganador": 1553,
-      "diferencia": 47,
-      "objetivo": 1537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1537,
-      "ok": true
-    },
-    {
       "id": "MLU703630211",
       "precio": 1600,
       "ganador": 1117,
@@ -108696,17 +109197,6 @@
       "ok": true
     },
     {
-      "id": "MLU703629073",
-      "precio": 1600,
-      "ganador": 1553,
-      "diferencia": 47,
-      "objetivo": 1537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1537,
-      "ok": true
-    },
-    {
       "id": "MLU703629069",
       "precio": 2130,
       "ganador": 1185,
@@ -108817,14 +109307,14 @@
       "ok": true
     },
     {
-      "id": "MLU703628421",
-      "precio": 2280,
-      "ganador": 2227,
-      "diferencia": 53,
-      "objetivo": 2204,
+      "id": "MLU703628397",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
       "esperado": "bajar",
       "hecho": "bajar",
-      "precio_nuevo": 2204,
+      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -109191,17 +109681,6 @@
       "ok": true
     },
     {
-      "id": "MLU703625583",
-      "precio": 1700,
-      "ganador": 1652,
-      "diferencia": 48,
-      "objetivo": 1635,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1635,
-      "ok": true
-    },
-    {
       "id": "MLU703625553",
       "precio": 2570,
       "ganador": 1970,
@@ -109265,17 +109744,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1187,
-      "ok": true
-    },
-    {
-      "id": "MLU703624745",
-      "precio": 1600,
-      "ganador": 1553,
-      "diferencia": 47,
-      "objetivo": 1537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -109499,6 +109967,17 @@
       "ok": true
     },
     {
+      "id": "MLU703621311",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1537,
+      "ok": true
+    },
+    {
       "id": "MLU703621289",
       "precio": 3300,
       "ganador": 2338,
@@ -109570,9 +110049,9 @@
       "ganador": 2226,
       "diferencia": 1054,
       "objetivo": 2203,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 2226,
       "ok": true
     },
     {
@@ -109680,9 +110159,9 @@
       "ganador": 1193,
       "diferencia": 407,
       "objetivo": 1181,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1193,
       "ok": true
     },
     {
@@ -109807,6 +110286,17 @@
       "ok": true
     },
     {
+      "id": "MLU703619705",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1537,
+      "ok": true
+    },
+    {
       "id": "MLU703619655",
       "precio": 3390,
       "ganador": 2218,
@@ -109815,6 +110305,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2218,
+      "ok": true
+    },
+    {
+      "id": "MLU703619319",
+      "precio": 2110,
+      "ganador": 2059,
+      "diferencia": 51,
+      "objetivo": 2038,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2038,
       "ok": true
     },
     {
@@ -110112,6 +110613,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 5706,
+      "ok": true
+    },
+    {
+      "id": "MLU703617515",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -110962,6 +111474,28 @@
       "ok": true
     },
     {
+      "id": "MLU703611667",
+      "precio": 2970,
+      "ganador": 2910,
+      "diferencia": 60,
+      "objetivo": 2880,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2880,
+      "ok": true
+    },
+    {
+      "id": "MLU703611611",
+      "precio": 2130,
+      "ganador": 2079,
+      "diferencia": 51,
+      "objetivo": 2058,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2058,
+      "ok": true
+    },
+    {
       "id": "MLU703611549",
       "precio": 2180,
       "ganador": 1672,
@@ -111138,6 +111672,17 @@
       "ok": true
     },
     {
+      "id": "MLU703608875",
+      "precio": 1690,
+      "ganador": 1642,
+      "diferencia": 48,
+      "objetivo": 1625,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1625,
+      "ok": true
+    },
+    {
       "id": "MLU703608809",
       "precio": 2820,
       "ganador": 1522,
@@ -111212,6 +111757,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1997,
+      "ok": true
+    },
+    {
+      "id": "MLU703608301",
+      "precio": 1950,
+      "ganador": 1900,
+      "diferencia": 50,
+      "objetivo": 1881,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1881,
       "ok": true
     },
     {
@@ -111523,17 +112079,6 @@
       "ok": true
     },
     {
-      "id": "MLU703607347",
-      "precio": 2380,
-      "ganador": 2326,
-      "diferencia": 54,
-      "objetivo": 2302,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 2302,
-      "ok": true
-    },
-    {
       "id": "MLU703607307",
       "precio": 2400,
       "ganador": 1821,
@@ -111685,17 +112230,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1187,
-      "ok": true
-    },
-    {
-      "id": "MLU703606297",
-      "precio": 1690,
-      "ganador": 1642,
-      "diferencia": 48,
-      "objetivo": 1625,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1625,
       "ok": true
     },
     {
@@ -112073,17 +112607,6 @@
       "ok": true
     },
     {
-      "id": "MLU703603925",
-      "precio": 1600,
-      "ganador": 1553,
-      "diferencia": 47,
-      "objetivo": 1537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1537,
-      "ok": true
-    },
-    {
       "id": "MLU703603433",
       "precio": 2850,
       "ganador": 2088,
@@ -112216,6 +112739,17 @@
       "ok": true
     },
     {
+      "id": "MLU703602219",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1537,
+      "ok": true
+    },
+    {
       "id": "MLU703602115",
       "precio": 2310,
       "ganador": 1008,
@@ -112249,17 +112783,6 @@
       "ok": true
     },
     {
-      "id": "MLU703601963",
-      "precio": 1670,
-      "ganador": 1623,
-      "diferencia": 47,
-      "objetivo": 1606,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1606,
-      "ok": true
-    },
-    {
       "id": "MLU703601935",
       "precio": 2080,
       "ganador": 1529,
@@ -112279,6 +112802,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1098,
+      "ok": true
+    },
+    {
+      "id": "MLU703601825",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -112389,6 +112923,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2420,
+      "ok": true
+    },
+    {
+      "id": "MLU703601479",
+      "precio": 2600,
+      "ganador": 2544,
+      "diferencia": 56,
+      "objetivo": 2518,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2518,
       "ok": true
     },
     {
@@ -112623,6 +113168,17 @@
       "ok": true
     },
     {
+      "id": "MLU703600613",
+      "precio": 1650,
+      "ganador": 1603,
+      "diferencia": 47,
+      "objetivo": 1586,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1586,
+      "ok": true
+    },
+    {
       "id": "MLU703600601",
       "precio": 3040,
       "ganador": 2331,
@@ -112675,6 +113231,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1528,
+      "ok": true
+    },
+    {
+      "id": "MLU703600109",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -112810,6 +113377,17 @@
       "ok": true
     },
     {
+      "id": "MLU703599011",
+      "precio": 1990,
+      "ganador": 1929,
+      "diferencia": 61,
+      "objetivo": 1909,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1909,
+      "ok": true
+    },
+    {
       "id": "MLU703598967",
       "precio": 2590,
       "ganador": 1953,
@@ -112829,17 +113407,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1860,
-      "ok": true
-    },
-    {
-      "id": "MLU703598887",
-      "precio": 1600,
-      "ganador": 1553,
-      "diferencia": 47,
-      "objetivo": 1537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -113316,6 +113883,17 @@
       "ok": true
     },
     {
+      "id": "MLU703594381",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1537,
+      "ok": true
+    },
+    {
       "id": "MLU703594287",
       "precio": 1600,
       "ganador": 1195,
@@ -113456,17 +114034,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 3821,
-      "ok": true
-    },
-    {
-      "id": "MLU703593373",
-      "precio": 1830,
-      "ganador": 1781,
-      "diferencia": 49,
-      "objetivo": 1763,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1763,
       "ok": true
     },
     {
@@ -113643,6 +114210,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1673,
+      "ok": true
+    },
+    {
+      "id": "MLU703591951",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -113841,6 +114419,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1161,
+      "ok": true
+    },
+    {
+      "id": "MLU703591351",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -114064,14 +114653,14 @@
       "ok": true
     },
     {
-      "id": "MLU703589017",
-      "precio": 2450,
-      "ganador": 2395,
-      "diferencia": 55,
-      "objetivo": 2371,
+      "id": "MLU703589033",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
       "esperado": "bajar",
       "hecho": "bajar",
-      "precio_nuevo": 2371,
+      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -114770,9 +115359,9 @@
     {
       "id": "MLU1531971982",
       "precio": 2000,
-      "ganador": 920,
-      "diferencia": 1080,
-      "objetivo": 910,
+      "ganador": 911,
+      "diferencia": 1089,
+      "objetivo": 901,
       "esperado": "saltear",
       "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
@@ -115296,17 +115885,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531968096",
-      "precio": 1720,
-      "ganador": 1662,
-      "diferencia": 58,
-      "objetivo": 1645,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1645,
-      "ok": true
-    },
-    {
       "id": "MLU1531968024",
       "precio": 1600,
       "ganador": 1211,
@@ -115538,17 +116116,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531967106",
-      "precio": 1780,
-      "ganador": 1732,
-      "diferencia": 48,
-      "objetivo": 1714,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1714,
-      "ok": true
-    },
-    {
       "id": "MLU1531967102",
       "precio": 1600,
       "ganador": 575,
@@ -115601,17 +116168,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 3535,
-      "ok": true
-    },
-    {
-      "id": "MLU1531966954",
-      "precio": 1600,
-      "ganador": 1553,
-      "diferencia": 47,
-      "objetivo": 1537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -115978,6 +116534,17 @@
       "ok": true
     },
     {
+      "id": "MLU1531966020",
+      "precio": 1790,
+      "ganador": 1741,
+      "diferencia": 49,
+      "objetivo": 1723,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1723,
+      "ok": true
+    },
+    {
       "id": "MLU1531966008",
       "precio": 1840,
       "ganador": 1342,
@@ -116030,6 +116597,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1049,
+      "ok": true
+    },
+    {
+      "id": "MLU1531965902",
+      "precio": 1880,
+      "ganador": 1831,
+      "diferencia": 49,
+      "objetivo": 1812,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1812,
       "ok": true
     },
     {
@@ -116192,9 +116770,9 @@
       "ganador": 2177,
       "diferencia": 493,
       "objetivo": 2155,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 2177,
       "ok": true
     },
     {
@@ -116338,17 +116916,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2071,
-      "ok": true
-    },
-    {
-      "id": "MLU1531964858",
-      "precio": 1740,
-      "ganador": 1692,
-      "diferencia": 48,
-      "objetivo": 1675,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1675,
       "ok": true
     },
     {
@@ -116561,17 +117128,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531963964",
-      "precio": 1860,
-      "ganador": 1811,
-      "diferencia": 49,
-      "objetivo": 1792,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1792,
-      "ok": true
-    },
-    {
       "id": "MLU1531963824",
       "precio": 4090,
       "ganador": 3414,
@@ -116613,6 +117169,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1069,
+      "ok": true
+    },
+    {
+      "id": "MLU1531963418",
+      "precio": 2670,
+      "ganador": 2613,
+      "diferencia": 57,
+      "objetivo": 2586,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2586,
       "ok": true
     },
     {
@@ -116858,17 +117425,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531962008",
-      "precio": 1620,
-      "ganador": 1574,
-      "diferencia": 46,
-      "objetivo": 1558,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1558,
-      "ok": true
-    },
-    {
       "id": "MLU1531961962",
       "precio": 1900,
       "ganador": 1439,
@@ -116877,17 +117433,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1439,
-      "ok": true
-    },
-    {
-      "id": "MLU1531961848",
-      "precio": 1660,
-      "ganador": 1613,
-      "diferencia": 47,
-      "objetivo": 1596,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1596,
       "ok": true
     },
     {
@@ -117042,6 +117587,28 @@
       "esperado": "saltear",
       "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
+      "ok": true
+    },
+    {
+      "id": "MLU1531882154",
+      "precio": 1670,
+      "ganador": 1623,
+      "diferencia": 47,
+      "objetivo": 1606,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1606,
+      "ok": true
+    },
+    {
+      "id": "MLU1531882140",
+      "precio": 2090,
+      "ganador": 2039,
+      "diferencia": 51,
+      "objetivo": 2018,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2018,
       "ok": true
     },
     {
@@ -117309,6 +117876,17 @@
       "ok": true
     },
     {
+      "id": "MLU1531878614",
+      "precio": 2110,
+      "ganador": 2059,
+      "diferencia": 51,
+      "objetivo": 2038,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2038,
+      "ok": true
+    },
+    {
       "id": "MLU1531878508",
       "precio": 3540,
       "ganador": 3132,
@@ -117386,6 +117964,17 @@
       "ok": true
     },
     {
+      "id": "MLU1531878274",
+      "precio": 1800,
+      "ganador": 1751,
+      "diferencia": 49,
+      "objetivo": 1733,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1733,
+      "ok": true
+    },
+    {
       "id": "MLU1531878256",
       "precio": 2450,
       "ganador": 1323,
@@ -117405,6 +117994,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1115,
+      "ok": true
+    },
+    {
+      "id": "MLU1531878162",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -117694,6 +118294,17 @@
       "ok": true
     },
     {
+      "id": "MLU1531877176",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1537,
+      "ok": true
+    },
+    {
       "id": "MLU1531877004",
       "precio": 1600,
       "ganador": 1116,
@@ -117837,17 +118448,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531876652",
-      "precio": 2230,
-      "ganador": 2177,
-      "diferencia": 53,
-      "objetivo": 2155,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 2155,
-      "ok": true
-    },
-    {
       "id": "MLU1531876614",
       "precio": 2350,
       "ganador": 1930,
@@ -117922,6 +118522,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1355,
+      "ok": true
+    },
+    {
+      "id": "MLU1531876310",
+      "precio": 2500,
+      "ganador": 2445,
+      "diferencia": 55,
+      "objetivo": 2420,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2420,
       "ok": true
     },
     {
@@ -118010,6 +118621,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1816,
+      "ok": true
+    },
+    {
+      "id": "MLU1531876054",
+      "precio": 2090,
+      "ganador": 2039,
+      "diferencia": 51,
+      "objetivo": 2018,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2018,
       "ok": true
     },
     {
@@ -118164,6 +118786,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2168,
+      "ok": true
+    },
+    {
+      "id": "MLU1531875384",
+      "precio": 2080,
+      "ganador": 2029,
+      "diferencia": 51,
+      "objetivo": 2008,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2008,
       "ok": true
     },
     {
@@ -118417,6 +119050,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 4090,
+      "ok": true
+    },
+    {
+      "id": "MLU1531874758",
+      "precio": 2470,
+      "ganador": 2415,
+      "diferencia": 55,
+      "objetivo": 2390,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2390,
       "ok": true
     },
     {
@@ -118725,17 +119369,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2326,
-      "ok": true
-    },
-    {
-      "id": "MLU1531872592",
-      "precio": 1670,
-      "ganador": 1623,
-      "diferencia": 47,
-      "objetivo": 1606,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1606,
       "ok": true
     },
     {
@@ -119575,17 +120208,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531864642",
-      "precio": 1820,
-      "ganador": 1772,
-      "diferencia": 48,
-      "objetivo": 1754,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1754,
-      "ok": true
-    },
-    {
       "id": "MLU1531864606",
       "precio": 3390,
       "ganador": 1839,
@@ -119616,17 +120238,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2316,
-      "ok": true
-    },
-    {
-      "id": "MLU1531864552",
-      "precio": 1700,
-      "ganador": 1652,
-      "diferencia": 48,
-      "objetivo": 1635,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1635,
       "ok": true
     },
     {
@@ -120246,17 +120857,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531862984",
-      "precio": 1740,
-      "ganador": 1692,
-      "diferencia": 48,
-      "objetivo": 1675,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1675,
-      "ok": true
-    },
-    {
       "id": "MLU1531862962",
       "precio": 3720,
       "ganador": 2779,
@@ -120367,17 +120967,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531862710",
-      "precio": 2470,
-      "ganador": 2415,
-      "diferencia": 55,
-      "objetivo": 2390,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 2390,
-      "ok": true
-    },
-    {
       "id": "MLU1531862708",
       "precio": 1600,
       "ganador": 1186,
@@ -120430,6 +121019,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2052,
+      "ok": true
+    },
+    {
+      "id": "MLU1531862652",
+      "precio": 2480,
+      "ganador": 2425,
+      "diferencia": 55,
+      "objetivo": 2400,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 2400,
       "ok": true
     },
     {
@@ -120617,17 +121217,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1731,
-      "ok": true
-    },
-    {
-      "id": "MLU1531861836",
-      "precio": 2090,
-      "ganador": 2039,
-      "diferencia": 51,
-      "objetivo": 2018,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 2018,
       "ok": true
     },
     {
@@ -120826,17 +121415,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2496,
-      "ok": true
-    },
-    {
-      "id": "MLU1531861428",
-      "precio": 2000,
-      "ganador": 1950,
-      "diferencia": 50,
-      "objetivo": 1930,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1930,
       "ok": true
     },
     {
@@ -121115,17 +121693,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531859670",
-      "precio": 1600,
-      "ganador": 1553,
-      "diferencia": 47,
-      "objetivo": 1537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1537,
-      "ok": true
-    },
-    {
       "id": "MLU1531859588",
       "precio": 2820,
       "ganador": 2316,
@@ -121134,17 +121701,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2316,
-      "ok": true
-    },
-    {
-      "id": "MLU1531859552",
-      "precio": 1600,
-      "ganador": 1553,
-      "diferencia": 47,
-      "objetivo": 1537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -121508,17 +122064,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1820,
-      "ok": true
-    },
-    {
-      "id": "MLU1531852914",
-      "precio": 1600,
-      "ganador": 1553,
-      "diferencia": 47,
-      "objetivo": 1537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -122017,17 +122562,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531851062",
-      "precio": 1650,
-      "ganador": 1603,
-      "diferencia": 47,
-      "objetivo": 1586,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1586,
-      "ok": true
-    },
-    {
       "id": "MLU1531850968",
       "precio": 1600,
       "ganador": 897,
@@ -122047,17 +122581,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1744,
-      "ok": true
-    },
-    {
-      "id": "MLU1531850912",
-      "precio": 1920,
-      "ganador": 1871,
-      "diferencia": 49,
-      "objetivo": 1852,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1852,
       "ok": true
     },
     {
@@ -122088,9 +122611,9 @@
       "ganador": 1147,
       "diferencia": 593,
       "objetivo": 1135,
-      "esperado": "no_tocar",
-      "hecho": "sin_tocar_umbral",
-      "precio_nuevo": 1147,
+      "esperado": "saltear",
+      "hecho": "saltear_ganador_sin_dato",
+      "precio_nuevo": null,
       "ok": true
     },
     {
@@ -122105,17 +122628,6 @@
       "ok": true
     },
     {
-      "id": "MLU1531850778",
-      "precio": 1600,
-      "ganador": 1553,
-      "diferencia": 47,
-      "objetivo": 1537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1537,
-      "ok": true
-    },
-    {
       "id": "MLU1531850688",
       "precio": 3160,
       "ganador": 2514,
@@ -122124,17 +122636,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 2514,
-      "ok": true
-    },
-    {
-      "id": "MLU1531850650",
-      "precio": 1710,
-      "ganador": 1663,
-      "diferencia": 47,
-      "objetivo": 1646,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1646,
       "ok": true
     },
     {
@@ -122292,6 +122793,17 @@
       "ok": true
     },
     {
+      "id": "MLU1531849984",
+      "precio": 1740,
+      "ganador": 1692,
+      "diferencia": 48,
+      "objetivo": 1675,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1675,
+      "ok": true
+    },
+    {
       "id": "MLU1531849980",
       "precio": 1600,
       "ganador": 614,
@@ -122311,17 +122823,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1194,
-      "ok": true
-    },
-    {
-      "id": "MLU1531849918",
-      "precio": 2690,
-      "ganador": 2633,
-      "diferencia": 57,
-      "objetivo": 2606,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 2606,
       "ok": true
     },
     {
@@ -122355,6 +122856,17 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1758,
+      "ok": true
+    },
+    {
+      "id": "MLU1531849830",
+      "precio": 1740,
+      "ganador": 1702,
+      "diferencia": 38,
+      "objetivo": 1684,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1684,
       "ok": true
     },
     {
@@ -122545,6 +123057,17 @@
       "ok": true
     },
     {
+      "id": "MLU1531849174",
+      "precio": 1600,
+      "ganador": 1553,
+      "diferencia": 47,
+      "objetivo": 1537,
+      "esperado": "bajar",
+      "hecho": "bajar",
+      "precio_nuevo": 1537,
+      "ok": true
+    },
+    {
       "id": "MLU1531849140",
       "precio": 1670,
       "ganador": 1144,
@@ -122561,9 +123084,9 @@
       "ganador": 1504,
       "diferencia": 466,
       "objetivo": 1488,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 1504,
       "ok": true
     },
     {
@@ -122575,17 +123098,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1428,
-      "ok": true
-    },
-    {
-      "id": "MLU1531849080",
-      "precio": 1600,
-      "ganador": 1553,
-      "diferencia": 47,
-      "objetivo": 1537,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1537,
       "ok": true
     },
     {
@@ -122627,9 +123139,9 @@
       "ganador": 2761,
       "diferencia": 619,
       "objetivo": 2733,
-      "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
-      "precio_nuevo": null,
+      "esperado": "no_tocar",
+      "hecho": "sin_tocar_umbral",
+      "precio_nuevo": 2761,
       "ok": true
     },
     {
@@ -122773,17 +123285,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 505,
-      "ok": true
-    },
-    {
-      "id": "MLU1531848248",
-      "precio": 1740,
-      "ganador": 1692,
-      "diferencia": 48,
-      "objetivo": 1675,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1675,
       "ok": true
     },
     {
@@ -122982,17 +123483,6 @@
       "esperado": "no_tocar",
       "hecho": "sin_tocar_umbral",
       "precio_nuevo": 1004,
-      "ok": true
-    },
-    {
-      "id": "MLU1531846474",
-      "precio": 1600,
-      "ganador": 1544,
-      "diferencia": 56,
-      "objetivo": 1528,
-      "esperado": "bajar",
-      "hecho": "bajar",
-      "precio_nuevo": 1528,
       "ok": true
     },
     {
@@ -123372,9 +123862,9 @@
     {
       "id": "MLU703784155",
       "precio": 2190,
-      "ganador": 960,
-      "diferencia": 1230,
-      "objetivo": 950,
+      "ganador": 950,
+      "diferencia": 1240,
+      "objetivo": 940,
       "esperado": "saltear",
       "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
@@ -123713,9 +124203,9 @@
     {
       "id": "MLU703783851",
       "precio": 2480,
-      "ganador": 1048,
-      "diferencia": 1432,
-      "objetivo": 1037,
+      "ganador": 1038,
+      "diferencia": 1442,
+      "objetivo": 1027,
       "esperado": "saltear",
       "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
@@ -124901,9 +125391,9 @@
     {
       "id": "MLU703772459",
       "precio": 3500,
-      "ganador": 1194,
-      "diferencia": 2306,
-      "objetivo": 1182,
+      "ganador": 1181,
+      "diferencia": 2319,
+      "objetivo": 1169,
       "esperado": "saltear",
       "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
@@ -126892,9 +127382,9 @@
     {
       "id": "MLU703759639",
       "precio": 2350,
-      "ganador": 759,
-      "diferencia": 1591,
-      "objetivo": 751,
+      "ganador": 750,
+      "diferencia": 1600,
+      "objetivo": 742,
       "esperado": "saltear",
       "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
@@ -126925,9 +127415,9 @@
     {
       "id": "MLU703759603",
       "precio": 1860,
-      "ganador": 715,
-      "diferencia": 1145,
-      "objetivo": 707,
+      "ganador": 722,
+      "diferencia": 1138,
+      "objetivo": 714,
       "esperado": "saltear",
       "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
@@ -127974,7 +128464,7 @@
       "diferencia": 392,
       "objetivo": 1195,
       "esperado": "saltear",
-      "hecho": "saltear_ganador_sin_dato",
+      "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
       "ok": true
     },
@@ -128597,9 +129087,9 @@
     {
       "id": "MLU703747029",
       "precio": 2100,
-      "ganador": 998,
-      "diferencia": 1102,
-      "objetivo": 988,
+      "ganador": 987,
+      "diferencia": 1113,
+      "objetivo": 977,
       "esperado": "saltear",
       "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
@@ -128663,9 +129153,9 @@
     {
       "id": "MLU703746991",
       "precio": 2070,
-      "ganador": 1009,
-      "diferencia": 1061,
-      "objetivo": 998,
+      "ganador": 1008,
+      "diferencia": 1062,
+      "objetivo": 997,
       "esperado": "saltear",
       "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
@@ -128762,9 +129252,9 @@
     {
       "id": "MLU703746919",
       "precio": 2000,
-      "ganador": 893,
-      "diferencia": 1107,
-      "objetivo": 884,
+      "ganador": 883,
+      "diferencia": 1117,
+      "objetivo": 874,
       "esperado": "saltear",
       "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
@@ -129125,9 +129615,9 @@
     {
       "id": "MLU703746705",
       "precio": 2620,
-      "ganador": 1088,
-      "diferencia": 1532,
-      "objetivo": 1077,
+      "ganador": 1077,
+      "diferencia": 1543,
+      "objetivo": 1066,
       "esperado": "saltear",
       "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
@@ -129393,7 +129883,7 @@
       "diferencia": 1872,
       "objetivo": 1700,
       "esperado": "saltear",
-      "hecho": "saltear_ganador_inmediato",
+      "hecho": "saltear_ganador_sin_dato",
       "precio_nuevo": null,
       "ok": true
     },
@@ -130302,9 +130792,9 @@
     {
       "id": "MLU703743955",
       "precio": 1600,
-      "ganador": 1071,
-      "diferencia": 529,
-      "objetivo": 1060,
+      "ganador": 1061,
+      "diferencia": 539,
+      "objetivo": 1050,
       "esperado": "saltear",
       "hecho": "saltear_ganador_inmediato",
       "precio_nuevo": null,
@@ -130576,5 +131066,5 @@
     }
   ],
   "discrepancias": [],
-  "llamadas": 2096
+  "llamadas": 2099
 }
