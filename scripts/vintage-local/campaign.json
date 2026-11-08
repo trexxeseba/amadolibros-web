@@ -3,7 +3,7 @@
   "mode": "correct_only",
   "ejecutor": "nube",
   "nube": {
-    "modo": "real",
+    "modo": "apagado",
     "tanda": 1000,
     "tope_diario": 8000,
     "minutos": 50,
