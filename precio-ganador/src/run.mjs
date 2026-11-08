@@ -11,7 +11,7 @@ import { CUENTAS, MAX_CAMBIOS_POR_CORRIDA, STOCK_DEMANDA_DEFAULT, UMBRAL_UYU, fe
 import { fuenteTokenD1 } from './token.mjs';
 import { crearCliente } from './ml.mjs';
 import { idsActivos, detalle } from './publicaciones.mjs';
-import { competencia, promocionActiva, MUESTRAS } from './competencia.mjs';
+import { competencia, porQuePierde, promocionActiva, MUESTRAS } from './competencia.mjs';
 import { decidir, CAMBIA } from './decision.mjs';
 import { resumir, tablaMarkdown, enviarResumen, informeRegla } from './reporte.mjs';
 import { cargarPisosVintage } from './costos-vintage.mjs';
@@ -119,6 +119,13 @@ async function main() {
     for (const r of res) { r.piso = pisoDe(r.item.id); filas.push(r); if (r.comp?.marcada && !r.previo) marcadas++; }
     if (marcadas >= maxMarcadas && i + lote >= enEstado.length) break;
   }
+  // Por qué pierde cada una que compite (sólo lectura, para el informe). Un error acá
+  // nunca frena la corrida ni cambia una decisión.
+  const cacheVendedores = new Map();
+  for (const f of filas.filter(f => f.comp?.compite)) {
+    try { f.perdida = await porQuePierde(ml, f.item, f.comp, { sellerId: cuenta.sellerId, cacheVendedores }); }
+    catch (e) { f.perdida = { causa: 'error', error: e?.code ?? 'error' }; }
+  }
   // Publicaciones del estado que ya no están activas: se conservan, no se tocan.
   for (const id of enEstado) if (!items.has(id) || items.get(id).status !== 'active') filas.push({ item: items.get(id) ?? { id }, comp: null, d: { accion: 'inactiva', motivo: 'no está activa' }, previo: estado.publicaciones[id] });
 
@@ -225,7 +232,7 @@ async function main() {
   // Filas de las marcadas y de las del estado, para la auditoría independiente.
   await writeFile(join(dirSalida, `${cuenta.clave}-filas.json`), JSON.stringify(filas.filter(f => f.comp?.marcada || f.comp?.compite || f.previo).map(f => ({
     id: f.item.id, titulo: String(f.item.title ?? '').slice(0, 60), precio: f.item.price, moneda: f.item.currency_id, variaciones: f.item.variaciones, precio_dinamico: Boolean(f.item.precio_dinamico), marcada: Boolean(f.comp?.marcada), compite: Boolean(f.comp?.compite),
-    ganador: f.comp?.ganador ?? null, bloqueo: f.comp?.bloqueo ?? null, entrega_ganador: f.comp?.entrega_ganador ?? null, techo: f.comp?.techo ?? null, techo_de: f.comp?.techo_de ?? null, piso: f.piso ?? null,
+    ganador: f.comp?.ganador ?? null, perdida: f.perdida ?? null, bloqueo: f.comp?.bloqueo ?? null, entrega_ganador: f.comp?.entrega_ganador ?? null, techo: f.comp?.techo ?? null, techo_de: f.comp?.techo_de ?? null, piso: f.piso ?? null,
     en_estado_antes: Boolean(f.previo), precio_original: f.previo?.precio_original ?? null, promo: f.promo ?? null, accion: f.d.accion, motivo: f.d.motivo ?? null, detalle: /^error/.test(f.d.accion) ? (f.d.detalle ?? null) : null, precio_nuevo: f.d.precio ?? null, stock_nuevo: f.d.stock ?? null, aplicado: f.aplicado ?? null,
   })), null, 2));
   if (real) {

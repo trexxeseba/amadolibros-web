@@ -42,7 +42,9 @@ export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
   for (const f of filas) if (/^error/.test(f.d.accion)) errores[f.d.motivo] = (errores[f.d.motivo] ?? 0) + 1;
   // Ejemplos de errores con el motivo que dio Mercado Libre (sin tokens ni datos personales).
   const ejemplosError = filas.filter(f => /^error/.test(f.d.accion)).slice(0, 10).map(f => ({ id: f.item.id, accion: f.d.accion, motivo: f.d.motivo ?? null, detalle: f.d.detalle ?? null }));
-  return { cuenta: cuenta.clave, umbral, ejemplos_error: ejemplosError, duracion_s: Math.round((Date.now() - inicio) / 1000), contadores, catalogo: { estados, publicaciones_con_alguna_sugerencia: filas.filter(f => f.comp?.oportunidades?.length).length, sugerencias, motivos, por_tipo: porTipo, errores_por_tipo: filas.filter(f => f.comp?.error).reduce((a, f) => (a[f.comp.error] = (a[f.comp.error] ?? 0) + 1, a), {}) }, errores, llamadas: stats.llamadas, por_status: stats.porStatus };
+  // Por qué pierden las que compiten (precio, envío gratis, reputación o entrega).
+  const causasPerdida = filas.filter(f => f.perdida).reduce((a, f) => (a[f.perdida.causa] = (a[f.perdida.causa] ?? 0) + 1, a), {});
+  return { cuenta: cuenta.clave, umbral, causas_perdida: causasPerdida, ejemplos_error: ejemplosError, duracion_s: Math.round((Date.now() - inicio) / 1000), contadores, catalogo: { estados, publicaciones_con_alguna_sugerencia: filas.filter(f => f.comp?.oportunidades?.length).length, sugerencias, motivos, por_tipo: porTipo, errores_por_tipo: filas.filter(f => f.comp?.error).reduce((a, f) => (a[f.comp.error] = (a[f.comp.error] ?? 0) + 1, a), {}) }, errores, llamadas: stats.llamadas, por_status: stats.porStatus };
 }
 
 const ACCION = {
@@ -66,10 +68,21 @@ export function tablaMarkdown(filas, { cuenta, real, resumen }) {
     const accion = (f.d.accion === 'saltear_piso' && /piso 1000000000000/.test(f.d.motivo) ? 'Saltear: sin costo conocido en la lista de SBS' : f.d.accion === 'saltear_piso' ? `Saltear: queda bajo el piso (${f.d.motivo.replace('piso ', '')})` : (ACCION[f.d.accion] ?? f.d.accion)) + (CAMBIA.has(f.d.accion) ? ` → ${f.d.precio}` : '') + (f.verificado === true ? ' (aplicado y verificado)' : f.verificado === false ? ` (NO verificado: ML muestra ${f.precio_leido})` : '');
     l.push(`| [${f.item.id}](${f.item.permalink ?? `https://articulo.mercadolibre.com.uy/${String(f.item.id).replace('MLU', 'MLU-')}`}) ${esc(f.item.title?.slice(0, 50) ?? '')} | ${f.comp?.tipo ?? ''} ${f.comp?.estado ?? ''} | ${p ?? ''} | ${g ?? ''} | ${dif} | ${accion} | ${stock} | ${(f.comp?.motivos ?? []).map(m => typeof m === 'string' ? m : (m?.id ?? '')).join(', ')} |`);
   }
+  const conCausa = filas.filter(f => f.perdida);
+  if (conCausa.length) {
+    l.push('', '## Por qué pierden', '', `Causas: ${Object.entries(resumen.causas_perdida ?? {}).map(([k, v]) => `${CAUSA[k] ?? k} ${v}`).join(' · ')}`, '',
+      '| Publicación | Mi precio | Más barato de otro vendedor | Ganador | Nivel del ganador | Envío gratis nuestro | ML marca que nos falta | Causa |', '|---|---:|---:|---:|---|---|---|---|');
+    for (const f of conCausa) {
+      const q = f.perdida;
+      l.push(`| ${f.item.id} ${esc(f.item.title?.slice(0, 40) ?? '')} | ${f.item.price} | ${q.mas_barato ?? 'nadie'} | ${q.ganador_precio ?? ''} | ${q.ganador_nivel ?? ''} | ${q.envio_gratis_propio === true ? 'sí' : q.envio_gratis_propio === false ? 'no' : ''} | ${(q.le_falta ?? []).map(b => FALTA[b] ?? b).join(', ')} | ${CAUSA[q.causa] ?? q.causa} |`);
+    }
+  }
   if (Object.keys(resumen.errores).length) l.push('', '## Errores', '', ...Object.entries(resumen.errores).map(([k, v]) => `- ${k}: ${v}`));
   return l.join('\n') + '\n';
 }
 const esc = s => String(s).replace(/\|/g, '/');
+const CAUSA = { precio: 'por precio', envio_gratis: 'por envío gratis', reputacion_entrega: 'por reputación o entrega', otro: 'otro', error: 'no se pudo leer', sin_ficha: 'sin ficha' };
+const FALTA = { free_shipping: 'envío gratis', fulfillment: 'Full', same_day_shipping: 'envío en el día', free_installments: 'cuotas sin interés', shipping_collect: 'colecta' };
 
 export async function enviarResumen({ cuenta, acum, resumen, fetcher = (...a) => globalThis.fetch(...a) }) {
   const apiKey = process.env.RESEND_API_KEY;
@@ -84,6 +97,7 @@ export async function enviarResumen({ cuenta, acum, resumen, fetcher = (...a) =>
     ['Subidas o vueltas al original', suma('subidas') + suma('restauradas')],
     ['Sin tocar por diferencia por encima del tope (última)', ult.sin_tocar_umbral ?? 0], ['Sin tocar por bajar más del 30 % (última)', ult.sin_tocar_pct ?? 0],
     ['Salteadas por promoción (última)', ult.promo ?? 0], ['Errores', suma('errores')], ['Cambios de stock', suma('cambios_stock')],
+    ['Por qué pierden (última)', Object.entries(resumen.causas_perdida ?? {}).map(([k, v]) => `${CAUSA[k] ?? k}: ${v}`).join(' · ') || '—'],
   ];
   const est = resumen.catalogo?.estados ?? {};
   filas.push(['Catálogo: ganando', est.winning ?? 0], ['Catálogo: comparten el primer lugar', est.sharing_first_place ?? 0], ['Catálogo: perdiendo', est.competing ?? 0], ['Catálogo: con alguna sugerencia de ML (Full, cuotas, etc.)', resumen.catalogo?.publicaciones_con_alguna_sugerencia ?? 0]);
