@@ -344,6 +344,27 @@ test('17d. Clasifica libros con señales fuertes sin aceptar una señal legado a
     assert.equal(isEligibleForFeed(ssd), false);
 });
 
+test('17d2. Mazos de tarot y barajas entran con ISBN válido aunque no tengan autor ni páginas', () => {
+    const deck = (extra = {}) => book({
+        domain_id: 'MLU-TAROT_CARDS', isbn: '9788499809991', author: null, pages: null, bibliographic: null, ...extra,
+    });
+    assert.equal(isBookProduct(deck()), true);
+    assert.equal(isEligibleForFeed(deck()), true);
+    assert.equal(isBookProduct(deck({ domain_id: 'MLU-BOARD_AND_CARD_GAMES' })), true);
+    // Sin ISBN válido no entran: Merchant exige un identificador real.
+    assert.equal(isBookProduct(deck({ isbn: null })), false);
+    assert.equal(isBookProduct(deck({ isbn: '1234567890123' })), false);
+    // El ISBN solo no alcanza para otros rubros.
+    assert.equal(isBookProduct(book({
+        domain_id: 'MLU-COMPUTER_COMPONENTS', isbn: '9788499809991', author: null, pages: null, bibliographic: null,
+    })), false);
+    // Un mazo publicado lleva su código de barras y no inventa autor ni marca.
+    const xml = renderFeedItem(deck({ id: 'MLU999', title: 'Oráculo de prueba' }));
+    assert.match(xml, /<g:gtin>9788499809991<\/g:gtin>/);
+    assert.doesNotMatch(xml, /identifier_exists/);
+    assert.doesNotMatch(xml, /<g:brand>/);
+});
+
 test('17e. Producción publica sólo portadas primarias válidas y vigentes en R2', () => {
     const ready = book({ id: 'MLU123456', thumbnail: 'http://http2.mlstatic.com/D_READY-I.jpg' });
     const stale = book({ id: 'MLU123457', thumbnail: 'https://http2.mlstatic.com/D_NEW-I.jpg' });
