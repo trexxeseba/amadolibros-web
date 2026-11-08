@@ -1,4 +1,4 @@
-# Auditoría Precio Ganador · Amado Libros · 2026-11-08T01:12:46.373Z
+# Auditoría Precio Ganador · Amado Libros · 2026-11-08T03:42:32.416Z
 
 Discrepancias: **0**
 
@@ -6,16 +6,16 @@ Discrepancias: **0**
 
 | Publicación | Precio | Estado ML | Para ganar | Competidor más barato | Sugerencias de ML | Conclusión | OK |
 |---|---:|---|---:|---:|---|---|---|
-| MLU669859866 Biblia De Los Pequeños Antiguo Y Nuevo Testamento Para Niños | 2600 | winning | 2600 | ninguno | Envíos Full, Envíos en el día | Gana: no hay otros vendedores | sí |
-| MLU636069194 Impact 2b - Combo Split + Wb A/cd | 710 | winning | 710 | 1822.9 | Envíos Full, Envío gratis, Envíos en el día | Gana: el competidor más barato está en 1822.9 | sí |
-| MLU645839745 Libro La Argentina Deseada - Jose Luis Espert - Sudamericana | 2200 | winning | 2200 | 2170 | Envíos Full, Envíos en el día | Gana aunque hay uno más barato (2170): ML pesa envío y reputación | sí |
-| MLU669549984 Egyptian (libro + Cartas) Tarot, De Silvana Alasia. Serie Un | 2300 | winning | 1940 | ninguno | Envíos Full, Envíos en el día | Gana: no hay otros vendedores | sí |
-| MLU669972586 Anatomía Del Espíritu, De La Curación Del Cuerpo Llega A Tra | 1277 | sharing_first_place | 1251 | 1258 | Envíos Full, Envíos en el día | Comparte el primer lugar (1 más) | sí |
-| MLU684369582 Crímenes De Los Aliados. Los Otros Criminales, De Solis Mira | 2300 | winning | 2300 | ninguno | Envíos Full, Envíos en el día | Gana: no hay otros vendedores | sí |
-| MLU1227852836 Beehive 2 - Student Book With Online Practice, De Thompson,  | 2910 | winning | 2910 | 2769 | Envíos Full, Envíos en el día | Gana aunque hay uno más barato (2769): ML pesa envío y reputación | sí |
-| MLU651575142 Libro Humanizar La Educación - Bona, Cesar | 1150 | winning | 1150 | 1569 | Envíos Full, Envíos en el día | Gana: el competidor más barato está en 1569 | sí |
-| MLU890995630 Manual De Psicoterapias. Teoría Y Técnicas, De Rodriguez Mor | 3600 | winning | 3600 | 4023 | Envíos Full, Envíos en el día | Gana: el competidor más barato está en 4023 | sí |
-| MLU644392989 El Tarot De Miguel Angel Martin - Reino De Cordelia | 2450 | winning | 2067 | 2100 | Envíos Full, Envíos en el día | Gana aunque hay uno más barato (2100): ML pesa envío y reputación | sí |
+| MLU1029309702 Libro Freud Padre Del Psicoanálisis 40 Fichas Conductuales,  | 2550 | winning | 2550 | 1176.76 | Envíos Full | Gana aunque hay uno más barato (1176.76): ML pesa envío y reputación | sí |
+| MLU783707304 Jesus Esta Vivo - Tardif,emiliano | 1051 | winning | 1051 | 1062 | Envíos Full | Gana: el competidor más barato está en 1062 | sí |
+| MLU669984884 Egyptian Tarot Grand Trumps, De Lo Scarabeo. Editorial Llewe | 2300 | winning | 1940 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
+| MLU1317658890 Introducción A Heidegger Gianni Vattimo Filosofía Herder | 1286 | winning | 1286 | 1300 | Envíos Full | Gana: el competidor más barato está en 1300 | sí |
+| MLU1445876800 Libro 50 Juegos De Animales, De Dibujator, Vol. 1. Editorial | 1200 | winning | 1200 | 1010 | Envíos Full | Gana aunque hay uno más barato (1010): ML pesa envío y reputación | sí |
+| MLU883975728 Los Juegos Psicóticos En La Familia, De Selvini Palazzoli, M | 2450 | winning | 2450 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
+| MLU907608712 Intervenciãâ³n Neuropsicolãâ³gica En Los Trastornos Adquirid | 2990 | winning | 2990 | 4670 | Envíos Full | Gana: el competidor más barato está en 4670 | sí |
+| MLU628044489 Libro - Emdr - Shapiro, Forrest Y Otros | 2850 | winning | 2850 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
+| MLU730317234 Psicologia Del Desarrollo Para Docentes, De Carlos Martin Br | 1900 | winning | 1900 | ninguno | Envíos Full | Gana: no hay otros vendedores | sí |
+| MLU631890269 Estaciones De La Bruja, De Lorriane Anderson Y Juliet Diaz.  | 901 | winning | 901 | 990 | Envíos Full, Envío gratis | Gana: el competidor más barato está en 990 | sí |
 
 ## Publicaciones que el sistema bajó (60)
 
@@ -82,56 +82,41 @@ Discrepancias: **0**
 | MLU893400508 Teoría De La Justicia - John Rawls | 1087 | 1064 | 1064 | sí |
 | MLU900823506 Libro Libro El Universo En 100 Preguntas - Victor  | 611 | 593 | 593 | sí |
 
-## Regla recalculada sobre las marcadas de la última corrida (49)
+## Regla recalculada sobre las marcadas de la última corrida (34)
 
 | Publicación | Precio | Ganador | Diferencia | Esperado | Hizo | OK |
 |---|---:|---:|---:|---|---|---|
-| MLU636030618 | 2800 | 657 | 2143 | no_tocar | sin_tocar_umbral → 657 | sí |
-| MLU636005026 | 2550 | 1354 | 1196 | no_tocar | sin_tocar_umbral → 1354 | sí |
-| MLU651058026 | 2850 | 1139 | 1711 | no_tocar | sin_tocar_umbral → 1139 | sí |
-| MLU651009706 | 1400 | 738 | 662 | no_tocar | sin_tocar_umbral → 738 | sí |
-| MLU631813403 | 2850 | 1583 | 1267 | no_tocar | sin_tocar_umbral → 1583 | sí |
-| MLU652083500 | 695 | 675 | 20 | bajar | bajar → 675 | sí |
-| MLU652640572 | 2450 | 812 | 1638 | no_tocar | sin_tocar_umbral → 812 | sí |
-| MLU655245898 | 4300 | 3079 | 1221 | no_tocar | sin_tocar_umbral → 3079 | sí |
-| MLU658141576 | 1200 | 1175 | 25 | bajar | bajar → 1175 | sí |
-| MLU658066440 | 791 | 774 | 17 | bajar | bajar → 774 | sí |
-| MLU658014482 | 1950 | 1328 | 622 | no_tocar | sin_tocar_umbral → 1328 | sí |
-| MLU661228680 | 1341 | 1314 | 27 | bajar | bajar → 1314 | sí |
-| MLU668180202 | 1143 | 1120 | 23 | bajar | bajar → 1120 | sí |
-| MLU669549988 | 1790 | 982 | 808 | no_tocar | sin_tocar_umbral → 982 | sí |
-| MLU674520846 | 2750 | 1140 | 1610 | no_tocar | sin_tocar_umbral → 1140 | sí |
-| MLU676002408 | 1480 | 1437 | 43 | bajar | bajar → 1437 | sí |
-| MLU682218876 | 947 | 922 | 25 | bajar | bajar → 922 | sí |
-| MLU683328768 | 1985 | 915 | 1070 | no_tocar | sin_tocar_umbral → 915 | sí |
-| MLU691295954 | 1990 | 980 | 1010 | no_tocar | sin_tocar_umbral → 980 | sí |
-| MLU701212828 | 908 | 884 | 24 | bajar | bajar → 884 | sí |
-| MLU702790272 | 651 | 631 | 20 | bajar | bajar → 631 | sí |
-| MLU706364386 | 2137 | 1277 | 860 | no_tocar | sin_tocar_umbral → 1277 | sí |
-| MLU648669567 | 1450 | 1013 | 437 | no_tocar | sin_tocar_umbral → 1013 | sí |
-| MLU713666896 | 830 | 808 | 22 | bajar | bajar → 808 | sí |
+| MLU636030618 | 2800 | 667 | 2133 | no_tocar | sin_tocar_umbral → 667 | sí |
+| MLU636005026 | 2550 | 1375 | 1175 | no_tocar | sin_tocar_umbral → 1375 | sí |
+| MLU651058026 | 2850 | 1157 | 1693 | no_tocar | sin_tocar_umbral → 1157 | sí |
+| MLU651009706 | 1400 | 754 | 646 | no_tocar | sin_tocar_umbral → 754 | sí |
+| MLU631813403 | 2850 | 1607 | 1243 | no_tocar | sin_tocar_umbral → 1607 | sí |
+| MLU652640572 | 2450 | 825 | 1625 | no_tocar | sin_tocar_umbral → 825 | sí |
+| MLU655245898 | 4300 | 3126 | 1174 | no_tocar | sin_tocar_umbral → 3126 | sí |
+| MLU658014482 | 1950 | 1348 | 602 | no_tocar | sin_tocar_umbral → 1348 | sí |
+| MLU669549988 | 1790 | 998 | 792 | no_tocar | sin_tocar_umbral → 998 | sí |
+| MLU674520846 | 2750 | 1158 | 1592 | no_tocar | sin_tocar_umbral → 1158 | sí |
+| MLU683328768 | 1985 | 930 | 1055 | no_tocar | sin_tocar_umbral → 930 | sí |
+| MLU691295954 | 1990 | 989 | 1001 | no_tocar | sin_tocar_umbral → 989 | sí |
+| MLU706364386 | 2137 | 1296 | 841 | no_tocar | sin_tocar_umbral → 1296 | sí |
+| MLU648669567 | 1450 | 1023 | 427 | no_tocar | sin_tocar_umbral → 1023 | sí |
 | MLU728138914 | 2050 | 1089 | 961 | no_tocar | sin_tocar_umbral → 1089 | sí |
-| MLU730247430 | 2550 | 1060 | 1490 | no_tocar | sin_tocar_umbral → 1060 | sí |
-| MLU735608772 | 1995 | 1257 | 738 | no_tocar | sin_tocar_umbral → 1257 | sí |
-| MLU826991156 | 2750 | 1583 | 1167 | no_tocar | sin_tocar_umbral → 1583 | sí |
-| MLU844994424 | 1685 | 1647 | 38 | bajar | bajar → 1647 | sí |
-| MLU653035273 | 1659 | 1616 | 43 | bajar | bajar → 1616 | sí |
+| MLU730247430 | 2550 | 1076 | 1474 | no_tocar | sin_tocar_umbral → 1076 | sí |
+| MLU735608772 | 1995 | 1277 | 718 | no_tocar | sin_tocar_umbral → 1277 | sí |
+| MLU826991156 | 2750 | 1608 | 1142 | no_tocar | sin_tocar_umbral → 1608 | sí |
 | MLU853875712 | 3710 | 2474 | 1236 | no_tocar | sin_tocar_umbral → 2474 | sí |
-| MLU884307200 | 2450 | 1852 | 598 | no_tocar | sin_tocar_umbral → 1852 | sí |
-| MLU893400508 | 1087 | 1064 | 23 | bajar | bajar → 1064 | sí |
-| MLU900823506 | 611 | 593 | 18 | bajar | bajar → 593 | sí |
-| MLU912983914 | 2350 | 853 | 1497 | no_tocar | sin_tocar_umbral → 853 | sí |
-| MLU1009973108 | 2450 | 1705 | 745 | no_tocar | sin_tocar_umbral → 1705 | sí |
+| MLU884307200 | 2450 | 1890 | 560 | no_tocar | sin_tocar_umbral → 1890 | sí |
+| MLU912983914 | 2350 | 911 | 1439 | no_tocar | sin_tocar_umbral → 911 | sí |
+| MLU1009973108 | 2450 | 1732 | 718 | no_tocar | sin_tocar_umbral → 1732 | sí |
 | MLU1047310668 | 2650 | 812 | 1838 | no_tocar | sin_tocar_umbral → 812 | sí |
-| MLU655144089 | 1801 | 604 | 1197 | no_tocar | sin_tocar_umbral → 604 | sí |
-| MLU660973661 | 898 | 874 | 24 | saltear | saltear_precio_dinamico | sí |
-| MLU1183159820 | 2350 | 1305 | 1045 | no_tocar | sin_tocar_umbral → 1305 | sí |
-| MLU678056633 | 1790 | 575 | 1215 | no_tocar | sin_tocar_umbral → 575 | sí |
-| MLU1346572834 | 702 | 423 | 279 | no_tocar | sin_tocar_pct → 423 | sí |
-| MLU693165653 | 2150 | 805 | 1345 | no_tocar | sin_tocar_umbral → 805 | sí |
-| MLU1392392680 | 2100 | 1007 | 1093 | no_tocar | sin_tocar_umbral → 1007 | sí |
-| MLU693750973 | 1670 | 1189 | 481 | no_tocar | sin_tocar_umbral → 1189 | sí |
-| MLU694096589 | 1950 | 895 | 1055 | no_tocar | sin_tocar_umbral → 895 | sí |
-| MLU1426348092 | 3750 | 2133 | 1617 | no_tocar | sin_tocar_umbral → 2133 | sí |
-| MLU1444239500 | 3750 | 1832 | 1918 | no_tocar | sin_tocar_umbral → 1832 | sí |
-| MLU1470582628 | 2550 | 1269 | 1281 | no_tocar | sin_tocar_umbral → 1269 | sí |
+| MLU655144089 | 1801 | 613 | 1188 | no_tocar | sin_tocar_umbral → 613 | sí |
+| MLU1183159820 | 2350 | 1332 | 1018 | no_tocar | sin_tocar_umbral → 1332 | sí |
+| MLU678056633 | 1790 | 583 | 1207 | no_tocar | sin_tocar_umbral → 583 | sí |
+| MLU1346572834 | 702 | 433 | 269 | no_tocar | sin_tocar_pct → 433 | sí |
+| MLU693165653 | 2150 | 821 | 1329 | no_tocar | sin_tocar_umbral → 821 | sí |
+| MLU1392392680 | 2100 | 1028 | 1072 | no_tocar | sin_tocar_umbral → 1028 | sí |
+| MLU693750973 | 1670 | 1208 | 462 | no_tocar | sin_tocar_umbral → 1208 | sí |
+| MLU694096589 | 1950 | 914 | 1036 | no_tocar | sin_tocar_umbral → 914 | sí |
+| MLU1426348092 | 3750 | 2166 | 1584 | no_tocar | sin_tocar_umbral → 2166 | sí |
+| MLU1444239500 | 3750 | 1861 | 1889 | no_tocar | sin_tocar_umbral → 1861 | sí |
+| MLU1470582628 | 2550 | 1295 | 1255 | no_tocar | sin_tocar_umbral → 1295 | sí |
