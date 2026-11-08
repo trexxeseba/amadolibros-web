@@ -162,14 +162,33 @@ export async function porQuePierde(ml, item, comp, { sellerId, cacheVendedores =
     nivelGanador = cacheVendedores.get(ganador.seller_id);
   }
   const boosts = comp?.boosts ?? {};
+  // Nuestro nivel de MercadoLíder (una lectura por corrida).
+  if (!cacheVendedores.has('yo')) {
+    let nivel = null;
+    try { const u = await ml.get(`/users/${sellerId}`); nivel = u?.seller_reputation?.power_seller_status ?? 'ninguno'; } catch (e) { if (e?.status === 429) throw e; }
+    cacheVendedores.set('yo', nivel);
+  }
   const falta = Object.entries(boosts).filter(([, st]) => st === 'opportunity').map(([id]) => id);
   const precio = Number(item.price);
   const causa = masBarato && masBarato.price < precio ? 'precio'
     : boosts.free_shipping === 'opportunity' ? 'envio_gratis'
     : (nivelGanador && nivelGanador !== 'ninguno') || falta.some(b => b === 'fulfillment' || b === 'same_day_shipping') ? 'reputacion_entrega'
     : 'otro';
+  // Envío gratis: lo que nos costaría por venta (sólo lectura). Si ML no lo informa, null.
+  let costoEnvioGratis = null, palanca = null;
+  if (causa === 'envio_gratis') {
+    try {
+      const o = await ml.get(`/users/${sellerId}/shipping_options/free?item_id=${item.id}`);
+      const c = num(o?.coverage?.all_country?.list_cost ?? o?.coverage?.all_country?.cost);
+      costoEnvioGratis = c;
+    } catch (e) { if (e?.status === 429) throw e; }
+    const baja = num(comp?.ganador) !== null ? precio - entero(comp.ganador) : null;
+    // Criterio (08/11/2026): envío gratis si cuesta hasta 1,5 veces lo que habría que bajar
+    // (además sube en la búsqueda); si no, bajar el precio.
+    palanca = costoEnvioGratis === null ? 'envio_gratis_sin_costo' : baja !== null && costoEnvioGratis <= 1.5 * baja ? 'envio_gratis' : 'bajar';
+  } else if (causa === 'precio' || causa === 'reputacion_entrega') palanca = 'bajar';
   return {
-    causa, competidores: otros.length,
+    causa, palanca, costo_envio_gratis: costoEnvioGratis, nuestro_nivel: cacheVendedores.get('yo') ?? null, competidores: otros.length,
     mas_barato: masBarato?.price ?? null, mas_barato_item: masBarato?.item_id ?? null,
     ganador_precio: ganador?.price ?? null, ganador_nivel: nivelGanador,
     envio_gratis_propio: boosts.free_shipping === 'boosted' ? true : boosts.free_shipping === 'opportunity' ? false : null,

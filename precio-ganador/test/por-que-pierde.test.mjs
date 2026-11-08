@@ -33,3 +33,15 @@ test('un error al leer la ficha no corta nada', async () => {
   const roto = { async get() { throw Object.assign(new Error('x'), { status: 500, code: 'http_500' }); } };
   assert.equal((await porQuePierde(roto, item(651), {}, { sellerId: YO })).causa, 'error');
 });
+test('palanca: envío gratis si cuesta hasta 1,5 veces la baja; si no, bajar', async () => {
+  const conCosto = costo => ({ async get(p) {
+    if (p.startsWith('/products/')) return { results: [{ item_id: 'MLU2', price: 890, seller_id: 5 }], paging: { total: 1 } };
+    if (p.includes('/shipping_options/free')) return { coverage: { all_country: { list_cost: costo } } };
+    return { seller_reputation: { power_seller_status: 'gold' } };
+  } });
+  const comp = { ganadorItem: 'MLU2', ganador: 631, boosts: { free_shipping: 'opportunity' } };
+  const barato = await porQuePierde(conCosto(25), item(651), comp, { sellerId: YO });
+  assert.deepEqual([barato.causa, barato.palanca, barato.costo_envio_gratis], ['envio_gratis', 'envio_gratis', 25]);   // 25 <= 1,5 x 20
+  assert.equal((await porQuePierde(conCosto(189), item(651), comp, { sellerId: YO })).palanca, 'bajar');
+  assert.equal(barato.nuestro_nivel, 'gold');
+});

@@ -70,11 +70,11 @@ export function tablaMarkdown(filas, { cuenta, real, resumen }) {
   }
   const conCausa = filas.filter(f => f.perdida);
   if (conCausa.length) {
-    l.push('', '## Por qué pierden', '', `Causas: ${Object.entries(resumen.causas_perdida ?? {}).map(([k, v]) => `${CAUSA[k] ?? k} ${v}`).join(' · ')}`, '',
-      '| Publicación | Mi precio | Más barato de otro vendedor | Ganador | Nivel del ganador | Envío gratis nuestro | ML marca que nos falta | Causa |', '|---|---:|---:|---:|---|---|---|---|');
+    l.push('', '## Por qué pierden', '', `Nuestro nivel: ${conCausa.find(f => f.perdida.nuestro_nivel)?.perdida.nuestro_nivel ?? 'sin dato'}`, '', `Causas: ${Object.entries(resumen.causas_perdida ?? {}).map(([k, v]) => `${CAUSA[k] ?? k} ${v}`).join(' · ')}`, '',
+      '| Publicación | Mi precio | Más barato de otro vendedor | Ganador | Nivel del ganador | Envío gratis nuestro | ML marca que nos falta | Causa | Costo envío gratis | Palanca (todavía no se aplica) |', '|---|---:|---:|---:|---|---|---|---|---:|---|');
     for (const f of conCausa) {
       const q = f.perdida;
-      l.push(`| ${f.item.id} ${esc(f.item.title?.slice(0, 40) ?? '')} | ${f.item.price} | ${q.mas_barato ?? 'nadie'} | ${q.ganador_precio ?? ''} | ${q.ganador_nivel ?? ''} | ${q.envio_gratis_propio === true ? 'sí' : q.envio_gratis_propio === false ? 'no' : ''} | ${(q.le_falta ?? []).map(b => FALTA[b] ?? b).join(', ')} | ${CAUSA[q.causa] ?? q.causa} |`);
+      l.push(`| ${f.item.id} ${esc(f.item.title?.slice(0, 40) ?? '')} | ${f.item.price} | ${q.mas_barato ?? 'nadie'} | ${q.ganador_precio ?? ''} | ${q.ganador_nivel ?? ''} | ${q.envio_gratis_propio === true ? 'sí' : q.envio_gratis_propio === false ? 'no' : ''} | ${(q.le_falta ?? []).map(b => FALTA[b] ?? b).join(', ')} | ${CAUSA[q.causa] ?? q.causa} | ${q.costo_envio_gratis ?? ''} | ${PALANCA[q.palanca] ?? q.palanca ?? ''} |`);
     }
   }
   if (Object.keys(resumen.errores).length) l.push('', '## Errores', '', ...Object.entries(resumen.errores).map(([k, v]) => `- ${k}: ${v}`));
@@ -82,6 +82,7 @@ export function tablaMarkdown(filas, { cuenta, real, resumen }) {
 }
 const esc = s => String(s).replace(/\|/g, '/');
 const CAUSA = { precio: 'por precio', envio_gratis: 'por envío gratis', reputacion_entrega: 'por reputación o entrega', otro: 'otro', error: 'no se pudo leer', sin_ficha: 'sin ficha' };
+const PALANCA = { bajar: 'bajar el precio', envio_gratis: 'poner envío gratis', envio_gratis_sin_costo: 'envío gratis (ML no informó el costo)' };
 const FALTA = { free_shipping: 'envío gratis', fulfillment: 'Full', same_day_shipping: 'envío en el día', free_installments: 'cuotas sin interés', shipping_collect: 'colecta' };
 
 export async function enviarResumen({ cuenta, acum, resumen, fetcher = (...a) => globalThis.fetch(...a) }) {
