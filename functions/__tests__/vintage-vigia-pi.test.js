@@ -31,3 +31,20 @@ test('the first run only learns the existing infractions; a new IP one later bra
  assert.equal(mails.length,1);assert.ok(await brakeOn(query),'the brake stays on until released');
  await releaseBrake(query);assert.equal(await brakeOn(query),null);
 });
+
+test('image-rights reports (PPPI6) count as IP, and a new open BPP case brakes with its due date',async t=>{
+ assert.ok(isIp(inf('6','PPPI6','La publicación usa imágenes protegidas')));
+ assert.ok(isIp(inf('7','X','Infringe derechos de autor')));
+ const query=d1(t),mails=[];const send=async m=>{mails.push(m);return 'enviado';};
+ const existing=[inf('old1','FOTOS')];
+ await watch({query,getInfractions:pages(existing),getCases:async()=>[{id:'c1',current_status:'closed'}],send});
+ assert.equal(mails.length,0);
+ const r=await watch({query,getInfractions:pages(existing),getCases:async()=>[{id:'c1',current_status:'closed'},{id:'c2',current_status:'pending_seller_response',item_id:'MLU77',due_date:'2026-11-11'}],send});
+ assert.equal(r.nuevas_pi,1);assert.equal(r.denuncias_abiertas,1);assert.equal(mails.length,1);
+ assert.match(mails[0].texto,/Brand Protection Program/);assert.match(mails[0].texto,/2026-11-11/);
+ assert.ok(await brakeOn(query));
+ // Si la consulta de denuncias falla, no se frena por eso, pero se informa.
+ await releaseBrake(query);
+ const r2=await watch({query,getInfractions:pages(existing),getCases:async()=>{throw new Error('x');},send});
+ assert.equal(r2.denuncias_abiertas,null);assert.equal(await brakeOn(query),null);
+});
