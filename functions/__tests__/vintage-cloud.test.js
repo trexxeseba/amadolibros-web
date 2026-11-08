@@ -37,7 +37,7 @@ async function harness(t,{campaignValue,daily=[10,12]}={}){
  const calls=[],connection={version:1,endpoint:'https://www.amadolibros.com/operations/vintage-local',key:'b'.repeat(64),expires_at:Date.now()+86400000,seller_id:'2341378249',app_id:'4741021817925208',run_id:BULK_RUN,policy,policy_hash:await policyHash(policy),receipts:[{isbn:'1',state:'published'}]};
  const statuses=[...daily];
  const deps={
-  renewClient:()=>async action=>{calls.push('post:'+action);return action==='keepalive'?{refreshed:false,expires_at:Date.now()+5*3600000}:{};},
+  vigia:async()=>({nuevas_pi:0}),renewClient:()=>async action=>{calls.push('post:'+action);return action==='keepalive'?{refreshed:false,expires_at:Date.now()+5*3600000}:{};},
   renew:async({connection:file})=>{calls.push('renew');await fs.writeFile(file,JSON.stringify(connection));return {state:'renewed',source_date:'2026-11-05T03:00:00Z',rows:2};},
   inspect:async()=>({rows:[{isbn:'1',listArs:40000,weightKg:.5,stock:'3'},{isbn:'9',listArs:40000,weightKg:.5,stock:'3'}]}),
   sync:async({mode})=>{calls.push('sync:'+mode);return {mode,published:1};},
@@ -105,7 +105,7 @@ test('an authorization cut during the test is retried and resumes from the saved
  const h=await harness(t);
  const states=['auth_error','ready'];
  const r=await cloudRun({action:'prueba',directory:h.dir,campaign:campaign('pc','prueba'),env:{VINTAGE_RENEW_SECRET:'r'.repeat(40),SBS_EMAIL:'a@b.c',SBS_PASSWORD:'x'},query:async()=>[],deps:{
-  renewClient:()=>async a=>a==='keepalive'?{refreshed:false,expires_at:Date.now()+5*3600000}:{},
+  vigia:async()=>({nuevas_pi:0}),renewClient:()=>async a=>a==='keepalive'?{refreshed:false,expires_at:Date.now()+5*3600000}:{},
   renew:async({connection:file})=>{await fs.writeFile(file,JSON.stringify({version:1,endpoint:'https://www.amadolibros.com/operations/vintage-local',key:'b'.repeat(64),expires_at:Date.now()+86400000,seller_id:'2341378249',app_id:'4741021817925208',run_id:BULK_RUN,policy,receipts:[]}));return {state:'renewed'};},
   inspect:async()=>({rows:[]}),sync:async()=>({}),
   engine:async()=>({state:states.shift()}),
@@ -282,7 +282,7 @@ test('a run that crosses midnight counts its altas with the campaign total, not 
  const h=await harness(t,{campaignValue:campaign('nube','real')});
  const statuses=[{daily_created:7555,published_total:21359},{daily_created:120,published_total:21731}];
  const r=await cloudRun({action:'publicar',directory:h.dir,campaign:campaign('nube','real',{tope_diario:8000}),env:{VINTAGE_RENEW_SECRET:'r'.repeat(40),SBS_EMAIL:'a@b.c',SBS_PASSWORD:'x'},query:async()=>[],deps:{
-  renewClient:()=>async a=>a==='keepalive'?{refreshed:false,expires_at:Date.now()+5*3600000}:{},
+  vigia:async()=>({nuevas_pi:0}),renewClient:()=>async a=>a==='keepalive'?{refreshed:false,expires_at:Date.now()+5*3600000}:{},
   renew:async({connection:file})=>{await fs.writeFile(file,JSON.stringify({version:1,endpoint:'https://www.amadolibros.com/operations/vintage-local',key:'b'.repeat(64),expires_at:Date.now()+86400000,seller_id:'2341378249',app_id:'4741021817925208',run_id:BULK_RUN,policy,receipts:[]}));return {state:'renewed'};},
   inspect:async()=>({rows:[]}),sync:async()=>({}),engine:async()=>({state:'time_slice_done',published_total:21731}),
   broker:()=>async()=>statuses.shift(),
@@ -321,4 +321,14 @@ test('a risky title is dropped before any Mercado Libre call and is never prepar
  const result=await run({excel:'x',connection:f.connection,directory:f.dir,readWorkbook:f.readWorkbook,classifiers:2,classifyOnly:true,maxMs:60000,apiFactory:()=>api,brokerFactory:()=>async()=>({}),waitFor:ms=>new Promise(r=>setTimeout(r,Math.min(ms,5)))});
  assert.equal(result.classified.skipped_ip_risk,1);assert.equal(result.classified.validated,1);
  assert.ok(!touched.includes(isbnN(401)),'no ML call for the risky book');
+});
+
+test('with the IP brake on, or if the watcher could not read, publicar does not publish',async t=>{
+ for(const [vigia,brakeRow,expected] of [[async()=>({nuevas_pi:1}),{value:JSON.stringify({motivo:'infraccion_pi'}),at:1},'frenado_por_infraccion_pi'],[async()=>{throw Object.assign(new Error('x'),{code:'cloudflare_http_500'});},null,'vigia_sin_datos']]){
+  const h=await harness(t,{campaignValue:campaign('nube','real',{tope_diario:8000})});
+  const query=async sql=>/FROM ml_vintage_cloud_flags/.test(sql)&&brakeRow?[brakeRow]:[];
+  const engineCalls=[];
+  const r=await cloudRun({action:'publicar',directory:h.dir,campaign:campaign('nube','real',{tope_diario:8000}),env:{VINTAGE_RENEW_SECRET:'r'.repeat(40),SBS_EMAIL:'a@b.c',SBS_PASSWORD:'x'},query,deps:{vigia,renewClient:()=>async a=>a==='keepalive'?{refreshed:false,expires_at:Date.now()+5*3600000}:{},renew:async()=>{engineCalls.push('renew');return {};},engine:async()=>{engineCalls.push('engine');return {};}}});
+  assert.equal(r.estado,expected);assert.deepEqual(engineCalls,[]);
+ }
 });
