@@ -406,7 +406,11 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
    const items=await call(env,`/products/${productId}/items`);
    const list=Array.isArray(items.results)?items.results:Array.isArray(items)?items:[];
    for(const i of list)if(String(i.seller_id??'')!==sellerId&&(i.currency_id===undefined||i.currency_id==='UYU'))add(Number(i.price),i.item_id??i.id);
-  }catch(error){if(!candidates.length)throw error;}
+  }catch(error){
+   // 404 en /products/{id}/items: nadie vende esa ficha (mismo criterio que el panel de competencia).
+   const nobodySells=productNotFoundAsMissing&&error instanceof MercadoLibreError&&error.status===404;
+   if(!nobodySells&&!candidates.length)throw error;
+  }
   if(!candidates.length)return {price:null,at:now(),days:null};
   candidates.sort((x,y)=>x.price-y.price);
   for(const c of candidates.slice(0,MAX_RIVALS_CHECKED)){
