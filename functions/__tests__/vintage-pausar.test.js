@@ -88,3 +88,33 @@ test('la lista de eliminación tiene las 719 infectadas, sólo números MLU, sin
  assert.ok(ids.every(id=>/^MLU\d+$/.test(id)));
  assert.ok(!ids.some(id=>pausa.has(id)));
 });
+
+import {motivoPorFicha,motivoPorDescripcion,buscar} from '../../scripts/vintage-cloud/pausar-ebook.mjs';
+test('pausa preventiva: editoriales Hodder, Alma y Eli, y ebook o acceso digital; "digital" sola no alcanza',()=>{
+ assert.equal(motivoPorFicha({title:'Dieci B1',publisher:'ALMA EDIZIONI'}),'editorial');
+ assert.equal(motivoPorFicha({title:'Arriviamo! 3',publisher:'Eli'}),'editorial');
+ assert.equal(motivoPorFicha({title:'Digital Society',publisher:'Hodder Education'}),'editorial');
+ assert.equal(motivoPorFicha({title:'Libro + Ebook Interattivo',publisher:'X'}),'ebook_en_titulo');
+ assert.equal(motivoPorFicha({title:'Curso con e-book incluido',publisher:''}),'ebook_en_titulo');
+ assert.equal(motivoPorFicha({title:'Libro electrónico de cocina',publisher:''}),'ebook_en_titulo');
+ assert.equal(motivoPorFicha({title:'Acceso digital al material',publisher:''}),'ebook_en_titulo');
+ // No son motivo: "digital" a secas, editoriales de nombre parecido, y libros comunes.
+ assert.equal(motivoPorFicha({title:'Fotografía digital para todos',publisher:'Anaya'}),null);
+ assert.equal(motivoPorFicha({title:'Alma Mater',publisher:'Alma Books'}),null);
+ assert.equal(motivoPorFicha({title:'Eli y el mar',publisher:'Planeta'}),null);
+ assert.equal(motivoPorDescripcion('Incluye acceso digital por 12 meses'),'ebook_en_descripcion');
+ assert.equal(motivoPorDescripcion('Libro en papel, tapa blanda'),null);
+});
+test('pausa preventiva: busca en activas, cuenta una sola vez y lee la descripción sólo de las que no coincidieron',async()=>{
+ const items={MLU1:{id:'MLU1',title:'Dieci A1 Ebook',status:'active',attributes:[{id:'BOOK_PUBLISHER',value_name:'Alma Edizioni'}]},MLU2:{id:'MLU2',title:'Novela',status:'active',attributes:[]},MLU3:{id:'MLU3',title:'Otra',status:'active',attributes:[]}};
+ const desc={MLU2:{plain_text:'Con acceso digital'},MLU3:{plain_text:'Papel'}};
+ const readDescriptions=[];
+ const ml={get:async p=>{
+  if(p.includes('/items/search'))return p.includes('scroll_id')?{results:[]}:{results:Object.keys(items),scroll_id:'s'};
+  if(p.startsWith('/items?ids='))return p.split('ids=')[1].split('&')[0].split(',').map(id=>({code:200,body:items[id]}));
+  const m=p.match(/\/items\/(MLU\d+)\/description/);if(m){readDescriptions.push(m[1]);return desc[m[1]];}
+  throw Error('x');}};
+ const r=await buscar(ml,{log:()=>{}});
+ assert.deepEqual(r.coincidencias.map(h=>[h.id,h.motivo]).sort(),[['MLU1','editorial'],['MLU2','ebook_en_descripcion']]);
+ assert.deepEqual(readDescriptions.sort(),['MLU2','MLU3'],'no lee la descripción de la que ya coincidió');
+});
