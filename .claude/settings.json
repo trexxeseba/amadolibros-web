@@ -1,4 +1,13 @@
 {
+  "permissions": {
+    "allow": [
+      "mcp__Windsor_ai__get_data",
+      "mcp__Windsor_ai__get_fields",
+      "mcp__Windsor_ai__get_connectors",
+      "mcp__Windsor_ai__list_actions",
+      "mcp__Windsor_ai__get_options"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
