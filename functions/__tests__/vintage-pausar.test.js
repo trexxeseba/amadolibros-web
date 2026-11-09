@@ -81,3 +81,10 @@ test('eliminar: si no se deja pausar y sigue activa, queda marcada y no se cierr
  assert.equal(r.resultado,'sigue_activa');
  assert.deepEqual(ml.puts.map(([,b])=>b),[{status:'paused'}]);
 });
+
+test('la lista de eliminación tiene las 719 infectadas, sólo números MLU, sin repetidas y ninguna de la lista de pausa',async()=>{
+ const ids=await readList('scripts/vintage-cloud/eliminar-2026-11-09.txt'),pausa=new Set(await readList('scripts/vintage-cloud/pausar-2026-11-09.txt'));
+ assert.equal(ids.length,719);assert.equal(new Set(ids).size,719);
+ assert.ok(ids.every(id=>/^MLU\d+$/.test(id)));
+ assert.ok(!ids.some(id=>pausa.has(id)));
+});

@@ -100,6 +100,19 @@ export const MAX_ELIMINAR_FUERA=300;
 
 async function main(){
  const args=process.argv.slice(2),get=n=>args.includes(n)?args[args.indexOf(n)+1]:undefined;
+ if(args.includes('--eliminar-lista')){
+  // Eliminar la lista de infectadas (orden de Seba, 09/11/2026). Sólo con --real. Respaldo antes de cada una.
+  const aEliminar=await readList(get('--eliminar-lista'));
+  if(!args.includes('--real')){console.log(JSON.stringify({eliminar:'sin_real_no_se_hace_nada',total:aEliminar.length}));return;}
+  const archivoE=get('--respaldo')??'artifacts/vintage/respaldo-eliminar.jsonl';
+  await fs.mkdir(archivoE.replace(/[^/]*$/,'')||'.',{recursive:true});await fs.writeFile(archivoE,'');
+  const respaldoE=async item=>{await fs.appendFile(archivoE,JSON.stringify(item)+'\n');};
+  const mlE=crearCliente(fuenteTokenD1(CUENTAS.vintage),{concurrencia:2}),cuentaE={};let nextE=0;
+  await Promise.all(Array.from({length:2},async()=>{for(;;){const id=aEliminar[nextE++];if(!id)return;const r=await eliminarUna(mlE,id,{respaldo:respaldoE});cuentaE[r.resultado]=(cuentaE[r.resultado]??0)+1;console.log('ELIMINA\t'+[r.id,r.resultado,(r.titulo??'').replace(/[\t\n]/g,' '),r.isbn??'',r.estado_despues??r.error??''].join('\t'));}}));
+  console.log('=== ELIMINAR ===');console.log(JSON.stringify({total:aEliminar.length,resultados:cuentaE}));
+  if((cuentaE.sigue_activa??0)>0||(cuentaE.error??0)>0||(cuentaE.no_se_pudo_leer??0)>0)process.exitCode=1;
+  return;
+ }
  const ids=await readList(get('--lista'));
  const real=args.includes('--real');
  const archivo=get('--respaldo')??'artifacts/vintage/respaldo-pausa.jsonl';
