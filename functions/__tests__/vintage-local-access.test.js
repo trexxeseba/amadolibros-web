@@ -236,3 +236,11 @@ test('a reconciled create of another run is accepted without the exact price, qu
  assert.throws(()=>checkCreated({...item,status:'closed'},'9789502323060',null),/created_item_check_failed/);
  assert.doesNotThrow(()=>checkCreated({...item,available_quantity:1,status:'active'},'9789502323060',1450));
 });
+
+test('an external brake stops the engine before the next create',async t=>{
+ let creates=0;
+ const h=await engineHarness(t,{async create(){creates++;throw Error('must_not_create');}});
+ const result=await h.run({...h.options,target:1000,limitNew:5,stopCheckMs:0,shouldStop:async()=>true});
+ assert.equal(result.state,'stopped_brake');
+ assert.equal(creates,0,'nothing is created while the brake is on');
+});

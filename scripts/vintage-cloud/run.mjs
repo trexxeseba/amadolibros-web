@@ -140,7 +140,7 @@ async function cloudRunInner({action,directory,campaign,overrides={},env=process
   report.freno={altas_hoy:status.daily_created,tope_diario:settings.tope_diario,tanda:n};
   if(n===0)return {...report,estado:'tope_diario_alcanzado'};
   let result;
-  for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,limitNew:n,target:settings.target_total,raiseTargetTo:settings.target_total,intervalMs:settings.intervalo_ms,...CLOUD_ENGINE,classifiers:settings.clasificadores,blockedIsbns:await blockedIsbns(q),maxMs:settings.minutos*60000,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
+  for(let intento=1;intento<=3;intento++){result=await (deps.engine??runEngine)({excel,connection,directory,limitNew:n,target:settings.target_total,raiseTargetTo:settings.target_total,intervalMs:settings.intervalo_ms,...CLOUD_ENGINE,classifiers:settings.clasificadores,shouldStop:()=>brakeOn(dq).then(Boolean).catch(()=>true),blockedIsbns:await blockedIsbns(q),maxMs:settings.minutos*60000,onStatus:x=>console.log(x)});if(result.state!=='auth_error')break;report.reintentos_autorizacion=intento;}
   const after=await (deps.broker??makeBroker)(c)('status');
   // Con el total de la campaña y no con las altas del día: el contador del día vuelve a 0 a la
   // medianoche y una corrida que la cruza parecía no haber publicado nada.
