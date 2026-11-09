@@ -14,6 +14,10 @@ on:
       confirmar:
         description: 'Para pausar de verdad escribí PAUSAR'
         required: false
+      eliminar_lista:
+        description: 'ELIMINAR las 719 infectadas de scripts/vintage-cloud/eliminar-2026-11-09.txt (con real y confirmar=ELIMINAR). Irreversible; respaldo antes de cada una.'
+        type: boolean
+        default: false
       eliminar_fuera:
         description: 'Con real: las riesgosas activas que el barrido encuentra fuera de la lista se ELIMINAN (respaldo antes). Si son más de 300, sólo se pausan.'
         type: boolean
@@ -54,6 +58,11 @@ jobs:
           CONFIRMAR: ${{ inputs.confirmar }}
         shell: bash
         run: |
+          if [ "${{ inputs.eliminar_lista }}" = "true" ]; then
+            if [ "$REAL" != "true" ] || [ "$CONFIRMAR" != "ELIMINAR" ]; then echo "Para eliminar hay que tildar real y escribir ELIMINAR"; exit 1; fi
+            node scripts/vintage-cloud/pausar.mjs --eliminar-lista scripts/vintage-cloud/eliminar-2026-11-09.txt --real | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           ARGS=(--lista scripts/vintage-cloud/pausar-2026-11-09.txt)
           if [ "${{ inputs.barrido }}" = "true" ]; then ARGS+=(--barrido); fi
           if [ "$REAL" = "true" ]; then
@@ -67,5 +76,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vintage-respaldo-pausa
-          path: artifacts/vintage/respaldo-pausa.jsonl
+          path: |
+            artifacts/vintage/respaldo-pausa.jsonl
+            artifacts/vintage/respaldo-eliminar.jsonl
+          if-no-files-found: ignore
           retention-days: 90
