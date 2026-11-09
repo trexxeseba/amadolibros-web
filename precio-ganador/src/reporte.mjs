@@ -157,7 +157,7 @@ export function listaDemanda(filas) {
   })).sort((a, b) => (b.dias ?? 0) - (a.dias ?? 0));
 }
 
-export async function enviarListaDemanda({ cuenta, lista, fetcher = (...a) => globalThis.fetch(...a) }) {
+export async function enviarListaDemanda({ cuenta, lista, franja = '', fetcher = (...a) => globalThis.fetch(...a) }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return { status: 'sin_credenciales' };
   if (!lista.length) return { status: 'sin_casos' };
@@ -173,7 +173,7 @@ export async function enviarListaDemanda({ cuenta, lista, fetcher = (...a) => gl
   const texto = intro + '\n\n' + lista.map(x => `- ${frase(x)} ${x.permalink}`).join('\n');
   try {
     const res = await fetcher('https://api.resend.com/emails', {
-      method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `lista-demanda-${cuenta.clave}-${fechaMontevideo()}` },
+      method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `lista-demanda-${cuenta.clave}-${fechaMontevideo()}-${franja}` },
       body: JSON.stringify({ from, to, subject: `Seba, ${lista.length} ${lista.length === 1 ? 'libro queda oculto' : 'libros quedan ocultos'} detrás de vendedores que demoran días`, html, text: texto }),
       signal: AbortSignal.timeout(30000),
     });

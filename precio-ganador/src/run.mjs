@@ -7,7 +7,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { writeFileSync, mkdirSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
-import { CUENTAS, MAX_CAMBIOS_POR_CORRIDA, STOCK_DEMANDA_DEFAULT, UMBRAL_UYU, fechaMontevideo } from './config.mjs';
+import { CUENTAS, MAX_CAMBIOS_POR_CORRIDA, STOCK_DEMANDA_DEFAULT, UMBRAL_UYU, fechaMontevideo, horaMontevideo } from './config.mjs';
 import { fuenteTokenD1 } from './token.mjs';
 import { crearCliente } from './ml.mjs';
 import { idsActivos, detalle } from './publicaciones.mjs';
@@ -41,6 +41,7 @@ async function leerEstado(f, d) {
   catch { throw Object.assign(new Error('estado_corrupto'), { fatal: true }); }
 }
 
+const HORAS_LISTA_DEMANDA = [9, 13, 17, 21];
 const memoriaDe = e => Object.fromEntries(['ganando', 'perdio_en', 'perdio_fecha'].filter(k => e?.[k] !== undefined).map(k => [k, e[k]]));
 
 async function main() {
@@ -244,8 +245,9 @@ async function main() {
     await mkdir(join(dirEstado, 'diario'), { recursive: true });
     await writeFile(dia, JSON.stringify(acum, null, 2) + '\n');
     if (flag('correo-diario')) console.log('Correo:', JSON.stringify(await enviarResumen({ cuenta, acum, resumen })));
-    // Una vez por día (con el resumen de las 21:00): la lista para publicar fuera de catálogo.
-    if (flag('correo-diario') && cuenta.clave === 'libros') console.log('Lista a demanda:', JSON.stringify(await enviarListaDemanda({ cuenta, lista: listaDemanda(filas) })));
+    // Cada 4 horas (Seba, 09/11/2026): con las corridas de las 9, 13, 17 y 21 de Montevideo,
+    // la lista de las que quedan ocultas detrás de vendedores a demanda.
+    if (cuenta.clave === 'libros' && HORAS_LISTA_DEMANDA.includes(horaMontevideo(inicio))) console.log('Lista a demanda:', JSON.stringify(await enviarListaDemanda({ cuenta, lista: listaDemanda(filas), franja: horaMontevideo(inicio) })));
   } else if (flag('correo-diario')) {
     console.log('Correo:', JSON.stringify(await enviarResumen({ cuenta, acum: { corridas: [resumen.contadores] }, resumen })));
   }
