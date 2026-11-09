@@ -43,8 +43,9 @@ export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
   // Ejemplos de errores con el motivo que dio Mercado Libre (sin tokens ni datos personales).
   const ejemplosError = filas.filter(f => /^error/.test(f.d.accion)).slice(0, 10).map(f => ({ id: f.item.id, accion: f.d.accion, motivo: f.d.motivo ?? null, detalle: f.d.detalle ?? null }));
   // Por qué pierden las que compiten (precio, envío gratis, reputación o entrega).
+  const contraDemanda = filas.filter(f => f.perdida?.contra_demanda).length;
   const causasPerdida = filas.filter(f => f.perdida).reduce((a, f) => (a[f.perdida.causa] = (a[f.perdida.causa] ?? 0) + 1, a), {});
-  return { cuenta: cuenta.clave, umbral, causas_perdida: causasPerdida, ejemplos_error: ejemplosError, duracion_s: Math.round((Date.now() - inicio) / 1000), contadores, catalogo: { estados, publicaciones_con_alguna_sugerencia: filas.filter(f => f.comp?.oportunidades?.length).length, sugerencias, motivos, por_tipo: porTipo, errores_por_tipo: filas.filter(f => f.comp?.error).reduce((a, f) => (a[f.comp.error] = (a[f.comp.error] ?? 0) + 1, a), {}) }, errores, llamadas: stats.llamadas, por_status: stats.porStatus };
+  return { cuenta: cuenta.clave, umbral, causas_perdida: causasPerdida, pierden_contra_demanda: contraDemanda, ejemplos_error: ejemplosError, duracion_s: Math.round((Date.now() - inicio) / 1000), contadores, catalogo: { estados, publicaciones_con_alguna_sugerencia: filas.filter(f => f.comp?.oportunidades?.length).length, sugerencias, motivos, por_tipo: porTipo, errores_por_tipo: filas.filter(f => f.comp?.error).reduce((a, f) => (a[f.comp.error] = (a[f.comp.error] ?? 0) + 1, a), {}) }, errores, llamadas: stats.llamadas, por_status: stats.porStatus };
 }
 
 const ACCION = {
@@ -71,11 +72,16 @@ export function tablaMarkdown(filas, { cuenta, real, resumen }) {
   const conCausa = filas.filter(f => f.perdida);
   if (conCausa.length) {
     l.push('', '## Por qué pierden', '', `Nuestro nivel: ${conCausa.find(f => f.perdida.nuestro_nivel)?.perdida.nuestro_nivel ?? 'sin dato'}`, '', `Causas: ${Object.entries(resumen.causas_perdida ?? {}).map(([k, v]) => `${CAUSA[k] ?? k} ${v}`).join(' · ')}`, '',
-      '| Publicación | Mi precio | Más barato de otro vendedor | Ganador | Nivel del ganador | Envío gratis nuestro | ML marca que nos falta | Causa | Costo envío gratis | Palanca (todavía no se aplica) |', '|---|---:|---:|---:|---|---|---|---|---:|---|');
+      '| Publicación | Mi precio | Más barato de otro vendedor | Ganador | Nivel del ganador | Envío gratis nuestro | ML marca que nos falta | Causa | Días del ganador | Costo envío gratis | Palanca (todavía no se aplica) |', '|---|---:|---:|---:|---|---|---|---|---:|---:|---|');
     for (const f of conCausa) {
       const q = f.perdida;
-      l.push(`| ${f.item.id} ${esc(f.item.title?.slice(0, 40) ?? '')} | ${f.item.price} | ${q.mas_barato ?? 'nadie'} | ${q.ganador_precio ?? ''} | ${q.ganador_nivel ?? ''} | ${q.envio_gratis_propio === true ? 'sí' : q.envio_gratis_propio === false ? 'no' : ''} | ${(q.le_falta ?? []).map(b => FALTA[b] ?? b).join(', ')} | ${CAUSA[q.causa] ?? q.causa} | ${q.costo_envio_gratis ?? ''} | ${PALANCA[q.palanca] ?? q.palanca ?? ''} |`);
+      l.push(`| ${f.item.id} ${esc(f.item.title?.slice(0, 40) ?? '')} | ${f.item.price} | ${q.mas_barato ?? 'nadie'} | ${q.ganador_precio ?? ''} | ${q.ganador_nivel ?? ''} | ${q.envio_gratis_propio === true ? 'sí' : q.envio_gratis_propio === false ? 'no' : ''} | ${(q.le_falta ?? []).map(b => FALTA[b] ?? b).join(', ')} | ${CAUSA[q.causa] ?? q.causa} | ${q.ganador_dias ?? ''}${q.contra_demanda ? ' (a demanda)' : ''} | ${q.costo_envio_gratis ?? ''} | ${PALANCA[q.palanca] ?? q.palanca ?? ''} |`);
     }
+  }
+  const demanda = listaDemanda(filas);
+  if (demanda.length) {
+    l.push('', '## Pierden contra vendedores a demanda (más de 5 días): para publicar fuera de catálogo', '', '| Publicación | Mi precio | Precio del que gana | Días del que gana |', '|---|---:|---:|---:|');
+    for (const x of demanda) l.push(`| ${x.id} ${esc(x.titulo.slice(0, 50))} | ${x.precio} | ${x.ganador ?? ''} | ${x.dias} |`);
   }
   if (Object.keys(resumen.errores).length) l.push('', '## Errores', '', ...Object.entries(resumen.errores).map(([k, v]) => `- ${k}: ${v}`));
   return l.join('\n') + '\n';
@@ -139,4 +145,35 @@ export function informeRegla(filas, { cuenta, maxCambios, reglas }) {
     `## Ya bajadas por el sistema (${enEstado.length}), según el ganador de hoy`, '', '| Ganador | Publicaciones |', '|---|---:|', ...Object.entries(porEntrega).map(([k, v]) => `| ${k} | ${v} |`), '',
     `De ellas, contra ganador de entrega inmediata: ${enEstado.filter(f => f.comp?.entrega_ganador === 'inmediato').length}; volverían al original ${enEstado.filter(f => f.comp?.entrega_ganador === 'inmediato' && f.d.accion === 'restaurar').length} y subirían ${enEstado.filter(f => f.comp?.entrega_ganador === 'inmediato' && f.d.accion === 'subir').length}.`];
   return l.join('\n') + '\n';
+}
+
+// Lista diaria para Gaby y Lola (adm@amadolibros.com.uy): publicaciones de catálogo que
+// pierden contra un vendedor a demanda (más de 5 días). La idea es armar una publicación
+// fuera de catálogo con entrega inmediata: el comprador apurado la elige aunque cueste más.
+export function listaDemanda(filas) {
+  return filas.filter(f => f.perdida?.contra_demanda).map(f => ({
+    id: f.item.id, titulo: String(f.item.title ?? '').slice(0, 90), permalink: f.item.permalink ?? `https://articulo.mercadolibre.com.uy/${String(f.item.id).replace('MLU', 'MLU-')}`,
+    precio: f.item.price, ganador: f.perdida.ganador_precio ?? f.comp?.ganador ?? null, dias: f.perdida.ganador_dias, competidores: f.perdida.competidores ?? null,
+  })).sort((a, b) => (b.dias ?? 0) - (a.dias ?? 0));
+}
+
+export async function enviarListaDemanda({ cuenta, lista, fetcher = (...a) => globalThis.fetch(...a) }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return { status: 'sin_credenciales' };
+  if (!lista.length) return { status: 'sin_casos' };
+  const to = (process.env.LISTA_DEMANDA_EMAIL_TO || 'adm@amadolibros.com.uy,undiaes@gmail.com').split(',').map(s => s.trim()).filter(Boolean);
+  const from = process.env.REPORT_EMAIL_FROM || 'Amado Libros <web@notificaciones.amadolibros.com>';
+  const escH = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const filasHtml = lista.map(x => `<tr><td><a href="${escH(x.permalink)}">${escH(x.titulo)}</a><br><small>${escH(x.id)}</small></td><td align="right">$ ${escH(x.precio)}</td><td align="right">$ ${escH(x.ganador ?? '—')}</td><td align="right">${escH(x.dias)} días</td></tr>`).join('');
+  const intro = `Estas publicaciones de ${cuenta.nombre} pierden la ficha de catálogo contra un vendedor que tarda más de 5 días en entregar. Nosotros tenemos el libro para entrega inmediata: conviene armar una publicación fuera de catálogo que lo destaque, así el comprador que lo quiere ya nos encuentra.`;
+  const html = `<p>${escH(intro)}</p><table cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse;font-family:sans-serif;font-size:14px"><tr><th align="left">Libro</th><th>Nuestro precio</th><th>Precio del que gana</th><th>Entrega del que gana</th></tr>${filasHtml}</table>`;
+  const texto = intro + '\n\n' + lista.map(x => `- ${x.titulo} (${x.id}): nuestro $ ${x.precio}, gana $ ${x.ganador ?? '—'} con entrega en ${x.dias} días. ${x.permalink}`).join('\n');
+  try {
+    const res = await fetcher('https://api.resend.com/emails', {
+      method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `lista-demanda-${cuenta.clave}-${fechaMontevideo()}` },
+      body: JSON.stringify({ from, to, subject: `Para publicar fuera de catálogo: ${lista.length} ${lista.length === 1 ? 'libro pierde' : 'libros pierden'} contra vendedores a demanda`, html, text: texto }),
+      signal: AbortSignal.timeout(30000),
+    });
+    return res.ok ? { status: 'enviado', casos: lista.length } : { status: 'error', http: res.status };
+  } catch { return { status: 'error_transporte' }; }
 }

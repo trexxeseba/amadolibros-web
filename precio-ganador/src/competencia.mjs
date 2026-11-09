@@ -30,6 +30,8 @@ export async function entregaDe(ml, itemId, cache) {
   return r;
 }
 const entero = n => Math.floor(Number(n) + 1e-9);
+// Más de estos días de entrega = vendedor a demanda (Seba, 08/11/2026: "más de unos 5 días").
+export const DIAS_DEMANDA = 5;
 
 export const MUESTRAS = { price_to_win: [], suggestions: [], products_items: [], seller_promotions: [], sale_price: [] };
 const muestra = (k, v) => { if (MUESTRAS[k].length < 3) MUESTRAS[k].push(v); };
@@ -161,6 +163,15 @@ export async function porQuePierde(ml, item, comp, { sellerId, cacheVendedores =
     }
     nivelGanador = cacheVendedores.get(ganador.seller_id);
   }
+  // En cuántos días entrega el ganador (Seba, 09/11/2026: contra vendedores a demanda
+  // conviene otra publicación fuera de catálogo, con entrega inmediata, en vez de bajar).
+  let ganadorDias = null;
+  if (comp?.ganadorItem) {
+    try {
+      const env = readShipping(await ml.get(`/items/${comp.ganadorItem}/shipping_options?city_to=${SHIPPING_CITY}`));
+      if (env && !env.sin_envio && env.plazo_dias !== null) ganadorDias = env.plazo_dias;
+    } catch (e) { if (e?.status === 429) throw e; }
+  }
   const boosts = comp?.boosts ?? {};
   // Nuestro nivel de MercadoLíder (una lectura por corrida).
   if (!cacheVendedores.has('yo')) {
@@ -187,7 +198,7 @@ export async function porQuePierde(ml, item, comp, { sellerId, cacheVendedores =
     palanca = 'envio_gratis';
   } else if (causa === 'precio' || causa === 'reputacion_entrega') palanca = 'bajar';
   return {
-    causa, palanca, costo_envio_gratis: costoEnvioGratis, nuestro_nivel: cacheVendedores.get('yo') ?? null, competidores: otros.length,
+    causa, palanca, costo_envio_gratis: costoEnvioGratis, ganador_dias: ganadorDias, contra_demanda: ganadorDias !== null && ganadorDias > DIAS_DEMANDA, nuestro_nivel: cacheVendedores.get('yo') ?? null, competidores: otros.length,
     mas_barato: masBarato?.price ?? null, mas_barato_item: masBarato?.item_id ?? null,
     ganador_precio: ganador?.price ?? null, ganador_nivel: nivelGanador,
     envio_gratis_propio: boosts.free_shipping === 'boosted' ? true : boosts.free_shipping === 'opportunity' ? false : null,

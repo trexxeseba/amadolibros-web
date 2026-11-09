@@ -45,3 +45,15 @@ test('palanca: si perdemos por envío gratis, envío gratis siempre (Seba 08/11)
   const p = await porQuePierde(conCosto(25), item(651), { ganadorItem: 'MLU2', ganador: 600, boosts: {} }, { sellerId: YO });
   assert.equal(p.palanca, 'bajar');   // no hay oportunidad de envío gratis: se baja como siempre
 });
+test('días del ganador: más de 5 = a demanda (para publicar fuera de catálogo)', async () => {
+  const conPlazo = horas => ({ async get(p) {
+    if (p.startsWith('/products/')) return { results: [{ item_id: 'MLU2', price: 900, seller_id: 5 }], paging: { total: 1 } };
+    if (p.includes('/shipping_options?')) return { options: [{ display: 'recommended', estimated_delivery_time: { schedule: horas, unit: 'hour' } }] };
+    return { seller_reputation: { power_seller_status: 'gold' } };
+  } });
+  const comp = { ganadorItem: 'MLU2', ganador: 850, boosts: {} };
+  const lento = await porQuePierde(conPlazo(480), item(1000), comp, { sellerId: YO });
+  assert.deepEqual([lento.ganador_dias, lento.contra_demanda], [20, true]);
+  const rapido = await porQuePierde(conPlazo(48), item(1000), comp, { sellerId: YO });
+  assert.deepEqual([rapido.ganador_dias, rapido.contra_demanda], [2, false]);
+});

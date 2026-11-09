@@ -13,7 +13,7 @@ import { crearCliente } from './ml.mjs';
 import { idsActivos, detalle } from './publicaciones.mjs';
 import { competencia, porQuePierde, promocionActiva, MUESTRAS } from './competencia.mjs';
 import { decidir, CAMBIA } from './decision.mjs';
-import { resumir, tablaMarkdown, enviarResumen, informeRegla } from './reporte.mjs';
+import { resumir, tablaMarkdown, enviarResumen, informeRegla, listaDemanda, enviarListaDemanda } from './reporte.mjs';
 import { cargarPisosVintage } from './costos-vintage.mjs';
 
 const args = process.argv.slice(2);
@@ -244,6 +244,8 @@ async function main() {
     await mkdir(join(dirEstado, 'diario'), { recursive: true });
     await writeFile(dia, JSON.stringify(acum, null, 2) + '\n');
     if (flag('correo-diario')) console.log('Correo:', JSON.stringify(await enviarResumen({ cuenta, acum, resumen })));
+    // Una vez por día (con el resumen de las 21:00): la lista para publicar fuera de catálogo.
+    if (flag('correo-diario') && cuenta.clave === 'libros') console.log('Lista a demanda:', JSON.stringify(await enviarListaDemanda({ cuenta, lista: listaDemanda(filas) })));
   } else if (flag('correo-diario')) {
     console.log('Correo:', JSON.stringify(await enviarResumen({ cuenta, acum: { corridas: [resumen.contadores] }, resumen })));
   }
