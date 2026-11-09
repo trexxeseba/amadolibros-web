@@ -1,0 +1,39 @@
+name: Vintage vigía de propiedad intelectual
+
+# Mira las infracciones de Amado Vintage (seller 2341378249) cada 10 minutos y, si hay una nueva de
+# propiedad intelectual, pausa la denunciada y las parecidas, pone el freno al publicador y avisa por
+# mail. Sólo lee de Mercado Libre (salvo pausar). Nunca Amado Libros. Código: scripts/vintage-cloud/vigia.mjs.
+# El Worker de Cloudflare lo lanza cada 10 minutos (el cron de GitHub se atrasa y queda de respaldo).
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: vintage-vigia
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  vigilar:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vigilar infracciones
+        run: node scripts/vintage-cloud/vigia.mjs
