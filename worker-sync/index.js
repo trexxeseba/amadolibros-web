@@ -1,5 +1,5 @@
 import { dispararPrecioGanador, CRONS_PRECIO_GANADOR } from './precio-ganador-trigger.js';
-import { dispararVintageNube, CRON_VINTAGE_NUBE } from './vintage-nube-trigger.js';
+import { dispararVintageNube, dispararVintageVigia, CRON_VINTAGE_NUBE, CRON_VINTAGE_VIGIA } from './vintage-nube-trigger.js';
 import { IMAGE_SOURCE_POLICY_VERSION } from '../functions/_shared/image-source-policy.js';
 /**
  * worker-sync/index.js
@@ -173,6 +173,12 @@ export default {
     if (event?.cron === CRON_VINTAGE_NUBE) {
       ctx.waitUntil(dispararVintageNube(env).then(result => {
         console.log('[vintage nube]', JSON.stringify(result));
+      }));
+      return;
+    }
+    if (event?.cron === CRON_VINTAGE_VIGIA) {
+      ctx.waitUntil(dispararVintageVigia(env).then(result => {
+        console.log('[vintage vigia]', JSON.stringify(result));
       }));
       return;
     }

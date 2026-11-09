@@ -66,7 +66,7 @@ export async function inspectWorkbook(file){
  const bytes=await fs.readFile(file),input=readFullStock(bytes);
  return {...input,source_sha256:await sha256('vintage-bulk-positive-v1:'+await sha256(bytes))};
 }
-export async function run({excel,connection,directory,target=1000,raiseTargetTo=0,intervalMs=2000,requestTimeoutMs=60000,statusEvery=1,keepIndexDays=0,classifiers=0,classifyOnly=false,maxValidated=300,trustPreparedMs=0,deferPictures=false,productNotFoundAsMissing=false,requeueReviewCodes=[],blockedIsbns=null,catalogOnly=false,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
+export async function run({excel,connection,directory,target=1000,raiseTargetTo=0,intervalMs=2000,requestTimeoutMs=60000,statusEvery=1,keepIndexDays=0,classifiers=0,classifyOnly=false,maxValidated=300,trustPreparedMs=0,deferPictures=false,productNotFoundAsMissing=false,requeueReviewCodes=[],blockedIsbns=null,catalogOnly=false,shouldStop=null,stopCheckMs=15000,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
  if(!Number.isInteger(target)||target<5||target>MAX_TARGET_TOTAL||!Number.isInteger(validateOnly)||validateOnly<0||validateOnly>5)throw new Error('invalid_local_limits');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
  if(await policyHash(policy)!==c.policy_hash)throw new Error('connection_policy_changed');
@@ -74,7 +74,7 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
  if(!stockIsFresh(input.source_date,Date.now(),VINTAGE_STOCK_MAX_HOURS)||input.source_sha256!==c.source_sha256||Date.parse(input.source_date)!==Date.parse(c.source_date))throw new Error('workbook_does_not_match_current_approved_stock');
  await fs.mkdir(directory,{recursive:true});
  const db=openDatabase(path.join(directory,validateOnly?'validation.sqlite':'publisher.sqlite')),broker=brokerFactory(c),env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id,ML_PUBLISHER_MODE:'enabled',ML_PUBLISH_QUEUE_ENABLED:'false'};
- let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false,capHit=false,sliceDone=false;
+ let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false,capHit=false,sliceDone=false,brakeStop=false;
  const limited=createVintageBulkFetch({intervalMs,cooldownFloorMs:intervalMs<2000?15000:120000,parallel:classifiers>0,cacheTtlMs:classifiers>0?7*86400000:1800000}),rateLog=path.join(directory,'rate-limit-events.jsonl');let listingQuotaHit=false;
  // Records which endpoint got a real 429 (no ids or tokens) and notices the listing-quota refusal.
  const watched=async(url,options)=>{
@@ -258,12 +258,14 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
    return {state:classifyAuthError?'auth_error':'classified',classified:classifyStats,counts,minutes:Math.round((Date.now()-started)/600)/100,published_total:5+await s.publishedCount(BULK_RUN)};
   }
   const start=5+await s.publishedCount(BULK_RUN);let batchStart=start;
-  let remoteCache=null,reservationsAtStatus=0,ticks=0;
+  let remoteCache=null,reservationsAtStatus=0,ticks=0,lastStopCheck=0;
   // Turno de publicación: con maxMs el motor cede el tiempo restante a la corrección de
   // precios de lo ya publicado (reparto 70/30 del día, lo fija el autorun).
   const turnStarted=Date.now();
   for(;;){
    if(maxMs&&Date.now()-turnStarted>=maxMs){sliceDone=true;break;}
+   // Freno externo (vigía de propiedad intelectual): se consulta cada stopCheckMs, no sólo al arrancar.
+   if(shouldStop&&Date.now()-lastStopCheck>=stopCheckMs){lastStopCheck=Date.now();if(await shouldStop()){brakeStop=true;break;}}
    // El estado del servidor (altas del día, total) se pide cada statusEvery vueltas; entre medio se
    // suman las reservas propias, así el tope diario se respeta igual.
    if(!remoteCache||ticks%statusEvery===0){remoteCache=await broker('status');reservationsAtStatus=reservationsThisProcess;}
@@ -282,7 +284,7 @@ export async function run({excel,connection,directory,target=1000,raiseTargetTo=
   }
   stopClassify=true;if(pool)await pool;
   if(validateOnly)await fs.writeFile(path.join(directory,'items.preview.json'),JSON.stringify(await s.preview(BULK_RUN),null,2));
-  const final=failedReadback?'stopped_item_readback_failed':listingQuotaHit?'stopped_listing_quota':capHit?'daily_cap_reached':sliceDone?'time_slice_done':(await s.run(BULK_RUN)).state;
+  const final=brakeStop?'stopped_brake':failedReadback?'stopped_item_readback_failed':listingQuotaHit?'stopped_listing_quota':capHit?'daily_cap_reached':sliceDone?'time_slice_done':(await s.run(BULK_RUN)).state;
   if(sliceDone)await fs.writeFile(path.join(directory,'status.json'),JSON.stringify({at:new Date().toISOString(),seller_id:SELLER,state:final,published_total:5+await s.publishedCount(BULK_RUN)},null,2));
   return {state:final,published_total:5+await s.publishedCount(BULK_RUN),...(classifiers>0?{classified:classifyStats}:{})};
  }finally{if(stopPool)await stopPool();db.close();}
