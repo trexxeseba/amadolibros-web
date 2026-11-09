@@ -14,6 +14,10 @@ on:
       confirmar:
         description: 'Para pausar de verdad escribí PAUSAR'
         required: false
+      eliminar_fuera:
+        description: 'Con real: las riesgosas activas que el barrido encuentra fuera de la lista se ELIMINAN (respaldo antes). Si son más de 300, sólo se pausan.'
+        type: boolean
+        default: false
       barrido:
         description: 'Antes de pausar, revisar todas las activas de la cuenta y listar las riesgosas que no están en la lista (p. ej. gemelas de catálogo). Tarda ~15 min.'
         type: boolean
@@ -56,6 +60,7 @@ jobs:
             if [ "$CONFIRMAR" != "PAUSAR" ]; then echo "Para pausar de verdad hay que escribir PAUSAR"; exit 1; fi
             ARGS+=(--real)
           fi
+          if [ "${{ inputs.eliminar_fuera }}" = "true" ]; then ARGS+=(--eliminar-fuera); fi
           node scripts/vintage-cloud/pausar.mjs "${ARGS[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Respaldo
         if: always() && inputs.real

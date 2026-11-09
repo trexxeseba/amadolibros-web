@@ -73,6 +73,31 @@ export async function run({ids,ml,real,respaldo,log=console.log,concurrency=2}){
  return {total:ids.length,real,resultados:count,sin_resolver:pendientes};
 }
 
+// Eliminar una publicación fuera de la lista (decisión de Seba, 09/11/2026: las "infectadas" que el
+// barrido encuentra se eliminan, no se pausan). Respalda el JSON completo, la pausa, la cierra y la
+// borra; verifica el estado final. Si Mercado Libre no deja borrarla (ventas pendientes, por ejemplo)
+// queda cerrada, que ya es inactiva para siempre.
+export async function eliminarUna(ml,id,{respaldo=async()=>{}}={}){
+ let item;
+ try{item=await ml.get(`/items/${id}`);}catch(e){return {id,resultado:'no_se_pudo_leer',error:e.code??String(e)};}
+ const base={id,titulo:item?.title??'',isbn:isbnOf(item),estado_antes:item?.status??null};
+ if(String(item?.seller_id)!==SELLER)return {...base,resultado:'otra_cuenta_no_se_toca'};
+ await respaldo({respaldado_el:new Date().toISOString(),...item});
+ try{
+  if(item.status==='active')await ml.put(`/items/${id}`,{status:'paused'});
+  const pausada=await ml.get(`/items/${id}`);
+  if(pausada?.status==='active')return {...base,resultado:'sigue_activa'};
+  if(pausada?.status!=='closed')await ml.put(`/items/${id}`,{status:'closed'});
+  let borrada=false;
+  try{await ml.put(`/items/${id}`,{deleted:'true'});borrada=true;}catch{borrada=false;}
+  const fin=await ml.get(`/items/${id}`).catch(()=>null);
+  const estado=fin?.status??'no_se_puede_leer';
+  if(estado==='active')return {...base,resultado:'sigue_activa',estado_despues:estado};
+  return {...base,resultado:borrada?'eliminada':'cerrada_no_borrada',estado_despues:estado};
+ }catch(e){return {...base,resultado:'error',error:e.code??String(e),status:e.status??null};}
+}
+export const MAX_ELIMINAR_FUERA=300;
+
 async function main(){
  const args=process.argv.slice(2),get=n=>args.includes(n)?args[args.indexOf(n)+1]:undefined;
  const ids=await readList(get('--lista'));
@@ -85,6 +110,19 @@ async function main(){
  let barrido=null;
  if(args.includes('--barrido')){barrido=await sweepActive(ml,new Set(ids));console.log('=== BARRIDO ===');console.log(JSON.stringify({...barrido,riesgosas_fuera_de_lista:barrido.riesgosas_fuera_de_lista.slice(0,200)}));}
  const summary=await run({ids,ml,real,respaldo});
+ // Las riesgosas activas fuera de la lista: con --eliminar-fuera y --real se eliminan (hasta el tope;
+ // si son más, algo raro pasa con el filtro y sólo se pausan).
+ if(real&&barrido&&args.includes('--eliminar-fuera')){
+  const fuera=barrido.riesgosas_fuera_de_lista,eliminar=fuera.length<=MAX_ELIMINAR_FUERA,cuenta={};
+  if(!eliminar)console.log('FUERA_MUCHAS\t'+fuera.length+'\tsólo se pausan');
+  for(const f of fuera){
+   const r=eliminar?await eliminarUna(ml,f.id,{respaldo}):await processOne(ml,f.id,{real:true,respaldo});
+   cuenta[r.resultado]=(cuenta[r.resultado]??0)+1;
+   console.log((eliminar?'ELIMINA':'PAUSA_FUERA')+'\t'+[r.id,r.resultado,(r.titulo??'').replace(/[\t\n]/g,' '),r.isbn??'',r.estado_despues??r.error??''].join('\t'));
+  }
+  console.log('=== FUERA_DE_LISTA ===');console.log(JSON.stringify({total:fuera.length,accion:eliminar?'eliminar':'pausar',resultados:cuenta}));
+  if((cuenta.sigue_activa??0)>0)process.exitCode=1;
+ }
  console.log('=== PAUSA ===');console.log(JSON.stringify({...summary,fuera_de_lista:barrido?barrido.riesgosas_fuera_de_lista.length:null}));
  if(real&&summary.sin_resolver.length)process.exitCode=1;
 }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {processOne,run,readList} from '../../scripts/vintage-cloud/pausar.mjs';
+import {processOne,run,readList,eliminarUna} from '../../scripts/vintage-cloud/pausar.mjs';
 
 function fakeMl(items,{stubborn=[]}={}){
  const puts=[];
@@ -61,4 +61,23 @@ test('el barrido previo encuentra riesgosas activas fuera de la lista (p. ej. la
  assert.equal(r.activas_revisadas,5);
  assert.deepEqual(r.riesgosas_fuera_de_lista.map(x=>x.id).sort(),['MLU1','MLU5']);
  assert.ok(lines.some(l=>l.startsWith('FUERA_DE_LISTA\tMLU1\tebook\tcatalogo\tMLU555')));
+});
+
+test('eliminar una de las "infectadas": respalda, pausa, cierra, borra y nunca toca otra cuenta',async()=>{
+ const ml=fakeMl({MLU1:vintage('MLU1',{catalog_listing:true}),MLU2:vintage('MLU2',{seller_id:440298103})});
+ const saved=[];
+ const r=await eliminarUna(ml,'MLU1',{respaldo:async i=>saved.push(i)});
+ assert.equal(r.resultado,'eliminada');
+ assert.deepEqual(ml.puts.map(([,b])=>b),[{status:'paused'},{status:'closed'},{deleted:'true'}]);
+ assert.equal(saved.length,1);assert.equal(saved[0].id,'MLU1');
+ const o=await eliminarUna(ml,'MLU2',{respaldo:async i=>saved.push(i)});
+ assert.equal(o.resultado,'otra_cuenta_no_se_toca');assert.equal(saved.length,1);
+ assert.ok(!ml.puts.some(([id])=>id==='MLU2'));
+});
+
+test('eliminar: si no se deja pausar y sigue activa, queda marcada y no se cierra ni se borra',async()=>{
+ const ml=fakeMl({MLU1:vintage('MLU1')},{stubborn:['MLU1']});
+ const r=await eliminarUna(ml,'MLU1');
+ assert.equal(r.resultado,'sigue_activa');
+ assert.deepEqual(ml.puts.map(([,b])=>b),[{status:'paused'}]);
 });
