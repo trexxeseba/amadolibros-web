@@ -14,6 +14,10 @@ on:
       confirmar:
         description: 'Para pausar de verdad escribí PAUSAR'
         required: false
+      ebook:
+        description: 'Pausa preventiva: activas de Hodder, Alma y Eli Edizioni, o con ebook / e-book / libro electrónico / acceso digital en título o descripción. Sin real sólo cuenta y lista. Con real: confirmar=PAUSAR.'
+        type: boolean
+        default: false
       eliminar_lista:
         description: 'ELIMINAR las 719 infectadas de scripts/vintage-cloud/eliminar-2026-11-09.txt (con real y confirmar=ELIMINAR). Irreversible; respaldo antes de cada una.'
         type: boolean
@@ -58,6 +62,15 @@ jobs:
           CONFIRMAR: ${{ inputs.confirmar }}
         shell: bash
         run: |
+          if [ "${{ inputs.ebook }}" = "true" ]; then
+            EARGS=()
+            if [ "$REAL" = "true" ]; then
+              if [ "$CONFIRMAR" != "PAUSAR" ]; then echo "Para pausar de verdad hay que escribir PAUSAR"; exit 1; fi
+              EARGS+=(--real)
+            fi
+            node scripts/vintage-cloud/pausar-ebook.mjs "${EARGS[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           if [ "${{ inputs.eliminar_lista }}" = "true" ]; then
             if [ "$REAL" != "true" ] || [ "$CONFIRMAR" != "ELIMINAR" ]; then echo "Para eliminar hay que tildar real y escribir ELIMINAR"; exit 1; fi
             node scripts/vintage-cloud/pausar.mjs --eliminar-lista scripts/vintage-cloud/eliminar-2026-11-09.txt --real | tee -a "$GITHUB_STEP_SUMMARY"
@@ -79,5 +92,6 @@ jobs:
           path: |
             artifacts/vintage/respaldo-pausa.jsonl
             artifacts/vintage/respaldo-eliminar.jsonl
+            artifacts/vintage/respaldo-ebook.jsonl
           if-no-files-found: ignore
           retention-days: 90
