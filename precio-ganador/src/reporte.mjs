@@ -164,14 +164,17 @@ export async function enviarListaDemanda({ cuenta, lista, fetcher = (...a) => gl
   const to = (process.env.LISTA_DEMANDA_EMAIL_TO || 'adm@amadolibros.com.uy,undiaes@gmail.com').split(',').map(s => s.trim()).filter(Boolean);
   const from = process.env.REPORT_EMAIL_FROM || 'Amado Libros <web@notificaciones.amadolibros.com>';
   const escH = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const filasHtml = lista.map(x => `<tr><td><a href="${escH(x.permalink)}">${escH(x.titulo)}</a><br><small>${escH(x.id)}</small></td><td align="right">$ ${escH(x.precio)}</td><td align="right">$ ${escH(x.ganador ?? '—')}</td><td align="right">${escH(x.dias)} días</td></tr>`).join('');
-  const intro = `Estas publicaciones de ${cuenta.nombre} pierden la ficha de catálogo contra un vendedor que tarda más de 5 días en entregar. Nosotros tenemos el libro para entrega inmediata: conviene armar una publicación fuera de catálogo que lo destaque, así el comprador que lo quiere ya nos encuentra.`;
-  const html = `<p>${escH(intro)}</p><table cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse;font-family:sans-serif;font-size:14px"><tr><th align="left">Libro</th><th>Nuestro precio</th><th>Precio del que gana</th><th>Entrega del que gana</th></tr>${filasHtml}</table>`;
-  const texto = intro + '\n\n' + lista.map(x => `- ${x.titulo} (${x.id}): nuestro $ ${x.precio}, gana $ ${x.ganador ?? '—'} con entrega en ${x.dias} días. ${x.permalink}`).join('\n');
+  // Una línea por libro, en el tono que pidió Seba (09/11/2026).
+  const frase = x => x.ganador != null && x.ganador < x.precio
+    ? `"${x.titulo}" queda oculta detrás de otra publicación de catálogo que está más barata ($ ${x.ganador}, la nuestra $ ${x.precio}) pero demora ${x.dias} días.`
+    : `"${x.titulo}" queda oculta detrás de otra publicación de catálogo que demora ${x.dias} días (la nuestra $ ${x.precio}).`;
+  const intro = 'Seba, estas publicaciones las tenemos para entrega inmediata, pero en la ficha de catálogo gana otro vendedor más barato que tarda días en entregar. Conviene armar una publicación fuera de catálogo que destaque la entrega inmediata.';
+  const html = `<p>${escH(intro)}</p><ul style="font-family:sans-serif;font-size:14px">${lista.map(x => `<li style="margin-bottom:8px">${escH(frase(x))} <a href="${escH(x.permalink)}">Ver publicación</a></li>`).join('')}</ul>`;
+  const texto = intro + '\n\n' + lista.map(x => `- ${frase(x)} ${x.permalink}`).join('\n');
   try {
     const res = await fetcher('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `lista-demanda-${cuenta.clave}-${fechaMontevideo()}` },
-      body: JSON.stringify({ from, to, subject: `Para publicar fuera de catálogo: ${lista.length} ${lista.length === 1 ? 'libro pierde' : 'libros pierden'} contra vendedores a demanda`, html, text: texto }),
+      body: JSON.stringify({ from, to, subject: `Seba, ${lista.length} ${lista.length === 1 ? 'libro queda oculto' : 'libros quedan ocultos'} detrás de vendedores que demoran días`, html, text: texto }),
       signal: AbortSignal.timeout(30000),
     });
     return res.ok ? { status: 'enviado', casos: lista.length } : { status: 'error', http: res.status };

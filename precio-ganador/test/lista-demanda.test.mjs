@@ -17,7 +17,8 @@ test('el mail va a adm@amadolibros.com.uy; sin casos no se manda', async () => {
   const r = await enviarListaDemanda({ cuenta: { clave: 'libros', nombre: 'Amado Libros' }, lista: listaDemanda([fila('MLU3', 20, true)]), fetcher });
   assert.equal(r.status, 'enviado');
   assert.ok(body.to.includes('adm@amadolibros.com.uy'));
-  assert.match(body.subject, /fuera de catálogo/);
+  assert.match(body.subject, /^Seba, 1 libro queda oculto/);
+  assert.match(body.text, /"Libro MLU3" queda oculta detrás de otra publicación de catálogo que está más barata \(\$ 850, la nuestra \$ 1000\) pero demora 20 días\./);
   assert.doesNotMatch(body.html + body.text, /únicamente|sólo /);
   delete process.env.RESEND_API_KEY;
 });
