@@ -61,6 +61,9 @@ async function main(){
   infractions.push(...list);
   if(list.length<10)break;
  }
+ // Denuncias del programa de protección de propiedad intelectual (PPPI / Brand Protection): casos abiertos y cerrados.
+ let casos=null;
+ try{casos=await ml.get('/moderations/pppi/cases');console.log('=== PPPI ===');console.log(JSON.stringify(casos).slice(0,8000));}catch(e){console.log(JSON.stringify({pppi:'error',error:e.code??String(e),status:e.status??null}));}
  const count=(rows,fn)=>rows.reduce((m,x)=>{const k=String(fn(x));m[k]=(m[k]??0)+1;return m;},{});
  const flat=infractions.map(i=>flatten(i));
  const porCampo={};
@@ -104,7 +107,7 @@ async function main(){
   for(const r of risky)console.log('AUD\t'+[r.id,r.grupo,r.campaña?'campaña':'otra_linea',r.catalogo?'catalogo':'tradicional',r.status,String(r.title??'').replace(/[\t\n]/g,' '),r.demanda?'a_demanda':'stock',r.dias??'',r.stock??'',r.vendidos??'',r.precio??''].join('\t'));
  }
  await fs.mkdir(out,{recursive:true});
- await fs.writeFile(path.join(out,'moderadas.json'),JSON.stringify({cuentas,resumen,infracciones:infractions,publicaciones:rows,auditoria},null,2));
+ await fs.writeFile(path.join(out,'moderadas.json'),JSON.stringify({cuentas,resumen,infracciones:infractions,publicaciones:rows,auditoria,casos_pppi:casos},null,2));
  console.log('=== MODERADAS ===');
  console.log(JSON.stringify({cuentas,resumen,muestra:rows.slice(0,60)}));
 }
