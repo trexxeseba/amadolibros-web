@@ -224,6 +224,9 @@ jobs:
           SMOKE_EXPECT_CHECKOUT: 'enabled'
         run: node scripts/smoke-production.js
 
+      - name: Verify public catalog for partner integrations
+        run: node scripts/smoke-public-catalog.mjs
+
       - name: Capture first and repeated production timings
         id: perf_control
         run: |
