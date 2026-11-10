@@ -81,13 +81,15 @@ export async function watch({query,getInfractions,getItemTitle=async()=>null,get
  // en la publicación. Una denuncia abierta nueva frena igual que una infracción.
  let cases=[];try{cases=await getCases();}catch{cases=null;}
  // La respuesta de Mercado Libre puede traer un bloque de paginación ({total,offset,limit}) en lugar de casos: no es un caso.
- const openCases=(cases??[]).filter(c=>(c?.id??c?.case_id)!==undefined&&!/closed|finished|resolved/i.test(String(c?.current_status??c?.status??'')));
+ const openCases=(cases??[]).filter(c=>(c?.id??c?.case_id)!==undefined&&!/^(REJECTED|DISCARDED|DOCUMENTATION_APPROVED|MEMBER_NOT_RESPOND)|closed|finished|resolved/i.test(String(c?.current_status??c?.status??'')));
  for(const c of openCases){
   const id='case:'+String(c.id??c.case_id??'');if(id==='case:')continue;
   const seen=(await query(`SELECT id FROM ${SEEN} WHERE id=?`,[id]))[0];
   if(seen)continue;
   await query(`INSERT OR IGNORE INTO ${SEEN}(id,item_id,subgroup,ip,created,seen_at) VALUES(?,?,?,?,?,?)`,[id,c.item_id??c.element_id??null,'BPP_'+String(c.current_status??c.status??''),1,c.date_created??c.due_date??null,now]);
-  if(!baseline)fresh.push({id,element_id:c.item_id??c.element_id??null,filter_subgroup:'DENUNCIA_BPP',reason:`Denuncia del Brand Protection Program (${c.current_status??c.status??''}). Vence: ${c.due_date??'sin dato'}.`,date_created:c.date_created??null});
+  // Una denuncia vieja que recién ahora se alcanza a leer se anota sin alarma: sólo reaccionan las de los últimos 3 días.
+  const edad=now-Date.parse(c.date_created??'');
+  if(!baseline&&!(edad>3*86400000))fresh.push({id,element_id:c.item_id??c.element_id??null,filter_subgroup:'DENUNCIA_BPP',reason:`Denuncia del Brand Protection Program (${c.current_status??c.status??''}). Vence: ${c.due_date??'sin dato'}.`,date_created:c.date_created??null});
  }
  if(!fresh.length)return {baseline,nuevas_pi:0,denuncias_abiertas:cases===null?null:openCases.length,freno:await brakeOn(query)};
  const items=[];
@@ -131,6 +133,6 @@ export function mlReaders(query){
   react:query?makeReact(ml,query):null,
   getInfractions:async offset=>{const r=await ml.get(`/moderations/infractions/${SELLER}?offset=${offset}&limit=10`);return Array.isArray(r?.infractions)?r.infractions:[];},
   getItemTitle:async id=>{try{return (await ml.get(`/items/${id}?attributes=title`))?.title??null;}catch{return null;}},
-  getCases:async()=>{const r=await ml.get('/moderations/pppi/cases');const list=Array.isArray(r?.results)?r.results:Array.isArray(r?.cases)?r.cases:Array.isArray(r)?r:[];return list;},
+  getCases:async()=>{const r=await ml.get('/moderations/pppi/cases?offset=0&date_created=&status=');const list=Array.isArray(r?.results)?r.results:Array.isArray(r?.cases)?r.cases:Array.isArray(r)?r:[];return list;},
  };
 }

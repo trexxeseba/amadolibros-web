@@ -61,9 +61,28 @@ async function main(){
   infractions.push(...list);
   if(list.length<10)break;
  }
- // Denuncias del programa de protección de propiedad intelectual (PPPI / Brand Protection): casos abiertos y cerrados.
- let casos=null;
- try{casos=await ml.get('/moderations/pppi/cases');console.log('=== PPPI ===');console.log(JSON.stringify(casos).slice(0,8000));}catch(e){console.log(JSON.stringify({pppi:'error',error:e.code??String(e),status:e.status??null}));}
+ // Denuncias del Brand Protection Program (documentación oficial "Publicaciones denunciadas"): los
+ // parámetros offset, date_created y status son obligatorios aunque vayan vacíos.
+ let casos=null;const intento=async path=>{try{return await ml.get(path);}catch(e){return {error:e.code??String(e),status:e.status??null};}};
+ casos=await intento('/moderations/pppi/cases?offset=0&date_created=&status=');
+ console.log('=== PPPI ===');console.log(JSON.stringify(casos).slice(0,6000));
+ const listaCasos=(Array.isArray(casos)?casos:[]).filter(c=>c?.case_id!==undefined);
+ const detalleCasos=[];
+ for(const c of listaCasos.slice(0,40)){const d=await intento(`/moderations/pppi/case/${c.case_id}`);detalleCasos.push({case_id:c.case_id,item_id:d?.item_info?.item_id??c.item_id,titulo:d?.item_info?.title??null,estado:d?.current_status??c.current_status,motivo_id:d?.reason_id??null,denunciante:d?.public_member_name??null,creada:d?.date_created??c.date_created,vence:d?.due_date??c.due_date,error:d?.error??null});}
+ console.log('=== PPPI_DETALLE ===');console.log(JSON.stringify(detalleCasos));
+ // Última moderación de cada publicación con infracción de propiedad intelectual: filtro que la generó y texto detectado.
+ const ipIds=[...new Set(infractions.filter(i=>/COPIAS|PI_|FAKE|PPPI/i.test(i.filter_subgroup??'')).map(i=>i.element_id).filter(Boolean))];
+ const ultimas=[];
+ for(const id of ipIds){const m=await intento(`/moderations/last_moderation/${id}-ITM`);ultimas.push({id,moderacion:Array.isArray(m)?m.map(x=>({filtro:x.name,fecha:x.date_created,evidencias:x.evidences??[],textos:(x.wordings??[]).map(w=>`${w.type}: ${w.value}`)})):m});}
+ console.log('=== ULTIMA_MODERACION ===');console.log(JSON.stringify(ultimas).slice(0,12000));
+ // Publicaciones con moderación activa (status pending agrupa under_review y sus sub_status).
+ const pendientes=await intento(`/users/${VINTAGE}/items/search?status=pending&limit=50`);
+ console.log('=== PENDIENTES ===');console.log(JSON.stringify({total:pendientes?.paging?.total??null,ids:pendientes?.results??null,error:pendientes?.error??null}));
+ // Avisos vigentes de Mercado Libre al vendedor y reputación (sólo lectura).
+ const avisos=await intento('/communications/notices?limit=20&offset=0');
+ console.log('=== AVISOS ===');console.log(JSON.stringify(avisos).slice(0,6000));
+ const usuario=await intento(`/users/${VINTAGE}`);
+ console.log('=== REPUTACION ===');console.log(JSON.stringify(usuario?.seller_reputation??usuario).slice(0,3000));
  const count=(rows,fn)=>rows.reduce((m,x)=>{const k=String(fn(x));m[k]=(m[k]??0)+1;return m;},{});
  const flat=infractions.map(i=>flatten(i));
  const porCampo={};
@@ -107,7 +126,7 @@ async function main(){
   for(const r of risky)console.log('AUD\t'+[r.id,r.grupo,r.campaña?'campaña':'otra_linea',r.catalogo?'catalogo':'tradicional',r.status,String(r.title??'').replace(/[\t\n]/g,' '),r.demanda?'a_demanda':'stock',r.dias??'',r.stock??'',r.vendidos??'',r.precio??''].join('\t'));
  }
  await fs.mkdir(out,{recursive:true});
- await fs.writeFile(path.join(out,'moderadas.json'),JSON.stringify({cuentas,resumen,infracciones:infractions,publicaciones:rows,auditoria,casos_pppi:casos},null,2));
+ await fs.writeFile(path.join(out,'moderadas.json'),JSON.stringify({cuentas,resumen,infracciones:infractions,publicaciones:rows,auditoria,casos_pppi:casos,casos_detalle:detalleCasos,ultimas_moderaciones:ultimas,pendientes,avisos,reputacion:usuario?.seller_reputation??null},null,2));
  console.log('=== MODERADAS ===');
  console.log(JSON.stringify({cuentas,resumen,muestra:rows.slice(0,60)}));
 }
