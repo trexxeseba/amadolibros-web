@@ -340,3 +340,18 @@ test('a supplier 500 reports its content type and a short body without mails',as
   assert.equal(e.code,'supplier_download_failed');assert.equal(e.detail.http_status,500);
   assert.equal(e.detail.content_type,'text/html');assert.match(e.detail.body,/Error interno/);assert.ok(!/soporte@/.test(e.detail.body));return true;});
 });
+
+test('when the supplier portal fails, the error also lists list or download links of its home page',async()=>{
+ const {renewConnection}=await import('../../scripts/vintage-local/renew.mjs');
+ const jar={'set-cookie':'s=1; path=/'};
+ const fetcher=async(url,o={})=>{
+  const u=String(url);
+  if(/Account\/Login/.test(u)&&!o.method)return new Response('<input name="__RequestVerificationToken" type="hidden" value="tok">',{status:200,headers:jar});
+  if(/Account\/Login/.test(u))return new Response(null,{status:302,headers:{location:'/Home/AllPriceList',...jar}});
+  if(/AllPriceList/.test(u))return new Response('<style>.a{color:red}</style><h1>Error interno</h1>',{status:500,headers:{'content-type':'text/html'}});
+  return new Response('<a href="/Home/Dashboard">x</a><a href="/Home/PriceListNew">Lista</a><a href="/Account/Logout">y</a>',{status:200});
+ };
+ await assert.rejects(()=>renewConnection({excel:'/tmp/x.xlsx',connection:'/tmp/c',secret:'s'.repeat(40),sbs:{email:'a@b.c',password:'xxxxxx'},fetcher}),e=>{
+  assert.equal(e.detail.http_status,500);assert.match(e.detail.body,/Error interno/);assert.ok(!/color:red/.test(e.detail.body));
+  assert.deepEqual(e.detail.portal_links,['/Home/PriceListNew']);return true;});
+});
