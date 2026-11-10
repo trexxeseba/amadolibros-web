@@ -1,0 +1,37 @@
+name: Agentes ML — sondeo de la API (solo lectura)
+
+# Confirma con llamadas reales cada endpoint de Mercado Libre que van a usar los
+# agentes diarios de Amado Libros (Promociones y medición de Product Ads), con el
+# token que ya tiene la app (D1 ml_oauth, renovado por el Worker; se lee con los
+# secretos de Cloudflare igual que Precio Ganador). Solo GET: el cliente rechaza
+# cualquier escritura. El log es público: imprime códigos HTTP y formas (claves y
+# tipos), nunca montos de ventas, visitas, métricas de publicidad ni datos ajenos.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agentes-ml-sondeo
+  cancel-in-progress: false
+
+jobs:
+  sondeo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests
+        run: node --test agentes-ml/test/*.test.mjs
+      - name: Sondeo (solo lectura)
+        run: node agentes-ml/src/sondeo.mjs
