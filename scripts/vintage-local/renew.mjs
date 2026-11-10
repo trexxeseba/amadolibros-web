@@ -67,7 +67,7 @@ export async function downloadStock(source,{fetcher=fetch,cookie='',origin=''}={
   }
   if(!response.ok||!response.body){
    // Diagnóstico del error del proveedor: tipo de contenido y un trozo del cuerpo (sin correos ni cookies).
-   let snippet='';try{snippet=String(await response.text()).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').replace(/[\w.+-]+@[\w-]+\.[\w.]+/g,'[mail]').trim().slice(0,240);}catch{}
+   let snippet='';try{snippet=String(await response.text()).replace(/<(style|script)[\s\S]*?<\/\1>/gi,' ').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').replace(/[\w.+-]+@[\w-]+\.[\w.]+/g,'[mail]').trim().slice(0,600);}catch{}
    throw problem('supplier_download_failed',{http_status:response.status,content_type:response.headers.get('content-type')??null,server:response.headers.get('server')??null,body:snippet});
   }
   if(/text\/html/i.test(response.headers.get('content-type')??''))throw problem('supplier_login_required',{http_status:response.status});
@@ -89,7 +89,21 @@ export function makeRenewClient(secret,{fetcher=fetch,endpoint=RENEW_ENDPOINT}={
 export async function renewConnection({excel,connection,secret,source,sbs=null,fetcher=fetch,inspect=inspectWorkbook,now=Date.now,log=()=>{}}){
  let download={source:source||SBS_SOURCE};
  if(sbs){log({step:'login',portal:sbs.portal||SBS_PORTAL});download=await sbsLogin({...sbs,fetcher});if(source)download.source=source;}
- const bytes=await downloadStock(download.source,{fetcher,cookie:download.cookie,origin:download.origin});
+ let bytes;
+ try{bytes=await downloadStock(download.source,{fetcher,cookie:download.cookie,origin:download.origin});}
+ catch(error){
+  // Si el portal falla, se mira si el enlace de la lista cambió de lugar: enlaces de la página principal
+  // que parezcan de listas de precios o descargas (sólo rutas, sin cookies ni correos).
+  if(error.code==='supplier_download_failed'&&download.cookie){
+   try{
+    const home=await fetcher(download.origin+'/',{headers:{Cookie:download.cookie},redirect:'manual',signal:AbortSignal.timeout(30000)});
+    const html=home.ok?await home.text():'';
+    const links=[...new Set([...html.matchAll(/href="([^"#]+)"/gi)].map(m=>m[1]).filter(h=>/price|lista|list|download|descarg|excel|xls|stock/i.test(h)))].slice(0,30);
+    error.detail={...(error.detail??{}),portal_home_http:home.status,portal_links:links};
+   }catch{}
+  }
+  throw error;
+ }
  await writeAtomic(excel,bytes);
  const input=await inspect(excel);
  if(!stockIsFresh(input.source_date,now(),VINTAGE_STOCK_MAX_HOURS))throw problem('supplier_stock_stale',{source_date:input.source_date});
