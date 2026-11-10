@@ -78,3 +78,21 @@ test('a pagination block from Mercado Libre (total 0) is not an open case',async
  const real=await watch({query,getInfractions:pages([]),getCases:async()=>[{id:'c1',current_status:'open',item_id:'MLU9',due_date:'2026-12-01'}],send:async()=>'enviado'});
  assert.equal(real.denuncias_abiertas,1,'un caso con id sigue contando');
 });
+
+test('an old BPP case seen for the first time is recorded without alarm; a recent one brakes',async t=>{
+ const query=d1(t),mails=[],send=async m=>{mails.push(m);return 'enviado';},now=Date.parse('2026-11-10T12:00:00Z');
+ await watch({query,getInfractions:pages([]),send,now});
+ const old={case_id:1,item_id:'MLU1',current_status:'DOCUMENTATION_NOT_PRESENTED',date_created:'2026-10-01T10:00:00Z'};
+ const r=await watch({query,getInfractions:pages([]),getCases:async()=>[old,{total:1,offset:0,limit:50}],send,now});
+ assert.equal(r.nuevas_pi,0);assert.equal(mails.length,0);assert.equal(await brakeOn(query),null);
+ const recent={case_id:2,item_id:'MLU2',current_status:'WAITING_DOCUMENTATION',date_created:'2026-11-10T09:00:00Z',due_date:'2026-11-17T09:00:00Z'};
+ const r2=await watch({query,getInfractions:pages([]),getCases:async()=>[old,recent],send,now});
+ assert.equal(r2.nuevas_pi,1);assert.equal(mails.length,1);assert.ok(await brakeOn(query));
+});
+
+test('BPP cases that were rejected, discarded or approved are not open cases',async t=>{
+ const query=d1(t),now=Date.parse('2026-11-10T12:00:00Z'),mk=(i,s)=>({case_id:i,item_id:'MLU'+i,current_status:s,date_created:'2026-11-10T09:00:00Z'});
+ await watch({query,getInfractions:pages([]),send:async()=>'enviado',now});
+ const r=await watch({query,getInfractions:pages([]),getCases:async()=>[mk(1,'REJECTED'),mk(2,'DISCARDED'),mk(3,'DOCUMENTATION_APPROVED'),mk(4,'MEMBER_NOT_RESPOND'),mk(5,'WAITING_DOCUMENTATION')],send:async()=>'enviado',now});
+ assert.equal(r.denuncias_abiertas,1);
+});
