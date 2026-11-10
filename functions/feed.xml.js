@@ -91,6 +91,20 @@ const MAX_MERCHANT_DESCRIPTION_CHARS = 5000;
 // de Merchant viendo si esa causa baja a cero después de la próxima lectura
 // del feed.
 const GOOGLE_PRODUCT_CATEGORY_BOOKS = '784';
+// Categorías oficiales de la taxonomía de Google (IDs verificados en
+// google.com/basepages/producttype/taxonomy-with-ids.en-US.txt):
+//   499711 = Religious & Ceremonial > Religious Items > Tarot Cards
+//   1247   = Toys & Games > Games > Card Games
+const GOOGLE_PRODUCT_CATEGORY_TAROT = '499711';
+const GOOGLE_PRODUCT_CATEGORY_CARD_GAMES = '1247';
+
+/** Categoría de Google del ítem: libros por defecto; mazos y barajas en la suya. */
+export function googleProductCategory(item) {
+    if (!isCardDeckProduct(item)) return GOOGLE_PRODUCT_CATEGORY_BOOKS;
+    return /TAROT_CARDS/.test(String(item?.domain_id || '').toUpperCase())
+        ? GOOGLE_PRODUCT_CATEGORY_TAROT
+        : GOOGLE_PRODUCT_CATEGORY_CARD_GAMES;
+}
 
 export async function onRequest(context) {
     try {
@@ -638,7 +652,7 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
         <g:availability>${availability}</g:availability>
         <g:price>${escapeXml(price)}</g:price>
         <g:condition>${escapeXml(cond)}</g:condition>
-        <g:google_product_category>${GOOGLE_PRODUCT_CATEGORY_BOOKS}</g:google_product_category>${gtinTag}${brandTag}${identifierExistsTag}${productTypeTags}${customLabelTag}
+        <g:google_product_category>${googleProductCategory(item)}</g:google_product_category>${gtinTag}${brandTag}${identifierExistsTag}${productTypeTags}${customLabelTag}
     </item>`;
 }
 
