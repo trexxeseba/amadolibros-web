@@ -25,7 +25,7 @@ export function forma(v, prof = 0) {
 export const texto = s => String(s ?? '').replace(/[^\w .,:;()/%_=|-]/g, '').slice(0, 200);
 
 // Identificador tapado: deja ver que existe sin exponerlo entero.
-export const mascara = id => { const s = String(id ?? ''); return s.length <= 4 ? '****' : s.slice(0, 3) + '…' + s.slice(-2); };
+export const mascara = id => { const s = String(id ?? ''); return s.length <= 4 ? '****' : s.slice(0, 3) + '..' + s.slice(-2); };
 
 // Quedarse con algunas claves de un objeto (para imprimir valores permitidos).
 export function elegir(obj, claves) {

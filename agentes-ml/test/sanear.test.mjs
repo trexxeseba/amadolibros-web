@@ -14,7 +14,7 @@ test('texto deja solo caracteres seguros y recorta', () => {
 });
 
 test('mascara deja ver que hay un identificador sin exponerlo', () => {
-  assert.equal(mascara('1234567890'), '123…90');
+  assert.equal(mascara('1234567890'), '123..90');
   assert.equal(mascara('12'), '****');
 });
 

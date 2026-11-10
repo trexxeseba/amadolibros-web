@@ -60,7 +60,12 @@ async function main() {
       const p = await ml.sonda(`/users/${CUENTA.sellerId}/items/search?status=active&search_type=scan&limit=100&scroll_id=${encodeURIComponent(scroll)}`);
       ids.push(...lista(p.json)); scroll = p.json?.scroll_id; paginas++;
     }
-    return { http: r.status, forma: forma(r.json), total: r.json?.paging?.total ?? null, con_scroll_id: typeof r.json?.scroll_id === 'string', paginas, ids_leidos: ids.length };
+    // Filtro catalog_listing del search: si responde, trae publicaciones de catálogo para price_to_win.
+    const c = await ml.sonda(`/users/${CUENTA.sellerId}/items/search?status=active&catalog_listing=true&limit=50`);
+    const idsCatalogo = lista(c.json);
+    ids = [...idsCatalogo.slice(0, 20), ...ids];
+    return { http: r.status, forma: forma(r.json), total: r.json?.paging?.total ?? null, con_scroll_id: typeof r.json?.scroll_id === 'string', paginas, ids_leidos: ids.length,
+      filtro_catalog_listing: { http: c.status, total: c.json?.paging?.total ?? null, cantidad: idsCatalogo.length, ...(c.ok ? {} : { detalle: detalle(c.json) }) } };
   });
   await seccion('items_bulk', async () => {
     if (!ids.length) return { omitido: 'sin ids' };
@@ -172,13 +177,16 @@ async function main() {
     return { http: r.status, forma: forma(r.json), cantidad: advs.length, sites: advs.map(a => a?.site_id), ...(r.ok ? {} : { detalle: detalle(r.json) }) };
   });
   if (advertiser?.advertiser_id) {
+    // Rutas de la documentación "Product Ads para Catálogo y User Products (lectura)":
+    // siempre con el site en el path, header api-version: 2, búsquedas con /search.
     const adv = advertiser.advertiser_id, site = advertiser.site_id ?? SITE_ID;
-    const metricas = 'clicks,prints,ctr,cost,cpc,acos,roas,units_quantity,direct_units_quantity,indirect_units_quantity,direct_amount,indirect_amount,total_amount';
-    const rango = `date_from=${hace7}&date_to=${hoy}`;
-    // Prueba cada candidata y devuelve la primera que responde 200 (con todos los códigos).
+    const metricas = 'clicks,prints,ctr,cost,cpc,acos,roas,cvr,sov,units_quantity,direct_units_quantity,indirect_units_quantity,direct_amount,indirect_amount,total_amount,organic_units_quantity,advertising_items_quantity';
+    const rango7 = `date_from=${hace7}&date_to=${hoy}`, rango30 = `date_from=${hace30}&date_to=${hoy}`;
+    const lista2 = j => Array.isArray(j) ? j : Array.isArray(j?.results) ? j.results : [];
+    // Prueba cada candidata y se queda con la primera que responde 200 (informa todos los códigos).
     async function candidatas(lista) {
       const out = {}; let ganadora = null;
-      for (const [nombre, path, v] of lista) {
+      for (const [nombre, path, v = 2] of lista) {
         const r = await ml.sonda(path, ADS(v));
         const res = lista2(r.json);
         out[nombre] = { http: r.status, api_version: v, path: tapar(path), forma: forma(r.json), ...(res.length ? { cantidad: res.length } : {}), ...(r.ok ? {} : { detalle: detalle(r.json) }) };
@@ -186,56 +194,52 @@ async function main() {
       }
       return { out, ganadora };
     }
-    const lista2 = j => Array.isArray(j) ? j : Array.isArray(j?.results) ? j.results : Array.isArray(j?.campaigns) ? j.campaigns : Array.isArray(j?.ad_groups) ? j.ad_groups : Array.isArray(j?.ads) ? j.ads : [];
+    const resumenCampania = c => ({ id: mascara(c?.id ?? c?.campaign_id), status: c?.status, strategy: c?.strategy ?? null, channel: c?.channel ?? null, tiene: { budget: c?.budget !== undefined, roas_target: c?.roas_target !== undefined, acos_target: c?.acos_target !== undefined, date_created: c?.date_created !== undefined, last_updated: c?.last_updated !== undefined }, campos: Object.keys(c ?? {}), metricas: Object.keys(c?.metrics ?? {}) });
     let campanias = [], campaniaId = null;
     await seccion('ads_campanias', async () => {
-      const base = `/advertising/advertisers/${adv}/product_ads/campaigns`;
+      const base = `/advertising/${site}/advertisers/${adv}/product_ads/campaigns/search`;
       const { out, ganadora } = await candidatas([
-        ['adv_v2_metricas', `${base}?limit=50&offset=0&${rango}&metrics=${metricas}&metrics_summary=true`, 2],
-        ['adv_v2', `${base}?limit=50&offset=0`, 2],
-        ['adv_v1', `${base}?limit=50&offset=0`, 1],
-        ['adv_search_v2', `${base}/search?limit=50&offset=0&${rango}&metrics=${metricas}`, 2],
-        ['site_v1_viejo', `/advertising/${site}/product_ads/campaigns?limit=50&offset=0`, 1],
-        ['site_v2_viejo', `/advertising/${site}/product_ads/campaigns?limit=50&offset=0`, 2],
+        ['search', `${base}?limit=50&offset=0`],
+        ['search_activas', `${base}?limit=50&offset=0&filters[status]=active`],
+        ['search_metricas_resumen', `${base}?limit=50&offset=0&${rango30}&metrics=${metricas}&metrics_summary=true`],
+        ['search_diario', `${base}?limit=2&offset=0&${rango7}&metrics=clicks,cost,direct_amount,indirect_amount,units_quantity&aggregation_type=DAILY`],
       ]);
       campanias = ganadora?.res ?? [];
       const activa = campanias.find(c => String(c?.status).toLowerCase() === 'active') ?? campanias[0];
       campaniaId = activa?.id ?? activa?.campaign_id ?? null;
-      return { ...out, ganadora: ganadora?.nombre ?? null, campanias: campanias.slice(0, 10).map(c => ({ id: mascara(c?.id ?? c?.campaign_id), status: c?.status, strategy: c?.strategy ?? c?.strategy_type ?? null, campos: Object.keys(c ?? {}), metricas: Object.keys(c?.metrics ?? {}) })) };
+      return { ...out, ganadora: ganadora?.nombre ?? null, total: ganadora?.json?.paging?.total ?? null, campanias: campanias.slice(0, 12).map(resumenCampania), metrics_summary_claves: Object.keys(ganadora?.json?.metrics_summary ?? {}) };
     });
     if (campaniaId) {
       let adGroupId = null;
       await seccion('ads_campania_detalle', async () => {
+        const base = `/advertising/${site}/product_ads/campaigns/${campaniaId}`;
         const { out } = await candidatas([
-          ['adv_detalle_v2', `/advertising/advertisers/${adv}/product_ads/campaigns/${campaniaId}?${rango}&metrics=${metricas},lost_impression_share_by_budget,lost_impression_share_by_ad_rank`, 2],
-          ['detalle_v2', `/advertising/product_ads/campaigns/${campaniaId}?${rango}&metrics=${metricas}`, 2],
-          ['adv_detalle_diario_v2', `/advertising/advertisers/${adv}/product_ads/campaigns/${campaniaId}?${rango}&metrics=clicks,cost,direct_amount,indirect_amount,units_quantity&aggregation_type=DAILY`, 2],
-          ['adv_metrics_diario_v2', `/advertising/advertisers/${adv}/product_ads/campaigns/${campaniaId}/metrics?${rango}&metrics=clicks,cost&aggregation_type=DAILY`, 2],
-          ['adv_detalle_v1', `/advertising/advertisers/${adv}/product_ads/campaigns/${campaniaId}?${rango}&metrics=clicks,cost`, 1],
+          ['detalle_30d', `${base}?${rango30}&metrics=${metricas},impression_share,top_impression_share,lost_impression_share_by_budget,lost_impression_share_by_ad_rank,acos_benchmark`],
+          ['detalle_diario_7d', `${base}?${rango7}&metrics=clicks,cost,direct_amount,indirect_amount,units_quantity&aggregation_type=DAILY`],
         ]);
         return out;
       });
       await seccion('ads_ad_groups', async () => {
         const mlu = muestraIds[0] ?? '';
+        const base = `/advertising/${site}/advertisers/${adv}/product_ads`;
         const { out, ganadora } = await candidatas([
-          ['adv_ad_groups_search_campania', `/advertising/advertisers/${adv}/product_ads/ad_groups/search?limit=50&offset=0&${rango}&metrics=clicks,cost,direct_amount,indirect_amount,units_quantity&filters[campaign_id]=${campaniaId}`, 2],
-          ['adv_ad_groups_search', `/advertising/advertisers/${adv}/product_ads/ad_groups/search?limit=5&offset=0`, 2],
-          ['adv_ad_groups', `/advertising/advertisers/${adv}/product_ads/ad_groups?limit=5&offset=0&campaign_id=${campaniaId}`, 2],
-          ['adv_campania_ad_groups', `/advertising/advertisers/${adv}/product_ads/campaigns/${campaniaId}/ad_groups?limit=5&offset=0`, 2],
-          ['adv_ads_search_campania', `/advertising/advertisers/${adv}/product_ads/ads/search?limit=5&offset=0&${rango}&metrics=clicks,cost&filters[campaign_id]=${campaniaId}`, 2],
-          ['adv_ads_search_item', `/advertising/advertisers/${adv}/product_ads/ads/search?limit=5&offset=0&filters[item_ids]=${mlu}`, 2],
-          ['adv_ad_groups_search_item', `/advertising/advertisers/${adv}/product_ads/ad_groups/search?limit=5&offset=0&filters[item_ids]=${mlu}`, 2],
-          ['adv_campania_items_v1', `/advertising/advertisers/${adv}/product_ads/campaigns/${campaniaId}/items?limit=5&offset=0`, 1],
+          ['ad_groups_search_campania_30d', `${base}/ad_groups/search?limit=50&offset=0&${rango30}&sort=desc&sort_by=clicks&metrics=CLICKS,PRINTS,COST,CPC,CTR,DIRECT_AMOUNT,INDIRECT_AMOUNT,TOTAL_AMOUNT,DIRECT_UNITS_QUANTITY,INDIRECT_UNITS_QUANTITY,UNITS_QUANTITY&filters[campaign_id]=${campaniaId}`],
+          ['ad_groups_search_todos', `${base}/ad_groups/search?limit=5&offset=0&${rango30}&metrics=CLICKS,COST,UNITS_QUANTITY`],
+          ['ads_search_campania', `${base}/ads/search?limit=5&offset=0&${rango30}&metrics=clicks,cost,units_quantity,direct_amount,indirect_amount&filters[campaign_id]=${campaniaId}`],
+          ['ads_search_item_ids', `${base}/ads/search?limit=5&offset=0&filters[item_ids]=${mlu}`],
+          ['ads_search_item_id', `${base}/ads/search?limit=5&offset=0&filters[item_id]=${mlu}`],
+          ['campania_ads_metrics_7d', `${base}/campaigns/${campaniaId}/ads/metrics?${rango7}&metrics=clicks,prints,cost,direct_amount,indirect_amount,units_quantity`],
         ]);
         const grupos = ganadora?.res ?? [];
         adGroupId = grupos[0]?.id ?? grupos[0]?.ad_group_id ?? null;
-        const extra = { ganadora: ganadora?.nombre ?? null, grupos: grupos.slice(0, 5).map(g => ({ id: mascara(g?.id ?? g?.ad_group_id), status: g?.status, type: g?.type ?? g?.ad_group_type ?? null, external_id: g?.ad_group_external_id ? tapar(g.ad_group_external_id) : null, campos: Object.keys(g ?? {}), metricas: Object.keys(g?.metrics ?? {}) })) };
+        const extra = { ganadora: ganadora?.nombre ?? null, total: ganadora?.json?.paging?.total ?? null, grupos: grupos.slice(0, 5).map(g => ({ id: mascara(g?.id ?? g?.ad_group_id), status: g?.status, type: g?.type ?? g?.ad_group_type ?? null, external_id: g?.ad_group_external_id ? tapar(g.ad_group_external_id) : null, campos: Object.keys(g ?? {}), metricas: Object.keys(g?.metrics ?? {}) })) };
         if (adGroupId) {
           const { out: out2 } = await candidatas([
-            ['adv_ad_group_diario_v2', `/advertising/advertisers/${adv}/product_ads/ad_groups/${adGroupId}?date_from=${hace30}&date_to=${hoy}&metrics=clicks,cost,direct_amount,indirect_amount,units_quantity&aggregation_type=DAILY`, 2],
-            ['ad_group_diario_v2', `/advertising/product_ads/ad_groups/${adGroupId}?date_from=${hace30}&date_to=${hoy}&metrics=clicks,cost&aggregation_type=DAILY`, 2],
-            ['adv_ad_group_metrics_diario_v2', `/advertising/advertisers/${adv}/product_ads/ad_groups/${adGroupId}/metrics?date_from=${hace30}&date_to=${hoy}&metrics=clicks,cost&aggregation_type=DAILY`, 2],
-            ['adv_ad_groups_search_diario', `/advertising/advertisers/${adv}/product_ads/ad_groups/search?limit=5&offset=0&date_from=${hace30}&date_to=${hoy}&metrics=clicks,cost&aggregation_type=DAILY&filters[campaign_id]=${campaniaId}`, 2],
+            ['ad_group_detalle_30d', `/advertising/${site}/product_ads/ad_groups/${adGroupId}?${rango30}&metrics=CLICKS,PRINTS,COST,CPC,CTR,DIRECT_AMOUNT,INDIRECT_AMOUNT,TOTAL_AMOUNT,DIRECT_UNITS_QUANTITY,INDIRECT_UNITS_QUANTITY,UNITS_QUANTITY`],
+            ['ad_group_diario_30d', `/advertising/${site}/product_ads/ad_groups/${adGroupId}?${rango30}&metrics=CLICKS,COST,DIRECT_AMOUNT,INDIRECT_AMOUNT,UNITS_QUANTITY&aggregation_type=daily`],
+            ['ad_group_diario_30d_MAYUS', `/advertising/${site}/product_ads/ad_groups/${adGroupId}?${rango30}&metrics=CLICKS,COST,UNITS_QUANTITY&aggregation_type=DAILY`],
+            ['ad_groups_search_diario', `${base}/ad_groups/search?limit=2&offset=0&${rango7}&metrics=CLICKS,COST,UNITS_QUANTITY&aggregation_type=DAILY&filters[campaign_id]=${campaniaId}`],
+            ['ad_group_ads_30d', `/advertising/${site}/product_ads/ad_groups/${adGroupId}/ads?${rango30}&metrics=clicks,cost,units_quantity,direct_amount,indirect_amount`],
           ]);
           Object.assign(extra, { diario: out2 });
         }
