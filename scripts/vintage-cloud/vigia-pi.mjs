@@ -127,12 +127,66 @@ export function makeReact(ml,query){
   return {pausadas:unique,errores};
  };
 }
+// Otras señales, sólo lectura (Seba, 09/11/2026: vigilar cualquier tipo de suspensión):
+//  - Avisos vigentes de Mercado Libre al vendedor (/communications/notices). Uno nuevo de propiedad
+//    intelectual frena igual que una infracción; cualquier otro avisa por mail sin frenar.
+//  - Reputación (una foto por día). Avisa si cambia el nivel o si cancelaciones o reclamos pasan
+//    los valores de referencia de MercadoLíder (1,5 % y 2,5 %: no son umbrales de suspensión, sino alerta temprana).
+export const REP_CANCEL_ALERT=0.015,REP_CLAIMS_ALERT=0.025;
+const IP_NOTICE=/propiedad intelectual|replicas|falsific|copias no autorizadas|marca registrada|derechos de autor/i;
+const uyDay=ms=>new Date(ms-3*3600000).toISOString().slice(0,10);
+const plain=x=>String(x??'').replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+export async function watchSignals({query,getNotices=async()=>[],getReputation=async()=>null,send=sendMail,now=Date.now(),runUrl=null}){
+ await schema(query);
+ const out={avisos_nuevos:0,avisos_pi:0,reputacion:null};
+ // Avisos
+ let notices=null;try{notices=await getNotices();}catch{notices=null;}
+ if(notices){
+  const armed=(await query(`SELECT value FROM ${FLAGS} WHERE key='avisos_armado'`))[0];
+  if(!armed)await query(`INSERT OR IGNORE INTO ${FLAGS}(key,value,at) VALUES('avisos_armado','1',?)`,[now]);
+  for(const n of notices){
+   const id='notice:'+String(n?.id??'');if(id==='notice:')continue;
+   if((await query(`SELECT id FROM ${SEEN} WHERE id=?`,[id]))[0])continue;
+   const title=plain(n.title??n.label),detail=plain(n.description),ip=IP_NOTICE.test(title+' '+detail)?1:0;
+   await query(`INSERT OR IGNORE INTO ${SEEN}(id,item_id,subgroup,ip,created,seen_at) VALUES(?,?,?,?,?,?)`,[id,null,'AVISO_'+String(n.category??''),ip,null,now]);
+   if(!armed)continue; // la primera vez sólo se aprende lo vigente
+   out.avisos_nuevos++;
+   if(ip){
+    out.avisos_pi++;
+    const value={motivo:'aviso_pi',infracciones:[{id,item:null,title,subgroup:'AVISO_PANEL',reason:detail,fecha:null}],reaccion:null};
+    await query(`INSERT INTO ${FLAGS}(key,value,at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,at=excluded.at`,[FLAG,JSON.stringify(value),now]);
+    await send({asunto:'ALARMA: aviso nuevo de propiedad intelectual. Publicador FRENADO',texto:`Mercado Libre mandó un aviso nuevo a Amado Vintage:\n\n${title}\n${detail}\n\nEl publicador quedó frenado. Revisá las infracciones y las publicaciones antes de liberarlo.${runUrl?`\n\nDetalle: ${runUrl}`:''}`});
+   }else{
+    await send({asunto:`aviso nuevo de Mercado Libre: ${title.slice(0,80)}`,texto:`Mercado Libre mandó un aviso nuevo a Amado Vintage (no es de propiedad intelectual, el publicador no se frenó):\n\n${title}\n${detail}${runUrl?`\n\nDetalle: ${runUrl}`:''}`});
+   }
+  }
+ }
+ // Reputación: una foto por día.
+ let rep=null;try{rep=await getReputation();}catch{rep=null;}
+ if(rep){
+  const day=uyDay(now),prev=(await query(`SELECT value FROM ${FLAGS} WHERE key='reputacion'`))[0],before=prev?JSON.parse(prev.value):null;
+  const m=rep.metrics??{},snap={day,level:rep.level_id??null,cancelaciones:m.cancellations?.rate??null,reclamos:m.claims?.rate??null,demoras:m.delayed_handling_time?.rate??null,ventas:m.sales?.completed??null};
+  out.reputacion=snap;
+  if(!before||before.day!==day){
+   const motivos=[];
+   if(before&&before.level&&snap.level&&before.level!==snap.level)motivos.push(`el nivel pasó de ${before.level} a ${snap.level}`);
+   if(snap.cancelaciones!==null&&snap.cancelaciones>REP_CANCEL_ALERT)motivos.push(`las cancelaciones están en ${(snap.cancelaciones*100).toFixed(1)} % (referencia 1,5 %)`);
+   if(snap.reclamos!==null&&snap.reclamos>REP_CLAIMS_ALERT)motivos.push(`los reclamos están en ${(snap.reclamos*100).toFixed(1)} % (referencia 2,5 %)`);
+   await query(`INSERT INTO ${FLAGS}(key,value,at) VALUES('reputacion',?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,at=excluded.at`,[JSON.stringify(snap),now]);
+   if(motivos.length)await send({asunto:'reputación de Vintage: '+motivos[0],texto:`Reputación de Amado Vintage al ${day}: ${motivos.join('; ')}.\n\nNivel ${snap.level}, ventas ${snap.ventas}, cancelaciones ${snap.cancelaciones===null?'sin dato':(snap.cancelaciones*100).toFixed(2)+' %'}, reclamos ${snap.reclamos===null?'sin dato':(snap.reclamos*100).toFixed(2)+' %'}, demoras de despacho ${snap.demoras===null?'sin dato':(snap.demoras*100).toFixed(2)+' %'}.\nLos valores de referencia son los de MercadoLíder: no son umbrales de suspensión, sino una alerta temprana.${runUrl?`\n\nDetalle: ${runUrl}`:''}`});
+  }
+ }
+ return out;
+}
+
 export function mlReaders(query){
  const ml=crearCliente(fuenteTokenD1(CUENTAS.vintage),{concurrencia:1});
  return {
   react:query?makeReact(ml,query):null,
   getInfractions:async offset=>{const r=await ml.get(`/moderations/infractions/${SELLER}?offset=${offset}&limit=10`);return Array.isArray(r?.infractions)?r.infractions:[];},
   getItemTitle:async id=>{try{return (await ml.get(`/items/${id}?attributes=title`))?.title??null;}catch{return null;}},
+  getNotices:async()=>{const r=await ml.get('/communications/notices?limit=50&offset=0');return Array.isArray(r?.results)?r.results:[];},
+  getReputation:async()=>(await ml.get(`/users/${SELLER}`))?.seller_reputation??null,
   getCases:async()=>{const r=await ml.get('/moderations/pppi/cases?offset=0&date_created=&status=');const list=Array.isArray(r?.results)?r.results:Array.isArray(r?.cases)?r.cases:Array.isArray(r)?r:[];return list;},
  };
 }

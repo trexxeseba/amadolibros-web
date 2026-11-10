@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {correr} from '../../scripts/vintage-cloud/vigia.mjs';
 
 test('the standalone watcher reports what the watcher found and never publishes',async()=>{
- const out=await correr({vigia:async()=>({baseline:false,nuevas_pi:0,freno:null})});
- assert.deepEqual(out,{ok:true,vigia_pi:{baseline:false,nuevas_pi:0,freno:null}});
+ const out=await correr({vigia:async()=>({baseline:false,nuevas_pi:0,freno:null}),senales:async()=>({avisos_nuevos:0})});
+ assert.equal(out.ok,true);assert.deepEqual(out.vigia_pi,{baseline:false,nuevas_pi:0,freno:null});
 });
 
 test('a watcher failure is reported with a short code and no message text',async()=>{
