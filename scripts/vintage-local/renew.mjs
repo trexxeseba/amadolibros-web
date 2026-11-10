@@ -99,7 +99,16 @@ export async function renewConnection({excel,connection,secret,source,sbs=null,f
     const home=await fetcher(download.origin+'/',{headers:{Cookie:download.cookie},redirect:'manual',signal:AbortSignal.timeout(30000)});
     const html=home.ok?await home.text():'';
     const links=[...new Set([...html.matchAll(/href="([^"#]+)"/gi)].map(m=>m[1]).filter(h=>!/\.(css|js|png|jpe?g|gif|svg|ico|woff2?)(\?|$)/i.test(h)&&!/^(mailto|tel|javascript):/i.test(h)))].slice(0,80);
-    error.detail={...(error.detail??{}),portal_home_http:home.status,portal_links:links};
+    // Páginas donde podría estar hoy la exportación: rutas que mencionen exportar, excel, descarga o listas.
+    const pages={};
+    for(const page of ['/Home/Books','/Home/Catalog','/Home/RecentlyAdded']){
+     try{
+      const r=await fetcher(download.origin+page,{headers:{Cookie:download.cookie},redirect:'manual',signal:AbortSignal.timeout(30000)});
+      const h=r.ok?await r.text():'';
+      pages[page]={http:r.status,rutas:[...new Set([...h.matchAll(/["'(]((?:https?:)?\/[A-Za-z0-9_\-\/.?=&%]*(?:export|excel|xls|descarg|download|pricelist|lista)[A-Za-z0-9_\-\/.?=&%]*)["')]/gi)].map(m=>m[1]).filter(x=>!/\.(css|js|png|jpe?g|svg|ico|woff2?)(\?|$)/i.test(x)))].slice(0,20)};
+     }catch{pages[page]={http:null};}
+    }
+    error.detail={...(error.detail??{}),portal_home_http:home.status,portal_links:links,portal_pages:pages};
    }catch{}
   }
   throw error;
