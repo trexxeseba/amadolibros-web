@@ -59,7 +59,15 @@ export async function downloadStock(source,{fetcher=fetch,cookie='',origin=''}={
  let url=source;
  for(let hop=0;hop<5;hop++){
   const headers={'Cache-Control':'no-cache'};
-  if(cookie&&origin&&new URL(url).origin===origin)headers.Cookie=cookie;
+  if(cookie&&origin&&new URL(url).origin===origin){
+   headers.Cookie=cookie;
+   // El portal de SBS devolvió 500 a pedidos sin estos datos mientras en un navegador andaba (10/11/2026):
+   // se piden como lo haría un navegador que llega desde la página de Catálogo. Sólo al origen del portal.
+   headers['User-Agent']='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
+   headers.Referer=origin+'/Home/Catalog';
+   headers.Accept='text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
+   headers['Accept-Language']='es-UY,es;q=0.9';
+  }
   const response=await fetcher(url,{headers,redirect:'manual',signal:AbortSignal.timeout(120000)});
   if(REDIRECTS.includes(response.status)){
    const location=response.headers.get('location');if(!location)throw problem('supplier_download_failed',{http_status:response.status});
