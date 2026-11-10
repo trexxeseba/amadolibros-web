@@ -90,7 +90,7 @@ test('la lista de eliminación tiene las 719 infectadas, sólo números MLU, sin
 });
 
 import {motivoPorFicha,motivoPorDescripcion,buscar} from '../../scripts/vintage-cloud/pausar-ebook.mjs';
-test('pausa preventiva: editoriales Hodder, Alma y Eli, y ebook o acceso digital; "digital" sola no alcanza',()=>{
+test('pausa preventiva: editoriales Hodder, Alma y Eli, y ebook, acceso digital o "digital" sola (regla más dura)',()=>{
  assert.equal(motivoPorFicha({title:'Dieci B1',publisher:'ALMA EDIZIONI'}),'editorial');
  assert.equal(motivoPorFicha({title:'Arriviamo! 3',publisher:'Eli'}),'editorial');
  assert.equal(motivoPorFicha({title:'Digital Society',publisher:'Hodder Education'}),'editorial');
@@ -98,8 +98,8 @@ test('pausa preventiva: editoriales Hodder, Alma y Eli, y ebook o acceso digital
  assert.equal(motivoPorFicha({title:'Curso con e-book incluido',publisher:''}),'ebook_en_titulo');
  assert.equal(motivoPorFicha({title:'Libro electrónico de cocina',publisher:''}),'ebook_en_titulo');
  assert.equal(motivoPorFicha({title:'Acceso digital al material',publisher:''}),'ebook_en_titulo');
- // No son motivo: "digital" a secas, editoriales de nombre parecido, y libros comunes.
- assert.equal(motivoPorFicha({title:'Fotografía digital para todos',publisher:'Anaya'}),null);
+ // No son motivo: editoriales de nombre parecido y libros comunes.
+ assert.equal(motivoPorFicha({title:'Fotografía digital para todos',publisher:'Anaya'}),'ebook_en_titulo');
  assert.equal(motivoPorFicha({title:'Alma Mater',publisher:'Alma Books'}),null);
  assert.equal(motivoPorFicha({title:'Eli y el mar',publisher:'Planeta'}),null);
  assert.equal(motivoPorDescripcion('Incluye acceso digital por 12 meses'),'ebook_en_descripcion');
