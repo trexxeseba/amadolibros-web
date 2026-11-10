@@ -372,3 +372,14 @@ test('the SBS probe reads every list of the Catalog menu, reports rows and error
  assert.equal(out[1].filas,2);assert.equal(out[1].con_stock,1);assert.equal(out[1].fecha,'2026-11-10');
  assert.equal(lines.length,RUTAS.length);
 });
+
+test('the supplier download asks like a browser coming from the Catalog page, only to the portal origin',async()=>{
+ const {downloadStock}=await import('../../scripts/vintage-local/renew.mjs');
+ const seen=[];
+ const fetcher=async(url,o)=>{seen.push({url:String(url),headers:o.headers});
+  if(seen.length===1)return new Response(null,{status:302,headers:{location:'https://sbs-bucket.s3.amazonaws.com/x.xlsx'}});
+  return new Response(new Uint8Array([1,2,3]),{status:200,headers:{'content-type':'application/octet-stream'}});};
+ await downloadStock('https://ag.sbs.com.ar/Home/AllPriceList',{fetcher,cookie:'s=1',origin:'https://ag.sbs.com.ar'});
+ assert.equal(seen[0].headers.Referer,'https://ag.sbs.com.ar/Home/Catalog');assert.match(seen[0].headers['User-Agent'],/Chrome/);assert.equal(seen[0].headers.Cookie,'s=1');
+ assert.equal(seen[1].headers.Cookie,undefined,'la cookie no va a otro origen');assert.equal(seen[1].headers.Referer,undefined);
+});
