@@ -36,5 +36,6 @@ detalle va a Airtable.
 ## Estado
 
 1. Sondeo de solo lectura de cada endpoint: `src/sondeo.mjs`, workflow
-   `agentes-ml-sondeo.yml` (manual).
+   `agentes-ml-sondeo.yml` (manual). Resultado y diferencias con la
+   documentación en `ENDPOINTS.md`.
 2. Guardas con tests, Job B, Job A en prueba: pendientes (un PR por paso).
