@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {watch,brakeOn,releaseBrake,isIp,similarTo,makeReact,blockedIds,blockedIsbns} from '../../scripts/vintage-cloud/vigia-pi.mjs';
+import {watch,watchSignals,brakeOn,releaseBrake,isIp,similarTo,makeReact,blockedIds,blockedIsbns} from '../../scripts/vintage-cloud/vigia-pi.mjs';
 import {openDatabase} from '../../scripts/vintage-local/db.mjs';
 
 function d1(t){const db=openDatabase(':memory:');t.after(()=>db.close());return async(sql,params=[])=>{const st=db.prepare(sql).bind(...params);return /^\s*SELECT/i.test(sql)?(await st.all()).results:(await st.run(),[]);};}
@@ -95,4 +95,34 @@ test('BPP cases that were rejected, discarded or approved are not open cases',as
  await watch({query,getInfractions:pages([]),send:async()=>'enviado',now});
  const r=await watch({query,getInfractions:pages([]),getCases:async()=>[mk(1,'REJECTED'),mk(2,'DISCARDED'),mk(3,'DOCUMENTATION_APPROVED'),mk(4,'MEMBER_NOT_RESPOND'),mk(5,'WAITING_DOCUMENTATION')],send:async()=>'enviado',now});
  assert.equal(r.denuncias_abiertas,1);
+});
+
+const notice=(id,title,description='')=>({id,title,description,category:'ALERT'});
+test('panel notices: the first read only learns; a new IP notice brakes with one alarm; another kind only mails',async t=>{
+ const query=d1(t),mails=[],send=async m=>{mails.push(m);return 'enviado';},now=Date.parse('2026-11-10T12:00:00Z');
+ const old=[notice('1','Retiramos algunas publicaciones porque incumplen la política de propiedad intelectual')];
+ const first=await watchSignals({query,getNotices:async()=>old,send,now});
+ assert.equal(first.avisos_nuevos,0);assert.equal(mails.length,0);assert.equal(await brakeOn(query),null);
+ const again=await watchSignals({query,getNotices:async()=>old,send,now});
+ assert.equal(again.avisos_nuevos,0);
+ const other=await watchSignals({query,getNotices:async()=>[notice('2','Actualizamos nuestros términos'),...old],send,now});
+ assert.equal(other.avisos_nuevos,1);assert.equal(mails.length,1);assert.equal(await brakeOn(query),null);
+ const ip=await watchSignals({query,getNotices:async()=>[notice('3','Aviso','<p>Réplicas, falsificaciones y copias no autorizadas</p>'),notice('2','Actualizamos nuestros términos'),...old],send,now});
+ assert.equal(ip.avisos_pi,1);assert.ok(await brakeOn(query));assert.match(mails.at(-1).asunto,/FRENADO/);
+ await watchSignals({query,getNotices:async()=>[notice('3','Aviso','<p>Réplicas, falsificaciones y copias no autorizadas</p>'),notice('2','x'),...old],send,now});
+ assert.equal(mails.length,2,'no repite el aviso');
+});
+
+test('reputation: one snapshot per day; mails only if the level changes or cancellations or claims pass the reference',async t=>{
+ const query=d1(t),mails=[],send=async m=>{mails.push(m);return 'enviado';};
+ const rep=(level,cancel,claims)=>({level_id:level,metrics:{sales:{completed:153},cancellations:{rate:cancel},claims:{rate:claims},delayed_handling_time:{rate:.007}}});
+ const d1ms=Date.parse('2026-11-10T12:00:00Z'),d2=d1ms+86400000,d3=d2+86400000;
+ let r=await watchSignals({query,getReputation:async()=>rep('5_green',.006,0),send,now:d1ms});
+ assert.equal(r.reputacion.level,'5_green');assert.equal(mails.length,0);
+ await watchSignals({query,getReputation:async()=>rep('5_green',.03,0),send,now:d1ms+3600000});
+ assert.equal(mails.length,0,'el mismo día no se vuelve a evaluar');
+ await watchSignals({query,getReputation:async()=>rep('5_green',.03,0),send,now:d2});
+ assert.equal(mails.length,1);assert.match(mails[0].texto,/cancelaciones/);
+ await watchSignals({query,getReputation:async()=>rep('4_light_green',.006,0),send,now:d3});
+ assert.equal(mails.length,2);assert.match(mails[1].texto,/nivel pasó de 5_green a 4_light_green/);
 });

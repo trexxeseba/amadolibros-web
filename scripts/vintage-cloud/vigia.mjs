@@ -7,12 +7,18 @@
 import {pathToFileURL} from 'node:url';
 import path from 'node:path';
 import {d1Client} from './d1.mjs';
-import {watch,mlReaders} from './vigia-pi.mjs';
+import {watch,watchSignals,mlReaders} from './vigia-pi.mjs';
 
-export async function correr({query,runUrl=null,vigia=null}={}){
+export async function correr({query,runUrl=null,vigia=null,senales=null}={}){
  try{
-  const result=vigia?await vigia():await (()=>{const dq=query??d1Client();return watch({query:dq,...mlReaders(dq),runUrl});})();
-  return {ok:true,vigia_pi:result};
+  let dq=null,readers=null;
+  const prepare=()=>{dq=query??d1Client();readers=mlReaders(dq);};
+  const result=vigia?await vigia():await (()=>{prepare();return watch({query:dq,...readers,runUrl});})();
+  // Avisos del panel y reputación: si fallan no tumban el vigía de infracciones.
+  let otras=null;
+  try{otras=senales?await senales():await (()=>{if(!dq)prepare();return watchSignals({query:dq,getNotices:readers.getNotices,getReputation:readers.getReputation,runUrl});})();}
+  catch(error){otras={error:[error.code,error.message].find(x=>/^[a-z0-9_]{1,100}$/.test(x??''))??'senales_fallo'};}
+  return {ok:true,vigia_pi:result,senales:otras};
  }catch(error){
   return {ok:false,error:[error.code,error.message].find(x=>/^[a-z0-9_]{1,100}$/.test(x??''))??'vigia_fallo'};
  }
