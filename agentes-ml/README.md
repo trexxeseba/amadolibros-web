@@ -38,4 +38,22 @@ detalle va a Airtable.
 1. Sondeo de solo lectura de cada endpoint: `src/sondeo.mjs`, workflow
    `agentes-ml-sondeo.yml` (manual). Resultado y diferencias con la
    documentación en `ENDPOINTS.md`.
-2. Guardas con tests, Job B, Job A en prueba: pendientes (un PR por paso).
+2. Guardas con tests: `src/guardas.mjs` y `config/exclusiones.json` (lista manual y
+   palabras de libros médicos, editables). Cubren todas las reglas de Seba; ver el
+   encabezado del módulo. Toda escritura de los jobs pasa por `evaluarEscritura`.
+3. Job B (medición de Ads), Job A (promociones) en prueba, y modo real: pendientes
+   (un PR por paso).
+
+## Modos de escritura
+
+| Modo | Mercado Libre | Airtable |
+| --- | --- | --- |
+| `solo_lectura` (`AGENTES_ML_SOLO_LECTURA=true`, interruptor general) | no se escribe nunca | informes sí |
+| `prueba` (default; `AGENTES_ML_DRY_RUN=true` lo fuerza) | no se toca | filas con prefijo "[PRUEBA]" |
+| `real` (`AGENTES_ML_MODO=real`) | se escribe, pasando las guardas | filas normales |
+
+Supuestos a confirmar por Seba (marcados en `guardas.mjs`): ítems sin catálogo
+entran como candidatos; relámpago compartido solo si lo que pone el vendedor es
+15 % o menos; el cupón del tope de $750 sale de la API, después de Airtable y por
+último $500. La detección de libros médicos es por palabras del título: la primera
+prueba de 5 días lista lo que excluye para ajustarla.
