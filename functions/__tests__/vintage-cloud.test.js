@@ -341,7 +341,7 @@ test('a supplier 500 reports its content type and a short body without mails',as
   assert.equal(e.detail.content_type,'text/html');assert.match(e.detail.body,/Error interno/);assert.ok(!/soporte@/.test(e.detail.body));return true;});
 });
 
-test('when the supplier portal fails, the error also lists list or download links of its home page',async()=>{
+test('when the supplier portal fails, the error also lists the internal links of its home page',async()=>{
  const {renewConnection}=await import('../../scripts/vintage-local/renew.mjs');
  const jar={'set-cookie':'s=1; path=/'};
  const fetcher=async(url,o={})=>{
@@ -353,5 +353,5 @@ test('when the supplier portal fails, the error also lists list or download link
  };
  await assert.rejects(()=>renewConnection({excel:'/tmp/x.xlsx',connection:'/tmp/c',secret:'s'.repeat(40),sbs:{email:'a@b.c',password:'xxxxxx'},fetcher}),e=>{
   assert.equal(e.detail.http_status,500);assert.match(e.detail.body,/Error interno/);assert.ok(!/color:red/.test(e.detail.body));
-  assert.deepEqual(e.detail.portal_links,['/Home/PriceListNew']);return true;});
+  assert.deepEqual(e.detail.portal_links,['/Home/Dashboard','/Home/PriceListNew','/Account/Logout']);return true;});
 });

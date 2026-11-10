@@ -93,12 +93,12 @@ export async function renewConnection({excel,connection,secret,source,sbs=null,f
  try{bytes=await downloadStock(download.source,{fetcher,cookie:download.cookie,origin:download.origin});}
  catch(error){
   // Si el portal falla, se mira si el enlace de la lista cambió de lugar: enlaces de la página principal
-  // que parezcan de listas de precios o descargas (sólo rutas, sin cookies ni correos).
+  // (sólo rutas, sin recursos estáticos, cookies ni correos).
   if(error.code==='supplier_download_failed'&&download.cookie){
    try{
     const home=await fetcher(download.origin+'/',{headers:{Cookie:download.cookie},redirect:'manual',signal:AbortSignal.timeout(30000)});
     const html=home.ok?await home.text():'';
-    const links=[...new Set([...html.matchAll(/href="([^"#]+)"/gi)].map(m=>m[1]).filter(h=>/price|lista|list|download|descarg|excel|xls|stock/i.test(h)))].slice(0,30);
+    const links=[...new Set([...html.matchAll(/href="([^"#]+)"/gi)].map(m=>m[1]).filter(h=>!/\.(css|js|png|jpe?g|gif|svg|ico|woff2?)(\?|$)/i.test(h)&&!/^(mailto|tel|javascript):/i.test(h)))].slice(0,80);
     error.detail={...(error.detail??{}),portal_home_http:home.status,portal_links:links};
    }catch{}
   }
