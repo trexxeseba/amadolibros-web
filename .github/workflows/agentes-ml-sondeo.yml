@@ -8,6 +8,12 @@ name: Agentes ML — sondeo de la API (solo lectura)
 # tipos), nunca montos de ventas, visitas, métricas de publicidad ni datos ajenos.
 on:
   workflow_dispatch:
+    inputs:
+      titulo:
+        description: 'Opcional: en vez del sondeo, busca una publicación propia por título y muestra su precio, historial de precios, promos y stock (solo lectura)'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -34,4 +40,10 @@ jobs:
       - name: Tests
         run: node --test agentes-ml/test/*.test.mjs
       - name: Sondeo (solo lectura)
+        if: inputs.titulo == ''
         run: node agentes-ml/src/sondeo.mjs
+      - name: Consulta de una publicación por título (solo lectura)
+        if: inputs.titulo != ''
+        env:
+          TITULO: ${{ inputs.titulo }}
+        run: node agentes-ml/src/consulta.mjs "$TITULO"
