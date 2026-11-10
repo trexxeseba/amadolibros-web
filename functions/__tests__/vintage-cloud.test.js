@@ -332,3 +332,11 @@ test('with the IP brake on, or if the watcher could not read, publicar does not 
   assert.equal(r.estado,expected);assert.deepEqual(engineCalls,[]);
  }
 });
+
+test('a supplier 500 reports its content type and a short body without mails',async()=>{
+ const {renewConnection}=await import('../../scripts/vintage-local/renew.mjs');
+ const fetcher=async()=>new Response('<html><body>Error interno. Contacte a soporte@sbs.com.ar</body></html>',{status:500,headers:{'content-type':'text/html'}});
+ await assert.rejects(()=>renewConnection({excel:'/tmp/x.xlsx',connection:'/tmp/c',secret:'s'.repeat(40),fetcher}),e=>{
+  assert.equal(e.code,'supplier_download_failed');assert.equal(e.detail.http_status,500);
+  assert.equal(e.detail.content_type,'text/html');assert.match(e.detail.body,/Error interno/);assert.ok(!/soporte@/.test(e.detail.body));return true;});
+});
