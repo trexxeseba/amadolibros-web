@@ -12,6 +12,7 @@ import {
     isBookProduct,
     isCardDeckProduct,
     feedGtin,
+    googleProductCategory,
     cleanIsbnRaw,
     isValidIsbn13,
     isValidIsbn10,
@@ -395,6 +396,15 @@ test('17d3. Mazos: EAN/UPC real como GTIN; sin código, identifier_exists=no y m
     assert.match(xml, /<g:identifier_exists>no<\/g:identifier_exists>/);
     // Un libro sin ISBN nunca lleva marca.
     assert.doesNotMatch(renderFeedItem(book({ id: 'MLU4', publisher: 'Luciernaga' })), /<g:brand>/);
+});
+
+test('17d4. Categoría de Google: libros 784, tarot 499711, juegos de cartas 1247', () => {
+    const it = (domain_id) => book({ domain_id, isbn: '9788499809991' });
+    assert.equal(googleProductCategory(it('MLU-BOOKS')), '784');
+    assert.equal(googleProductCategory(it('MLU-TAROT_CARDS')), '499711');
+    assert.equal(googleProductCategory(it('MLU-BOARD_AND_CARD_GAMES')), '1247');
+    assert.match(renderFeedItem(it('MLU-TAROT_CARDS')), /<g:google_product_category>499711<\/g:google_product_category>/);
+    assert.match(renderFeedItem(it('MLU-BOOKS')), /<g:google_product_category>784<\/g:google_product_category>/);
 });
 
 test('17e. Producción publica sólo portadas primarias válidas y vigentes en R2', () => {

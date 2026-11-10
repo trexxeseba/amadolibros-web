@@ -209,9 +209,10 @@ test('resolveLiquidation: sin lista y con D1 caído, vitrina vacía y ventas sin
 
 test('feed: la etiqueta usa solo la lista del JSON, nunca la regla de 1 año', () => {
     const items = [book('MLU1'), book('MLU2'), book('MLU3', { start_time: iso(900) })];
-    assert.equal(liquidationIds(items, { data: listData([]) }).size, 0);
-    assert.equal(liquidationIds(items).size, 0, 'el archivo versionado todavía no trae lista');
-    assert.deepEqual([...liquidationIds(items, { data: listData(['MLU1', 'MLU2']) })], ['MLU1']);
+    // Fecha fija anterior al 10/11: el test no puede depender del reloj real.
+    assert.equal(liquidationIds(items, { data: listData([]), now: NOW }).size, 0);
+    assert.equal(liquidationIds(items, { now: NOW }).size, 0, 'el archivo versionado todavía no trae lista');
+    assert.deepEqual([...liquidationIds(items, { data: listData(['MLU1', 'MLU2']), now: NOW })], ['MLU1']);
 });
 
 test('el feed arma la etiqueta desde la lista, sin la regla de ventas', () => {
