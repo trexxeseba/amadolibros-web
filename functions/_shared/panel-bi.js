@@ -205,8 +205,23 @@ export async function loadCompetitivePosition(db) {
 // precio sugerido apenas debajo de él y cuánto más entraría por mes al ritmo
 // de los últimos 90 días. Los agotados entran con su precio promedio de venta
 // (es el precio al que se volvería a publicar). Sólo sugiere: no cambia precios.
-const RAISE_THRESHOLD = 0.85, RAISE_UNDERCUT = 0.98;
+const RAISE_THRESHOLD = 0.85, RAISE_UNDERCUT = 0.98, RAISE_ROWS = 150;
 const round10 = v => Math.floor(v / 10) * 10;
+
+// Libros vigilados que no tuvieron ventas en 12 meses (no están en la tabla de
+// ventas): título y stock del catálogo, ventas en cero.
+export function withUnsoldBooks(facts, { books, meta, stock }) {
+  if (!facts) return books;
+  const conVentas = new Set(books.map(b => b.isbn));
+  const extra = [];
+  for (const isbn of facts.keys()) {
+    if (conVentas.has(isbn)) continue;
+    const qty = stock?.get(isbn)?.stock_propio ?? 0;
+    if (!(qty > 0)) continue;
+    extra.push({ isbn, title: meta?.get(isbn)?.title ?? null, u365: 0, u180: 0, u90: 0, rev365: 0, rev90: 0, avgPrice: null, lastMs: null, stock: qty });
+  }
+  return extra.length ? [...books, ...extra] : books;
+}
 
 export function priceRaises(facts, books, model = null) {
   if (!facts) return null;
@@ -242,11 +257,13 @@ export function priceRaises(facts, books, model = null) {
       margenActual: c ? marginOf(actual, c.cost, model.feeRate) : null, margenSugerido: c ? marginOf(sugerido, c.cost, model.feeRate) : null,
     });
   }
-  lista.sort((a, b) => b.ganaMes - a.ganaMes || b.subaPct - a.subaPct);
+  // Primero lo que más plata deja por mes; entre los que no vendieron en 90 días,
+  // el que más pesos por libro está dejando sobre la mesa.
+  lista.sort((a, b) => b.ganaMes - a.ganaMes || (b.sugerido - b.actual) - (a.sugerido - a.actual) || b.subaPct - a.subaPct);
   solos.sort((a, b) => b.ganaMes - a.ganaMes);
   return {
     total: lista.length, conStock: lista.filter(x => !x.agotado).length,
-    ganaMesTotal: lista.reduce((n, x) => n + x.ganaMes, 0), lista: lista.slice(0, 40),
+    ganaMesTotal: lista.reduce((n, x) => n + x.ganaMes, 0), lista: lista.slice(0, RAISE_ROWS),
     solos: solos.slice(0, 15), solosTotal: solos.length, umbral: RAISE_THRESHOLD,
   };
 }
@@ -362,7 +379,10 @@ export async function loadBi(db, catalog, now = Date.now()) {
     pubs = await section(() => topPublishers(table.data.books));
     const model = await section(() => loadCostModel(db, table.data.books.map(b => b.isbn)));
     margen = model.ok ? await section(() => marginSummary(table.data.books, model.data)) : { ok: false, error: model.error };
-    if (competencia.ok) precios = await section(() => priceRaises(competencia.data?.facts, table.data.books, model.ok ? model.data : null));
+    // La vigilancia cubre todo el catálogo con stock, no sólo lo vendido en 12
+    // meses: los libros sin ventas recientes entran con su título y stock del
+    // catálogo, para que un precio muy bajo también se vea.
+    if (competencia.ok) precios = await section(() => priceRaises(competencia.data?.facts, withUnsoldBooks(competencia.data?.facts, table.data), model.ok ? model.data : null));
     if (inv.ok) {
       const A = table.data.books.filter(b => b.clase === 'A' && b.stock === 0).sort((a, b) => b.u90 - a.u90);
       const market = await section(() => loadSinStockMarket(db, A, model.ok ? model.data : null));
@@ -399,5 +419,8 @@ export function brujulaDigest(bi) {
     .slice(0, DIGEST_ROWS)
     .map(b => ({ isbn: b.isbn, title: b.title, detalle: `lo vendés a $ ${b.price.toLocaleString('es-UY')} y reponerlo cuesta $ ${b.cost.toLocaleString('es-UY')}` }));
   if (!reponer.length && !subir.length && !agotan.length && !perdida.length) return null;
-  return { reponer, subir, agotan, perdida };
+  // Cuántos libros con stock están muy por debajo del mercado en total: el correo
+  // lista pocos y avisa que hay más en el panel.
+  const subirTotal = bi?.precios?.ok && bi.precios.data ? bi.precios.data.conStock : 0;
+  return { reponer, subir, agotan, perdida, subirTotal };
 }

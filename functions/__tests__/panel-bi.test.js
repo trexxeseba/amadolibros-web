@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { loadBi, abc, priceRaises } from '../_shared/panel-bi.js';
+import { loadBi, abc, priceRaises, withUnsoldBooks, brujulaDigest } from '../_shared/panel-bi.js';
 import { renderBi, createBiPanel } from '../panel/inteligencia.js';
 import { SALES_SCHEMA } from '../../worker-sync/ml-sales.js';
 import { importPurchases } from '../../worker-sync/purchases.js';
@@ -181,4 +181,35 @@ test('precios: si sos el único con entrega inmediata, el sugerido sale de los q
   assert.equal(r.lista[0].aPedido, true);
   assert.equal(r.lista[0].sugerido, 4900);
   assert.equal(r.solosTotal, 0);
+});
+
+test('libros vigilados sin ventas en 12 meses: entran a "muy barato" con el stock del catálogo y el correo dice cuántos son', () => {
+  const facts = new Map([
+    // Vendido: nadie más inmediato, a pedido desde 5.000.
+    ['A', { tu_precio: 2000, competidores_comparables: 0, competidores_inmediatos: 0, competidores_a_pedido: 1, precio_minimo_a_pedido: 5000 }],
+    // Sin ventas, con stock: único inmediato a 1.395, a pedido desde 1.890.
+    ['B', { tu_precio: 1395, competidores_comparables: 0, competidores_inmediatos: 0, competidores_a_pedido: 2, precio_minimo_a_pedido: 1890 }],
+    // Sin ventas y sin stock en el catálogo: no entra.
+    ['C', { tu_precio: 500, competidores_comparables: 0, competidores_inmediatos: 0, competidores_a_pedido: 1, precio_minimo_a_pedido: 2000 }],
+  ]);
+  const table = {
+    books: [{ isbn: 'A', title: 'Vendido', u90: 3, stock: 1 }],
+    meta: new Map([['B', { title: 'Cola larga' }], ['C', { title: 'Agotado' }]]),
+    stock: new Map([['B', { stock_propio: 2 }], ['C', { stock_propio: 0 }]]),
+  };
+  const books = withUnsoldBooks(facts, table);
+  assert.deepEqual(books.map(b => b.isbn), ['A', 'B']);
+  const r = priceRaises(facts, books);
+  assert.deepEqual(r.lista.map(b => b.isbn), ['A', 'B'], 'primero lo que más deja por mes');
+  const b = r.lista[1];
+  assert.equal(b.title, 'Cola larga');
+  assert.equal(b.sugerido, 1850);
+  assert.equal(b.subaPct, 33);
+  assert.equal(b.ganaMes, 0);
+  assert.equal(b.aPedido, true);
+  assert.equal(r.conStock, 2);
+  const digest = brujulaDigest({ precios: { ok: true, data: r } });
+  assert.equal(digest.subirTotal, 2);
+  assert.match(digest.subir[1].detalle, /de \$ 1\.395 a \$ 1\.850 \(\+33%; sos el único con entrega inmediata/);
+  assert.equal(withUnsoldBooks(null, table), table.books);
 });

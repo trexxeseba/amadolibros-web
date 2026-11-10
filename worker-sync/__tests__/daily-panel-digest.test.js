@@ -115,3 +115,16 @@ test('sección Brújula: qué reponer, subir precio, se agota y a pérdida, con 
   const sin = buildDigestEmail({ toShip: [], unpaid: [], soldCount: 0, soldTotal: 0, createdCount: 0, brujula: null });
   assert.doesNotMatch(sin.text, /BRÚJULA/);
 });
+
+test('"Subile el precio" dice cuántos libros con stock están muy por debajo del mercado cuando hay más que los listados', () => {
+  const fila = { isbn: '9788441437623', title: 'Cola larga', detalle: 'de $ 1.395 a $ 1.850 (+33%)' };
+  const base = { toShip: [], unpaid: [], soldCount: 0, soldTotal: 0, createdCount: 0 };
+  const conMas = buildDigestEmail({ ...base, brujula: { reponer: [], subir: [fila], agotan: [], perdida: [], subirTotal: 212 } });
+  assert.match(conMas.text, /Subile el precio \(1 de 212 con stock muy por debajo del mercado; todos en el panel\):/);
+  assert.match(conMas.html, /Subile el precio \(1 de 212 con stock muy por debajo del mercado; todos en el panel\)/);
+  const justos = buildDigestEmail({ ...base, brujula: { reponer: [], subir: [fila], agotan: [], perdida: [], subirTotal: 1 } });
+  assert.match(justos.text, /  Subile el precio:\n/);
+  // Un resumen armado sin el total (versión anterior) se muestra como siempre.
+  const sinTotal = buildDigestEmail({ ...base, brujula: { reponer: [], subir: [fila], agotan: [], perdida: [] } });
+  assert.match(sinTotal.text, /  Subile el precio:\n/);
+});
