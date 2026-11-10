@@ -65,7 +65,11 @@ export async function downloadStock(source,{fetcher=fetch,cookie='',origin=''}={
    const location=response.headers.get('location');if(!location)throw problem('supplier_download_failed',{http_status:response.status});
    url=new URL(location,url).href;if(/\/Account\/Login/i.test(url))throw problem('supplier_login_required');continue;
   }
-  if(!response.ok||!response.body)throw problem('supplier_download_failed',{http_status:response.status});
+  if(!response.ok||!response.body){
+   // Diagnóstico del error del proveedor: tipo de contenido y un trozo del cuerpo (sin correos ni cookies).
+   let snippet='';try{snippet=String(await response.text()).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').replace(/[\w.+-]+@[\w-]+\.[\w.]+/g,'[mail]').trim().slice(0,240);}catch{}
+   throw problem('supplier_download_failed',{http_status:response.status,content_type:response.headers.get('content-type')??null,server:response.headers.get('server')??null,body:snippet});
+  }
   if(/text\/html/i.test(response.headers.get('content-type')??''))throw problem('supplier_login_required',{http_status:response.status});
   const reader=response.body.getReader(),chunks=[];let length=0;
   for(;;){const {value,done}=await reader.read();if(done)break;length+=value.length;if(length>MAX_BYTES){await reader.cancel();throw problem('supplier_file_too_large');}chunks.push(value);}
