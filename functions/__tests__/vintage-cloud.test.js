@@ -355,3 +355,20 @@ test('when the supplier portal fails, the error also lists the internal links of
   assert.equal(e.detail.http_status,500);assert.match(e.detail.body,/Error interno/);assert.ok(!/color:red/.test(e.detail.body));
   assert.deepEqual(e.detail.portal_links,['/Home/Dashboard','/Home/PriceListNew','/Account/Logout']);return true;});
 });
+
+test('the SBS probe reads every list of the Catalog menu, reports rows and errors, and keeps going after one fails',async()=>{
+ const {sondear,RUTAS}=await import('../../scripts/vintage-cloud/sbs-sondeo.mjs');
+ const fetcher=async(url,o={})=>{
+  const u=String(url);
+  if(/Account\/Login/.test(u)&&!o.method)return new Response('<input name="__RequestVerificationToken" type="hidden" value="tok">',{status:200,headers:{'set-cookie':'s=1; path=/'}});
+  if(/Account\/Login/.test(u))return new Response(null,{status:302,headers:{location:'/Home/AllPriceList','set-cookie':'s=1; path=/'}});
+  if(/AllPriceList/.test(u))return new Response('<html>Error</html>',{status:500,headers:{'content-type':'text/html'}});
+  return new Response(new Uint8Array([1,2,3,4]),{status:200,headers:{'content-type':'application/octet-stream'}});
+ };
+ const lines=[];
+ const out=await sondear({email:'a@b.c',password:'xxxxxx',fetcher,dir:await (await import('node:fs/promises')).mkdtemp('/tmp/sbs-sondeo-test-'),log:x=>lines.push(x),inspect:async()=>({source_date:'2026-11-10',rows:[{isbn:'1',stock:'2'},{isbn:'2',stock:'0'}]})});
+ assert.equal(out.length,RUTAS.length);
+ assert.equal(out[0].error,'supplier_download_failed');assert.equal(out[0].http,500);
+ assert.equal(out[1].filas,2);assert.equal(out[1].con_stock,1);assert.equal(out[1].fecha,'2026-11-10');
+ assert.equal(lines.length,RUTAS.length);
+});
