@@ -98,6 +98,19 @@ async function main(){
   }
  }catch(e){console.log(JSON.stringify({altas_hoy:'error',error:e.code??String(e)}));}
  console.log('=== ALTAS_24H ===');console.log(JSON.stringify({total:altas.length,catalogo:altas.filter(a=>a.catalogo).length,tradicionales:altas.filter(a=>!a.catalogo).length,con_riesgo_filtro:altas.filter(a=>a.riesgo_filtro).length,activas:altas.filter(a=>a.estado==='active').length,lista:altas.slice(0,150)}));
+ // Competencia en catálogo (documentación oficial "Competencia en catálogo", recurso price_to_win): estado y
+ // razón por la que una publicación no gana. Se mira en las altas de las últimas 24 horas y en una muestra de
+ // publicaciones más viejas, para saber si la restricción es de la cuenta o de cada publicación. Sólo lectura.
+ const ptw={altas:[],viejas:[]};
+ try{
+  const dq2=d1Client(),limite=Date.now()-7*86400000;
+  const viejas=await dq2("SELECT item_id FROM ml_vintage_pub_receipts WHERE seller_id=? AND state='published' AND item_id IS NOT NULL AND created_at<? ORDER BY RANDOM() LIMIT 40",[VINTAGE,limite]);
+  const leer=async(ids,dest)=>{for(const id of ids){try{const r=await ml.get(`/items/${id}/price_to_win?siteId=MLU&version=v2`);dest.push({id,status:r?.status??null,reason:r?.reason??null,visit_share:r?.visit_share??null,ganador:r?.winner?.item_id??null});}catch(e){dest.push({id,error:e.code??String(e),http:e.status??null});}}};
+  await leer(altas.filter(a=>a.catalogo).map(a=>a.id),ptw.altas);
+  await leer(viejas.map(v=>v.item_id),ptw.viejas);
+ }catch(e){console.log(JSON.stringify({price_to_win:'error',error:e.code??String(e)}));}
+ const resumirPtw=l=>l.reduce((m,x)=>{const k=x.error?`error_${x.http??x.error}`:`${x.status}|${[].concat(x.reason??[]).join('+')||'sin_razon'}`;m[k]=(m[k]??0)+1;return m;},{});
+ console.log('=== PRICE_TO_WIN ===');console.log(JSON.stringify({altas:resumirPtw(ptw.altas),viejas:resumirPtw(ptw.viejas),ejemplo:ptw.altas[0]??null}));
  const count=(rows,fn)=>rows.reduce((m,x)=>{const k=String(fn(x));m[k]=(m[k]??0)+1;return m;},{});
  const flat=infractions.map(i=>flatten(i));
  const porCampo={};
@@ -141,7 +154,7 @@ async function main(){
   for(const r of risky)console.log('AUD\t'+[r.id,r.grupo,r.campaña?'campaña':'otra_linea',r.catalogo?'catalogo':'tradicional',r.status,String(r.title??'').replace(/[\t\n]/g,' '),r.demanda?'a_demanda':'stock',r.dias??'',r.stock??'',r.vendidos??'',r.precio??''].join('\t'));
  }
  await fs.mkdir(out,{recursive:true});
- await fs.writeFile(path.join(out,'moderadas.json'),JSON.stringify({cuentas,resumen,infracciones:infractions,publicaciones:rows,auditoria,casos_pppi:casos,altas_24h:altas,casos_detalle:detalleCasos,ultimas_moderaciones:ultimas,pendientes,avisos,reputacion:usuario?.seller_reputation??null},null,2));
+ await fs.writeFile(path.join(out,'moderadas.json'),JSON.stringify({cuentas,resumen,infracciones:infractions,publicaciones:rows,auditoria,casos_pppi:casos,altas_24h:altas,price_to_win:ptw,casos_detalle:detalleCasos,ultimas_moderaciones:ultimas,pendientes,avisos,reputacion:usuario?.seller_reputation??null},null,2));
  console.log('=== MODERADAS ===');
  console.log(JSON.stringify({cuentas,resumen,muestra:rows.slice(0,60)}));
 }
