@@ -135,11 +135,12 @@ export default {
           console.error('[ml sales] Error', error?.code || error?.name || 'Error');
           return { state: 'error' };
         }),
-        // Competencia por API de ML: una foto por día de los productos de
-        // catálogo de los libros que más vendemos, por tandas. Sólo conteos en
-        // el log (los datos de terceros quedan en D1). Inerte sin
-        // ML_COMPETITION_ENABLED="true".
-        (String(env.ML_COMPETITION_ENABLED) === 'true' ? mlCompetition.sync(env, { calls: 30 }) : Promise.resolve({ state: 'disabled' })).then(result => {
+        // Competencia por API de ML: una foto por día de todos los productos de
+        // catálogo con stock (unos 3.100), por tandas. 120 llamadas por tanda
+        // alcanzan para tener la foto completa antes del correo de la mañana
+        // (96 tandas de 00:00 a 08:00). Sólo conteos en el log (los datos de
+        // terceros quedan en D1). Inerte sin ML_COMPETITION_ENABLED="true".
+        (String(env.ML_COMPETITION_ENABLED) === 'true' ? mlCompetition.sync(env, { calls: 120, deadlineMs: 90000 }) : Promise.resolve({ state: 'disabled' })).then(result => {
           if (!['disabled', 'idle', 'busy'].includes(result?.state)) console.log('[ml competition]', JSON.stringify({ state: result.state, products: result.products, sellers: result.sellers, caps: result.caps, code: result.code }));
           return result;
         }).catch(error => {

@@ -211,3 +211,98 @@ test('opciones de envío: schedule = horas de preparación; sin schedule y despa
   assert.equal(readShipping({ options: [] }).sin_envio, true);
   assert.equal(readShipping({}), null);
 });
+
+// ── Cobertura de todo el catálogo con stock (10/11/2026) ─────────────────────
+const TAIL = '9788441437623', AGOTADO = '9788420412146';
+const catalogoAmplio = { updated_at: catalog.updated_at, items: [
+  ...catalog.items,
+  // Sin ventas en 12 meses pero con stock: entra a la cola.
+  { id: 'MLU3', isbn: TAIL, status: 'active', available_quantity: 1, catalog_listing: true, catalog_product_id: 'MLU888', price: 1395, title: 'Cola larga' },
+  // Sin ventas y sin stock: no se vigila.
+  { id: 'MLU4', isbn: AGOTADO, status: 'paused', available_quantity: 0, catalog_listing: true, catalog_product_id: 'MLU777', price: 900 },
+] };
+function fakeMlAmplio(state) {
+  const base = fakeMl(state);
+  return async url => {
+    const u = new URL(String(url));
+    if (u.pathname === '/products/MLU888/items') {
+      if (state.tailPartial) return Response.json({ paging: { total: 99 }, results: [{ item_id: 'MLU3', seller_id: Number(OWN), price: 1395, condition: 'new' }] });
+      return Response.json({ paging: { total: 2 }, results: [{ item_id: 'MLU3', seller_id: Number(OWN), price: 1395, condition: 'new' }, { item_id: 'MLUD', seller_id: 88, price: 1890, condition: 'new' }] });
+    }
+    if (u.pathname === '/items/MLUD/shipping_options') return Response.json({ options: [{ display: 'recommended', estimated_delivery_time: { schedule: 504, handling: 24, unit: 'hour' } }] });
+    if (u.pathname === '/items/MLU3/price_to_win') return state.ptw404 ? new Response('nope', { status: 404 }) : Response.json({ status: 'winning', price_to_win: 1395, winner: { item_id: 'MLU3' } });
+    return base(url);
+  };
+}
+const amplio = (state, nowMs) => createMlCompetition({ fetcher: fakeMlAmplio(state), tokenProvider: async () => 'tok', now: () => nowMs, loadCatalog: async () => catalogoAmplio });
+async function diaCompleto(db, state, nowMs) {
+  const comp = amplio(state, nowMs);
+  let r;
+  for (let i = 0; i < 6; i++) { r = await comp.sync({ ORDERS_DB: db }, { calls: 50 }); if (r.state === 'done' || r.state === 'error') break; }
+  return r;
+}
+
+test('todo el catálogo con stock se vigila: primero los más vendidos, después la cola; sin stock y sin ventas queda afuera', async t => {
+  const db = await seed(t);
+  assert.equal((await diaCompleto(db, { day: 1 }, DAY1)).state, 'done');
+  const targets = db.sqlite.prepare('SELECT catalog_product_id,isbn,priority,own_catalog_item_id FROM comp_targets ORDER BY priority DESC').all();
+  assert.deepEqual(targets.map(r => r.catalog_product_id), ['MLU999', 'MLU888']);
+  assert.equal(targets[1].isbn, TAIL);
+  assert.equal(targets[1].own_catalog_item_id, 'MLU3');
+  // El libro de la cola: único con entrega inmediata, el otro lo vende a pedido bastante más caro.
+  const f = (await competitionByIsbn(db, [TAIL])).get(TAIL);
+  assert.equal(f.tu_precio, 1395);
+  assert.equal(f.competidores_comparables, 0);
+  assert.equal(f.precio_minimo_a_pedido, 1890);
+  assert.equal(f.primer_lugar, 'winning');
+  assert.ok(f.avisos.some(a => a.tipo === 'solos_en_catalogo' && /único con entrega inmediata/.test(a.texto)));
+  assert.equal((await competitionEvents(db)).vigilados, 2);
+});
+
+test('mientras la foto de hoy no llegó a un libro vale la de ayer, sin comparar días; si la de hoy quedó parcial no hay dato', async t => {
+  const db = await seed(t);
+  const state = { day: 1 };
+  await diaCompleto(db, state, DAY1);
+  // Día 2: el cupo alcanza sólo para el primero (el más vendido).
+  state.day = 2;
+  const r = await amplio(state, DAY2).sync({ ORDERS_DB: db }, { calls: 1 });
+  assert.equal(r.products, 1);
+  const facts = await competitionByIsbn(db, [ISBN, TAIL]);
+  assert.equal(facts.get(ISBN).foto, montevideoDate(DAY2));
+  assert.ok(facts.get(ISBN).avisos.some(a => a.tipo === 'primer_lugar_perdido'), 'el que ya tiene foto de hoy compara contra ayer');
+  const cola = facts.get(TAIL);
+  assert.equal(cola.foto, montevideoDate(DAY1));
+  assert.equal(cola.foto_anterior, null);
+  assert.equal(cola.precio_minimo_a_pedido, 1890);
+  assert.deepEqual(cola.avisos.map(a => a.tipo), ['solos_en_catalogo']);
+  // La tanda siguiente llega a la cola pero ML devuelve la lista incompleta: sin dato, no se usa la de ayer.
+  state.tailPartial = true;
+  await amplio(state, DAY2 + 300000).sync({ ORDERS_DB: db }, { calls: 50 });
+  assert.equal(db.sqlite.prepare("SELECT status FROM comp_product_days WHERE catalog_product_id='MLU888' AND snap_date=?").get(montevideoDate(DAY2)).status, 'partial');
+  assert.equal((await competitionByIsbn(db, [TAIL])).has(TAIL), false);
+});
+
+test('un 404 suelto de price_to_win no apaga el endpoint para el resto del catálogo', async t => {
+  const db = await seed(t);
+  // La cola responde 404 en price_to_win; el más vendido se lee igual al día siguiente.
+  const state = { day: 1, ptw404: true };
+  await diaCompleto(db, state, DAY1);
+  const st = await competitionStatus(db);
+  assert.equal(st.cursor.caps.price_to_win, 'ok');
+  assert.equal(st.cursor.ptwFails, 1);
+  assert.equal((await competitionByIsbn(db, [ISBN])).get(ISBN).primer_lugar, 'winning');
+  assert.equal((await competitionByIsbn(db, [TAIL])).get(TAIL).primer_lugar, null);
+});
+
+test('una lista armada con el criterio anterior se rearma en la primera tanda, sin esperar al día siguiente', async t => {
+  const db = await seed(t);
+  await diaCompleto(db, { day: 1 }, DAY1);
+  // Cursor del mismo día dejado por la versión que sólo vigilaba los más vendidos.
+  db.sqlite.prepare("DELETE FROM comp_targets WHERE catalog_product_id='MLU888'").run();
+  const viejo = JSON.parse(db.sqlite.prepare("SELECT cursor_json FROM comp_state WHERE name='daily'").get().cursor_json);
+  delete viejo.tv;
+  db.sqlite.prepare("UPDATE comp_state SET cursor_json=?,lease_until=0 WHERE name='daily'").run(JSON.stringify(viejo));
+  const r = await amplio({ day: 1 }, DAY1 + 600000).sync({ ORDERS_DB: db }, { calls: 0 });
+  assert.equal(r.targets, 2);
+  assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM comp_targets').get().n, 2);
+});

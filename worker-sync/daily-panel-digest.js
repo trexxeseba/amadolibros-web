@@ -103,13 +103,17 @@ const BRUJULA_BLOCKS = [
   ['perdida', 'Se venden a pérdida'],
 ];
 const bookLink = isbn => `${PANEL_URL}/reposicion?q=${encodeURIComponent(isbn)}`;
+// "Subile el precio" lista pocos: si hay más libros con stock muy por debajo del
+// mercado, el título dice cuántos son en total.
+const blockTitle = (b, key, title) => key === 'subir' && b.subirTotal > b.subir.length
+  ? `${title} (${b.subir.length} de ${b.subirTotal} con stock muy por debajo del mercado; todos en el panel)` : title;
 
 function brujulaText(b) {
   if (!b) return [];
   const out = ['BRÚJULA AMADO — qué hacer hoy'];
   for (const [key, title] of BRUJULA_BLOCKS) {
     if (!b[key]?.length) continue;
-    out.push(`  ${title}:`, ...b[key].map(r => `  - ${r.title ?? r.isbn}: ${r.detalle}`));
+    out.push(`  ${blockTitle(b, key, title)}:`, ...b[key].map(r => `  - ${r.title ?? r.isbn}: ${r.detalle}`));
   }
   out.push(`  Todo en ${BRUJULA_URL}`, '');
   return out;
@@ -118,7 +122,7 @@ function brujulaText(b) {
 function brujulaHtml(b) {
   if (!b) return '';
   const blocks = BRUJULA_BLOCKS.filter(([key]) => b[key]?.length).map(([key, title]) => `
-    <h3 style="font-size:15px;margin:14px 0 4px">${escapeHtml(title)}</h3>
+    <h3 style="font-size:15px;margin:14px 0 4px">${escapeHtml(blockTitle(b, key, title))}</h3>
     <ul style="margin:0;padding-left:18px">${b[key].map(r => `<li style="margin:3px 0"><a href="${escapeHtml(bookLink(r.isbn))}" style="color:#a94e3d">${escapeHtml(r.title ?? r.isbn)}</a>: ${escapeHtml(r.detalle)}</li>`).join('')}</ul>`).join('');
   return `<h2 style="font-size:17px;margin:24px 0 6px">Brújula Amado: qué hacer hoy</h2>${blocks}
     <p style="margin:8px 0"><a href="${BRUJULA_URL}" style="color:#a94e3d">Ver todo en Brújula Amado</a></p>`;
