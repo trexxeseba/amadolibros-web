@@ -1,6 +1,6 @@
 // Pausa preventiva en Amado Vintage (seller 2341378249) de las publicaciones ACTIVAS que:
 //  - son de las editoriales Hodder Education, Alma Edizioni o Eli Edizioni (campo editorial o título), o
-//  - mencionan ebook, e-book, libro electrónico o acceso digital en el título o en la descripción.
+//  - mencionan ebook, e-book, libro electrónico, acceso digital o simplemente "digital" en el título o en la descripción.
 // Orden de Seba, 09/11/2026: sólo Vintage, PAUSAR (no eliminar), guardar el listado con ID, título y
 // motivo. Una publicación que cumple varios motivos se cuenta una sola vez (el primero en el orden
 // editorial, título, descripción). Nunca toca otra cuenta: processOne revisa el vendedor.
@@ -16,7 +16,9 @@ import {processOne,SELLER} from './pausar.mjs';
 export const MAX_PAUSAR=6000;
 const PUBLISHER_FIELD=/^hodder\b|^(alma|eli)( edizioni)?$/;
 const PUBLISHER_TITLE=/\b(hodder|alma edizioni|eli edizioni)\b/;
-const EBOOK=/\be ?books?\b|\blibro electronico\b|\bacceso digital\b/;
+// Regla más dura (Seba, 09/11/2026: "siempre priorizamos la cuenta sobre un libro"): "digital" sola también cuenta,
+// igual que en el filtro de altas (worker-sync/ip-risk.js).
+const EBOOK=/\be ?books?\b|\blibro electronico\b|\bacceso digital\b|\bdigital(es)?\b/;
 
 // Motivo por el que una publicación se pausa según su título y su editorial, o null.
 export function motivoPorFicha({title,publisher}){

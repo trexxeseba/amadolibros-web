@@ -70,3 +70,11 @@ test('on a new IP report the watcher pauses the denounced listing and the simila
  assert.match(mails[0].texto,/Se pausaron 2 publicaciones/);assert.ok(!/Responder desde la publicación/.test(mails[0].texto));
  assert.ok(await brakeOn(query));
 });
+
+test('a pagination block from Mercado Libre (total 0) is not an open case',async t=>{
+ const query=d1(t);
+ const r=await watch({query,getInfractions:pages([]),getCases:async()=>[{total:0,offset:0,limit:50}],send:async()=>'enviado'});
+ assert.equal(r.denuncias_abiertas,0);
+ const real=await watch({query,getInfractions:pages([]),getCases:async()=>[{id:'c1',current_status:'open',item_id:'MLU9',due_date:'2026-12-01'}],send:async()=>'enviado'});
+ assert.equal(real.denuncias_abiertas,1,'un caso con id sigue contando');
+});

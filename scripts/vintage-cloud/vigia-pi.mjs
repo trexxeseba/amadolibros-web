@@ -80,7 +80,8 @@ export async function watch({query,getInfractions,getItemTitle=async()=>null,get
  // Denuncias abiertas del Brand Protection Program: tienen plazo (due_date) y las responde el vendedor
  // en la publicación. Una denuncia abierta nueva frena igual que una infracción.
  let cases=[];try{cases=await getCases();}catch{cases=null;}
- const openCases=(cases??[]).filter(c=>!/closed|finished|resolved/i.test(String(c?.current_status??c?.status??'')));
+ // La respuesta de Mercado Libre puede traer un bloque de paginación ({total,offset,limit}) en lugar de casos: no es un caso.
+ const openCases=(cases??[]).filter(c=>(c?.id??c?.case_id)!==undefined&&!/closed|finished|resolved/i.test(String(c?.current_status??c?.status??'')));
  for(const c of openCases){
   const id='case:'+String(c.id??c.case_id??'');if(id==='case:')continue;
   const seen=(await query(`SELECT id FROM ${SEEN} WHERE id=?`,[id]))[0];
