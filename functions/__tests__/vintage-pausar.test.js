@@ -102,6 +102,7 @@ test('pausa preventiva: editoriales Hodder, Alma y Eli, y ebook, acceso digital 
  assert.equal(motivoPorFicha({title:'Fotografía digital para todos',publisher:'Anaya'}),'ebook_en_titulo');
  assert.equal(motivoPorFicha({title:'Alma Mater',publisher:'Alma Books'}),null);
  assert.equal(motivoPorFicha({title:'Eli y el mar',publisher:'Planeta'}),null);
+ assert.equal(motivoPorFicha({title:'Bordando Nanas - Canciones Cuna + Disco',publisher:'Del Naranjo'}),'ebook_en_titulo');
  assert.equal(motivoPorDescripcion('Incluye acceso digital por 12 meses'),'ebook_en_descripcion');
  assert.equal(motivoPorDescripcion('Libro en papel, tapa blanda'),null);
 });
