@@ -18,6 +18,10 @@ on:
         description: 'Pausa preventiva: activas de Hodder, Alma y Eli Edizioni, o con ebook / e-book / libro electrónico / acceso digital en título o descripción. Sin real sólo cuenta y lista. Con real: confirmar=PAUSAR.'
         type: boolean
         default: false
+      sin_descripciones:
+        description: 'Con ebook: mirar sólo título y editorial (unos 10 minutos) y no la descripción de cada publicación (más de una hora).'
+        type: boolean
+        default: false
       eliminar_lista:
         description: 'ELIMINAR las 719 infectadas de scripts/vintage-cloud/eliminar-2026-11-09.txt (con real y confirmar=ELIMINAR). Irreversible; respaldo antes de cada una.'
         type: boolean
@@ -64,6 +68,7 @@ jobs:
         run: |
           if [ "${{ inputs.ebook }}" = "true" ]; then
             EARGS=()
+            if [ "${{ inputs.sin_descripciones }}" = "true" ]; then EARGS+=(--sin-descripciones); fi
             if [ "$REAL" = "true" ]; then
               if [ "$CONFIRMAR" != "PAUSAR" ]; then echo "Para pausar de verdad hay que escribir PAUSAR"; exit 1; fi
               EARGS+=(--real)

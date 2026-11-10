@@ -17,7 +17,7 @@ export const IP_RISK_PATTERNS=[
  // Digital, descargable, acceso online
  ['digital','\\bdigital(es)?\\b|\\bdigitale\\b|\\bnumerique\\b|\\bdigitalausgabe\\b'],
  ['ebook','\\be ?books?\\b|\\be ?libro\\b|\\blibro electronico\\b|\\belectronic\\b|\\betext\\b|\\be text\\b'],
- ['formato_archivo','\\bpdf\\b|\\bepub\\b|\\bmobi\\b|\\bkindle\\b|\\bmp3\\b|\\bcd ?rom\\b|\\bdvd\\b|\\bmultirom\\b|\\bcd\\b'],
+ ['formato_archivo','\\bpdf\\b|\\bepub\\b|\\bmobi\\b|\\bkindle\\b|\\bmp3\\b|\\bcd ?rom\\b|\\bdvd\\b|\\bmultirom\\b|\\bcd\\b|\\bdiscos?\\b'],
  ['descarga','\\bdescarga(s|ble|bles)?\\b|\\bdownload(able)?\\b|\\bonline\\b|\\bon line\\b|\\ben linea\\b'],
  ['acceso','\\bacceso\\b|\\baccess\\b|\\bcodigo\\b|\\bcode\\b|\\blicencia\\b|\\blicense\\b|\\bsuscripcion\\b|\\bsubscription\\b|\\bplataforma\\b|\\bplatform\\b'],
  ['interactivo','\\binteractiv[oae]s?\\b|\\binterattiv[oaei]\\b|\\binteractive\\b|\\bapp\\b|\\bapps\\b'],
