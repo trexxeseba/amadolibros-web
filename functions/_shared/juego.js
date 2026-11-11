@@ -96,23 +96,23 @@ export function vencimiento(now = new Date(), horas = CODIGO_VIGENCIA_HORAS) {
 
 /**
  * Precio con el premio de un código sobre el precio habitual.
+ * - Con transferencia, el 12 % se suma al premio hasta completar el tope:
+ *   total = min(premio + 12 %, MAX_TOTAL_DISCOUNT). Así quien gana un premio
+ *   nunca paga más que quien paga por transferencia sin premio (10 % + 12 % = 22 %).
  * - El descuento total nunca pasa MAX_TOTAL_DISCOUNT.
- * - La transferencia (12 %) se suma solo mientras el total entre en el tope.
  * - Si el precio final queda bajo el piso de $1.200, el premio no se aplica.
- * Devuelve { ok, price, totalPct, transferSumada, reason }.
+ * Devuelve { ok, price, totalPct, transferSumada, reason }; transferSumada es
+ * true si la transferencia aportó algo al total.
  */
 export function precioConPremio(habitual, premioPct, { transferencia = false } = {}) {
     const h = Number(habitual);
     if (!Number.isFinite(h) || h <= 0) return { ok: false, price: habitual, totalPct: 0, transferSumada: false, reason: 'precio_invalido' };
-    let pct = Math.min(Number(premioPct) / 100, MAX_TOTAL_DISCOUNT);
-    let transferSumada = false;
-    if (transferencia && pct + TRANSFER_DISCOUNT <= MAX_TOTAL_DISCOUNT + 1e-9) {
-        pct += TRANSFER_DISCOUNT;
-        transferSumada = true;
-    }
-    const price = Math.max(Math.round(h * (1 - pct)), Math.ceil(h * (1 - MAX_TOTAL_DISCOUNT)));
+    const premio = Math.min(Number(premioPct) / 100, MAX_TOTAL_DISCOUNT);
+    const total = transferencia ? Math.min(premio + TRANSFER_DISCOUNT, MAX_TOTAL_DISCOUNT) : premio;
+    const transferSumada = transferencia && total > premio + 1e-9;
+    const price = Math.max(Math.round(h * (1 - total)), Math.ceil(h * (1 - MAX_TOTAL_DISCOUNT)));
     if (price < PRICE_FLOOR_UYU) return { ok: false, price: h, totalPct: 0, transferSumada: false, reason: 'bajo_piso' };
-    return { ok: true, price, totalPct: Math.round(pct * 100), transferSumada, reason: 'ok' };
+    return { ok: true, price, totalPct: Math.round(total * 100), transferSumada, reason: 'ok' };
 }
 
 export function mensajeCodigoWhatsapp(code) {

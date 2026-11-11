@@ -89,8 +89,20 @@ test('precio con premio: tope, transferencia solo si entra y piso de $1.200', ()
     const conTransf = precioConPremio(2000, 10, { transferencia: true });
     assert.equal(conTransf.totalPct, 22);
     assert.equal(conTransf.transferSumada, true);
-    assert.equal(precioConPremio(2000, 15, { transferencia: true }).transferSumada, false, '15 + 12 pasa el tope');
-    assert.equal(precioConPremio(2000, 25, { transferencia: true }).totalPct, 25);
+    // 15 + 12 pasa el tope: la transferencia completa hasta 25 %, nunca deja al cliente peor que sin premio.
+    const quince = precioConPremio(2000, 15, { transferencia: true });
+    assert.equal(quince.totalPct, 25);
+    assert.equal(quince.price, 1500);
+    assert.equal(quince.transferSumada, true);
+    for (const p of RUEDA_PREMIOS) {
+        const con = precioConPremio(2000, p.pct, { transferencia: true });
+        const base = precioConPremio(2000, 10, { transferencia: true });
+        assert.ok(con.price <= base.price, `premio ${p.pct}% no puede costar más que el 10% + transferencia`);
+        assert.ok(con.totalPct <= MAX_TOTAL_DISCOUNT * 100);
+    }
+    const veinticinco = precioConPremio(2000, 25, { transferencia: true });
+    assert.equal(veinticinco.totalPct, 25);
+    assert.equal(veinticinco.transferSumada, false, 'el 25 % ya está en el tope');
     assert.equal(precioConPremio(1400, 25).reason, 'bajo_piso');
     assert.ok(precioConPremio(1600, 25).price >= PRICE_FLOOR_UYU);
     assert.equal(precioConPremio(2000, 99).totalPct, 25, 'nunca pasa el tope aunque el dato venga mal');

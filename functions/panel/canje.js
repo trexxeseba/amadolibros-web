@@ -36,7 +36,7 @@ function resultado(info, code) {
     if (info.estado === 'inexistente') return `<p class="err card">No encontramos ese código.</p>${formHtml(code)}`;
     const r = info.row;
     const detalle = `<p>Descuento: <b>${esc(r.discount_pct)}%</b>${r.regalo ? ` · Regalo: <b>${esc(r.regalo)}</b>` : ''}<br>Vence: ${esc(fecha(r.expires_at))}</p>
-<p><small>Se aplica sobre el precio habitual del libro de la liquidación. Si el precio final queda bajo $1.200 no corresponde el premio. El descuento total, con la transferencia, no pasa 25%.</small></p>`;
+<p><small>Se aplica sobre el precio habitual del libro de la liquidación. Si el precio final queda bajo $1.200 no corresponde el premio. Si paga por transferencia se suma 12% hasta completar un máximo de 25% en total (por ejemplo 10% + 12% = 22%; 15% + 12% = 25%).</small></p>`;
     if (info.estado === 'usado') return `<div class="card"><p class="err">Ya fue usado el ${esc(fecha(r.used_at))}.</p>${detalle}</div>${formHtml()}`;
     if (info.estado === 'vencido') return `<div class="card"><p class="err">Venció.</p>${detalle}</div>${formHtml()}`;
     return `<div class="card"><p class="ok"><b>Código vigente</b> ${esc(r.code)}</p>${detalle}

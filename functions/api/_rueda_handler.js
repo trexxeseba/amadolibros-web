@@ -29,14 +29,22 @@ export const PREVIEW_TABLE_SQL = `CREATE TABLE IF NOT EXISTS juego_codigos (
 )`;
 const previewSchema = new WeakMap();
 
-function json(data, status = 200, extra = {}) {
+/** En preview la tabla se crea sola (en producción la crea la migración). */
+export async function asegurarTablaPreview(env, db) {
+    if (String(env?.APP_ENV || '') !== 'preview') return;
+    let pending = previewSchema.get(db);
+    if (!pending) { pending = db.prepare(PREVIEW_TABLE_SQL).bind().run(); previewSchema.set(db, pending); }
+    await pending;
+}
+
+export function json(data, status = 200, extra = {}) {
     return new Response(JSON.stringify(data), {
         status,
         headers: { 'Content-Type': 'application/json;charset=UTF-8', 'Cache-Control': 'no-store', ...extra },
     });
 }
 
-function sameOrigin(request) {
+export function sameOrigin(request) {
     const origin = request.headers.get('Origin');
     if (!origin) return true;
     try { return new URL(origin).host === new URL(request.url).host; } catch { return false; }

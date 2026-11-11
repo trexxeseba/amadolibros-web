@@ -114,12 +114,13 @@ export const RUEDA_SCRIPT = `<script>
       var c=document.createElement('strong'); c.className='cod'; c.textContent=d.code;
       var v=document.createElement('p'); v.textContent='Vale '+d.valid_hours+' horas y se usa una sola vez. Elegí tu libro de la liquidación y mandanos el código por WhatsApp.';
       var a=document.createElement('a'); a.href=link; a.target='_blank'; a.rel='noopener noreferrer'; a.textContent='Mandar mi código por WhatsApp';
-      a.addEventListener('click',function(){ev('codigo_enviado_whatsapp',{juego:'rueda',premio:d.discount_pct});});
+      a.addEventListener('click',function(){ev('codigo_enviado_whatsapp',{juego:d.juego||'rueda',premio:d.discount_pct});});
       box.appendChild(t); box.appendChild(c); box.appendChild(v); box.appendChild(a); box.hidden=false;
       msg.textContent=''; msg.className='rueda-msg'; btn.disabled=false;
-      if(!d.repeat) ev('rueda_girada',{juego:'rueda',premio:d.discount_pct});
+      if(!d.repeat) ev('rueda_girada',{juego:d.juego||'rueda',premio:d.discount_pct});
     },espera);
   }
+  root.ruedaMostrar=mostrar;
   form.addEventListener('submit',function(e){
     e.preventDefault(); if(btn.disabled) return;
     msg.className='rueda-msg'; msg.textContent='Girando...'; btn.disabled=true;
