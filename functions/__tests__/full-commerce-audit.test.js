@@ -115,3 +115,24 @@ test('terminada la promo, un feed que conserva el precio promocional falla', () 
   const result = auditFeed({ items: [catalogItem()] }, rows, { now: new Date('2026-11-10T00:00:00-03:00') });
   assert.ok(result.issues.some(row => row.code === 'FEED_PRICE_MISMATCH' && row.promo_active === false));
 });
+
+test('un libro en liquidación (desde el 10/11/2026) no es error si el feed publica el precio de liquidación', () => {
+  const ahora = { now: new Date('2026-11-11T12:00:00Z'), env: {}, liquidationData: { lista: { ids: ['MLU123456'] } } };
+  const catalog = { items: [catalogItem({ price: 2990, status: 'active', available_quantity: 3, date_created: '2020-01-01T00:00:00Z' })] };
+  const conLiquidacion = auditFeed(catalog, parseMerchantFeed(feedXml({ price: '2691 UYU' })), ahora);
+  assert.equal(conLiquidacion.critical, 0, JSON.stringify(conLiquidacion.issues));
+  // Si el feed sigue con el precio de lista mientras rige la liquidación, sí es un desajuste real.
+  const sinLiquidacion = auditFeed(catalog, parseMerchantFeed(feedXml({ price: '2990 UYU' })), ahora);
+  assert.ok(sinLiquidacion.issues.some(row => row.code === 'FEED_PRICE_MISMATCH'));
+  // Antes de la promo y de la liquidación el precio esperado es el de lista.
+  const antes = auditFeed(catalog, parseMerchantFeed(feedXml({ price: '2990 UYU' })), { ...ahora, now: new Date('2026-10-01T12:00:00Z') });
+  assert.equal(antes.critical, 0);
+});
+
+test('los mazos, el tarot, las barajas y los juegos de cartas del feed (decisión del 8/11) no son error', () => {
+  const rows = parseMerchantFeed(feedXml({ id: 'MLU999', link: 'https://www.amadolibros.com/libro/MLU999/x', image: 'https://www.amadolibros.com/book-cover/MLU999/cover.jpg' }));
+  const mazo = catalogItem({ id: 'MLU999', domain_id: 'MLU-TAROT_CARDS', isbn: null, author: null, pages: null });
+  assert.equal(auditFeed({ items: [mazo] }, rows, FUERA_DE_PROMO).issues.some(row => row.code === 'FEED_NON_BOOK'), false);
+  const compu = catalogItem({ id: 'MLU999', domain_id: 'MLU-COMPUTER_COMPONENTS', isbn: null, author: null, pages: null });
+  assert.equal(auditFeed({ items: [compu] }, rows, FUERA_DE_PROMO).issues.some(row => row.code === 'FEED_NON_BOOK'), true);
+});
