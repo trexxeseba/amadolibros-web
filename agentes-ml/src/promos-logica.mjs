@@ -34,7 +34,10 @@ export function entradaEnPromo(entradas, promo) {
 // (min/max_discounted_price); si Seba no pidió uno, usa el sugerido o el máximo (menor descuento).
 export function precioObjetivo({ entrada, precioPedido = null, precioActual = null }) {
   const min = num(entrada?.min_discounted_price), max = num(entrada?.max_discounted_price), sug = num(entrada?.suggested_discounted_price);
-  const fijo = num(entrada?.price);
+  // Las campañas del vendedor (SELLER_CAMPAIGN, DEAL) traen price: 0 en la entrada candidata:
+  // un 0 no es un precio fijado. Sólo SMART / SMART_LIGHTNING fijan el precio final en `price`.
+  const fijoLeido = num(entrada?.price);
+  const fijo = fijoLeido !== null && fijoLeido > 0 ? fijoLeido : null;
   const pedido = num(precioPedido);
   if (pedido !== null) {
     if (pedido <= 0) return { error: 'precio_invalido' };
@@ -43,9 +46,9 @@ export function precioObjetivo({ entrada, precioPedido = null, precioActual = nu
     if (fijo !== null && Math.abs(fijo - pedido) > 0.009 && min === null && max === null) return { error: 'precio_fijado_por_ml', fijo };
     return { precio: pedido, fuente: 'pedido' };
   }
+  if (sug !== null && sug > 0) return { precio: sug, fuente: 'sugerido' };
+  if (max !== null && max > 0) return { precio: max, fuente: 'maximo' };
   if (fijo !== null) return { precio: fijo, fuente: 'fijado_por_ml' };
-  if (sug !== null) return { precio: sug, fuente: 'sugerido' };
-  if (max !== null) return { precio: max, fuente: 'maximo' };
   if (num(precioActual) !== null) return { error: 'sin_rango_de_precio' };
   return { error: 'sin_precio' };
 }
