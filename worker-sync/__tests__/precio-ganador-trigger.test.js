@@ -61,10 +61,13 @@ test('sin GITHUB_TOKEN no llama a GitHub y avisa', async () => {
   assert.deepEqual([r.state, r.alerta, github], ['sin_token', 'enviada', 0]);
 });
 
-test('las dos cuentas corren en todos los horarios (Seba, 06/11/2026)', async () => {
-  for (const c of CRONS_PRECIO_GANADOR) assert.equal(cuentaDelHorario(c), 'ambas');
+test('Libros corre en todos los horarios y Vintage sólo a las 09:00 y 21:00 (Seba, 11/11/2026)', async () => {
+  assert.deepEqual(CRONS_PRECIO_GANADOR.filter(c => cuentaDelHorario(c) === 'ambas'), ['0 12 * * *', '0 0 * * *']);
+  for (const c of CRONS_PRECIO_GANADOR.filter(c => c !== '0 12 * * *' && c !== '0 0 * * *')) assert.equal(cuentaDelHorario(c), 'libros');
   let body = null;
   const fetcher = async (url, o) => { if (o?.method === 'POST') { body = JSON.parse(o.body); return new Response(null, { status: 204 }); } return J({ workflow_runs: [] }); };
   await dispararPrecioGanador(env, { cron: '0 16 * * *', fetcher, now: () => ahora });
+  assert.deepEqual(body.inputs, { accion: 'correr', cuenta: 'libros' });
+  await dispararPrecioGanador(env, { cron: '0 12 * * *', fetcher, now: () => ahora });
   assert.deepEqual(body.inputs, { accion: 'correr', cuenta: 'ambas' });
 });

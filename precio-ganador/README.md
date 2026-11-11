@@ -52,8 +52,11 @@ Piso opcional por publicación: `pisos/libros.json`, con el formato `{ "MLU123":
 
 ## Horarios
 
-Las dos cuentas cada 2 horas, de 09:00 a 21:00 de Montevideo: 09, 11, 13, 15, 17, 19 y 21
-(Seba, 06/11/2026). Las dispara el Worker (`worker-sync/precio-ganador-trigger.js`); el cron
+Libros cada 2 horas, de 09:00 a 21:00 de Montevideo: 09, 11, 13, 15, 17, 19 y 21 (Seba, 06/11/2026).
+Vintage sólo a las 09:00 y a las 21:00 (Seba, 11/11/2026): Mercado Libre lo tiene restringido para ganar
+en catálogo ("vendedor no confiable"), no hay precios para bajar y una pasada por las 28.000 publicaciones
+cada 2 horas es consulta de más. Cuando se levante la restricción se vuelve a las dos cuentas en todas las
+franjas (`CRONS_VINTAGE` en el Worker y la matriz de `precio-ganador.yml`). Las dispara el Worker (`worker-sync/precio-ganador-trigger.js`); el cron
 de GitHub queda de respaldo y se saltea si ya hubo una corrida en la última hora. El mail de
 resumen del día sale a undiaes@gmail.com con la corrida de las 21:00. Si un día no llega,
 algo se rompió. Si una corrida falla entera, GitHub manda su mail de falla.
