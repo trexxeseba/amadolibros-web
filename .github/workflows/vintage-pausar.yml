@@ -22,6 +22,10 @@ on:
         description: 'Con ebook: mirar sólo título y editorial (unos 10 minutos) y no la descripción de cada publicación (más de una hora).'
         type: boolean
         default: false
+      archivo_eliminar:
+        description: 'Con eliminar_lista: archivo de la lista, dentro de scripts/vintage-cloud (por defecto la de las 719 del 09/11, que ya se borró: usar eliminar-2026-11-11.txt para las de propiedad intelectual).'
+        required: false
+        default: 'eliminar-2026-11-11.txt'
       eliminar_lista:
         description: 'ELIMINAR las 719 infectadas de scripts/vintage-cloud/eliminar-2026-11-09.txt (con real y confirmar=ELIMINAR). Irreversible; respaldo antes de cada una.'
         type: boolean
@@ -78,7 +82,10 @@ jobs:
           fi
           if [ "${{ inputs.eliminar_lista }}" = "true" ]; then
             if [ "$REAL" != "true" ] || [ "$CONFIRMAR" != "ELIMINAR" ]; then echo "Para eliminar hay que tildar real y escribir ELIMINAR"; exit 1; fi
-            node scripts/vintage-cloud/pausar.mjs --eliminar-lista scripts/vintage-cloud/eliminar-2026-11-09.txt --real | tee -a "$GITHUB_STEP_SUMMARY"
+            ARCH="${{ inputs.archivo_eliminar }}"
+            # Sólo archivos eliminar-AAAA-MM-DD.txt de esa carpeta: nada de rutas libres.
+            if ! [[ "$ARCH" =~ ^eliminar-[0-9]{4}-[0-9]{2}-[0-9]{2}\.txt$ ]]; then echo "Archivo no permitido: $ARCH"; exit 1; fi
+            node scripts/vintage-cloud/pausar.mjs --eliminar-lista "scripts/vintage-cloud/$ARCH" --real | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           ARGS=(--lista scripts/vintage-cloud/pausar-2026-11-09.txt)
