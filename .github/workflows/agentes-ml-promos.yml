@@ -1,0 +1,85 @@
+name: Agentes ML — promociones por título (Amado Libros)
+
+# Job A de agentes-ml: promociones de Amado Libros (440298103) por la API
+# seller-promotions v2, con el token que ya tiene la app (D1 ml_oauth, renovado por
+# el Worker; se lee con los secretos de Cloudflare igual que Precio Ganador).
+#
+# Acciones: estado (sólo lectura), sumar y sacar (escriben sólo en modo real),
+# seleccion (títulos con ventas y visitas, sólo lectura), ads-gasto (gasto de Product
+# Ads del mes contra el tope; sólo lectura, Ads nunca se escribe por API).
+#
+# Modo real sólo desde main. Toda escritura pasa por agentes-ml/src/guardas.mjs y
+# después se relee el precio visible: si pasa del 16 % se saca el ítem.
+# El log es público: ids, títulos, precios y promos propios; nunca unidades
+# vendidas, visitas ni montos de publicidad.
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: 'Qué hacer'
+        type: choice
+        options: [estado, sumar, sacar, seleccion, ads-gasto]
+        default: estado
+      item:
+        description: 'Publicación (MLU... o el número)'
+        required: false
+        default: ''
+        type: string
+      promocion:
+        description: 'Nombre de la promoción (como aparece en Mercado Libre)'
+        required: false
+        default: 'Amado 15'
+        type: string
+      precio:
+        description: 'Precio final pedido (vacío = el que sugiere o permite la promo)'
+        required: false
+        default: ''
+        type: string
+      pedido_seba:
+        description: 'Pedido expreso de Seba sobre este título: salta competencia, antigüedad y lista manual (nunca límites, stock ni médicos)'
+        type: boolean
+        default: false
+      modo:
+        description: 'prueba = no toca Mercado Libre · real = escribe (sólo desde main)'
+        type: choice
+        options: [prueba, real]
+        default: prueba
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agentes-ml-promos
+  cancel-in-progress: false
+
+jobs:
+  promos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ACCION: ${{ inputs.accion }}
+      ITEM: ${{ inputs.item }}
+      PROMOCION: ${{ inputs.promocion }}
+      PRECIO: ${{ inputs.precio }}
+      PEDIDO_SEBA: ${{ inputs.pedido_seba }}
+    steps:
+      - name: Modo real sólo desde main
+        if: inputs.modo == 'real' && github.ref != 'refs/heads/main'
+        run: |
+          echo "El modo real sólo corre desde main (rama actual: $GITHUB_REF)."
+          exit 1
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests
+        run: node --test agentes-ml/test/*.test.mjs
+      - name: Correr
+        env:
+          AGENTES_ML_MODO: ${{ inputs.modo == 'real' && 'real' || 'prueba' }}
+        run: node agentes-ml/src/promos.mjs

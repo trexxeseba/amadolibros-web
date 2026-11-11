@@ -17,6 +17,14 @@
 //   - DELETE siempre con promotion_type. Product Ads: ninguna escritura, nunca.
 //   - Interruptor general: deja todo en solo lectura.
 //
+// Decisiones de Seba del 11/11/2026 (fila direccion|decisiones-seba-2026-11-11):
+//   - Publicidad: tope de $20.000 por mes calendario (antes $30.000). Code sólo lo
+//     lee y avisa; los ajustes de Ads los hace el agente único por navegador.
+//   - Se mantiene la regla de cero escritura en Ads por API.
+//   - Un pedido expreso de Seba sobre un título puede saltar las exclusiones de
+//     selección (competencia, antigüedad, lista manual), nunca los límites ni los
+//     bloqueos, y tampoco el stock mínimo ni los libros médicos (pedidoSeba).
+//
 // Supuestos tomados de las recomendaciones del 10/11/2026, a confirmar por Seba:
 //   (1) Un ítem sin dato de competencia porque no es de catálogo (price_to_win
 //       responde not_listed) entra como candidato. Una lectura que falla no se estima.
@@ -34,6 +42,8 @@ export const LIMITES = Object.freeze({
   stockMinimoParaPromo: 3,
   diasMinimosDesdeAlta: 90,
   stockMinimoTrasReservar: 3,
+  adsMensualMaxUyu: 20000,
+  adsAlertaPct: 80,
 });
 
 const DIA_MS = 86400000;
@@ -197,6 +207,29 @@ export function evaluarLightning(l) {
   if (reservar === null || reservar < 1) falla('lightning_reserva_invalida', 'No se informa cuánto stock reservar.');
   else if (Math.min(s1, s2) - reservar < LIMITES.stockMinimoTrasReservar) falla('lightning_stock_insuficiente', `Después de reservar ${reservar} tiene que quedar stock de ${LIMITES.stockMinimoTrasReservar} o más.`, { stock: Math.min(s1, s2), reservar });
   return f;
+}
+
+// ── Pedido expreso de Seba sobre un título ──────────────────────────────────
+// Las exclusiones de selección (competencia, antigüedad, lista manual) no aplican a
+// un título que Seba pidió por su nombre. Los límites y los bloqueos siguen; el stock
+// mínimo y los libros médicos también (son reglas de no quedarse sin stock y de
+// catálogo, no de selección).
+const EXCLUSIONES_FIRMES = new Set(['stock_bajo', 'libro_medico']);
+export function aplicarPedidoSeba(r) {
+  const fallas = r.fallas.filter(f => f.tipo !== 'exclusion' || EXCLUSIONES_FIRMES.has(f.guarda));
+  const saltadas = r.fallas.filter(f => !fallas.includes(f)).map(f => f.guarda);
+  return { ...resultado(fallas), saltadas };
+}
+
+// ── Publicidad: gasto del mes contra el tope ────────────────────────────────
+// Sólo lectura. Devuelve el estado frente al tope mensual: 'dentro', 'alerta' (desde
+// el 80 %) o 'superado'. Un gasto que no se pudo leer es 'no_leido', nunca 'dentro'.
+export function evaluarGastoAds(gastoMes, tope = LIMITES.adsMensualMaxUyu) {
+  const gasto = num(gastoMes), max = num(tope);
+  if (gasto === null || max === null || max <= 0 || gasto < 0) return { estado: 'no_leido', pct: null, tope: max };
+  const pct = redondear2(100 * gasto / max);
+  const estado = gasto > max ? 'superado' : pct >= LIMITES.adsAlertaPct ? 'alerta' : 'dentro';
+  return { estado, pct, tope: max, restante: Math.max(0, redondear2(max - gasto)) };
 }
 
 // ── Después de cada escritura ───────────────────────────────────────────────

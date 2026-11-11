@@ -41,8 +41,24 @@ detalle va a Airtable.
 2. Guardas con tests: `src/guardas.mjs` y `config/exclusiones.json` (lista manual y
    palabras de libros médicos, editables). Cubren todas las reglas de Seba; ver el
    encabezado del módulo. Toda escritura de los jobs pasa por `evaluarEscritura`.
-3. Job B (medición de Ads), Job A (promociones) en prueba, y modo real: pendientes
-   (un PR por paso).
+3. Job A, promociones por título: `src/promos.mjs` (lógica pura en
+   `src/promos-logica.mjs`), workflow `agentes-ml-promos.yml` (manual). Acciones:
+   `estado`, `sumar`, `sacar`, `seleccion` (títulos con ventas y visitas) y
+   `ads-gasto` (gasto del mes contra el tope, sólo lectura). Modo real sólo desde
+   main; después de cada escritura se relee `sale_price` y si el visible pasa del
+   16 % se saca el ítem. Primera corrida real: Gold Foil Tarot en Amado 15
+   (Seba, 11/11/2026).
+4. Job B (medición completa de Ads) y la corrida automática diaria: pendientes.
+
+## Decisiones de Seba del 11/11/2026 (fila `direccion|decisiones-seba-2026-11-11`)
+
+- Tope de publicidad: $20.000 por mes calendario (`LIMITES.adsMensualMaxUyu`).
+- Reparto: Code toma por API las promociones por título, la selección de 50
+  títulos con ventas y visitas y la lectura del gasto de Ads. El agente único de
+  Cowork sigue con cupones, Ads por navegador y el aviso a Seba.
+- Se mantiene la regla de cero escritura en Ads por API.
+- Lo hecho se registra en la mesa Propuestas (Rama "Promos y cupones", Tarea
+  "Agente Code", Tipo Hecho o Error). Code no pone filas en Aprobada ni Rechazada.
 
 ## Modos de escritura
 
