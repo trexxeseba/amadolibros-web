@@ -4,7 +4,7 @@ name: Agentes ML — promociones por título (Amado Libros)
 # seller-promotions v2, con el token que ya tiene la app (D1 ml_oauth, renovado por
 # el Worker; se lee con los secretos de Cloudflare igual que Precio Ganador).
 #
-# Acciones: estado (sólo lectura), sumar y sacar (escriben sólo en modo real),
+# Acciones: estado (sólo lectura), sumar, sumar-lote y sacar (escriben sólo en modo real),
 # seleccion (títulos con ventas y visitas, sólo lectura), ads-gasto (gasto de Product
 # Ads del mes contra el tope; sólo lectura, Ads nunca se escribe por API).
 #
@@ -18,10 +18,15 @@ on:
       accion:
         description: 'Qué hacer'
         type: choice
-        options: [estado, sumar, sacar, seleccion, ads-gasto]
+        options: [estado, sumar, sumar-lote, sacar, seleccion, ads-gasto]
         default: estado
       item:
         description: 'Publicación (MLU... o el número)'
+        required: false
+        default: ''
+        type: string
+      items:
+        description: 'Sólo para sumar-lote: publicaciones separadas por coma'
         required: false
         default: ''
         type: string
@@ -67,6 +72,7 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       ACCION: ${{ inputs.accion }}
       ITEM: ${{ inputs.item }}
+      ITEMS: ${{ inputs.items }}
       PROMOCION: ${{ inputs.promocion }}
       PRECIO: ${{ inputs.precio }}
       PEDIDO_SEBA: ${{ inputs.pedido_seba }}
