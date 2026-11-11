@@ -31,7 +31,7 @@ export function entradaEnPromo(entradas, promo) {
 }
 
 // Precio final que se manda. Respeta lo que la promo acepta para ese ítem
-// (min/max_discounted_price); si Seba no pidió uno, usa el sugerido o el máximo (menor descuento).
+// (min/max_discounted_price); si Seba no pidió uno, usa el máximo (menor descuento).
 export function precioObjetivo({ entrada, precioPedido = null, precioActual = null }) {
   const min = num(entrada?.min_discounted_price), max = num(entrada?.max_discounted_price), sug = num(entrada?.suggested_discounted_price);
   // Las campañas del vendedor (SELLER_CAMPAIGN, DEAL) traen price: 0 en la entrada candidata:
@@ -46,8 +46,10 @@ export function precioObjetivo({ entrada, precioPedido = null, precioActual = nu
     if (fijo !== null && Math.abs(fijo - pedido) > 0.009 && min === null && max === null) return { error: 'precio_fijado_por_ml', fijo };
     return { precio: pedido, fuente: 'pedido' };
   }
-  if (sug !== null && sug > 0) return { precio: sug, fuente: 'sugerido' };
+  // Sin precio pedido va el MENOR descuento que acepta la promo (max_discounted_price). El
+  // sugerido de Mercado Libre suele ser de 30 % a 55 % (lote del 11/11): sólo si no hay rango.
   if (max !== null && max > 0) return { precio: max, fuente: 'maximo' };
+  if (sug !== null && sug > 0) return { precio: sug, fuente: 'sugerido' };
   if (fijo !== null) return { precio: fijo, fuente: 'fijado_por_ml' };
   if (num(precioActual) !== null) return { error: 'sin_rango_de_precio' };
   return { error: 'sin_precio' };

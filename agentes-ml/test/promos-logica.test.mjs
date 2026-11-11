@@ -32,11 +32,14 @@ test('precio objetivo: el pedido respeta el rango de la promo; sin pedido usa su
   assert.deepEqual(precioObjetivo({ entrada: e, precioPedido: 2090 }), { precio: 2090, fuente: 'pedido' });
   assert.equal(precioObjetivo({ entrada: e, precioPedido: 2100 }).error, 'precio_sobre_el_maximo');
   assert.equal(precioObjetivo({ entrada: e, precioPedido: 1000 }).error, 'precio_bajo_el_minimo');
-  assert.deepEqual(precioObjetivo({ entrada: e }), { precio: 1980, fuente: 'sugerido' });
+  // Sin pedido: el menor descuento que acepta la promo, no el sugerido de ML (que llegó a 55 %).
+  assert.deepEqual(precioObjetivo({ entrada: e }), { precio: 2090, fuente: 'maximo' });
+  assert.deepEqual(precioObjetivo({ entrada: { suggested_discounted_price: 1980 } }), { precio: 1980, fuente: 'sugerido' });
   assert.deepEqual(precioObjetivo({ entrada: { max_discounted_price: 2090 } }), { precio: 2090, fuente: 'maximo' });
   // Entrada real de Amado 15 (11/11): price 0 con rango. El 0 no es un precio fijado: va el sugerido.
   const amado15 = { id: 'C-MLU1040790', type: 'SELLER_CAMPAIGN', status: 'candidate', price: 0, original_price: 2200, min_discounted_price: 765.6, max_discounted_price: 2090, suggested_discounted_price: 2090 };
-  assert.deepEqual(precioObjetivo({ entrada: amado15 }), { precio: 2090, fuente: 'sugerido' });
+  assert.deepEqual(precioObjetivo({ entrada: amado15 }), { precio: 2090, fuente: 'maximo' });
+  assert.deepEqual(precioObjetivo({ entrada: { ...amado15, max_discounted_price: 1890.5, suggested_discounted_price: 918 } }), { precio: 1890.5, fuente: 'maximo' });
   assert.deepEqual(precioObjetivo({ entrada: amado15, precioPedido: 2090 }), { precio: 2090, fuente: 'pedido' });
   assert.equal(precioObjetivo({ entrada: { price: 0 } }).error, 'sin_precio');
   assert.deepEqual(precioObjetivo({ entrada: { price: 1500, offer_id: 'C-1' } }), { precio: 1500, fuente: 'fijado_por_ml' });
