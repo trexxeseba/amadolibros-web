@@ -126,3 +126,16 @@ test('reputation: one snapshot per day; mails only if the level changes or cance
  await watchSignals({query,getReputation:async()=>rep('4_light_green',.006,0),send,now:d3});
  assert.equal(mails.length,2);assert.match(mails[1].texto,/nivel pasó de 5_green a 4_light_green/);
 });
+
+test('catalog competition: one daily snapshot of a sample; it mails only when fewer listings carry the non-trusted-seller reason',async t=>{
+ const query=d1(t),mails=[],send=async m=>{mails.push(m);return 'enviado';},d1ms=Date.parse('2026-11-11T12:00:00Z'),d2=d1ms+86400000,d3=d2+86400000;
+ const comp=(nt,otro)=>async()=>({total:nt+otro,por_razon:{'listed|non_trusted_seller':nt,...(otro?{'winning|sin_razon':otro}:{})}});
+ const a=await watchSignals({query,getCompetencia:comp(20,0),send,now:d1ms});
+ assert.equal(a.competencia.total,20);assert.equal(mails.length,0);
+ await watchSignals({query,getCompetencia:comp(10,10),send,now:d1ms+3600000});
+ assert.equal(mails.length,0,'el mismo día no se vuelve a evaluar');
+ await watchSignals({query,getCompetencia:comp(20,0),send,now:d2});
+ assert.equal(mails.length,0,'sin cambio no avisa');
+ await watchSignals({query,getCompetencia:comp(12,8),send,now:d3});
+ assert.equal(mails.length,1);assert.match(mails[0].texto,/60 %/);
+});

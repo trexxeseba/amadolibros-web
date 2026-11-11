@@ -136,7 +136,7 @@ export const REP_CANCEL_ALERT=0.015,REP_CLAIMS_ALERT=0.025;
 const IP_NOTICE=/propiedad intelectual|replicas|falsific|copias no autorizadas|marca registrada|derechos de autor/i;
 const uyDay=ms=>new Date(ms-3*3600000).toISOString().slice(0,10);
 const plain=x=>String(x??'').replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
-export async function watchSignals({query,getNotices=async()=>[],getReputation=async()=>null,send=sendMail,now=Date.now(),runUrl=null}){
+export async function watchSignals({query,getNotices=async()=>[],getReputation=async()=>null,getCompetencia=async()=>null,send=sendMail,now=Date.now(),runUrl=null}){
  await schema(query);
  const out={avisos_nuevos:0,avisos_pi:0,reputacion:null};
  // Avisos
@@ -176,6 +176,22 @@ export async function watchSignals({query,getNotices=async()=>[],getReputation=a
    if(motivos.length)await send({asunto:'reputación de Vintage: '+motivos[0],texto:`Reputación de Amado Vintage al ${day}: ${motivos.join('; ')}.\n\nNivel ${snap.level}, ventas ${snap.ventas}, cancelaciones ${snap.cancelaciones===null?'sin dato':(snap.cancelaciones*100).toFixed(2)+' %'}, reclamos ${snap.reclamos===null?'sin dato':(snap.reclamos*100).toFixed(2)+' %'}, demoras de despacho ${snap.demoras===null?'sin dato':(snap.demoras*100).toFixed(2)+' %'}.\nLos valores de referencia son los de MercadoLíder: no son umbrales de suspensión, sino una alerta temprana.${runUrl?`\n\nDetalle: ${runUrl}`:''}`});
   }
  }
+
+ // Competencia en catálogo (price_to_win): una foto por día de una muestra de publicaciones. Seba (10/11/2026):
+ // Mercado Libre marcó la cuenta como vendedor no confiable y no hay información pública de cuánto tarda en salir;
+ // se mide acá. Avisa cuando aparece alguna que ya no tiene esa razón.
+ let comp=null;try{comp=await getCompetencia();}catch{comp=null;}
+ if(comp&&comp.total){
+  const day=uyDay(now),prev=(await query(`SELECT value FROM ${FLAGS} WHERE key='competencia'`))[0],before=prev?JSON.parse(prev.value):null;
+  const snap={day,total:comp.total,por_razon:comp.por_razon};
+  out.competencia=snap;
+  if(!before||before.day!==day){
+   const noConf=m=>Object.entries(m??{}).filter(([k])=>/non_trusted_seller/.test(k)).reduce((a,[,v])=>a+v,0);
+   const antes=before?noConf(before.por_razon)/before.total:null,ahora=noConf(snap.por_razon)/snap.total;
+   await query(`INSERT INTO ${FLAGS}(key,value,at) VALUES('competencia',?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,at=excluded.at`,[JSON.stringify(snap),now]);
+   if(antes!==null&&ahora<antes)await send({asunto:'catálogo de Vintage: cambió el estado de competencia',texto:`Competencia en catálogo al ${day}: de ${snap.total} publicaciones de la muestra, ${(ahora*100).toFixed(0)} % siguen con razón "vendedor no confiable" (antes ${(antes*100).toFixed(0)} %).\n\nDetalle: ${JSON.stringify(snap.por_razon)}${runUrl?`\n\nDetalle de la corrida: ${runUrl}`:''}`});
+  }
+ }
  return out;
 }
 
@@ -187,6 +203,13 @@ export function mlReaders(query){
   getItemTitle:async id=>{try{return (await ml.get(`/items/${id}?attributes=title`))?.title??null;}catch{return null;}},
   getNotices:async()=>{const r=await ml.get('/communications/notices?limit=50&offset=0');return Array.isArray(r?.results)?r.results:[];},
   getReputation:async()=>(await ml.get(`/users/${SELLER}`))?.seller_reputation??null,
+  getCompetencia:async()=>{
+   if(!query)return null;
+   const ids=(await query("SELECT item_id FROM ml_vintage_pub_receipts WHERE seller_id=? AND state='published' AND item_id IS NOT NULL ORDER BY RANDOM() LIMIT 20",[SELLER])).map(r=>r.item_id);
+   const por_razon={};let total=0;
+   for(const id of ids){try{const r=await ml.get(`/items/${id}/price_to_win?siteId=MLU&version=v2`);if(r?.status==='not_listed')continue;total++;const k=`${r?.status??'?'}|${[].concat(r?.reason??[]).join('+')||'sin_razon'}`;por_razon[k]=(por_razon[k]??0)+1;}catch{}}
+   return {total,por_razon};
+  },
   getCases:async()=>{const r=await ml.get('/moderations/pppi/cases?offset=0&date_created=&status=');const list=Array.isArray(r?.results)?r.results:Array.isArray(r?.cases)?r.cases:Array.isArray(r)?r:[];return list;},
  };
 }
