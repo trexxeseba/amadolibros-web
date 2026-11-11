@@ -5,7 +5,7 @@
  * de mejor esfuerzo y se atrasa horas (el 05/11/2026 la corrida de las 00:00 UTC
  * arrancó a las 04:29). Cada 2 horas de 09:00 a 21:00 de Montevideo (12:00 a 00:00
  * UTC) el Worker pide un workflow_dispatch de precio-ganador.yml para las dos
- * cuentas (Seba, 06/11/2026: "cada 2 horas ambos").
+ * cuentas (Seba, 06/11/2026: "cada 2 horas ambos"); desde el 11/11/2026 Vintage sólo a las 09:00 y 21:00.
  *
  *  - No dispara sólo si ya hay una corrida de ESTA franja: creada en los últimos
  *    10 minutos (el cron de GitHub, si llegó puntual). Una corrida atrasada de la
@@ -22,8 +22,11 @@
  *    va en el código ni en wrangler.toml.
  */
 export const CRONS_PRECIO_GANADOR = ['0 12 * * *', '0 14 * * *', '0 16 * * *', '0 18 * * *', '0 20 * * *', '0 22 * * *', '0 0 * * *'];
-// Qué cuentas corren en cada horario: las dos en todos (Seba, 06/11/2026).
-export const CRONS_VINTAGE = CRONS_PRECIO_GANADOR;
+// Qué cuentas corren en cada horario: Libros en todos; Vintage sólo a las 09:00 y a las 21:00 de Montevideo
+// (Seba, 11/11/2026). Mercado Libre marcó Vintage como vendedor no confiable en catálogo (no puede ganar):
+// no hay precios para bajar y una pasada por las 28.000 publicaciones cada 2 horas es consulta de más.
+// Cuando se levante la restricción se vuelve a las dos cuentas en todos los horarios.
+export const CRONS_VINTAGE = ['0 12 * * *', '0 0 * * *'];
 // Horario con el mail de resumen del día (21:00 de Montevideo).
 export const CRON_RESUMEN = '0 0 * * *';
 export const cuentaDelHorario = cron => CRONS_VINTAGE.includes(cron) ? 'ambas' : 'libros';
