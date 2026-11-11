@@ -18,14 +18,16 @@ export const RATE_LIMIT = Object.freeze({ max: 6, windowMinutes: 60 });
 export const PREVIEW_TABLE_SQL = `CREATE TABLE IF NOT EXISTS juego_codigos (
   code TEXT PRIMARY KEY,
   origen TEXT NOT NULL CHECK (origen IN ('rueda','acertijo')),
-  discount_pct INTEGER NOT NULL CHECK (discount_pct BETWEEN 1 AND 25),
+  discount_pct INTEGER CHECK (discount_pct BETWEEN 1 AND 25),
+  monto_uyu INTEGER CHECK (monto_uyu BETWEEN 1 AND 5000),
   regalo TEXT,
   wa_hash TEXT NOT NULL,
   dia TEXT NOT NULL,
   ip_hash TEXT,
   created_at TEXT NOT NULL,
   expires_at TEXT NOT NULL,
-  used_at TEXT
+  used_at TEXT,
+  CHECK (discount_pct IS NOT NULL OR monto_uyu IS NOT NULL)
 )`;
 const previewSchema = new WeakMap();
 
@@ -53,7 +55,8 @@ export function sameOrigin(request) {
 const publico = row => ({
     ok: true,
     code: row.code,
-    discount_pct: Number(row.discount_pct),
+    monto_uyu: row.monto_uyu == null ? null : Number(row.monto_uyu),
+    discount_pct: row.discount_pct == null ? null : Number(row.discount_pct),
     expires_at: row.expires_at,
     valid_hours: CODIGO_VIGENCIA_HORAS,
 });
@@ -97,7 +100,7 @@ export function createRuedaHandler({ getNow = () => new Date(), roll, codeBytes 
             }
 
             const existente = await db.prepare(
-                "SELECT code, discount_pct, expires_at, used_at FROM juego_codigos WHERE wa_hash=? AND dia=? AND origen='rueda'"
+                "SELECT code, discount_pct, monto_uyu, expires_at, used_at FROM juego_codigos WHERE wa_hash=? AND dia=? AND origen='rueda'"
             ).bind(waHash, dia).first();
             if (existente) return respuestaRepetida(existente, createdAt);
 
@@ -114,15 +117,15 @@ export function createRuedaHandler({ getNow = () => new Date(), roll, codeBytes 
             for (let intento = 0; intento < 4; intento++) {
                 const code = generarCodigo(codeBytes ? codeBytes() : undefined);
                 const res = await db.prepare(
-                    'INSERT OR IGNORE INTO juego_codigos (code, origen, discount_pct, regalo, wa_hash, dia, ip_hash, created_at, expires_at, used_at) ' +
+                    'INSERT OR IGNORE INTO juego_codigos (code, origen, monto_uyu, regalo, wa_hash, dia, ip_hash, created_at, expires_at, used_at) ' +
                     "VALUES (?, 'rueda', ?, NULL, ?, ?, ?, ?, ?, NULL)"
-                ).bind(code, premio.pct, waHash, dia, ipHash, createdAt, vencimiento(now)).run();
+                ).bind(code, premio.monto, waHash, dia, ipHash, createdAt, vencimiento(now)).run();
                 if (Number(res?.meta?.changes ?? 1) > 0) {
-                    return json({ ...publico({ code, discount_pct: premio.pct, expires_at: vencimiento(now) }), repeat: false }, 201);
+                    return json({ ...publico({ code, monto_uyu: premio.monto, expires_at: vencimiento(now) }), repeat: false }, 201);
                 }
                 // Si fue una carrera por el mismo número, devolvemos el código ya creado.
                 const carrera = await db.prepare(
-                    "SELECT code, discount_pct, expires_at, used_at FROM juego_codigos WHERE wa_hash=? AND dia=? AND origen='rueda'"
+                    "SELECT code, discount_pct, monto_uyu, expires_at, used_at FROM juego_codigos WHERE wa_hash=? AND dia=? AND origen='rueda'"
                 ).bind(waHash, dia).first();
                 if (carrera) return respuestaRepetida(carrera, createdAt);
             }

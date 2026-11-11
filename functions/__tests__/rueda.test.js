@@ -5,7 +5,7 @@ import { DatabaseSync } from 'node:sqlite';
 
 import {
     RUEDA_PREMIOS, validarPremios, drawPrize, randomInt, diaMontevideo, generarCodigo, normalizarCodigo,
-    normalizarWhatsapp, hashWhatsapp, precioConPremio, CODIGO_RE, CODIGO_VIGENCIA_HORAS, mensajeCodigoWhatsapp,
+    normalizarWhatsapp, hashWhatsapp, PREMIO_MIN_UYU, PREMIO_MAX_UYU, precioConPremio, CODIGO_RE, CODIGO_VIGENCIA_HORAS, mensajeCodigoWhatsapp,
 } from '../_shared/juego.js';
 import { MAX_TOTAL_DISCOUNT, PRICE_FLOOR_UYU } from '../_shared/descuentos.js';
 import { createRuedaHandler, PREVIEW_TABLE_SQL, RATE_LIMIT } from '../api/_rueda_handler.js';
@@ -17,6 +17,8 @@ const NOW = new Date('2026-11-10T15:00:00.000Z');
 function d1() {
     const db = new DatabaseSync(':memory:');
     db.exec(readFileSync('migrations/0017_juego_codigos.sql', 'utf8'));
+    db.exec(readFileSync('migrations/0018_juego_acertijo.sql', 'utf8'));
+    db.exec(readFileSync('migrations/0019_juego_premios_en_pesos.sql', 'utf8'));
     return {
         raw: db,
         prepare(sql) {
@@ -43,27 +45,30 @@ const handler = (opts = {}) => createRuedaHandler({
     ...opts,
 });
 
-test('los premios suman 100 y ninguno pasa el tope de 25 %', () => {
+test('los premios suman 100 y van de $150 a $450', () => {
     assert.equal(RUEDA_PREMIOS.reduce((s, p) => s + p.peso, 0), 100);
-    assert.ok(RUEDA_PREMIOS.every(p => p.pct / 100 <= MAX_TOTAL_DISCOUNT));
-    assert.deepEqual(RUEDA_PREMIOS.map(p => [p.pct, p.peso]), [[10, 35], [12, 25], [15, 20], [18, 10], [20, 6], [25, 4]]);
-    assert.throws(() => validarPremios([{ pct: 30, peso: 100 }]), /supera el tope/);
-    assert.throws(() => validarPremios([{ pct: 10, peso: 90 }]), /suman/);
+    assert.ok(RUEDA_PREMIOS.every(p => p.monto >= PREMIO_MIN_UYU && p.monto <= PREMIO_MAX_UYU));
+    assert.equal(PREMIO_MIN_UYU, 150);
+    assert.equal(PREMIO_MAX_UYU, 450);
+    assert.deepEqual(RUEDA_PREMIOS.map(p => [p.monto, p.peso]), [[150, 30], [200, 25], [250, 20], [300, 12], [350, 8], [450, 5]]);
+    assert.throws(() => validarPremios([{ monto: 500, peso: 100 }]), /rango/);
+    assert.throws(() => validarPremios([{ monto: 100, peso: 100 }]), /rango/);
+    assert.throws(() => validarPremios([{ monto: 200, peso: 90 }]), /suman/);
 });
 
 test('drawPrize respeta los pesos en los bordes y en distribución', () => {
-    assert.equal(drawPrize(0).pct, 10);
-    assert.equal(drawPrize(34).pct, 10);
-    assert.equal(drawPrize(35).pct, 12);
-    assert.equal(drawPrize(59).pct, 12);
-    assert.equal(drawPrize(60).pct, 15);
-    assert.equal(drawPrize(80).pct, 18);
-    assert.equal(drawPrize(90).pct, 20);
-    assert.equal(drawPrize(96).pct, 25);
-    assert.equal(drawPrize(99).pct, 25);
+    assert.equal(drawPrize(0).monto, 150);
+    assert.equal(drawPrize(29).monto, 150);
+    assert.equal(drawPrize(30).monto, 200);
+    assert.equal(drawPrize(54).monto, 200);
+    assert.equal(drawPrize(55).monto, 250);
+    assert.equal(drawPrize(75).monto, 300);
+    assert.equal(drawPrize(87).monto, 350);
+    assert.equal(drawPrize(95).monto, 450);
+    assert.equal(drawPrize(99).monto, 450);
     const counts = {};
-    for (let i = 0; i < 20000; i++) { const p = drawPrize(randomInt(100)).pct; counts[p] = (counts[p] || 0) + 1; }
-    for (const p of RUEDA_PREMIOS) assert.ok(Math.abs(counts[p.pct] / 200 - p.peso) < 2, `premio ${p.pct}`);
+    for (let i = 0; i < 20000; i++) { const m = drawPrize(randomInt(100)).monto; counts[m] = (counts[m] || 0) + 1; }
+    for (const p of RUEDA_PREMIOS) assert.ok(Math.abs(counts[p.monto] / 200 - p.peso) < 2, 'premio ' + p.monto);
 });
 
 test('códigos legibles, sin caracteres ambiguos, y normalización', () => {
@@ -84,29 +89,39 @@ test('número de WhatsApp: formas válidas y hash diario sin el número', async 
     assert.equal(diaMontevideo(new Date('2026-11-11T02:00:00Z')), '2026-11-10');
 });
 
-test('precio con premio: tope, transferencia solo si entra y piso de $1.200', () => {
-    assert.deepEqual(precioConPremio(2000, 15), { ok: true, price: 1700, totalPct: 15, transferSumada: false, reason: 'ok' });
-    const conTransf = precioConPremio(2000, 10, { transferencia: true });
-    assert.equal(conTransf.totalPct, 22);
-    assert.equal(conTransf.transferSumada, true);
-    // 15 + 12 pasa el tope: la transferencia completa hasta 25 %, nunca deja al cliente peor que sin premio.
-    const quince = precioConPremio(2000, 15, { transferencia: true });
-    assert.equal(quince.totalPct, 25);
-    assert.equal(quince.price, 1500);
-    assert.equal(quince.transferSumada, true);
+test('precio con premio: suma al 10 %, al tope de 25 % y al piso de $1.200', () => {
+    // $2.000 habitual: 10 % ($200) + $150 = $350 → $1.650, sin transferencia.
+    assert.deepEqual(precioConPremio(2000, 150), { ok: true, price: 1650, descuentoUyu: 350, totalPct: 18, transferSumada: false, reason: 'ok' });
+    // $3.000 habitual con $450: 10 % ($300) + $450 = $750 = 25 % justo.
+    assert.equal(precioConPremio(3000, 450).price, 2250);
+    // Un premio grande en un libro más barato se recorta en el tope de 25 %.
+    const tope = precioConPremio(2000, 450);
+    assert.equal(tope.price, 1500);
+    assert.equal(tope.totalPct, 25);
+    // La transferencia suma 12 % hasta el tope, y nunca deja peor que sin premio.
+    const baseTransf = precioConPremio(4000, 150, { transferencia: true });
+    assert.equal(baseTransf.price, 3000 + 0, 'con 4.000: 10 % + $150 + 12 % pasa el tope y queda en 25 %');
+    assert.equal(baseTransf.transferSumada, true);
     for (const p of RUEDA_PREMIOS) {
-        const con = precioConPremio(2000, p.pct, { transferencia: true });
-        const base = precioConPremio(2000, 10, { transferencia: true });
-        assert.ok(con.price <= base.price, `premio ${p.pct}% no puede costar más que el 10% + transferencia`);
-        assert.ok(con.totalPct <= MAX_TOTAL_DISCOUNT * 100);
+        for (const h of [1300, 1500, 2000, 3500, 8000]) {
+            const con = precioConPremio(h, p.monto, { transferencia: true });
+            const sin = precioConPremio(h, p.monto, { transferencia: false });
+            assert.ok(con.price <= sin.price, 'transferencia no encarece: ' + p.monto + ' sobre ' + h);
+            assert.ok(con.totalPct <= MAX_TOTAL_DISCOUNT * 100 + 1, 'tope: ' + p.monto + ' sobre ' + h);
+            assert.ok(con.price >= PRICE_FLOOR_UYU && sin.price >= PRICE_FLOOR_UYU, 'piso: ' + p.monto + ' sobre ' + h);
+            assert.ok(sin.price <= Math.ceil(h * 0.9) || sin.price === PRICE_FLOOR_UYU, 'nunca peor que el 10 % de liquidación');
+        }
     }
-    const veinticinco = precioConPremio(2000, 25, { transferencia: true });
-    assert.equal(veinticinco.totalPct, 25);
-    assert.equal(veinticinco.transferSumada, false, 'el 25 % ya está en el tope');
-    assert.equal(precioConPremio(1400, 25).reason, 'bajo_piso');
-    assert.ok(precioConPremio(1600, 25).price >= PRICE_FLOOR_UYU);
-    assert.equal(precioConPremio(2000, 99).totalPct, 25, 'nunca pasa el tope aunque el dato venga mal');
-    assert.equal(precioConPremio('x', 10).reason, 'precio_invalido');
+    // Piso: se recorta el descuento para no bajar de $1.200, y bajo el piso no hay premio.
+    const recortado = precioConPremio(1500, 450);
+    assert.equal(recortado.price, 1200);
+    assert.equal(recortado.reason, 'recortado_por_piso');
+    assert.equal(precioConPremio(1200, 300).reason, 'bajo_piso');
+    assert.equal(precioConPremio(1000, 300).ok, false);
+    assert.equal(precioConPremio('x', 200).reason, 'precio_invalido');
+    // Códigos viejos con porcentaje siguen valiendo (y nunca pasan el tope).
+    assert.equal(precioConPremio(2000, { discount_pct: 15 }).price, 1700);
+    assert.equal(precioConPremio(2000, { discount_pct: 99 }).totalPct, 25);
 });
 
 test('POST /api/rueda: el servidor decide el premio y entrega un código de 48 horas', async () => {
@@ -114,7 +129,7 @@ test('POST /api/rueda: el servidor decide el premio y entrega un código de 48 h
     const res = await handler({ roll: () => 97 })({ request: post({ whatsapp: '099 841 325' }), env: { ORDERS_DB: db } });
     assert.equal(res.status, 201);
     const data = await res.json();
-    assert.equal(data.discount_pct, 25);
+    assert.equal(data.monto_uyu, 450);
     assert.match(data.code, CODIGO_RE);
     assert.equal(data.valid_hours, CODIGO_VIGENCIA_HORAS);
     assert.equal(data.expires_at, '2026-11-12T15:00:00.000Z');
@@ -171,10 +186,24 @@ test('sin base de datos responde 503 y nunca un código', async () => {
 });
 
 test('la tabla de preview es la misma de la migración', () => {
-    const norm = s => s.replace(/--.*$/gm, '').replace(/\s+/g, ' ').replace(/ ?\( ?/g, '(').replace(/ ?\) ?/g, ')').trim();
-    const mig = readFileSync('migrations/0017_juego_codigos.sql', 'utf8');
-    const create = mig.match(/CREATE TABLE IF NOT EXISTS juego_codigos[\s\S]*?\);/)[0].replace(/;$/, '');
-    assert.equal(norm(PREVIEW_TABLE_SQL), norm(create));
+    const norm = x => x.replace(/--.*$/gm, '').replace(/\s+/g, ' ').replace(/ ?\( ?/g, '(').replace(/ ?\) ?/g, ')').trim();
+    const mig = readFileSync('migrations/0019_juego_premios_en_pesos.sql', 'utf8');
+    const create = mig.match(/CREATE TABLE juego_codigos_nueva[\s\S]*?\n\);/)[0].replace(/;$/, '').replace('juego_codigos_nueva', 'IF NOT EXISTS juego_codigos');
+    assert.equal(norm(PREVIEW_TABLE_SQL), norm(create.replace('CREATE TABLE IF NOT EXISTS', 'CREATE TABLE IF NOT EXISTS')));
+});
+
+test('la migración de pesos conserva los códigos viejos con porcentaje', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec(readFileSync('migrations/0017_juego_codigos.sql', 'utf8'));
+    db.exec(readFileSync('migrations/0018_juego_acertijo.sql', 'utf8'));
+    db.prepare("INSERT INTO juego_codigos (code, origen, discount_pct, wa_hash, dia, created_at, expires_at) VALUES ('LIB-VIEJO','rueda',18,'h','2026-11-10','2026-11-10T10:00:00Z','2026-11-12T10:00:00Z')").run();
+    db.exec(readFileSync('migrations/0019_juego_premios_en_pesos.sql', 'utf8'));
+    const fila = db.prepare("SELECT * FROM juego_codigos WHERE code='LIB-VIEJO'").get();
+    assert.equal(fila.discount_pct, 18);
+    assert.equal(fila.monto_uyu, null);
+    db.prepare("INSERT INTO juego_codigos (code, origen, monto_uyu, wa_hash, dia, created_at, expires_at) VALUES ('LIB-NUEVO','rueda',300,'h2','2026-11-10','2026-11-10T10:00:00Z','2026-11-12T10:00:00Z')").run();
+    assert.throws(() => db.prepare("INSERT INTO juego_codigos (code, origen, wa_hash, dia, created_at, expires_at) VALUES ('LIB-VACIO','rueda','h3','2026-11-10','2026-11-10T10:00:00Z','2026-11-12T10:00:00Z')").run(), /CHECK/);
+    assert.throws(() => db.prepare("INSERT INTO juego_codigos (code, origen, monto_uyu, wa_hash, dia, created_at, expires_at) VALUES ('LIB-OTRO1','rueda',200,'h','2026-11-10','2026-11-10T11:00:00Z','2026-11-12T11:00:00Z')").run(), /UNIQUE/, 'sigue el índice de un giro por día');
 });
 
 // ---- Canje (panel) ----
@@ -202,6 +231,23 @@ test('el canje exige sesión del panel y producción', async () => {
     assert.equal(preview.status, 403);
 });
 
+test('canje: la calculadora da el precio final con y sin transferencia', async () => {
+    const db = d1();
+    const env = { ...PANEL_ENV, ORDERS_DB: db };
+    const { code } = await (await handler({ roll: () => 60 })({ request: post({ whatsapp: '099841325' }), env: { ORDERS_DB: db } })).json(); // $250
+    const panel = createCanjePanel({ getNow: () => NOW });
+    const cookie = await cookieDeSesion();
+    const res = await panel({ request: canjeReq(cookie, { codigo: code, accion: 'verificar', precio: '2000' }), env });
+    const html = await res.text();
+    assert.match(html, /Precio final para un libro de \$2\.000/);
+    assert.match(html, /Pagando por transferencia: <b>\$1\.500<\/b>/, 'con transferencia llega al tope de 25 %');
+    assert.match(html, /Otro medio de pago: <b>\$1\.550<\/b>/, '10 % ($200) + $250 = $450');
+    const bajo = await panel({ request: canjeReq(cookie, { codigo: code, accion: 'verificar', precio: '1200' }), env });
+    assert.match(await bajo.text(), /no corresponde el premio/);
+    const sinPrecio = await panel({ request: canjeReq(cookie, { codigo: code, accion: 'verificar' }), env });
+    assert.doesNotMatch(await sinPrecio.text(), /Precio final para un libro/);
+});
+
 test('canje: verificar no cambia nada; marcar como usado funciona una sola vez', async () => {
     const db = d1();
     const env = { ...PANEL_ENV, ORDERS_DB: db };
@@ -214,7 +260,7 @@ test('canje: verificar no cambia nada; marcar como usado funciona una sola vez',
     assert.equal(ver.status, 200);
     const html = await ver.text();
     assert.match(html, /Código vigente/);
-    assert.match(html, /10%/);
+    assert.match(html, /\$150 de descuento/);
     assert.equal(db.raw.prepare('SELECT used_at FROM juego_codigos').get().used_at, null);
 
     const uso = await panel({ request: canjeReq(cookie, { codigo: code, accion: 'usar' }), env });
@@ -235,7 +281,7 @@ test('canje: verificar no cambia nada; marcar como usado funciona una sola vez',
 test('canje: un código vencido no se puede usar', async () => {
     const db = d1();
     const env = { ...PANEL_ENV, ORDERS_DB: db };
-    db.raw.prepare("INSERT INTO juego_codigos (code, origen, discount_pct, wa_hash, dia, created_at, expires_at) VALUES ('LIB-ABCDE','rueda',12,'h','2026-11-01','2026-11-01T10:00:00Z','2026-11-03T10:00:00Z')").run();
+    db.raw.prepare("INSERT INTO juego_codigos (code, origen, monto_uyu, wa_hash, dia, created_at, expires_at) VALUES ('LIB-ABCDE','rueda',200,'h','2026-11-01','2026-11-01T10:00:00Z','2026-11-03T10:00:00Z')").run();
     const res = await createCanjePanel({ getNow: () => NOW })({ request: canjeReq(await cookieDeSesion(), { codigo: 'LIB-ABCDE', accion: 'usar' }), env });
     assert.match(await res.text(), /Venció/);
     assert.equal(db.raw.prepare('SELECT used_at FROM juego_codigos').get().used_at, null);
@@ -253,7 +299,7 @@ test('la pantalla de la Rueda: texto en positivo, tope y accesibilidad', () => {
     const html = ruedaHtml();
     assert.match(html, /id="rueda-form"/);
     assert.match(html, /name="website"/, 'campo trampa');
-    assert.match(html, /aria-label="Rueda con premios de 10% a 25%/);
+    assert.match(html, /aria-label="Rueda con premios de \$150 a \$450/);
     assert.match(html, /wa\.me\/59899841325\?text=__CODIGO__/);
     assert.doesNotMatch(html + RUEDA_SCRIPT, /únicamente|sólo|solo |inteligencia artificial|🙂|🎰/i);
     assert.match(RUEDA_STYLES, /prefers-reduced-motion:reduce/);

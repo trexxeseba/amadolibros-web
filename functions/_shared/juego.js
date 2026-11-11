@@ -6,28 +6,36 @@
  * - Ningún premio supera MAX_TOTAL_DISCOUNT: es la única constante de tope del sistema.
  * - Del número de WhatsApp solo se guarda un hash (con el día).
  */
-import { MAX_TOTAL_DISCOUNT, PRICE_FLOOR_UYU, TRANSFER_DISCOUNT } from './descuentos.js';
+import { LIQUIDACION_PRECIO, MAX_TOTAL_DISCOUNT, PRICE_FLOOR_UYU, TRANSFER_DISCOUNT } from './descuentos.js';
 
-/** Premios de la Rueda: porcentaje y probabilidad (en %). Suman 100. */
+/**
+ * Premios de la Rueda: descuento en pesos y probabilidad (en %). Suman 100.
+ * El descuento se suma al de la liquidación, pero el total nunca pasa
+ * MAX_TOTAL_DISCOUNT ni deja el precio bajo PRICE_FLOOR_UYU (ver precioConPremio).
+ */
+export const PREMIO_MIN_UYU = 150;
+export const PREMIO_MAX_UYU = 450;
 export const RUEDA_PREMIOS = Object.freeze([
-    Object.freeze({ pct: 10, peso: 35 }),
-    Object.freeze({ pct: 12, peso: 25 }),
-    Object.freeze({ pct: 15, peso: 20 }),
-    Object.freeze({ pct: 18, peso: 10 }),
-    Object.freeze({ pct: 20, peso: 6 }),
-    Object.freeze({ pct: 25, peso: 4 }),
+    Object.freeze({ monto: 150, peso: 30 }),
+    Object.freeze({ monto: 200, peso: 25 }),
+    Object.freeze({ monto: 250, peso: 20 }),
+    Object.freeze({ monto: 300, peso: 12 }),
+    Object.freeze({ monto: 350, peso: 8 }),
+    Object.freeze({ monto: 450, peso: 5 }),
 ]);
 
 export const CODIGO_VIGENCIA_HORAS = 48;
 const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sin 0/O ni 1/I
 export const CODIGO_RE = /^LIB-[A-HJ-NP-Z2-9]{5}$/;
 
-/** Falla al cargar el módulo si un premio pasa el tope o los pesos no suman 100. */
+/** Falla al cargar el módulo si un premio sale del rango o los pesos no suman 100. */
 export function validarPremios(premios = RUEDA_PREMIOS) {
     const total = premios.reduce((s, p) => s + p.peso, 0);
     if (total !== 100) throw new Error(`Los pesos de la Rueda suman ${total}, no 100.`);
     for (const p of premios) {
-        if (p.pct / 100 > MAX_TOTAL_DISCOUNT) throw new Error(`El premio ${p.pct}% supera el tope.`);
+        if (!Number.isInteger(p.monto) || p.monto < PREMIO_MIN_UYU || p.monto > PREMIO_MAX_UYU) {
+            throw new Error('Un premio de la Rueda sale del rango permitido: ' + p.monto);
+        }
     }
     return true;
 }
@@ -95,24 +103,38 @@ export function vencimiento(now = new Date(), horas = CODIGO_VIGENCIA_HORAS) {
 }
 
 /**
- * Precio con el premio de un código sobre el precio habitual.
- * - Con transferencia, el 12 % se suma al premio hasta completar el tope:
- *   total = min(premio + 12 %, MAX_TOTAL_DISCOUNT). Así quien gana un premio
- *   nunca paga más que quien paga por transferencia sin premio (10 % + 12 % = 22 %).
- * - El descuento total nunca pasa MAX_TOTAL_DISCOUNT.
- * - Si el precio final queda bajo el piso de $1.200, el premio no se aplica.
- * Devuelve { ok, price, totalPct, transferSumada, reason }; transferSumada es
- * true si la transferencia aportó algo al total.
+ * Precio con el premio de un código sobre el precio habitual (el tachado).
+ * `premio` es un monto en pesos, o { monto_uyu, discount_pct } de un código;
+ * los códigos viejos con porcentaje reemplazan el descuento base.
+ * - Con monto: total = base (10 %) + monto + transferencia (12 %, si paga así).
+ * - El total nunca pasa MAX_TOTAL_DISCOUNT del precio habitual.
+ * - El precio final nunca baja de PRICE_FLOOR_UYU: el descuento se recorta hasta ahí.
+ * - Quien gana un premio nunca paga más que sin premio.
+ * Devuelve { ok, price, descuentoUyu, totalPct, transferSumada, reason } con
+ * reason = 'ok' | 'recortado_por_piso' | 'bajo_piso' | 'precio_invalido'.
  */
-export function precioConPremio(habitual, premioPct, { transferencia = false } = {}) {
+export function precioConPremio(habitual, premio, { transferencia = false } = {}) {
     const h = Number(habitual);
-    if (!Number.isFinite(h) || h <= 0) return { ok: false, price: habitual, totalPct: 0, transferSumada: false, reason: 'precio_invalido' };
-    const premio = Math.min(Number(premioPct) / 100, MAX_TOTAL_DISCOUNT);
-    const total = transferencia ? Math.min(premio + TRANSFER_DISCOUNT, MAX_TOTAL_DISCOUNT) : premio;
-    const transferSumada = transferencia && total > premio + 1e-9;
-    const price = Math.max(Math.round(h * (1 - total)), Math.ceil(h * (1 - MAX_TOTAL_DISCOUNT)));
-    if (price < PRICE_FLOOR_UYU) return { ok: false, price: h, totalPct: 0, transferSumada: false, reason: 'bajo_piso' };
-    return { ok: true, price, totalPct: Math.round(total * 100), transferSumada, reason: 'ok' };
+    const vacio = reason => ({ ok: false, price: habitual, descuentoUyu: 0, totalPct: 0, transferSumada: false, reason });
+    if (!Number.isFinite(h) || h <= 0) return vacio('precio_invalido');
+    const cod = typeof premio === 'object' && premio ? premio : { monto_uyu: premio };
+    const tope = MAX_TOTAL_DISCOUNT * h;
+    const transf = transferencia ? TRANSFER_DISCOUNT * h : 0;
+    const base = LIQUIDACION_PRECIO.discount * h;
+    const bruto = cod.monto_uyu
+        ? base + Number(cod.monto_uyu)
+        : Math.min(Number(cod.discount_pct) / 100, MAX_TOTAL_DISCOUNT) * h;
+    const sinTransf = Math.min(bruto, tope);
+    const descuento = Math.min(bruto + transf, tope);
+    const transferSumada = descuento > sinTransf + 1e-9;
+    let reason = 'ok';
+    let price = Math.ceil(h - descuento);
+    if (price < PRICE_FLOOR_UYU) {
+        if (h <= PRICE_FLOOR_UYU) return vacio('bajo_piso');
+        price = PRICE_FLOOR_UYU;
+        reason = 'recortado_por_piso';
+    }
+    return { ok: true, price, descuentoUyu: Math.round(h - price), totalPct: Math.round(((h - price) / h) * 100), transferSumada, reason };
 }
 
 export function mensajeCodigoWhatsapp(code) {

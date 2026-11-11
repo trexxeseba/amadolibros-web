@@ -8,9 +8,8 @@ import DATA from '../_shared/acertijos-data.js';
 import {
     normalizarRespuesta, acertijoDelDia, diasDesdeEpoca, esRespuestaCorrecta, regaloTexto,
 } from '../_shared/acertijos.js';
-import { RUEDA_PREMIOS, CODIGO_RE } from '../_shared/juego.js';
-import { MAX_TOTAL_DISCOUNT } from '../_shared/descuentos.js';
-import { createAcertijoHandler, PREMIO_ACIERTO_PCT } from '../api/_acertijo_handler.js';
+import { RUEDA_PREMIOS, CODIGO_RE, PREMIO_MAX_UYU } from '../_shared/juego.js';
+import { createAcertijoHandler, PREMIO_ACIERTO_UYU } from '../api/_acertijo_handler.js';
 import { RATE_LIMIT } from '../api/_rueda_handler.js';
 import { acertijoHtml, ACERTIJO_SCRIPT, ACERTIJO_STYLES } from '../_shared/acertijo-ui.js';
 
@@ -22,6 +21,7 @@ function d1() {
     const db = new DatabaseSync(':memory:');
     db.exec(readFileSync('migrations/0017_juego_codigos.sql', 'utf8'));
     db.exec(readFileSync('migrations/0018_juego_acertijo.sql', 'utf8'));
+    db.exec(readFileSync('migrations/0019_juego_premios_en_pesos.sql', 'utf8'));
     return {
         raw: db,
         prepare(sql) {
@@ -102,15 +102,15 @@ test('GET devuelve el acertijo de hoy sin respuestas ni sin caché', async () =>
     assert.ok(!('respuestas' in body) && !('libro' in body) && !('borrador' in body));
 });
 
-test('acierto: código de 25 % con regalo, y el tope es el de todo el sistema', async () => {
-    assert.equal(PREMIO_ACIERTO_PCT, MAX_TOTAL_DISCOUNT * 100);
+test('acierto: código de $450 (el premio máximo) con regalo', async () => {
+    assert.equal(PREMIO_ACIERTO_UYU, PREMIO_MAX_UYU);
     const db = d1();
     const res = await handler()({ request: post({ id: HOY.id, respuesta: correcta(), whatsapp: '099 841 325' }), env: { ORDERS_DB: db } });
     assert.equal(res.status, 201);
     const d = await res.json();
     assert.equal(d.acerto, true);
     assert.equal(d.consuelo, false);
-    assert.equal(d.discount_pct, 25);
+    assert.equal(d.monto_uyu, 450);
     assert.equal(d.regalo, 'Marcapáginas de Amado');
     assert.match(d.code, CODIGO_RE);
     const row = db.raw.prepare('SELECT * FROM juego_codigos').get();
@@ -120,14 +120,14 @@ test('acierto: código de 25 % con regalo, y el tope es el de todo el sistema', 
 
 test('error: consuelo con un premio de la Rueda, sin regalo y sin pasar el tope', async () => {
     const db = d1();
-    const res = await handler({ roll: () => 61 })({ request: post({ id: HOY.id, respuesta: 'ni idea', whatsapp: '099841325' }), env: { ORDERS_DB: db } });
+    const res = await handler({ roll: () => 60 })({ request: post({ id: HOY.id, respuesta: 'ni idea', whatsapp: '099841325' }), env: { ORDERS_DB: db } });
     assert.equal(res.status, 201);
     const d = await res.json();
     assert.equal(d.acerto, false);
     assert.equal(d.consuelo, true);
     assert.equal(d.regalo, null);
-    assert.equal(d.discount_pct, 15);
-    assert.ok(RUEDA_PREMIOS.some(p => p.pct === d.discount_pct) && d.discount_pct <= 25);
+    assert.equal(d.monto_uyu, 250);
+    assert.ok(RUEDA_PREMIOS.some(p => p.monto === d.monto_uyu) && d.monto_uyu <= 450);
 });
 
 test('un intento por día y por número: el segundo ve el mismo resultado', async () => {
@@ -145,7 +145,7 @@ test('un intento por día y por número: el segundo ve el mismo resultado', asyn
 
 test('el acertijo y la rueda del mismo día son independientes', async () => {
     const db = d1();
-    db.raw.prepare("INSERT INTO juego_codigos (code, origen, discount_pct, wa_hash, dia, created_at, expires_at) VALUES ('LIB-AAAAA','rueda',10,'otro','2026-11-10','2026-11-10T10:00:00Z','2026-11-12T10:00:00Z')").run();
+    db.raw.prepare("INSERT INTO juego_codigos (code, origen, monto_uyu, wa_hash, dia, created_at, expires_at) VALUES ('LIB-AAAAA','rueda',150,'otro','2026-11-10','2026-11-10T10:00:00Z','2026-11-12T10:00:00Z')").run();
     const res = await handler()({ request: post({ id: HOY.id, respuesta: correcta(), whatsapp: '099841325' }), env: { ORDERS_DB: db } });
     assert.equal(res.status, 201);
     assert.equal(db.raw.prepare('SELECT COUNT(*) n FROM juego_codigos').get().n, 2);
