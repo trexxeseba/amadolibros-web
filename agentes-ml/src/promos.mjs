@@ -158,14 +158,16 @@ async function sacar() {
 
 async function seleccion() {
   const hoy = fechaMontevideo(), desde = fechaCorrida(-DIAS_VENTAS);
-  const ordenes = [];
+  const ordenes = []; let totalOrdenes = null;
   for (let offset = 0, pagina = 0; pagina < 80; offset += 50, pagina++) {
     const d = await ml.get(`/orders/search?seller=${CUENTA.sellerId}&order.date_created.from=${encodeURIComponent(desde + 'T00:00:00.000-03:00')}&order.date_created.to=${encodeURIComponent(hoy + 'T23:59:59.999-03:00')}&sort=date_desc&limit=50&offset=${offset}`);
-    const res = lista(d); ordenes.push(...res);
+    const res = lista(d); ordenes.push(...res); totalOrdenes ??= Number(d?.paging?.total) || null;
     if (res.length < 50 || offset + 50 >= Math.min(10000, Number(d?.paging?.total) || 0)) break;
   }
   const unidades = unidadesPorItem(ordenes);
-  const ranking = [...unidades.entries()].sort((a, b) => b[1] - a[1]).slice(0, Math.max(150, LIMITE * 3)).map(([id]) => id);
+  // Se leen todas las publicaciones con ventas (tope 600): la primera corrida mostró que
+  // casi la mitad de las que más vendieron ya no están activas o quedaron con stock 1 o 2.
+  const ranking = [...unidades.entries()].sort((a, b) => b[1] - a[1]).slice(0, Math.max(600, LIMITE * 6)).map(([id]) => id);
   const items = await leerItems(ranking);
   const visitas = new Map();
   await Promise.all(items.map(async it => { const r = await ml.sonda(`/items/${it.id}/visits/time_window?last=30&unit=day`); if (r.ok) visitas.set(it.id, r.json?.total_visits ?? 0); }));
@@ -187,7 +189,7 @@ async function seleccion() {
   }
   const sel = armarSeleccion({ items, unidades, visitas, config, enPromo, limite: LIMITE });
   // Log público: sin unidades ni visitas; el puntaje ordena.
-  imprimir('seleccion', { ventana_dias: DIAS_VENTAS, ordenes_leidas: ordenes.length, publicaciones_con_ventas: unidades.size, leidas: items.length, candidatos: sel.candidatos, fuera: sel.fuera, promo_destino: b.promo ? resumenPromo(b.promo) : b, ya_en_promo: enPromo.size,
+  imprimir('seleccion', { ventana_dias: DIAS_VENTAS, ordenes_leidas: ordenes.length, ordenes_total_ml: totalOrdenes, publicaciones_con_ventas: unidades.size, leidas: items.length, candidatos: sel.candidatos, fuera: sel.fuera, promo_destino: b.promo ? resumenPromo(b.promo) : b, ya_en_promo: enPromo.size,
     titulos: sel.seleccion.map((s, i) => ({ n: i + 1, id: s.id, title: s.title, price: s.price, stock: s.available_quantity, catalogo: s.catalog_listing, puntaje: s.puntaje })) });
   resumen(`### Selección de ${sel.seleccion.length} títulos (${DIAS_VENTAS} días de ventas, ${hoy})\n\n| # | MLU | Título | Precio | Stock | Puntaje |\n|---|---|---|---|---|---|\n` + sel.seleccion.map((s, i) => `| ${i + 1} | ${s.id} | ${texto(s.title)} | ${s.price} | ${s.available_quantity} | ${s.puntaje} |`).join('\n'));
   imprimir('resultado', { ok: true, modo, accion: ACCION, seleccionados: sel.seleccion.length });
