@@ -42,7 +42,7 @@ async function leerEstado(f, d) {
 }
 
 const HORAS_LISTA_DEMANDA = [9, 13, 17, 21];
-const memoriaDe = e => Object.fromEntries(['ganando', 'perdio_en', 'perdio_fecha'].filter(k => e?.[k] !== undefined).map(k => [k, e[k]]));
+const memoriaDe = e => Object.fromEntries(['ganando', 'perdio_en', 'perdio_fecha', 'compartida_fecha'].filter(k => e?.[k] !== undefined).map(k => [k, e[k]]));
 
 async function main() {
   const inicio = new Date();
@@ -95,7 +95,7 @@ async function main() {
     const candidatos = [num(pisos[id]), num(cuenta.minimo), pisoCosto ? (pisoCosto(items.get(id)) ?? SIN_COSTO) : null].filter(v => v !== null);
     return candidatos.length ? Math.max(...candidatos) : null;
   };
-  const reglas = { umbral: cuenta.umbral ?? UMBRAL_UYU, topePct: cuenta.topePct === undefined ? undefined : cuenta.topePct, umbralInclusivo: cuenta.umbralInclusivo === true, descuento: cuenta.descuento ?? 0, pasoMinimoSubida: cuenta.pasoMinimoSubida ?? 1, ahora: inicio.getTime() };
+  const reglas = { umbral: cuenta.umbral ?? UMBRAL_UYU, topePct: cuenta.topePct === undefined ? undefined : cuenta.topePct, umbralInclusivo: cuenta.umbralInclusivo === true, descuento: cuenta.descuento ?? 0, pasoMinimoSubida: cuenta.pasoMinimoSubida ?? 1, ahora: inicio.getTime(), ganarCompartida: cuenta.ganarCompartida === true };
   const cacheEntrega = new Map();
   const filas = []; let marcadas = 0;
   const lote = 40;
@@ -170,6 +170,7 @@ async function main() {
       fecha: previo?.fecha ?? ahora,
       ...(previo?.stock_original !== undefined ? { stock_original: previo.stock_original } : {}),
       ...memoriaDe(previo),
+      ...(f.d.memoria ?? {}),
       ...(f.item.demanda ? { dias_demanda: f.item.dias_demanda } : {}),
       pendiente: { precio: f.d.precio, desde: ahora, restaurar: f.d.accion === 'restaurar', ...(stockOriginal !== undefined ? { stock_original: stockOriginal } : {}) },
     };
