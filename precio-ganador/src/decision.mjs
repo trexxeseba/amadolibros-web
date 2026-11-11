@@ -19,7 +19,7 @@ export const entero = n => Math.floor(Number(n) + 1e-9);
 
 // umbralInclusivo: la diferencia igual al umbral también se baja (Vintage: <= 400).
 // descuento: fracción por debajo del ganador (Vintage 0.01 = 99 % del ganador).
-export function decidir({ item, comp, promo = false, previo, piso = null, tocarStock = false, stockDemanda = STOCK_DEMANDA_DEFAULT, umbral = UMBRAL_UYU, topePct = TOPE_PCT, umbralInclusivo = false, descuento = 0, pasoMinimoSubida = 1, seguir = false, confirmarSubida = 2, fraccionSubida = 0.5, memoriaDias = 3, ahora = Date.now() }) {
+export function decidir({ item, comp, promo = false, previo, piso = null, tocarStock = false, stockDemanda = STOCK_DEMANDA_DEFAULT, umbral = UMBRAL_UYU, topePct = TOPE_PCT, umbralInclusivo = false, descuento = 0, pasoMinimoSubida = 1, seguir = false, confirmarSubida = 2, fraccionSubida = 0.5, memoriaDias = 3, ahora = Date.now(), ganarCompartida = false }) {
   const precio = Number(item.price);
   if (comp?.error) return { accion: 'error_consulta', motivo: comp.error };
   if (item.currency_id !== 'UYU') return { accion: 'saltear_moneda', motivo: item.currency_id };
@@ -33,7 +33,7 @@ export function decidir({ item, comp, promo = false, previo, piso = null, tocarS
   // Ya la bajamos antes, pero alguien le cambió el precio a mano: queda fuera del sistema.
   if (previo && Number(previo.precio_aplicado) !== precio) return { accion: 'liberar_editada', motivo: `precio actual ${precio}, aplicado ${previo.precio_aplicado}` };
 
-  const reglas = { umbral, topePct, umbralInclusivo, descuento, pasoMinimoSubida, confirmarSubida, fraccionSubida, memoriaDias, ahora };
+  const reglas = { umbral, topePct, umbralInclusivo, descuento, pasoMinimoSubida, confirmarSubida, fraccionSubida, memoriaDias, ahora, ganarCompartida };
   const r = previo ? decidirConEstado({ precio, comp, previo, piso, seguir, ...reglas }) : decidirNueva({ precio, comp, piso, ...reglas });
   if (!CAMBIA.has(r.accion)) return r;
   // Precio administrado por Mercado Libre (tag dynamic_standard_price): el PUT a
@@ -50,7 +50,19 @@ export function decidir({ item, comp, promo = false, previo, piso = null, tocarS
   return r;
 }
 
-function decidirNueva({ precio, comp, piso, umbral, topePct, umbralInclusivo, descuento }) {
+// Comparte el primer lugar (Seba, 11/11/2026: "quiero ganar siempre, 1 %"): bajar 1 % para
+// ganar sola. Una sola vez cada `memoriaDias`: si el otro iguala, no se persigue (no hay
+// guerra de precios hacia abajo). Respeta umbral, tope y piso como cualquier baja.
+export const PCT_COMPARTIDA = 0.01;
+const compartida = comp => !comp?.marcada && !comp?.bloqueo && comp?.estado === 'sharing_first_place';
+
+function decidirNueva({ precio, comp, piso, umbral, topePct, umbralInclusivo, descuento, ganarCompartida, ahora }) {
+  if (ganarCompartida && compartida(comp)) {
+    const objetivo = entero(precio * (1 - PCT_COMPARTIDA));
+    if (fin(piso) && objetivo < piso) return { accion: 'saltear_piso', precio: objetivo, motivo: `piso ${piso}` };
+    if (objetivo >= precio || objetivo <= 0) return { accion: 'sin_marcar', motivo: 'comparte (1 % no cambia el precio)' };
+    return { accion: 'bajar', precio: objetivo, motivo: 'comparte el primer lugar: 1 % para ganar sola', memoria: { compartida_fecha: new Date(ahora).toISOString() } };
+  }
   // Ganador de entrega inmediata, o sin dato de plazo: no se compite por precio.
   if (comp?.bloqueo) return { accion: 'saltear_' + comp.bloqueo, motivo: comp.motivo_bloqueo ?? MOTIVO_BLOQUEO[comp.bloqueo] ?? comp.bloqueo };
   if (!comp?.marcada) return { accion: 'sin_marcar', motivo: comp?.estado ?? 'gana o comparte' };
@@ -79,7 +91,7 @@ export const objetivoDe = (ganador, descuento = 0) => entero(ganador * (1 - (des
 //     `memoriaDias` días y no vuelve a subir hasta ahí.
 // Así el precio se acerca de a poco al máximo con el que todavía gana y se queda ahí.
 // La memoria viaja en el estado: { ganando, perdio_en, perdio_fecha }.
-function decidirConEstado({ precio, comp, previo, piso, seguir = false, umbral, topePct, umbralInclusivo, descuento, pasoMinimoSubida, confirmarSubida, fraccionSubida, memoriaDias, ahora }) {
+function decidirConEstado({ precio, comp, previo, piso, seguir = false, umbral, topePct, umbralInclusivo, descuento, pasoMinimoSubida, confirmarSubida, fraccionSubida, memoriaDias, ahora, ganarCompartida }) {
   const original = Number(previo.precio_original);
   const fecha = new Date(ahora).toISOString();
   // Marcada contra un ganador a demanda (o sin filtro de plazo): seguirlo.
@@ -100,6 +112,16 @@ function decidirConEstado({ precio, comp, previo, piso, seguir = false, umbral, 
   // Ya no marcada (gana, o el ganador es de entrega inmediata, contra el que no se compite):
   // subir hacia el original sin pasarlo, hasta donde siga ganándole al competidor
   // a demanda más barato (techo, ya con el descuento aplicado), con la subida con memoria.
+  // Comparte el primer lugar: 1 % para ganar sola, una vez cada memoriaDias (no se persigue al otro).
+  if (ganarCompartida && compartida(comp)) {
+    const reciente = previo.compartida_fecha && ahora - Date.parse(previo.compartida_fecha) < memoriaDias * 86400_000;
+    if (reciente) return { accion: 'mantener', motivo: 'comparte; ya bajó 1 % hace menos de 3 días', memoria: { ganando: 0 } };
+    const objetivo = entero(precio * (1 - PCT_COMPARTIDA)), dif = original - objetivo;
+    const memoria = { ganando: 0, compartida_fecha: fecha };
+    if ((umbralInclusivo ? dif > umbral : dif >= umbral) || (topePct !== null && dif / original > topePct)) return { accion: 'mantener_umbral', motivo: `comparte; 1 % pasaría el tope contra el original ${original}`, memoria: { ganando: 0 } };
+    if (fin(piso) && objetivo < piso) return { accion: 'mantener_piso', motivo: `piso ${piso}`, memoria: { ganando: 0 } };
+    if (objetivo < precio) return { accion: 'ajustar', precio: objetivo, motivo: 'comparte el primer lugar: 1 % para ganar sola', memoria };
+  }
   const ganando = Number(previo.ganando ?? 0) + 1;
   const memoriaVigente = fin(previo.perdio_en) && ahora - Date.parse(previo.perdio_fecha ?? '') < memoriaDias * 86400_000;
   let techo = Math.min(original, fin(comp?.techo) ? entero(comp.techo) : original);

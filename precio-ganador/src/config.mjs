@@ -26,6 +26,8 @@ export const CUENTAS = {
     minimo: null,
     // Subir sólo si el salto es de 10 pesos o más (con la subida con memoria, 07/11/2026).
     pasoMinimoSubida: 10,
+    // Las que comparten el primer lugar bajan 1 % para ganar solas (Seba, 11/11/2026).
+    ganarCompartida: true,
     habilitada: true,
   },
   // Vintage corre acá desde el 05/11/2026 (Seba): el motor de la PC no está andando.
