@@ -2,7 +2,7 @@
 // Para Gaby y Lola desde el celular. Solo con sesión del panel y en producción.
 // Verificar no cambia nada; "Marcar como usado" lo hace una sola vez (atómico).
 import { deriveSessionSecret, hasValidSession, resolvePanelConfig } from '../_shared/panel-auth.js';
-import { normalizarCodigo } from '../_shared/juego.js';
+import { normalizarCodigo, precioConPremio } from '../_shared/juego.js';
 
 const ORIGIN = 'https://www.amadolibros.com';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -20,8 +20,22 @@ function page(body, status = 200) {
     });
 }
 
-const formHtml = (code = '') => `<form method="post"><label>Código del cliente<input name="codigo" value="${esc(code)}" placeholder="LIB-XXXXX" autocomplete="off" autocapitalize="characters" required></label>
+const formHtml = (code = '', precio = '') => `<form method="post"><label>Código del cliente<input name="codigo" value="${esc(code)}" placeholder="LIB-XXXXX" autocomplete="off" autocapitalize="characters" required></label>
+<label>Precio habitual del libro (el tachado), si querés ver el precio final<input name="precio" value="${esc(precio)}" inputmode="numeric" placeholder="2000" autocomplete="off" style="text-transform:none"></label>
 <button name="accion" value="verificar">Verificar</button></form>`;
+
+const pesos = n => `$${Math.round(n).toLocaleString('es-UY')}`;
+
+/** Calculadora para Gaby y Lola: precio final con el premio, con y sin transferencia. */
+function calculadoraHtml(row, precio) {
+    const h = Number(String(precio ?? '').replace(/[^\d]/g, ''));
+    if (!h) return '';
+    const premio = { monto_uyu: row.monto_uyu, discount_pct: row.discount_pct };
+    const fila = (titulo, r) => (r.ok
+        ? `<li>${titulo}: <b>${pesos(r.price)}</b> (descuento ${pesos(r.descuentoUyu)}, ${r.totalPct}% en total${r.reason === 'recortado_por_piso' ? '; se recortó para no bajar de $1.200' : ''})</li>`
+        : `<li>${titulo}: no corresponde el premio (el precio ya está en el piso de $1.200).</li>`);
+    return `<div class="card"><p><b>Precio final para un libro de ${pesos(h)}</b></p><ul>${fila('Pagando por transferencia', precioConPremio(h, premio, { transferencia: true }))}${fila('Otro medio de pago', precioConPremio(h, premio, { transferencia: false }))}</ul></div>`;
+}
 
 export function estadoCodigo(row, ahoraIso) {
     if (!row) return { estado: 'inexistente' };
@@ -32,15 +46,16 @@ export function estadoCodigo(row, ahoraIso) {
 
 const fecha = iso => new Date(iso).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'medium', timeStyle: 'short' });
 
-function resultado(info, code) {
+function resultado(info, code, precio = '') {
     if (info.estado === 'inexistente') return `<p class="err card">No encontramos ese código.</p>${formHtml(code)}`;
     const r = info.row;
-    const detalle = `<p>Descuento: <b>${esc(r.discount_pct)}%</b>${r.regalo ? ` · Regalo: <b>${esc(r.regalo)}</b>` : ''}<br>Vence: ${esc(fecha(r.expires_at))}</p>
-<p><small>Se aplica sobre el precio habitual del libro de la liquidación. Si el precio final queda bajo $1.200 no corresponde el premio. Si paga por transferencia se suma 12% hasta completar un máximo de 25% en total (por ejemplo 10% + 12% = 22%; 15% + 12% = 25%).</small></p>`;
+    const premio = r.monto_uyu != null ? `${pesos(r.monto_uyu)} de descuento` : `${esc(r.discount_pct)}% de descuento`;
+    const detalle = `<p>Premio: <b>${premio}</b>${r.regalo ? ` · Regalo: <b>${esc(r.regalo)}</b>` : ''}<br>Vence: ${esc(fecha(r.expires_at))}</p>
+<p><small>El premio se suma al 10% de la liquidación y, si paga por transferencia, al 12% de la transferencia, pero el total no pasa 25% del precio habitual ni deja el libro por debajo de $1.200. Escribí el precio habitual del libro (el tachado) y la pantalla calcula el precio final.</small></p>${info.estado === 'vigente' ? calculadoraHtml(r, precio) : ''}`;
     if (info.estado === 'usado') return `<div class="card"><p class="err">Ya fue usado el ${esc(fecha(r.used_at))}.</p>${detalle}</div>${formHtml()}`;
     if (info.estado === 'vencido') return `<div class="card"><p class="err">Venció.</p>${detalle}</div>${formHtml()}`;
     return `<div class="card"><p class="ok"><b>Código vigente</b> ${esc(r.code)}</p>${detalle}
-<form method="post"><input type="hidden" name="codigo" value="${esc(r.code)}"><button name="accion" value="usar">Marcar como usado</button><button name="accion" value="verificar" class="sec">Solo verificar</button></form></div>${formHtml()}`;
+<form method="post"><input type="hidden" name="codigo" value="${esc(r.code)}"><input type="hidden" name="precio" value="${esc(precio)}"><button name="accion" value="usar">Marcar como usado</button><button name="accion" value="verificar" class="sec">Solo verificar</button></form></div>${formHtml()}`;
 }
 
 export function createCanjePanel({ getNow = () => new Date() } = {}) {
@@ -56,21 +71,22 @@ export function createCanjePanel({ getNow = () => new Date() } = {}) {
         const form = await request.formData();
         const code = normalizarCodigo(form.get('codigo'));
         const accion = String(form.get('accion') || 'verificar');
+        const precio = String(form.get('precio') || '').slice(0, 12);
         if (!code) return page(`<p class="err card">El código tiene el formato LIB-XXXXX.</p>${formHtml(String(form.get('codigo') || ''))}`, 400);
         const db = env.ORDERS_DB;
         if (!db) return page('<p class="err">Servicio no disponible.</p>', 503);
 
         const ahora = getNow().toISOString();
-        const leer = () => db.prepare('SELECT code, origen, discount_pct, regalo, expires_at, used_at FROM juego_codigos WHERE code=?').bind(code).first();
+        const leer = () => db.prepare('SELECT code, origen, discount_pct, monto_uyu, regalo, expires_at, used_at FROM juego_codigos WHERE code=?').bind(code).first();
         if (accion === 'usar') {
             const res = await db.prepare('UPDATE juego_codigos SET used_at=? WHERE code=? AND used_at IS NULL AND expires_at>?').bind(ahora, code, ahora).run();
             const row = await leer();
             if (Number(res?.meta?.changes) > 0) {
-                return page(`<p class="ok card"><b>Listo, quedó marcado como usado.</b></p>${resultado(estadoCodigo(row, ahora), code)}`);
+                return page(`<p class="ok card"><b>Listo, quedó marcado como usado.</b></p>${resultado(estadoCodigo(row, ahora), code, precio)}`);
             }
-            return page(resultado(estadoCodigo(row, ahora), code));
+            return page(resultado(estadoCodigo(row, ahora), code, precio));
         }
-        return page(resultado(estadoCodigo(await leer(), ahora), code));
+        return page(resultado(estadoCodigo(await leer(), ahora), code, precio));
     };
 }
 

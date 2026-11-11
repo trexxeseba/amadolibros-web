@@ -22,9 +22,9 @@ function discoSvg() {
         const a = (mid - 90) * Math.PI / 180;
         const x = 100 + 66 * Math.cos(a), y = 100 + 66 * Math.sin(a);
         return `<path d="${slicePath(i)}" fill="${COLORS[i % COLORS.length]}" stroke="#faf7f2" stroke-width="1.2"/>` +
-            `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" fill="#fff8f0" font-size="15" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${mid} ${x.toFixed(1)} ${y.toFixed(1)})">${pr.pct}%</text>`;
+            `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" fill="#fff8f0" font-size="15" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${mid} ${x.toFixed(1)} ${y.toFixed(1)})">$${pr.monto}</text>`;
     }).join('');
-    return `<svg viewBox="0 0 200 200" role="img" aria-label="Rueda con premios de ${RUEDA_PREMIOS[0].pct}% a ${RUEDA_PREMIOS[N - 1].pct}% de descuento">${slices}<circle cx="100" cy="100" r="9" fill="#faf7f2" stroke="#18120e" stroke-width="2"/></svg>`;
+    return `<svg viewBox="0 0 200 200" role="img" aria-label="Rueda con premios de $${RUEDA_PREMIOS[0].monto} a $${RUEDA_PREMIOS[N - 1].monto} de descuento">${slices}<circle cx="100" cy="100" r="9" fill="#faf7f2" stroke="#18120e" stroke-width="2"/></svg>`;
 }
 
 // Gatito sentado, inspirado en el logo de Amado. Dibujo liviano en SVG.
@@ -70,7 +70,7 @@ export function ruedaHtml() {
   <div>
     <p class="liq-eyebrow">La Rueda del Librero</p>
     <h2 id="rueda-titulo">Girá la rueda y llevate un descuento extra</h2>
-    <p>Un giro por día. Si tenés suerte, tu código llega hasta 25% menos. Dura 48 horas y lo usás por WhatsApp, con el libro que elijas de la liquidación.</p>
+    <p>Un giro por día. Tu código te da entre $150 y $450 de descuento en un libro de la liquidación. Dura 48 horas y lo usás por WhatsApp.</p>
     <form class="rueda-form" id="rueda-form" novalidate>
       <label for="rueda-wa">Tu número de WhatsApp</label>
       <input id="rueda-wa" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="099 123 456" required>
@@ -87,7 +87,7 @@ export function ruedaHtml() {
 </section>`;
 }
 
-export const RUEDA_PREMIOS_JSON = JSON.stringify(RUEDA_PREMIOS.map(p => p.pct));
+export const RUEDA_PREMIOS_JSON = JSON.stringify(RUEDA_PREMIOS.map(p => p.monto));
 
 export const RUEDA_SCRIPT = `<script>
 (function(){
@@ -100,7 +100,8 @@ export const RUEDA_SCRIPT = `<script>
   function ev(name,params){try{if(typeof window.gtag==='function')window.gtag('event',name,params||{});}catch(e){}}
   ev('juego_visto',{juego:'rueda'});
   function mostrar(d){
-    var idx=premios.indexOf(d.discount_pct); if(idx<0) idx=0;
+    var idx=premios.indexOf(d.monto_uyu); if(idx<0) idx=0;
+    var texto=d.monto_uyu!=null?('$'+d.monto_uyu):(d.discount_pct+'%');
     var jitter=(Math.random()-0.5)*(slice*0.5);
     var vueltas=reduce?0:5*360;
     var grados=vueltas+(360-(idx*slice+slice/2))+jitter;
@@ -110,14 +111,14 @@ export const RUEDA_SCRIPT = `<script>
       root.classList.remove('is-spinning');
       var link=waBase.replace(encodeURIComponent('__CODIGO__'),encodeURIComponent('Hola, tengo el código '+d.code+' para este libro'));
       box.innerHTML='';
-      var t=document.createElement('p'); t.textContent=d.repeat?'Tu código de hoy sigue vigente:':'Ganaste '+d.discount_pct+'% de descuento. Tu código:';
+      var t=document.createElement('p'); t.textContent=d.repeat?'Tu código de hoy sigue vigente:':'Ganaste '+texto+' de descuento. Tu código:';
       var c=document.createElement('strong'); c.className='cod'; c.textContent=d.code;
       var v=document.createElement('p'); v.textContent='Vale '+d.valid_hours+' horas y se usa una sola vez. Elegí tu libro de la liquidación y mandanos el código por WhatsApp.';
       var a=document.createElement('a'); a.href=link; a.target='_blank'; a.rel='noopener noreferrer'; a.textContent='Mandar mi código por WhatsApp';
-      a.addEventListener('click',function(){ev('codigo_enviado_whatsapp',{juego:d.juego||'rueda',premio:d.discount_pct});});
+      a.addEventListener('click',function(){ev('codigo_enviado_whatsapp',{juego:d.juego||'rueda',premio:d.monto_uyu});});
       box.appendChild(t); box.appendChild(c); box.appendChild(v); box.appendChild(a); box.hidden=false;
       msg.textContent=''; msg.className='rueda-msg'; btn.disabled=false;
-      if(!d.repeat) ev('rueda_girada',{juego:d.juego||'rueda',premio:d.discount_pct});
+      if(!d.repeat) ev('rueda_girada',{juego:d.juego||'rueda',premio:d.monto_uyu});
     },espera);
   }
   root.ruedaMostrar=mostrar;

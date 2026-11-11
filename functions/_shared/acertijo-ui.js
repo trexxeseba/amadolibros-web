@@ -28,7 +28,7 @@ export function acertijoHtml() {
     return `<section class="acertijo" id="acertijo" aria-labelledby="acertijo-titulo" data-wa="${whatsappHref('__CODIGO__').replace(/"/g, '&quot;')}" hidden>
   <p class="liq-eyebrow" style="color:#a94e3d">El Acertijo del Librero</p>
   <h2 id="acertijo-titulo">Un acertijo literario por día</h2>
-  <p>Si acertás, te llevás 25% menos y un regalo de Amado. Si no, igual te regalamos un giro de la rueda.</p>
+  <p>Si acertás, te llevás $450 de descuento y un regalo de Amado. Si no, igual te regalamos un giro de la rueda.</p>
   <p class="acertijo-pregunta" id="acertijo-pregunta"></p>
   <form class="acertijo-form" id="acertijo-form" novalidate>
     <label for="acertijo-resp">Tu respuesta</label>
@@ -56,11 +56,11 @@ export const ACERTIJO_SCRIPT = `<script>
   function mostrarAcierto(d){
     var link=waBase.replace(encodeURIComponent('__CODIGO__'),encodeURIComponent('Hola, tengo el código '+d.code+' para este libro'));
     box.innerHTML='';
-    var t=document.createElement('p'); t.textContent=d.repeat?'Tu código de hoy sigue vigente:':'Acertaste. Ganaste '+d.discount_pct+'% de descuento y un regalo: '+d.regalo+'. Tu código:';
+    var t=document.createElement('p'); t.textContent=d.repeat?'Tu código de hoy sigue vigente:':'Acertaste. Ganaste $'+d.monto_uyu+' de descuento y un regalo: '+d.regalo+'. Tu código:';
     var c=document.createElement('strong'); c.className='cod'; c.textContent=d.code;
     var v=document.createElement('p'); v.textContent='Vale '+d.valid_hours+' horas y se usa una sola vez. Elegí tu libro de la liquidación y mandanos el código por WhatsApp.';
     var a=document.createElement('a'); a.href=link; a.target='_blank'; a.rel='noopener noreferrer'; a.textContent='Mandar mi código por WhatsApp';
-    a.addEventListener('click',function(){ev('codigo_enviado_whatsapp',{juego:'acertijo',premio:d.discount_pct});});
+    a.addEventListener('click',function(){ev('codigo_enviado_whatsapp',{juego:'acertijo',premio:d.monto_uyu});});
     box.appendChild(t); box.appendChild(c); box.appendChild(v); box.appendChild(a); box.hidden=false;
   }
   form.addEventListener('submit',function(e){

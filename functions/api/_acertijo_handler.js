@@ -8,23 +8,23 @@
  * Del número solo se guarda un hash con el día; de la red, un hash diario de la IP.
  */
 import {
-    CODIGO_VIGENCIA_HORAS, diaMontevideo, drawPrize, generarCodigo, hashWhatsapp, normalizarWhatsapp,
-    sha256Hex, vencimiento,
+    CODIGO_VIGENCIA_HORAS, PREMIO_MAX_UYU, diaMontevideo, drawPrize, generarCodigo, hashWhatsapp,
+    normalizarWhatsapp, sha256Hex, vencimiento,
 } from '../_shared/juego.js';
-import { MAX_TOTAL_DISCOUNT } from '../_shared/descuentos.js';
 import { acertijoDelDia, acertijoPublico, esRespuestaCorrecta, regaloTexto } from '../_shared/acertijos.js';
 import { asegurarTablaPreview, json, sameOrigin, RATE_LIMIT } from './_rueda_handler.js';
 
 export const MAX_BODY_BYTES = 2 * 1024;
-export const PREMIO_ACIERTO_PCT = Math.round(MAX_TOTAL_DISCOUNT * 100);
+export const PREMIO_ACIERTO_UYU = PREMIO_MAX_UYU;
 
-const SELECT_HOY = "SELECT code, discount_pct, regalo, expires_at, used_at FROM juego_codigos WHERE wa_hash=? AND dia=? AND origen='acertijo'";
+const SELECT_HOY = "SELECT code, discount_pct, monto_uyu, regalo, expires_at, used_at FROM juego_codigos WHERE wa_hash=? AND dia=? AND origen='acertijo'";
 
 function respuestaCodigo(fila, extra = {}) {
     const acerto = Boolean(fila.regalo);
     return {
         ok: true, acerto, consuelo: !acerto,
-        code: fila.code, discount_pct: Number(fila.discount_pct),
+        code: fila.code, monto_uyu: fila.monto_uyu == null ? null : Number(fila.monto_uyu),
+        discount_pct: fila.discount_pct == null ? null : Number(fila.discount_pct),
         regalo: fila.regalo || null, expires_at: fila.expires_at, valid_hours: CODIGO_VIGENCIA_HORAS, ...extra,
     };
 }
@@ -88,17 +88,17 @@ export function createAcertijoHandler({ getNow = () => new Date(), roll, codeByt
             }
 
             const acerto = esRespuestaCorrecta(respuesta, hoy);
-            const pct = acerto ? PREMIO_ACIERTO_PCT : drawPrize(roll ? roll() : undefined).pct;
+            const monto = acerto ? PREMIO_ACIERTO_UYU : drawPrize(roll ? roll() : undefined).monto;
             const regalo = acerto ? regaloTexto(env, data) : null;
             for (let intento = 0; intento < 4; intento++) {
                 const code = generarCodigo(codeBytes ? codeBytes() : undefined);
                 const expira = vencimiento(now);
                 const res = await db.prepare(
-                    'INSERT OR IGNORE INTO juego_codigos (code, origen, discount_pct, regalo, wa_hash, dia, ip_hash, created_at, expires_at, used_at) ' +
+                    'INSERT OR IGNORE INTO juego_codigos (code, origen, monto_uyu, regalo, wa_hash, dia, ip_hash, created_at, expires_at, used_at) ' +
                     "VALUES (?, 'acertijo', ?, ?, ?, ?, ?, ?, ?, NULL)"
-                ).bind(code, pct, regalo, waHash, dia, ipHash, createdAt, expira).run();
+                ).bind(code, monto, regalo, waHash, dia, ipHash, createdAt, expira).run();
                 if (Number(res?.meta?.changes ?? 1) > 0) {
-                    return json(respuestaCodigo({ code, discount_pct: pct, regalo, expires_at: expira }, { repeat: false }), 201);
+                    return json(respuestaCodigo({ code, monto_uyu: monto, regalo, expires_at: expira }, { repeat: false }), 201);
                 }
                 const carrera = await db.prepare(SELECT_HOY).bind(waHash, dia).first();
                 if (carrera) return respuestaRepetida(carrera, createdAt);
