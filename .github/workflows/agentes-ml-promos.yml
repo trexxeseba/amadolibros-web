@@ -39,6 +39,11 @@ on:
         description: 'Pedido expreso de Seba sobre este título: salta competencia, antigüedad y lista manual (nunca límites, stock ni médicos)'
         type: boolean
         default: false
+      dias_ventas:
+        description: 'Sólo para seleccion: días de ventas hacia atrás (7 a 180)'
+        required: false
+        default: '60'
+        type: string
       modo:
         description: 'prueba = no toca Mercado Libre · real = escribe (sólo desde main)'
         type: choice
@@ -65,6 +70,7 @@ jobs:
       PROMOCION: ${{ inputs.promocion }}
       PRECIO: ${{ inputs.precio }}
       PEDIDO_SEBA: ${{ inputs.pedido_seba }}
+      DIAS_VENTAS: ${{ inputs.dias_ventas }}
     steps:
       - name: Modo real sólo desde main
         if: inputs.modo == 'real' && github.ref != 'refs/heads/main'
