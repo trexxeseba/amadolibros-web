@@ -119,3 +119,8 @@ test('pausa preventiva: busca en activas, cuenta una sola vez y lee la descripci
  assert.deepEqual(r.coincidencias.map(h=>[h.id,h.motivo]).sort(),[['MLU1','editorial'],['MLU2','ebook_en_descripcion']]);
  assert.deepEqual(readDescriptions.sort(),['MLU2','MLU3'],'no lee la descripción de la que ya coincidió');
 });
+
+test('la lista de eliminación del 11/11 tiene las 5 que quedan de propiedad intelectual y ninguna de las 719 ya borradas',async()=>{
+ const ids=await readList('scripts/vintage-cloud/eliminar-2026-11-11.txt'),viejas=new Set(await readList('scripts/vintage-cloud/eliminar-2026-11-09.txt'));
+ assert.equal(ids.length,5);assert.ok(ids.every(id=>/^MLU\d+$/.test(id)));assert.ok(!ids.some(id=>viejas.has(id)));
+});
