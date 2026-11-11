@@ -2,6 +2,7 @@
 //
 //   ACCION=estado    ITEM=MLU...                      lee promos de la cuenta y de una publicación
 //   ACCION=sumar     ITEM=MLU... PROMOCION="Amado 15" [PRECIO=2090] [PEDIDO_SEBA=true]
+//   ACCION=sumar-lote ITEMS="MLU...,MLU..." PROMOCION="Amado 15" [PEDIDO_SEBA=true]   de a uno, mismas guardas
 //   ACCION=sacar     ITEM=MLU... PROMOCION="Amado 15"
 //   ACCION=seleccion [PROMOCION="Amado 15"] [DIAS_VENTAS=60] [LIMITE=50]   títulos con ventas y visitas
 //   ACCION=ads-gasto                                  gasto de Product Ads del mes contra el tope
@@ -24,7 +25,9 @@ const V2 = 'app_version=v2';
 const ADS = version => ({ headers: { 'Api-Version': String(version) } });
 const env = process.env;
 const ACCION = String(env.ACCION ?? 'estado').trim();
-const ITEM = String(env.ITEM ?? '').trim().toUpperCase().replace(/^#?(\d+)$/, 'MLU$1');
+const normalizarId = v => String(v ?? '').trim().toUpperCase().replace(/^#?(\d+)$/, 'MLU$1');
+const ITEM = normalizarId(env.ITEM);
+const ITEMS = String(env.ITEMS ?? '').split(/[\s,;]+/).map(normalizarId).filter(Boolean);
 const PROMOCION = String(env.PROMOCION ?? 'Amado 15').trim();
 const PRECIO = env.PRECIO ? Number(env.PRECIO) : null;
 const PEDIDO_SEBA = String(env.PEDIDO_SEBA ?? '').toLowerCase() === 'true';
@@ -41,7 +44,7 @@ function imprimir(titulo, valor) { salida[titulo] = valor; console.log(`\n## ${t
 function resumen(md) { if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, md + '\n'); console.log(md); }
 const fallo = (code, extra = {}) => { imprimir('resultado', { ok: false, error: code, ...extra }); process.exitCode = 1; };
 
-const escribe = modo === 'real' && ['sumar', 'sacar'].includes(ACCION);
+const escribe = modo === 'real' && ['sumar', 'sumar-lote', 'sacar'].includes(ACCION);
 const ml = crearCliente(fuenteTokenD1(CUENTA), { intentos: 4, concurrencia: 4, soloLectura: !escribe });
 const CAMPOS_ITEM = 'id,title,price,base_price,original_price,available_quantity,sold_quantity,status,sub_status,catalog_listing,catalog_product_id,date_created,last_updated,listing_type_id';
 
@@ -92,46 +95,92 @@ async function estado() {
   imprimir('resultado', { ok: true, modo, accion: ACCION });
 }
 
-async function sumar() {
-  if (!ID_RE.test(ITEM)) return fallo('item_invalido');
+// Promo destino y cupón vigente: se leen una vez por corrida.
+async function prepararPromo() {
   const promos = await leerPromosCuenta();
   const b = buscarPromo(promos, PROMOCION);
-  if (!b.promo) return fallo('promo_' + b.error, { candidatas: b.candidatas ?? [] });
+  if (!b.promo) return { error: 'promo_' + b.error, candidatas: b.candidatas ?? [] };
   const promo = b.promo;
-  if (TIPOS_PROHIBIDOS.has(promo.type) || !TIPOS_ESCRIBIBLES.has(promo.type)) return fallo('tipo_no_permitido', { tipo: promo.type });
-  const f = await fichaItem(ITEM);
-  if (!f.itemCompleto) return fallo('item_no_leido');
-  const entrada = entradaEnPromo(f.promosCrudas, promo);
-  if (entrada && String(entrada.status).toLowerCase() === 'started') { imprimir('resultado', { ok: true, ya_estaba: true, promo: resumenPromo(promo), entrada: resumenEntrada(entrada) }); return; }
-  const objetivo = precioObjetivo({ entrada, precioPedido: PRECIO, precioActual: f.itemCompleto.price });
+  if (TIPOS_PROHIBIDOS.has(promo.type) || !TIPOS_ESCRIBIBLES.has(promo.type)) return { error: 'tipo_no_permitido', tipo: promo.type };
   const cupones = await leerCupones(promos);
   const cupon = cuponVigente({ cuponesApi: cupones });
-  imprimir('lectura', { promo: resumenPromo(promo), item: f.item, precio_visible: f.venta, entrada: resumenEntrada(entrada), objetivo, cupon, competencia: f.competencia, cupones_vigentes: cupones.filter(c => ['started', 'active'].includes(String(c.status).toLowerCase())).length });
-  if (objetivo.error) return fallo('precio_' + objetivo.error, { min: objetivo.min ?? null, max: objetivo.max ?? null, fijo: objetivo.fijo ?? null });
-  const ctx = { modo, ahora: new Date(), config, item: f.itemCompleto, venta: f.venta, promo: { id: promo.id, type: promo.type, name: promo.name, price: objetivo.precio, seller_percentage: entrada?.seller_percentage ?? null }, cupon, competencia: f.ptw };
-  let r = evaluarEscritura(['SMART_LIGHTNING', 'LIGHTNING'].includes(promo.type) ? 'lightning' : 'unirse_promo', ctx);
-  if (PEDIDO_SEBA) r = aplicarPedidoSeba(r);
-  imprimir('guardas', { permitido: r.permitido, alerta: r.alerta, saltadas_por_pedido_de_seba: r.saltadas ?? [], fallas: r.fallas.map(x => ({ guarda: x.guarda, tipo: x.tipo, motivo: x.motivo })) });
-  if (!r.permitido) { imprimir('resultado', { ok: false, modo, accion: ACCION, haria: modo !== 'real' ? cuerpoPost(promo, objetivo.precio, entrada) : null, frenado_por: r.fallas.map(x => x.guarda) }); if (r.alerta) process.exitCode = 1; return; }
-  const body = cuerpoPost(promo, objetivo.precio, entrada);
-  let post;
-  try { post = await ml.post(`/seller-promotions/items/${ITEM}?${V2}`, body); }
-  catch (e) { return fallo('post_fallo', { detalle: detalleError(e), body }); }
-  imprimir('escritura', { body, respuesta: elegir(post ?? {}, ['id', 'type', 'status', 'price', 'original_price', 'start_date', 'finish_date', 'end_date', 'message']) });
-  await sleep(8000);
-  const [venta2, promos2] = await Promise.all([leerSalePrice(ITEM), leerPromosItem(ITEM)]);
-  const despues = entradaEnPromo(promos2, promo);
-  const check = verificarPostEscritura(venta2 ?? {});
-  // Si la promo todavía no impacta en sale_price (pending), se juzga por el precio que se mandó.
-  const regular = Number(venta2?.regular_amount ?? venta2?.amount ?? f.venta?.amount);
-  const visibleEsperado = regular > 0 ? Math.round((1 - objetivo.precio / regular) * 10000) / 100 : null;
-  imprimir('verificacion', { precio_visible: venta2 ? elegir(venta2, ['amount', 'regular_amount', 'metadata']) : null, entrada: resumenEntrada(despues), relectura: check, visible_esperado_pct: visibleEsperado });
-  if (!check.ok || (visibleEsperado !== null && visibleEsperado > LIMITES.visibleMaxPct)) {
-    let del = null;
-    try { del = await ml.delete(`/seller-promotions/items/${ITEM}?promotion_type=${encodeURIComponent(promo.type)}&promotion_id=${encodeURIComponent(promo.id)}&${V2}`); } catch (e) { del = { error: detalleError(e) }; }
-    return fallo('visible_alto_se_saco', { relectura: check, delete: del });
+  return { promos, promo, cupones, cupon };
+}
+
+// Suma UNA publicación a la promo: lectura, guardas, POST, relectura y, si hace falta, DELETE.
+// Devuelve { estado: 'sumado'|'ya_estaba'|'frenado'|'error'|'sacado', ... } y nunca tira.
+async function sumarUno(id, { promo, cupon, cupones }, { imprimirDetalle = true } = {}) {
+  const out = (estado, extra = {}) => ({ item: id, estado, ...extra });
+  try {
+    if (!ID_RE.test(id)) return out('error', { error: 'item_invalido' });
+    const f = await fichaItem(id);
+    if (!f.itemCompleto) return out('error', { error: 'item_no_leido' });
+    const entrada = entradaEnPromo(f.promosCrudas, promo);
+    const titulo = f.item?.title ?? null;
+    if (entrada && String(entrada.status).toLowerCase() === 'started') return out('ya_estaba', { titulo, entrada: resumenEntrada(entrada) });
+    const objetivo = precioObjetivo({ entrada, precioPedido: PRECIO, precioActual: f.itemCompleto.price });
+    if (imprimirDetalle) imprimir('lectura', { promo: resumenPromo(promo), item: f.item, precio_visible: f.venta, entrada: resumenEntrada(entrada), objetivo, cupon, competencia: f.competencia, cupones_vigentes: cupones.filter(c => ['started', 'active'].includes(String(c.status).toLowerCase())).length });
+    if (objetivo.error) return out('error', { titulo, error: 'precio_' + objetivo.error, min: objetivo.min ?? null, max: objetivo.max ?? null, fijo: objetivo.fijo ?? null });
+    const ctx = { modo, ahora: new Date(), config, item: f.itemCompleto, venta: f.venta, promo: { id: promo.id, type: promo.type, name: promo.name, price: objetivo.precio, seller_percentage: entrada?.seller_percentage ?? null }, cupon, competencia: f.ptw };
+    let r = evaluarEscritura(['SMART_LIGHTNING', 'LIGHTNING'].includes(promo.type) ? 'lightning' : 'unirse_promo', ctx);
+    if (PEDIDO_SEBA) r = aplicarPedidoSeba(r);
+    const guardas = { permitido: r.permitido, alerta: r.alerta, saltadas_por_pedido_de_seba: r.saltadas ?? [], fallas: r.fallas.map(x => ({ guarda: x.guarda, tipo: x.tipo, motivo: x.motivo })) };
+    if (imprimirDetalle) imprimir('guardas', guardas);
+    const body = cuerpoPost(promo, objetivo.precio, entrada);
+    if (!r.permitido) return out('frenado', { titulo, deal_price: objetivo.precio, haria: modo !== 'real' ? body : null, frenado_por: r.fallas.map(x => x.guarda), alerta: r.alerta, saltadas: r.saltadas ?? [] });
+    let post;
+    try { post = await ml.post(`/seller-promotions/items/${id}?${V2}`, body); }
+    catch (e) { return out('error', { titulo, error: 'post_fallo', detalle: detalleError(e), body }); }
+    if (imprimirDetalle) imprimir('escritura', { body, respuesta: elegir(post ?? {}, ['id', 'type', 'status', 'price', 'original_price', 'start_date', 'finish_date', 'end_date', 'message']) });
+    await sleep(8000);
+    const [venta2, promos2] = await Promise.all([leerSalePrice(id), leerPromosItem(id)]);
+    const despues = entradaEnPromo(promos2, promo);
+    const check = verificarPostEscritura(venta2 ?? {});
+    // Si la promo todavía no impacta en sale_price (pending), se juzga por el precio que se mandó.
+    const regular = Number(venta2?.regular_amount ?? venta2?.amount ?? f.venta?.amount);
+    const visibleEsperado = regular > 0 ? Math.round((1 - objetivo.precio / regular) * 10000) / 100 : null;
+    if (imprimirDetalle) imprimir('verificacion', { precio_visible: venta2 ? elegir(venta2, ['amount', 'regular_amount', 'metadata']) : null, entrada: resumenEntrada(despues), relectura: check, visible_esperado_pct: visibleEsperado });
+    if (!check.ok || (visibleEsperado !== null && visibleEsperado > LIMITES.visibleMaxPct)) {
+      let del = null;
+      try { del = await ml.delete(`/seller-promotions/items/${id}?promotion_type=${encodeURIComponent(promo.type)}&promotion_id=${encodeURIComponent(promo.id)}&${V2}`); } catch (e) { del = { error: detalleError(e) }; }
+      return out('sacado', { titulo, error: 'visible_alto_se_saco', relectura: check, delete: del });
+    }
+    return out('sumado', { titulo, deal_price: objetivo.precio, visible_pct: check.visiblePct || visibleEsperado, estado_entrada: despues?.status ?? null, saltadas: r.saltadas ?? [] });
+  } catch (e) { return out('error', { error: 'inesperado', detalle: detalleError(e) }); }
+}
+
+async function sumar() {
+  if (!ID_RE.test(ITEM)) return fallo('item_invalido');
+  const prep = await prepararPromo();
+  if (prep.error) return fallo(prep.error, { candidatas: prep.candidatas ?? [], tipo: prep.tipo ?? null });
+  const r = await sumarUno(ITEM, prep);
+  if (r.estado === 'ya_estaba') { imprimir('resultado', { ok: true, ya_estaba: true, promo: resumenPromo(prep.promo), entrada: r.entrada }); return; }
+  if (r.estado === 'frenado') { imprimir('resultado', { ok: false, modo, accion: ACCION, haria: r.haria, frenado_por: r.frenado_por }); if (r.alerta) process.exitCode = 1; return; }
+  if (r.estado !== 'sumado') return fallo(r.error, r);
+  imprimir('resultado', { ok: true, modo, accion: ACCION, item: ITEM, promo: resumenPromo(prep.promo), deal_price: r.deal_price, visible_pct: r.visible_pct, estado_entrada: r.estado_entrada });
+}
+
+// Lote: ITEMS separados por coma o espacio. Se suman de a uno, con las mismas guardas y
+// relectura; un título que falla no frena a los demás. Resumen al final.
+async function sumarLote() {
+  const ids = [...new Set(ITEMS)];
+  if (!ids.length) return fallo('sin_items');
+  if (ids.length > 200) return fallo('lote_demasiado_grande', { items: ids.length });
+  const prep = await prepararPromo();
+  if (prep.error) return fallo(prep.error, { candidatas: prep.candidatas ?? [], tipo: prep.tipo ?? null });
+  imprimir('lote', { promo: resumenPromo(prep.promo), cupon: prep.cupon, items: ids.length, modo, pedido_seba: PEDIDO_SEBA });
+  const resultados = [];
+  for (const id of ids) {
+    const r = await sumarUno(id, prep, { imprimirDetalle: false });
+    resultados.push(r);
+    console.log(`- ${id} ${r.estado}${r.deal_price ? ` $${r.deal_price}` : ''}${r.visible_pct !== undefined ? ` ${r.visible_pct}%` : ''}${r.frenado_por ? ' ' + r.frenado_por.join('+') : ''}${r.error ? ' ' + r.error : ''}`);
   }
-  imprimir('resultado', { ok: true, modo, accion: ACCION, item: ITEM, promo: resumenPromo(promo), deal_price: objetivo.precio, visible_pct: check.visiblePct || visibleEsperado, estado_entrada: despues?.status ?? null });
+  const porEstado = resultados.reduce((a, r) => ({ ...a, [r.estado]: (a[r.estado] ?? 0) + 1 }), {});
+  imprimir('resultados', resultados);
+  const fila = r => `| ${r.item} | ${texto(r.titulo ?? '')} | ${r.estado} | ${r.deal_price ?? ''} | ${r.visible_pct ?? ''} | ${texto((r.frenado_por ?? []).join('+') || r.error || '')} |`;
+  resumen(`### Lote a "${texto(prep.promo.name)}" (${modo}, ${fechaMontevideo()})\n\n${Object.entries(porEstado).map(([k, v]) => `${k}: ${v}`).join(' · ')}\n\n| MLU | Título | Estado | Precio | Visible % | Detalle |\n|---|---|---|---|---|---|\n` + resultados.map(fila).join('\n'));
+  imprimir('resultado', { ok: !resultados.some(r => ['error', 'sacado'].includes(r.estado)), modo, accion: ACCION, por_estado: porEstado });
+  if (resultados.some(r => r.estado === 'sacado' || r.estado === 'error')) process.exitCode = 1;
 }
 
 async function sacar() {
@@ -215,10 +264,10 @@ async function adsGasto() {
 }
 
 async function main() {
-  console.log(`Promos ${new Date().toISOString()} | accion=${ACCION} modo=${modo} escribe=${escribe} item=${ITEM || '-'} promocion="${texto(PROMOCION)}" precio=${PRECIO ?? '-'} pedido_seba=${PEDIDO_SEBA}`);
+  console.log(`Promos ${new Date().toISOString()} | accion=${ACCION} modo=${modo} escribe=${escribe} item=${ITEM || '-'} items=${ITEMS.length} promocion="${texto(PROMOCION)}" precio=${PRECIO ?? '-'} pedido_seba=${PEDIDO_SEBA}`);
   const yo = await ml.get('/users/me');
   if (String(yo?.id) !== CUENTA.sellerId) throw Object.assign(new Error('token_de_otra_cuenta'), { fatal: true });
-  const acciones = { estado, sumar, sacar, seleccion, 'ads-gasto': adsGasto };
+  const acciones = { estado, sumar, 'sumar-lote': sumarLote, sacar, seleccion, 'ads-gasto': adsGasto };
   if (!acciones[ACCION]) return fallo('accion_desconocida', { acciones: Object.keys(acciones) });
   await acciones[ACCION]();
   imprimir('estadisticas_cliente', ml.stats);
