@@ -23,6 +23,7 @@ import { promoAwareCacheControl, promoWasHtml, webPromoActive, WEB_PROMO } from 
 import { LIQUIDACION, resolveLiquidation, sortLiquidation } from './_shared/liquidacion.js';
 import { liquidationPricingActive, transferDisplayPrice, LIQUIDACION_PRECIO, TRANSFER_DISCOUNT } from './_shared/descuentos.js';
 import { buildWhatsAppMessage, whatsappHref } from '../shared/whatsapp-messages.js';
+import { RUEDA_SCRIPT, RUEDA_STYLES, ruedaHtml } from './_shared/rueda-ui.js';
 
 export const PAGE_SIZE = 48;
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
@@ -278,6 +279,7 @@ export async function onRequest(ctx) {
     .pager-link{display:inline-flex;min-height:44px;align-items:center;padding:.5rem .9rem;border:1px solid #d1c8be;border-radius:.6rem;background:#fff;color:#18120e;font-weight:700;text-decoration:none}
     .pager-link.is-disabled{opacity:.4}
     .empty{padding:2rem 0;color:#64748b}
+    ${RUEDA_STYLES}
   </style>
 </head>
 <body>
@@ -289,6 +291,7 @@ ${siteHeaderHtml({ current: 'liquidacion' })}
     <p>${lead}</p>
     <a href="${escapeHtml(generalWa)}" target="_blank" rel="noopener noreferrer" data-cta-location="liquidacion_hero">Pedinos una recomendación por WhatsApp</a>
   </section>
+  ${ruedaHtml()}
   ${topicsHtml(topics, tema, selected.length)}
   <p class="sub">${filtered.length} libros${totalPages > 1 ? ` · página ${page} de ${totalPages}` : ''}</p>
   ${slice.length
@@ -298,6 +301,7 @@ ${siteHeaderHtml({ current: 'liquidacion' })}
 ${footerHtml(new Date(now).getFullYear(), pagePath({ tema, page }))}
 ${waFloatHtml(null, pagePath({ tema, page }))}
 ${SITE_HEADER_SCRIPT}
+${RUEDA_SCRIPT}
 </body>
 </html>`;
 
