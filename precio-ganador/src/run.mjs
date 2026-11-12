@@ -243,9 +243,18 @@ async function main() {
     const dia = join(dirEstado, 'diario', `${cuenta.clave}-${fechaMontevideo(inicio)}.json`);
     const acum = await leerJson(dia, { corridas: [] });
     acum.corridas.push(resumen.contadores);
+    // Para el reporte diario: qué cambió hoy y la foto de lo que perdemos en esta corrida.
+    acum.cambios ??= [];
+    const hora = new Intl.DateTimeFormat('es-UY', { timeZone: 'America/Montevideo', hour: '2-digit', minute: '2-digit', hour12: false }).format(inicio);
+    for (const f of filas) if (f.aplicado && CAMBIA.has(f.d.accion)) acum.cambios.push({ id: f.item.id, titulo: String(f.item.title ?? '').slice(0, 70), antes: f.item.price, despues: f.d.precio, accion: f.d.accion, hora });
+    acum.foto = {
+      estados: resumen.catalogo?.estados ?? {},
+      perdiendo: filas.filter(f => f.comp?.compite).map(f => ({ id: f.item.id, titulo: String(f.item.title ?? '').slice(0, 70), precio: f.item.price, ganador: f.comp?.ganador ?? null, causa: f.perdida?.causa ?? null, dias: f.perdida?.ganador_dias ?? null, contra_demanda: Boolean(f.perdida?.contra_demanda), accion: f.d.accion })),
+    };
     await mkdir(join(dirEstado, 'diario'), { recursive: true });
     await writeFile(dia, JSON.stringify(acum, null, 2) + '\n');
-    if (flag('correo-diario')) console.log('Correo:', JSON.stringify(await enviarResumen({ cuenta, acum, resumen })));
+    const ayerArchivo = join(dirEstado, 'diario', `${cuenta.clave}-${fechaMontevideo(new Date(inicio.getTime() - 86400_000))}.json`);
+    if (flag('correo-diario')) console.log('Correo:', JSON.stringify(await enviarResumen({ cuenta, acum, resumen, ayer: await leerJson(ayerArchivo, null) })));
     // Cada 4 horas (Seba, 09/11/2026): con las corridas de las 9, 13, 17 y 21 de Montevideo,
     // la lista de las que quedan ocultas detrás de vendedores a demanda.
     if (cuenta.clave === 'libros' && HORAS_LISTA_DEMANDA.includes(horaMontevideo(inicio))) console.log('Lista a demanda:', JSON.stringify(await enviarListaDemanda({ cuenta, lista: listaDemanda(filas), franja: horaMontevideo(inicio) })));
