@@ -25,6 +25,10 @@
 
 const SESSION_COOKIE_NAME = 'amado_panel_session';
 const SESSION_TTL_SECONDS = 8 * 60 * 60;
+// Entrar con Windows Hello (panel-passkey.js) abre una sesión de 30 días: el
+// equipo ya prueba quién es cada vez que se usa, y pedirlo a diario era lo que
+// cansaba.
+const PASSKEY_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 const TOKEN_VERSION = 'v1';
 const SESSION_KEY_LABEL = 'amado-panel-session-key-v1';
 
@@ -144,13 +148,18 @@ export function parseCookies(cookieHeader) {
   return jar;
 }
 
+// SameSite=Lax y no Strict: con Strict el navegador no manda la cookie cuando se
+// llega desde un link de otro sitio (el correo diario, WhatsApp), y el panel
+// pedía entrar de nuevo aunque la sesión estuviera abierta. Lax la manda en esa
+// navegación (un GET de primer nivel) y la sigue negando en un POST desde otro
+// sitio, que es lo que protege las acciones del panel.
 export function sessionCookieHeader(token, { ttlSeconds = SESSION_TTL_SECONDS } = {}) {
   return [
     `${SESSION_COOKIE_NAME}=${token}`,
     'Path=/panel',
     'HttpOnly',
     'Secure',
-    'SameSite=Strict',
+    'SameSite=Lax',
     `Max-Age=${ttlSeconds}`,
   ].join('; ');
 }
@@ -161,7 +170,7 @@ export function clearedSessionCookieHeader() {
     'Path=/panel',
     'HttpOnly',
     'Secure',
-    'SameSite=Strict',
+    'SameSite=Lax',
     'Max-Age=0',
   ].join('; ');
 }
@@ -215,6 +224,7 @@ export async function clearFailedLogins(kv, ip) {
 export const PANEL_AUTH_CONSTANTS = Object.freeze({
   SESSION_COOKIE_NAME,
   SESSION_TTL_SECONDS,
+  PASSKEY_SESSION_TTL_SECONDS,
   LOGIN_MAX_ATTEMPTS,
   MIN_PASSWORD_LENGTH,
   LOGIN_WINDOW_SECONDS,
