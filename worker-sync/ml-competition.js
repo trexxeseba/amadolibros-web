@@ -35,6 +35,19 @@ const TARGETS_VERSION = 2;
 //   cualquier otra cosa             → null (sin dato), nunca "inmediata"
 export const SHIPPING_CITY = 'TUxVQ0NPUjZmZjNm';
 const HANDLING_IMMEDIATE_MAX_H = 24, MAX_SHIPPING_CHECKS = 12;
+
+// Vendedores que ML muestra sin plazo de preparación pero que en la práctica
+// venden a pedido (revisado a mano). Seller id → días reales aproximados. Para
+// ellos no se consulta shipping_options: cuentan siempre como a pedido.
+export const SLOW_SELLERS = new Map([
+  ['471589392', 12], // HERMES_PROMOSML: figura sin plazo, entrega en unos 12 días (26/10/2026)
+]);
+// Cuentas de la casa: nunca son competencia.
+export const HOUSE_SELLERS = new Set([SALES_SELLER_ID, '2341378249']); // Amado Libros, Amado Vintage
+export function realDays(sellerId, days) {
+  const slow = SLOW_SELLERS.get(String(sellerId ?? ''));
+  return slow != null && (days == null || days < slow) ? slow : days;
+}
 const toNum = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
 const toHours = (v, unit) => v == null ? null : String(unit ?? 'hour').toLowerCase().startsWith('day') ? v * 24 : v;
 export function readShipping(data) {
@@ -201,12 +214,14 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     // barato al más caro, hasta encontrar uno nuevo y nacional sin preparación:
     // los más caros que ése no cambian la comparación. Sin dato = null, nunca
     // "inmediato".
-    const competitors = (items ?? []).filter(it => typeof it?.item_id === 'string' && /^MLU[A-Z0-9]+$/i.test(it.item_id) && String(it.seller_id ?? '') !== SALES_SELLER_ID)
+    const competitors = (items ?? []).filter(it => typeof it?.item_id === 'string' && /^MLU[A-Z0-9]+$/i.test(it.item_id) && !HOUSE_SELLERS.has(String(it.seller_id ?? '')))
       .sort((a, b) => (Number(a.price) || Infinity) - (Number(b.price) || Infinity));
     if (caps.shipping_options !== 'ml_http_403' && caps.shipping_options !== 'ml_http_401') {
       let inmediata = false, consultas = 0;
       for (const it of competitors) {
         if (inmediata || consultas >= MAX_SHIPPING_CHECKS) break;
+        const slow = SLOW_SELLERS.get(String(it.seller_id ?? ''));
+        if (slow != null) { it._prep = slow; continue; }
         try {
           const env = readShipping(await ml(`/items/${encodeURIComponent(it.item_id)}/shipping_options?city_to=${SHIPPING_CITY}`, token));
           consultas++; extraCalls++;
@@ -360,7 +375,9 @@ export async function competitionByIsbn(db, isbns) {
     const dia = pd.snap_date, diaPrev = pdHoy ? prev : null;
     const pdPrev = diaPrev ? pdAyer : null;
     const prevOk = vigente(pdPrev);
-    const others = d => rows.filter(r => r.snap_date === d && r.seller_id !== SALES_SELLER_ID);
+    // Fotos viejas pueden traer a un vendedor lento como inmediato: se corrige al leer.
+    const others = d => rows.filter(r => r.snap_date === d && !HOUSE_SELLERS.has(String(r.seller_id)))
+      .map(r => SLOW_SELLERS.has(String(r.seller_id)) ? { ...r, manufacturing_days: realDays(r.seller_id, r.manufacturing_days) } : r);
     const ownToday = rows.some(r => r.snap_date === dia && r.seller_id === SALES_SELLER_ID);
     const hoy = others(dia), ayer = prevOk ? others(diaPrev) : [];
     // Una oferta sin evidencia no prueba inmediatez ni ausencia de competencia.
