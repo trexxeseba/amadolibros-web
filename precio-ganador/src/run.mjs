@@ -57,6 +57,9 @@ async function main() {
   const pisos = await leerJson(new URL(`../pisos/${cuenta.clave}.json`, import.meta.url), {});
   // Publicaciones que Seba pidió seguir bajando aunque el ganador quede a más del umbral del original.
   const seguir = await leerJson(new URL(`../seguir/${cuenta.clave}.json`, import.meta.url), {});
+  // Publicaciones que Seba pidió no tocar hasta una fecha (ej.: las que un rival persigue).
+  const excluirLista = await leerJson(new URL(`../excluir/${cuenta.clave}.json`, import.meta.url), {});
+  const excluida = id => { const e = excluirLista[id]; return e && Date.parse(e.hasta + 'T23:59:59-03:00') > inicio.getTime() ? (e.motivo ?? 'excluida a mano') : null; };
 
   const ml = crearCliente(fuenteTokenD1(cuenta));
   console.log('Fase: identidad');
@@ -105,11 +108,11 @@ async function main() {
       const item = items.get(id), previo = estado.publicaciones[id];
       try {
         const comp = await competencia(ml, item, { necesitaTecho: Boolean(previo), sellerId: cuenta.sellerId, soloContraDemanda: cuenta.soloContraDemanda === true, descuento: cuenta.descuento ?? 0, cache: cacheEntrega });
-        let d = decidir({ item, comp, promo: false, previo, piso: pisoDe(id), seguir: Boolean(seguir[id]), tocarStock: cuenta.tocarStockDemanda, stockDemanda, ...reglas });
+        let d = decidir({ item, comp, promo: false, previo, piso: pisoDe(id), seguir: Boolean(seguir[id]), excluida: excluida(id), tocarStock: cuenta.tocarStockDemanda, stockDemanda, ...reglas });
         let promo;
         if (CAMBIA.has(d.accion)) {
           promo = await promocionActiva(ml, id);
-          d = decidir({ item, comp, promo, previo, piso: pisoDe(id), seguir: Boolean(seguir[id]), tocarStock: cuenta.tocarStockDemanda, stockDemanda, ...reglas });
+          d = decidir({ item, comp, promo, previo, piso: pisoDe(id), seguir: Boolean(seguir[id]), excluida: excluida(id), tocarStock: cuenta.tocarStockDemanda, stockDemanda, ...reglas });
         }
         return { item, comp, d, previo, promo };
       } catch (e) {

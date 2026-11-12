@@ -19,8 +19,10 @@ export const entero = n => Math.floor(Number(n) + 1e-9);
 
 // umbralInclusivo: la diferencia igual al umbral también se baja (Vintage: <= 400).
 // descuento: fracción por debajo del ganador (Vintage 0.01 = 99 % del ganador).
-export function decidir({ item, comp, promo = false, previo, piso = null, tocarStock = false, stockDemanda = STOCK_DEMANDA_DEFAULT, umbral = UMBRAL_UYU, topePct = TOPE_PCT, umbralInclusivo = false, descuento = 0, pasoMinimoSubida = 1, seguir = false, confirmarSubida = 2, fraccionSubida = 0.5, memoriaDias = 3, ahora = Date.now(), ganarCompartida = false }) {
+export function decidir({ item, comp, promo = false, previo, piso = null, tocarStock = false, stockDemanda = STOCK_DEMANDA_DEFAULT, umbral = UMBRAL_UYU, topePct = TOPE_PCT, umbralInclusivo = false, descuento = 0, pasoMinimoSubida = 1, seguir = false, confirmarSubida = 2, fraccionSubida = 0.5, memoriaDias = 3, ahora = Date.now(), ganarCompartida = false, excluida = null }) {
   const precio = Number(item.price);
+  // Excluida a mano (precio-ganador/excluir/<cuenta>.json): no se toca hasta la fecha indicada.
+  if (excluida) return { accion: 'saltear_excluida', motivo: excluida };
   if (comp?.error) return { accion: 'error_consulta', motivo: comp.error };
   if (item.currency_id !== 'UYU') return { accion: 'saltear_moneda', motivo: item.currency_id };
   if (item.variaciones) return { accion: 'saltear_variaciones', motivo: 'precio por variación' };

@@ -100,3 +100,10 @@ test('seguir: una publicación con excepción sigue al ganador aunque pase el um
   assert.equal(decidir({ item: it, comp: marcada(4000), previo, seguir: true }).accion, 'mantener_umbral');
   assert.equal(decidir({ item: it, comp: marcada(6377), previo, seguir: true, piso: 6400 }).accion, 'mantener_piso');
 });
+test('excluida a mano: no se toca aunque pierda y la baja entre en los topes', () => {
+  // Fantastic Mr. Fox (12/11/2026): 1400 contra 787, el sistema lo volvía a bajar.
+  const libros = { umbral: 1e9, topePct: 0.5, piso: 500 };
+  const d = decidir({ item: item({ price: 1400 }), comp: marcada(787), excluida: 'Seba: no se toca', ...libros });
+  assert.deepEqual([d.accion, d.precio], ['saltear_excluida', undefined]);
+  assert.equal(decidir({ item: item({ price: 1400 }), comp: marcada(787), ...libros }).accion, 'bajar');
+});
