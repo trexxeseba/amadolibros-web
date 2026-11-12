@@ -1,0 +1,45 @@
+name: Búsquedas sin resultados, informe completo por correo (solo lectura)
+
+# Lee la tabla search_misses de D1 (solo lectura) y manda a Seba, por correo, la lista
+# completa de lo que la gente buscó en la web y no encontró. El repo es público, por eso
+# nada de esto se imprime en el log ni en el resumen del job.
+#
+# Sólo manual.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: busquedas-export
+  cancel-in-progress: false
+
+jobs:
+  exportar:
+    name: Exportar y mandar por correo
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Leer D1 y armar el informe
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/ops/busquedas-export.mjs
+
+      - name: Mandar el correo
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REPORT_EMAIL_FROM: Amado Libros <web@notificaciones.amadolibros.com>
+          REPORT_EMAIL_TO: undiaes@gmail.com
+          REPORT_EMAIL_SUBJECT: Amado Libros — todo lo que buscan y no encuentran
+          REPORT_EMAIL_FILES: artifacts/busquedas/busquedas-sin-resultados.md
+        run: node scripts/ops/send-report-email.mjs
