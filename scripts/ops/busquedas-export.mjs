@@ -183,13 +183,13 @@ async function jsonDe(url) {
 }
 
 async function main() {
-    const [crudas, pedidos, avisos, catalogo, categorias] = await Promise.all([
-        query('SELECT date, query, count FROM search_misses ORDER BY date'),
-        query('SELECT created_at, request_type, query, author_isbn, format, language, budget_uyu FROM book_requests ORDER BY created_at DESC').catch(() => []),
-        query('SELECT product_id, product_title, created_at FROM stock_waitlist ORDER BY created_at DESC').catch(() => []),
-        jsonDe(CATALOGO_URL),
-        jsonDe(CATEGORIAS_URL),
-    ]);
+    // En fila, no a la vez: cada consulta usa `npx wrangler` y dos instalaciones en paralelo
+    // se pisan en la caché de npx (falló con "spawn sh ENOENT").
+    const crudas = await query('SELECT date, query, count FROM search_misses ORDER BY date');
+    const pedidos = await query('SELECT created_at, request_type, query, author_isbn, format, language, budget_uyu FROM book_requests ORDER BY created_at DESC').catch(() => []);
+    const avisos = await query('SELECT product_id, product_title, created_at FROM stock_waitlist ORDER BY created_at DESC').catch(() => []);
+    const catalogo = await jsonDe(CATALOGO_URL);
+    const categorias = await jsonDe(CATEGORIAS_URL);
     const generos = generosNormalizados(catalogo?.items || [], categorias);
     const todas = crudas.map(f => ({ date: String(f.date), query: String(f.query), count: Number(f.count) || 0 }));
     const filas = limpiar(todas, { generos });
