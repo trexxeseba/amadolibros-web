@@ -49,6 +49,7 @@ export async function unidades(desdeMs, hastaMs, consulta = d1) {
 export function armarInforme({ estado, ventas, ahoraMs, control }) {
   const filas = [];
   for (const [id, e] of Object.entries(estado.publicaciones ?? {})) {
+    if (e.subida) continue; // las subidas aprobadas no son bajas: se miden aparte
     const inicio = Date.parse(e.fecha_primera_baja);
     if (!Number.isFinite(inicio)) continue;
     const diasDespues = Math.min(VENTANA_DIAS, (ahoraMs - inicio) / DIA_MS);
