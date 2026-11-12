@@ -9,8 +9,9 @@
  */
 import {
     CODIGO_VIGENCIA_HORAS, PREMIO_MAX_UYU, diaMontevideo, drawPrize, generarCodigo, hashWhatsapp,
-    normalizarWhatsapp, sha256Hex, vencimiento,
+    normalizarWhatsapp, sha256Hex, umbralPremioEntero, vencimiento,
 } from '../_shared/juego.js';
+import { enSegundoPlano, enviarAvisoPremio, premioGanadoEmail } from '../_shared/premio-avisos.js';
 import { acertijoDelDia, acertijoPublico, esRespuestaCorrecta, regaloTexto } from '../_shared/acertijos.js';
 import { asegurarTablaPreview, json, sameOrigin, RATE_LIMIT } from './_rueda_handler.js';
 
@@ -25,7 +26,8 @@ function respuestaCodigo(fila, extra = {}) {
         ok: true, acerto, consuelo: !acerto,
         code: fila.code, monto_uyu: fila.monto_uyu == null ? null : Number(fila.monto_uyu),
         discount_pct: fila.discount_pct == null ? null : Number(fila.discount_pct),
-        regalo: fila.regalo || null, expires_at: fila.expires_at, valid_hours: CODIGO_VIGENCIA_HORAS, ...extra,
+        regalo: fila.regalo || null, expires_at: fila.expires_at, valid_hours: CODIGO_VIGENCIA_HORAS,
+        umbral_uyu: fila.monto_uyu == null ? null : umbralPremioEntero(fila.monto_uyu), ...extra,
     };
 }
 
@@ -98,6 +100,8 @@ export function createAcertijoHandler({ getNow = () => new Date(), roll, codeByt
                     "VALUES (?, 'acertijo', ?, ?, ?, ?, ?, ?, ?, NULL)"
                 ).bind(code, monto, regalo, waHash, dia, ipHash, createdAt, expira).run();
                 if (Number(res?.meta?.changes ?? 1) > 0) {
+                    const ganado = { code, origen: 'acertijo', monto_uyu: monto, regalo, expires_at: expira, umbral_uyu: umbralPremioEntero(monto) };
+                    enSegundoPlano(context, enviarAvisoPremio(env, premioGanadoEmail(ganado), `premio-ganado/${code}`));
                     return json(respuestaCodigo({ code, monto_uyu: monto, regalo, expires_at: expira }, { repeat: false }), 201);
                 }
                 const carrera = await db.prepare(SELECT_HOY).bind(waHash, dia).first();

@@ -3,6 +3,7 @@ import {
   getMerchantOrder as defaultGetMerchantOrder,
 } from './_mp_client.js';
 import { resolveConfig } from './_env_config.js';
+import { marcarPremioUsadoStmt } from '../_shared/premio-web.js';
 import { sendSaleNotification as defaultSendSaleNotification } from './_sale_notification.js';
 import { orderEmailService as defaultOrderEmailService } from './_order_email.js';
 import { sendGa4Purchase as defaultSendGa4Purchase } from './_ga4_measurement.js';
@@ -75,6 +76,7 @@ async function applyApproved(db, order, payment, now, queueAnalytics = false) {
       "INSERT OR IGNORE INTO order_events (id,order_id,event_type,payload_json,created_at) VALUES (?,?,'payment_approved',?,?)"
     ).bind(eventId, order.id, payload, now.toISOString()),
   ];
+  if (order.premio_code) statements.push(marcarPremioUsadoStmt(db, order.id, paidAt));
   if (queueAnalytics) {
     statements.push(db.prepare(
       "INSERT OR IGNORE INTO order_events (id,order_id,event_type,payload_json,created_at) VALUES (?,?,'ga4_purchase',?,?)"
@@ -256,7 +258,8 @@ export function createMpWebhookHandler({
         'address,locality,department,requested_delivery_date,requested_delivery_from,' +
         'requested_delivery_to,delivery_notes,products_total_uyu,pickup_discount_uyu,' +
         'shipping_cost_uyu,payable_total_uyu,currency,payment_preference_id,' +
-        'payment_id,paid_at,ga_client_id,ga_session_id ' +
+        'payment_id,paid_at,ga_client_id,ga_session_id,' +
+        'premio_code,premio_discount_uyu,premio_transfer_discount_uyu ' +
         'FROM orders WHERE public_code=?'
       )
       .bind(publicCode)

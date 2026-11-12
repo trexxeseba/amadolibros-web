@@ -431,7 +431,8 @@ export async function loadOrder(db, publicCode) {
             products_total_uyu, pickup_discount_uyu, shipping_cost_uyu, payable_total_uyu,
             transfer_products_total_uyu,
             currency, payment_provider, payment_id, paid_amount_uyu,
-            created_at, paid_at, fulfilled_at, cancelled_at, archived_at
+            created_at, paid_at, fulfilled_at, cancelled_at, archived_at,
+            premio_code, premio_product_id, premio_discount_uyu, premio_transfer_discount_uyu
        FROM orders
       WHERE public_code = ?
       LIMIT 1`,

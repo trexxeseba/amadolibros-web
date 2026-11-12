@@ -93,6 +93,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
                     <p class="cart-subtotal-line">Total de productos:&nbsp;<strong id="cart-subtotal">$&nbsp;0</strong></p>
                     <p class="cart-transfer-discount-line" id="cart-transfer-discount-line" hidden><span id="cart-transfer-discount-label">Ahorro por transferencia (12%):</span>&nbsp;<strong id="cart-transfer-discount">−&nbsp;$0</strong></p>
                     <p class="cart-discount-line" id="cart-discount-line" hidden>Ahorro por retiro:&nbsp;<strong>−&nbsp;$150</strong></p>
+                    <p class="cart-premio-line" id="cart-premio-line" hidden><span id="cart-premio-label">Tu premio:</span>&nbsp;<strong id="cart-premio-discount">−&nbsp;$0</strong></p>
                     <p class="cart-total-line" id="cart-total-line" hidden>Total con retiro:&nbsp;<strong id="cart-total">$&nbsp;0</strong></p>
                     <p class="cart-shipping-note" id="cart-shipping-note" hidden>Envío: a coordinar según destino</p>
                     <p class="cart-shipping-cost-line" id="cart-shipping-cost-line" hidden>Envío:&nbsp;<strong id="cart-shipping-cost">$&nbsp;250</strong></p>
@@ -107,6 +108,18 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
                 </div>
               </div>
             </details>
+            <div class="cart-premio" id="cart-premio">
+              <p class="cart-premio-aviso" id="cart-premio-aviso" role="status" aria-live="polite" hidden></p>
+              <details class="cart-premio-form" id="cart-premio-form">
+                <summary>¿Ganaste un premio en la Rueda o el Acertijo?</summary>
+                <div class="cart-premio-row">
+                  <label class="sr-only" for="cart-premio-input">Código de premio</label>
+                  <input id="cart-premio-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="LIB-XXXXX">
+                  <button type="button" id="cart-premio-aplicar">Aplicar</button>
+                </div>
+                <p class="cart-premio-msg" id="cart-premio-msg" role="status" aria-live="polite"></p>
+              </details>
+            </div>
           </aside>
 
           <div class="checkout-left">
@@ -383,6 +396,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
           <div class="transfer-total-card" aria-live="polite">
             <p>Precio normal <span id="transfer-list-total">—</span></p>
             <p class="transfer-saving"><span id="transfer-saving-label">Ahorrás 12% en los libros</span> <strong id="transfer-saving">—</strong></p>
+            <p class="transfer-saving" id="transfer-premio-line" hidden><span id="transfer-premio-label">Tu premio</span> <strong id="transfer-premio">—</strong></p>
             <p class="transfer-final">Total exacto a transferir <strong id="transfer-final-total">—</strong></p>
           </div>
 
@@ -1393,6 +1407,57 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
     color: #267a42;
   }
 
+  .cart-premio-line {
+    font-size: 0.9rem;
+    color: #177a43;
+    font-weight: 700;
+  }
+
+  .cart-premio { margin-top: 0.5rem; padding: 0 0.25rem; }
+  .cart-premio-aviso {
+    font-size: 0.85rem;
+    color: var(--ink-2);
+    background: #f4efe6;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.65rem;
+    margin: 0.25rem 0;
+  }
+  .cart-premio-aviso.is-ok { background: #e8f4ec; color: #145c33; }
+  .cart-premio-form summary {
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--ink-2);
+    text-decoration: underline;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+  }
+  .cart-premio-row { display: flex; gap: 0.5rem; margin-top: 0.35rem; }
+  .cart-premio-row input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    font: inherit;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+  }
+  .cart-premio-row button {
+    min-height: 44px;
+    padding: 0.5rem 0.9rem;
+    font: inherit;
+    font-weight: 700;
+    border: 0;
+    border-radius: 0.5rem;
+    background: var(--ink);
+    color: #fff;
+    cursor: pointer;
+  }
+  .cart-premio-msg { font-size: 0.8rem; color: var(--ink-2); min-height: 1em; margin-top: 0.25rem; }
+  .cart-premio-msg.is-error { color: #b3261e; }
+
   .cart-total-line {
     font-size: 1rem;
     color: var(--ink);
@@ -2392,6 +2457,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
           email: (buyer.email || '').trim().toLowerCase(),
         },
       };
+      if (premioCodeForOrder()) fp.premio_code = premioCodeForOrder();
       if (deliveryType === 'shipping' && shipping) {
         fp.shipping = {
           address: (shipping.address || '').trim(),
@@ -2601,15 +2667,177 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       return validationRequest;
     }
 
+    // ── Premio de la Rueda o el Acertijo ─────────────────────────────────
+    // El código se guarda en este navegador al ganar (functions/_shared/
+    // premio-ui.js, clave amado_premio) y se carga solo acá. El descuento lo
+    // calcula siempre el servidor (/api/premio para mostrarlo, /api/orders
+    // para cobrarlo); el navegador nunca manda un monto.
+    var PREMIO_KEY = 'amado_premio';
+    var premioLineEl   = document.getElementById('cart-premio-line');
+    var premioDescEl   = document.getElementById('cart-premio-discount');
+    var premioLabelEl  = document.getElementById('cart-premio-label');
+    var premioAvisoEl  = document.getElementById('cart-premio-aviso');
+    var premioFormEl   = document.getElementById('cart-premio-form');
+    var premioInputEl  = document.getElementById('cart-premio-input');
+    var premioBtnEl    = document.getElementById('cart-premio-aplicar');
+    var premioMsgEl    = document.getElementById('cart-premio-msg');
+    var premioCode = '';
+    var premioInfo = null;
+    var premioFirma = '';
+    var premioTimer = null;
+
+    function leerPremioGuardado() {
+      try {
+        var raw = localStorage.getItem(PREMIO_KEY);
+        if (!raw) return null;
+        var p = JSON.parse(raw);
+        if (!p || typeof p.code !== 'string') return null;
+        if (p.expires_at && Date.parse(p.expires_at) <= Date.now()) { localStorage.removeItem(PREMIO_KEY); return null; }
+        return p;
+      } catch (_) { return null; }
+    }
+    function olvidarPremioGuardado(code) {
+      try {
+        var p = leerPremioGuardado();
+        if (p && (!code || p.code === code)) localStorage.removeItem(PREMIO_KEY);
+      } catch (_) {}
+    }
+    function premioDescuento() { return premioInfo && premioInfo.aplicado ? Number(premioInfo.descuento_uyu) || 0 : 0; }
+    function premioDescuentoTransfer() { return premioInfo && premioInfo.aplicado ? Number(premioInfo.descuento_transfer_uyu) || 0 : 0; }
+    function premioCodeForOrder() { return premioCode && premioInfo && premioInfo.aplicado ? premioCode : ''; }
+
+    function premioMensaje(texto, esError) {
+      if (!premioMsgEl) return;
+      premioMsgEl.textContent = texto || '';
+      premioMsgEl.className = 'cart-premio-msg' + (esError ? ' is-error' : '');
+    }
+    function pintarPremio() {
+      if (!premioAvisoEl) return;
+      if (!premioCode || !premioInfo) { premioAvisoEl.hidden = true; premioAvisoEl.textContent = ''; return; }
+      var texto = premioInfo.aplicado
+        ? 'Tu premio ' + premioCode + ' se aplicó a «' + (premioInfo.title || 'tu libro') + '»: te descuenta ' + fmt.format(premioDescuento()) + '.' + (premioInfo.aviso ? ' ' + premioInfo.aviso : '')
+        : (premioInfo.aviso || 'Tu premio queda guardado para otro libro.');
+      premioAvisoEl.textContent = texto;
+      premioAvisoEl.className = 'cart-premio-aviso' + (premioInfo.aplicado ? ' is-ok' : '');
+      premioAvisoEl.hidden = false;
+    }
+    function quitarPremio(motivo) {
+      var code = premioCode;
+      premioCode = ''; premioInfo = null; premioFirma = '';
+      if (motivo === 'usado' || motivo === 'vencido' || motivo === 'inexistente') olvidarPremioGuardado(code);
+      pintarPremio();
+      updateTotals();
+    }
+    function firmaCarrito() {
+      try { return JSON.stringify(paymentItemsPayload(window.AmadoCart.get())); } catch (_) { return ''; }
+    }
+    async function consultarPremio(code, opciones) {
+      var manual = Boolean(opciones && opciones.manual);
+      if (!code || !window.AmadoCart) return;
+      var items = paymentItemsPayload(window.AmadoCart.get());
+      if (!items.length) return;
+      var firma = JSON.stringify(items);
+      if (premioBtnEl) premioBtnEl.disabled = true;
+      if (manual) premioMensaje('Revisando tu premio…', false);
+      try {
+        var resp = await fetch('/api/premio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: code, items: items }),
+        });
+        var data = await resp.json();
+        if (!resp.ok) {
+          if (manual) premioMensaje(data.error || 'No pudimos revisar tu premio. Probá de nuevo.', true);
+          return;
+        }
+        if (!data.ok) {
+          if (manual) premioMensaje(data.error, true);
+          if (premioCode === code) quitarPremio(data.premio_estado);
+          else if (['usado', 'vencido', 'inexistente'].indexOf(data.premio_estado) >= 0) olvidarPremioGuardado(code);
+          return;
+        }
+        premioCode = data.premio.code;
+        premioInfo = data.premio;
+        premioFirma = firma;
+        premioMensaje(manual && data.premio.aplicado ? 'Listo, tu premio quedó aplicado.' : '', false);
+        if (premioInputEl) premioInputEl.value = premioCode;
+        if (premioFormEl && manual && data.premio.aplicado) premioFormEl.open = false;
+        pintarPremio();
+        updateTotals();
+      } catch (_) {
+        if (manual) premioMensaje('No pudimos conectar. Probá de nuevo.', true);
+      } finally {
+        if (premioBtnEl) premioBtnEl.disabled = false;
+      }
+    }
+    // Si cambia el carrito, el premio puede ir a otro libro: se recalcula.
+    function premioSeguirCarrito() {
+      if (premioPendiente && !premioInfo) {
+        try { if (!paymentItemsPayload(window.AmadoCart.get()).length) return; } catch (_) { return; }
+        var pendiente = premioPendiente;
+        premioPendiente = '';
+        setTimeout(function () { consultarPremio(pendiente); }, 0);
+        return;
+      }
+      if (!premioCode || !premioInfo) return;
+      var firma = firmaCarrito();
+      if (firma === premioFirma) return;
+      premioFirma = firma;
+      clearTimeout(premioTimer);
+      premioTimer = setTimeout(function () { consultarPremio(premioCode); }, 400);
+    }
+    if (premioBtnEl) {
+      premioBtnEl.addEventListener('click', function () {
+        var code = (premioInputEl && premioInputEl.value || '').trim().toUpperCase();
+        if (!code) { premioMensaje('Escribí el código de tu premio.', true); return; }
+        consultarPremio(code, { manual: true });
+      });
+    }
+    if (premioInputEl) {
+      premioInputEl.addEventListener('keydown', function (e) {
+        if (e['key'] === 'Enter') { e.preventDefault(); if (premioBtnEl) premioBtnEl.click(); }
+      });
+    }
+    // Un pedido rechazó el premio (se usó en otra compra, venció o está en otro pago).
+    function premioRechazado(orderData) {
+      if (!orderData || orderData.code !== 'PREMIO_NO_DISPONIBLE') return false;
+      quitarPremio(orderData.premio_estado);
+      if (premioFormEl) premioFormEl.open = true;
+      premioMensaje(orderData.error || 'Tu premio no está disponible.', true);
+      return true;
+    }
+    // El premio guardado se consulta recién cuando el carrito ya está cargado
+    // (la primera vez que se calculan los totales con libros).
+    var premioPendiente = '';
+    (function cargarPremioGuardado() {
+      var guardado = leerPremioGuardado();
+      if (!guardado) return;
+      premioPendiente = guardado.code;
+      if (premioInputEl) premioInputEl.value = guardado.code;
+    })();
+
     // ── Calcular y mostrar totales ───────────────────────────────────────
     function updateTotals() {
       if (!window.AmadoCart) return;
+      premioSeguirCarrito();
+      var premioMp       = premioDescuento();
+      var premioTransf   = premioDescuentoTransfer();
       var subtotal       = getSellableSubtotal();
       var deliveryType   = getDeliveryType();
       var isPickup       = deliveryType === 'pickup';
       var pickupEligible = qualifiesForPickupDiscount(subtotal);
 
       if (subtotalEl) subtotalEl.textContent = fmt.format(subtotal);
+
+      if (premioLineEl) {
+        var premioVisible = premioMp > 0 || premioTransf > 0;
+        premioLineEl.hidden = !premioVisible;
+        if (premioVisible) {
+          var premioMostrado = getPaymentMethod() === 'transfer' ? premioTransf : premioMp;
+          if (premioDescEl) premioDescEl.textContent = '− ' + fmt.format(premioMostrado);
+          if (premioLabelEl) premioLabelEl.textContent = 'Tu premio ' + premioCode + ':';
+        }
+      }
 
       if (!deliveryType || subtotal <= 0) {
         if (transferDiscountLineEl) transferDiscountLineEl.hidden = true;
@@ -2632,7 +2860,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
 
       if (isPickup) {
         var pickupDiscount = pickupEligible ? RETIRO_DISCOUNT : 0;
-        var total = Math.max(0, subtotal - pickupDiscount);
+        var total = Math.max(0, subtotal - pickupDiscount - premioMp);
 
         // V1.1 REDESIGN (corrección de revisión #1): preview de
         // "Pagás $X" — espejo EXACTO de calculateTransferTotals() en
@@ -2646,7 +2874,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
         // del resumen), lo que confundía al comprador.
         var transferProductsTotal = transferProductsTotalFor(subtotal);
         syncTransferLabels(subtotal, transferProductsTotal);
-        var transferPayable = Math.max(0, transferProductsTotal - pickupDiscount);
+        var transferPayable = Math.max(0, transferProductsTotal - pickupDiscount - premioTransf);
         var paymentMethod = getPaymentMethod();
         var displayTotal = paymentMethod === 'transfer' ? transferPayable : total;
 
@@ -2676,7 +2904,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
         }
       } else {
         var shippingCost      = subtotal < FREE_SHIPPING_THRESHOLD_UYU ? SHIPPING_COST : 0;
-        var totalWithShipping = subtotal + shippingCost;
+        var totalWithShipping = Math.max(0, subtotal + shippingCost - premioMp);
 
         // V1.1 REDESIGN (corrección de revisión #1): mismo espejo que
         // en la rama de retiro, ahora con shippingCost (sin pickupDiscount)
@@ -2685,7 +2913,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
         // de pago elegido, para que nunca difiera del importe de la card.
         var transferProductsTotalShip = transferProductsTotalFor(subtotal);
         syncTransferLabels(subtotal, transferProductsTotalShip);
-        var transferPayableShip = Math.max(0, transferProductsTotalShip + shippingCost);
+        var transferPayableShip = Math.max(0, transferProductsTotalShip + shippingCost - premioTransf);
         var paymentMethod = getPaymentMethod();
         var displayTotalShip = paymentMethod === 'transfer' ? transferPayableShip : totalWithShipping;
 
@@ -3428,8 +3656,15 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       if (!transferData || !transferData.payment) return;
       var payment = transferData.payment;
       document.getElementById('transfer-order-code').textContent = payment.public_code;
-      document.getElementById('transfer-list-total').textContent = fmt.format(payment.list_total_uyu);
+      // Con premio, el "precio normal" es el de antes del premio: el premio va en su propia línea.
+      var transferPremio = Number(payment.premio_discount_uyu) || 0;
+      document.getElementById('transfer-list-total').textContent = fmt.format(Number(payment.list_total_uyu) + transferPremio);
       document.getElementById('transfer-saving').textContent = '− ' + fmt.format(payment.transfer_discount_uyu);
+      var transferPremioLine = document.getElementById('transfer-premio-line');
+      if (transferPremioLine) {
+        transferPremioLine.hidden = transferPremio <= 0;
+        document.getElementById('transfer-premio').textContent = '− ' + fmt.format(transferPremio);
+      }
       document.getElementById('transfer-final-total').textContent = fmt.format(payment.transfer_total_uyu);
       renderTransferAccounts();
       var wa = document.getElementById('btn-transfer-whatsapp');
@@ -3559,6 +3794,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
         delivery_type: deliveryType,
         buyer: { name: name, phone: phone, email: email },
       };
+      if (premioCodeForOrder()) payload.premio_code = premioCodeForOrder();
       if (deliveryType === 'pickup') payload.pickup_ack = true;
       if (deliveryType === 'shipping') {
         payload.shipping = { address: address, locality: locality, department: department };
@@ -3589,6 +3825,11 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
         );
         recoverableError.code = orderData.code;
         throw recoverableError;
+      }
+      if (!response.ok && premioRechazado(orderData)) {
+        var premioError = new Error(orderData.error || 'Tu premio no está disponible.');
+        premioError.code = orderData.code;
+        throw premioError;
       }
       if (!response.ok) {
         var orderCreateError = new Error(orderData.error || 'No pudimos preparar el pedido.');
@@ -3796,6 +4037,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
           delivery_type: deliveryType,
           buyer: { name: prepName, phone: prepPhone, email: prepEmail },
         };
+        if (premioCodeForOrder()) payload.premio_code = premioCodeForOrder();
         if (deliveryType === 'pickup') payload.pickup_ack = true;
         if (deliveryType === 'shipping') {
           payload.shipping = {
@@ -3842,6 +4084,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
             // completa — mostraba "Error: Error al guardar el pedido..."
             // duplicado. Se muestra el mensaje del servidor tal cual, igual
             // que ya hace el camino de transferencia (línea ~3120).
+            premioRechazado(orderData);
             showCheckoutError(orderData.error || 'No pudimos preparar tu pedido. Intentá de nuevo.');
             trackCheckoutErrorEvent('order_create', orderData.code || 'ORDER_CREATE_FAILED', 'mercadopago');
             resetPrepareButton();

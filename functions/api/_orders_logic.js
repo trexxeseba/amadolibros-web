@@ -127,6 +127,11 @@ export function validateBody(body) {
     }
   }
 
+  // Premio de la Rueda o el Acertijo (opcional). El formato se valida después.
+  if (body.premio_code !== undefined && body.premio_code !== null) {
+    if (typeof body.premio_code !== 'string' || body.premio_code.trim().length > 20) return 'Código de premio inválido.';
+  }
+
   return null;
 }
 
@@ -386,17 +391,25 @@ export function qualifiesForPickupDiscount(productsTotal) {
     total >= PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU;
 }
 
-export function calculateTotals(snapshotItems, deliveryType) {
-  const productsTotal = snapshotItems.reduce((sum, item) => sum + item.line_total_uyu, 0);
+// PREMIO (JUEGO-4): premioDiscount es lo que baja el premio de la Rueda o el
+// Acertijo pagando con Mercado Pago. Se descuenta del total de productos
+// (orders.products_total_uyu) para que siga valiendo la regla de la tabla
+// payable = productos − retiro + envío. Los umbrales de envío gratis y de
+// retiro se miran sobre los libros sin premio: el premio nunca hace aparecer
+// un costo de envío ni quita el ahorro por retiro.
+export function calculateTotals(snapshotItems, deliveryType, { premioDiscount = 0 } = {}) {
+  const itemsTotal = snapshotItems.reduce((sum, item) => sum + item.line_total_uyu, 0);
+  const premio = Number.isInteger(premioDiscount) && premioDiscount > 0 ? Math.min(premioDiscount, itemsTotal) : 0;
+  const productsTotal = itemsTotal - premio;
   let pickupDiscount = 0;
   let shippingCost = 0;
 
   if (deliveryType === 'pickup') {
-    if (qualifiesForPickupDiscount(productsTotal)) {
+    if (qualifiesForPickupDiscount(itemsTotal)) {
       pickupDiscount = Math.min(RETIRO_DISCOUNT, productsTotal);
     }
   } else {
-    shippingCost = productsTotal < FREE_SHIPPING_THRESHOLD ? SHIPPING_COST : 0;
+    shippingCost = itemsTotal < FREE_SHIPPING_THRESHOLD ? SHIPPING_COST : 0;
   }
 
   const payableTotal = Math.max(0, productsTotal - pickupDiscount + shippingCost);
@@ -411,6 +424,9 @@ export function calculateTotals(snapshotItems, deliveryType) {
 // TOPE-25: `transferProductsTotal` puede venir ya calculado al crear el pedido
 // (orders.transfer_products_total_uyu, con el tope de 25 % por libro). Si no
 // viene (pedidos anteriores), se usa el cálculo de siempre.
+//
+// PREMIO: en un pedido con premio, products_total_uyu ya viene sin el premio de
+// Mercado Pago y transfer_products_total_uyu sin el premio de transferencia.
 export function calculateTransferTotals({ productsTotal, pickupDiscount, shippingCost, transferProductsTotal: stored = null }) {
   const storedValid = Number.isInteger(stored) && stored >= 0 && stored <= productsTotal;
   const transferProductsTotal = storedValid ? stored : Math.round(productsTotal * TRANSFER_FACTOR);
@@ -433,6 +449,9 @@ export function generateFingerprint(body, consolidatedItems) {
       email: normalizeBuyerEmail(body.buyer.email),
     },
   };
+
+  const premioCode = typeof body.premio_code === 'string' ? body.premio_code.trim().toUpperCase() : '';
+  if (premioCode) fingerprint.premio_code = premioCode;
 
   if (body.delivery_type === 'shipping') {
     fingerprint.shipping = {

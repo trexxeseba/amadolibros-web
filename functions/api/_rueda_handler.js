@@ -8,13 +8,14 @@
  */
 import {
     CODIGO_VIGENCIA_HORAS, diaMontevideo, drawPrize, generarCodigo, hashWhatsapp,
-    normalizarWhatsapp, sha256Hex, vencimiento,
+    normalizarWhatsapp, sha256Hex, umbralPremioEntero, vencimiento,
 } from '../_shared/juego.js';
+import { enSegundoPlano, enviarAvisoPremio, premioGanadoEmail } from '../_shared/premio-avisos.js';
 
 export const MAX_BODY_BYTES = 2 * 1024;
 export const RATE_LIMIT = Object.freeze({ max: 6, windowMinutes: 60 });
 
-/** Misma estructura que migrations/0017_juego_codigos.sql (un test las compara). */
+/** Misma estructura que migrations/0019 + 0021 (un test las compara). */
 export const PREVIEW_TABLE_SQL = `CREATE TABLE IF NOT EXISTS juego_codigos (
   code TEXT PRIMARY KEY,
   origen TEXT NOT NULL CHECK (origen IN ('rueda','acertijo')),
@@ -27,7 +28,12 @@ export const PREVIEW_TABLE_SQL = `CREATE TABLE IF NOT EXISTS juego_codigos (
   created_at TEXT NOT NULL,
   expires_at TEXT NOT NULL,
   used_at TEXT,
-  CHECK (discount_pct IS NOT NULL OR monto_uyu IS NOT NULL)
+  CHECK (discount_pct IS NOT NULL OR monto_uyu IS NOT NULL),
+  order_id TEXT,
+  reservado_hasta TEXT,
+  canal TEXT,
+  libro TEXT,
+  descuento_uyu INTEGER
 )`;
 const previewSchema = new WeakMap();
 
@@ -59,6 +65,7 @@ const publico = row => ({
     discount_pct: row.discount_pct == null ? null : Number(row.discount_pct),
     expires_at: row.expires_at,
     valid_hours: CODIGO_VIGENCIA_HORAS,
+    umbral_uyu: row.monto_uyu == null ? null : umbralPremioEntero(row.monto_uyu),
 });
 
 export function createRuedaHandler({ getNow = () => new Date(), roll, codeBytes } = {}) {
@@ -121,6 +128,8 @@ export function createRuedaHandler({ getNow = () => new Date(), roll, codeBytes 
                     "VALUES (?, 'rueda', ?, NULL, ?, ?, ?, ?, ?, NULL)"
                 ).bind(code, premio.monto, waHash, dia, ipHash, createdAt, vencimiento(now)).run();
                 if (Number(res?.meta?.changes ?? 1) > 0) {
+                    const ganado = { code, origen: 'rueda', monto_uyu: premio.monto, expires_at: vencimiento(now), umbral_uyu: umbralPremioEntero(premio.monto) };
+                    enSegundoPlano(context, enviarAvisoPremio(env, premioGanadoEmail(ganado), `premio-ganado/${code}`));
                     return json({ ...publico({ code, monto_uyu: premio.monto, expires_at: vencimiento(now) }), repeat: false }, 201);
                 }
                 // Si fue una carrera por el mismo número, devolvemos el código ya creado.
