@@ -9,6 +9,13 @@ import {
   recordSearchMiss,
 } from '../_shared/search-misses.js';
 
+test('las búsquedas de prueba de nuestros controles no cuentan como demanda', async () => {
+  assert.equal(normalizeSearchMiss('zzzinexistente999'), '');
+  assert.equal(normalizeSearchMiss('  ZZZInexistente999 '), '');
+  assert.equal(normalizeSearchMiss('zzzinexistente999 libro'), 'zzzinexistente999 libro', 'solo el texto exacto');
+  assert.equal(await recordSearchMiss({ db: { prepare() { throw new Error('no debe escribir'); } }, query: 'zzzinexistente999' }), false);
+});
+
 test('normaliza para que la misma búsqueda cuente una sola vez', () => {
   assert.equal(normalizeSearchMiss('  García   MÁRQUEZ!! '), 'garcia marquez');
   assert.equal(normalizeSearchMiss('El niño y la garza'), 'el nino y la garza');
