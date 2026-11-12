@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildCatalog,
   bulkEntryItem,
+  catalogProductDescription,
   CATALOG_PRODUCT_GALLERY_CACHE_KEY,
   createDataQualitySummary,
   enrichCatalogProductPictures,
@@ -850,4 +851,64 @@ test('los detalles se leen de /items/bulk y aceptan el formato status_code sin c
   assert.equal(bulkEntryItem({ body: { id: 'projected' } }).id, 'projected');
   assert.equal(bulkEntryItem({ status_code: 500, body: { id: 'c' } }), null);
   assert.equal(bulkEntryItem({ id: 'legacy' }).id, 'legacy');
+});
+
+test('completa la descripción desde la ficha de catálogo sin pisar la propia', async () => {
+  const objects = new Map();
+  const env = {
+    CATALOG_R2: {
+      async get(key) {
+        return objects.has(key) ? { text: async () => objects.get(key) } : null;
+      },
+      async put(key, value) { objects.set(key, String(value)); },
+    },
+    ML_CATALOG_GALLERY_SLEEP_MS: '0',
+  };
+  // Caché previa al cambio: galería vigente pero sin la clave `description`.
+  objects.set(CATALOG_PRODUCT_GALLERY_CACHE_KEY, JSON.stringify({
+    schema_version: 1,
+    updated_at: '2026-11-01T00:00:00.000Z',
+    entries: {
+      MLU500: { pictures: ['https://http2.mlstatic.com/D_A-O.jpg'], checked_at: '2026-11-01T00:00:00.000Z' },
+      MLU600: { pictures: ['https://http2.mlstatic.com/D_B-O.jpg'], checked_at: '2026-11-01T00:00:00.000Z' },
+    },
+  }));
+  const items = [
+    { id: 'MLU1', title: 'Tarot Rider', catalog_product_id: 'MLU500', description: null, pictures: [] },
+    { id: 'MLU2', title: 'Tarot Rider', catalog_product_id: 'MLU500', description: 'Tarot Rider', pictures: [] },
+    { id: 'MLU3', title: 'Otro', catalog_product_id: 'MLU600', description: 'Texto propio de la publicación.', pictures: [] },
+  ];
+  const calls = [];
+  const summary = await enrichCatalogProductPictures(items, env, 'token', {
+    now: new Date('2026-11-12T00:00:00.000Z'),
+    mlGetDeps: {
+      fetchFn: async url => {
+        calls.push(String(url));
+        return Response.json({
+          pictures: [{ url: 'https://http2.mlstatic.com/D_A-O.jpg' }],
+          short_description: { type: 'plaintext', content: '  Mazo de 78 cartas con guía.\r\n\r\n\r\nEdición en español.  ' },
+        });
+      },
+    },
+  });
+
+  // Sólo se reconsulta el producto con publicaciones sin texto.
+  assert.deepEqual(calls, ['https://api.mercadolibre.com/products/MLU500']);
+  assert.equal(items[0].description, 'Mazo de 78 cartas con guía.\n\nEdición en español.');
+  assert.equal(items[1].description, items[0].description);
+  assert.equal(items[2].description, 'Texto propio de la publicación.');
+  assert.equal(summary.descriptions_from_product, 2);
+  assert.equal(summary.reused, 1);
+
+  // Segunda corrida: sale de la caché, sin pedirle nada a ML.
+  const again = [{ id: 'MLU1', title: 'Tarot Rider', catalog_product_id: 'MLU500', description: null, pictures: [] }];
+  const second = await enrichCatalogProductPictures(again, env, 'token', {
+    now: new Date('2026-11-13T00:00:00.000Z'),
+    mlGetDeps: { fetchFn: async () => { throw new Error('no debe consultar ML'); } },
+  });
+  assert.equal(second.fetched, 0);
+  assert.equal(again[0].description, 'Mazo de 78 cartas con guía.\n\nEdición en español.');
+
+  assert.equal(catalogProductDescription({ short_description: '' }), null);
+  assert.equal(catalogProductDescription({}), null);
 });
