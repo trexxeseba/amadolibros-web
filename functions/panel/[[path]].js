@@ -59,6 +59,14 @@ import {
   sessionCookieHeader,
   timingSafeEqual,
 } from '../_shared/panel-auth.js';
+import {
+  base64UrlEncode,
+  issueChallenge,
+  listPasskeys,
+  registerPasskey,
+  removePasskey,
+  verifyPasskeyLogin,
+} from '../_shared/panel-passkey.js';
 import { ORDER_FILTERS, loadOrder, loadOrdersList, loadPanelData } from '../_shared/panel-data.js';
 import {
   ORDER_ACTION_EVENT_LABEL,
@@ -95,6 +103,8 @@ const sendTrackedEmail = createTrackedEmailSender();
 // aceptar un hostname de Preview que el resto del sitio rechaza, ni al revés.
 const PAGES_PREVIEW_HOSTNAME_RE = /^[^.]+\.amadolibros-web\.pages\.dev$/;
 const TURNSTILE_ACTION = 'panel_login';
+// Script del navegador para Windows Hello (entrada y registro de equipos).
+const PANEL_HELLO_SCRIPT = '/assets/panel-hello.js?v=1';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -590,17 +600,28 @@ function loginPage({ siteKey, error = '' }) {
        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>`
     : '<p class="err">Falta configurar Turnstile para el panel.</p>';
 
+  // Primero Windows Hello (PIN o huella del equipo); la contraseña queda plegada
+  // para un equipo nuevo o si Windows Hello falla. El script arranca solo si
+  // este equipo ya entró alguna vez con Windows Hello.
   return layout('Panel — Amado Libros', `
-<form class="login card" method="POST" action="/panel/login">
+<div class="login card">
   <h1>Panel interno</h1>
   <p class="muted">Amado Libros</p>
   ${error ? `<p class="err">${escapeHtml(error)}</p>` : ''}
-  <label for="panel-password">Contraseña</label>
-  <input id="panel-password" name="password" type="password" autocomplete="current-password"
-         required maxlength="200" autofocus>
-  ${widget}
-  <button type="submit">Entrar</button>
-</form>`);
+  <button type="button" id="entrar-hello">Entrar con Windows Hello</button>
+  <p class="muted" id="aviso-hello" role="status">Con el PIN o la huella de este equipo.</p>
+  <details>
+    <summary>Entrar con la contraseña</summary>
+    <form method="POST" action="/panel/login">
+      <label for="panel-password">Contraseña</label>
+      <input id="panel-password" name="password" type="password" autocomplete="current-password"
+             required maxlength="200">
+      ${widget}
+      <button type="submit">Entrar</button>
+    </form>
+  </details>
+</div>
+<script src="${PANEL_HELLO_SCRIPT}" defer></script>`);
 }
 
 function statusList(rows, diccionario = ORDER_STATUS_LABEL, labelKey = 'status') {
@@ -863,7 +884,7 @@ ${noticeCard(order, events, pickup, flash)}
  * correo al cliente. Es la unica pantalla del panel que escribe, y escribe
  * solo estos cuatro campos en KV.
  */
-function settingsPage(pickup, { saved = false, error = '' } = {}) {
+function settingsPage(pickup, { saved = false, error = '', passkeys = [] } = {}) {
   const falta = !pickupComplete(pickup);
   return layout('Ajustes - Amado Libros', `
 <div class="topbar">
@@ -898,13 +919,119 @@ ${falta ? '<p class="card alert">Falta completar dirección, barrio u horarios. 
   <p class="muted">Se le dice al cliente en el correo de retiro.</p>
 
   <button type="submit">Guardar</button>
-</form>`);
+</form>
+${passkeySection(passkeys)}`);
+}
+
+function passkeySection(passkeys) {
+  const filas = passkeys.length
+    ? `<ul class="equipos">${passkeys.map(p => `
+      <li><b>${escapeHtml(p.nombre)}</b> <span class="muted">desde ${escapeHtml(String(p.creado || '').slice(0, 10))}</span>
+        <form method="POST" action="/panel/passkey/quitar" style="display:inline">
+          <input type="hidden" name="id" value="${escapeHtml(p.id)}">
+          <button type="submit">Quitar</button>
+        </form></li>`).join('')}</ul>`
+    : '<p class="muted">Todavía no hay equipos registrados.</p>';
+  return `
+<section class="card">
+  <h2>Entrar con Windows Hello</h2>
+  <p class="muted">Registrá cada equipo una vez. Después el panel pide el PIN o la huella de ese equipo, y la sesión dura 30 días.</p>
+  ${filas}
+  <label for="nombre-equipo">Nombre de este equipo</label>
+  <input id="nombre-equipo" type="text" maxlength="60" autocomplete="off" placeholder="PC de Seba">
+  <button type="button" id="registrar-hello">Registrar este equipo</button>
+  <p class="muted" id="aviso-registro" role="status"></p>
+</section>
+<script src="${PANEL_HELLO_SCRIPT}" defer></script>`;
+}
+
+function jsonResponse(body, status = 200, extraHeaders = {}) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-Robots-Tag': 'noindex, nofollow',
+      'Cache-Control': 'no-store',
+      ...extraHeaders,
+    },
+  });
+}
+
+/**
+ * Rutas de Windows Hello. Entrar no pide sesión (es la entrada); registrar y
+ * quitar equipos sí. Todas son POST y rechazan otro origen.
+ */
+async function handlePasskey(context, config, path) {
+  const { request, env } = context;
+  const url = new URL(request.url);
+  if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
+  const origin = request.headers.get('origin');
+  if (origin && origin !== url.origin) return new Response('Forbidden', { status: 403 });
+  const kv = env?.AMADO_KV;
+  if (!kv) return jsonResponse({ ok: false, error: 'kv_no_disponible' }, 503);
+  const ip = clientIp(request);
+  const opts = { origin: url.origin, rpId: url.hostname };
+
+  if (path === '/panel/passkey/opciones-entrada') {
+    if (await loginAttemptsExceeded(kv, ip)) return jsonResponse({ ok: false, error: 'demasiados_intentos' }, 429);
+    const ids = (await listPasskeys(kv)).map(p => p.id);
+    if (!ids.length) return jsonResponse({ ok: false, error: 'sin_equipos' }, 404);
+    return jsonResponse({ challenge: await issueChallenge(kv, 'entrada'), rpId: url.hostname, ids });
+  }
+
+  if (path === '/panel/passkey/entrar') {
+    if (await loginAttemptsExceeded(kv, ip)) return jsonResponse({ ok: false, error: 'demasiados_intentos' }, 429);
+    let body;
+    try { body = await request.json(); } catch { return jsonResponse({ ok: false, error: 'datos_invalidos' }, 400); }
+    const result = await verifyPasskeyLogin(kv, body, opts);
+    if (!result.ok) {
+      await recordFailedLogin(kv, ip);
+      return jsonResponse({ ok: false, error: result.error }, 401);
+    }
+    await clearFailedLogins(kv, ip);
+    const ttlSeconds = PANEL_AUTH_CONSTANTS.PASSKEY_SESSION_TTL_SECONDS;
+    const token = await createSessionToken(await deriveSessionSecret(config.password), { ttlSeconds });
+    return jsonResponse({ ok: true }, 200, { 'Set-Cookie': sessionCookieHeader(token, { ttlSeconds }) });
+  }
+
+  // De acá para abajo, con la sesión abierta.
+  if (!(await hasValidSession(request, await deriveSessionSecret(config.password)))) {
+    return jsonResponse({ ok: false, error: 'sin_sesion' }, 401);
+  }
+
+  if (path === '/panel/passkey/opciones-registro') {
+    const ids = (await listPasskeys(kv)).map(p => p.id);
+    return jsonResponse({
+      challenge: await issueChallenge(kv, 'registro'),
+      rpId: url.hostname,
+      userId: base64UrlEncode(crypto.getRandomValues(new Uint8Array(16))),
+      ids,
+    });
+  }
+
+  if (path === '/panel/passkey/registrar') {
+    let body;
+    try { body = await request.json(); } catch { return jsonResponse({ ok: false, error: 'datos_invalidos' }, 400); }
+    const result = await registerPasskey(kv, body, opts);
+    return jsonResponse(result.ok ? { ok: true } : { ok: false, error: result.error }, result.ok ? 200 : 400);
+  }
+
+  if (path === '/panel/passkey/quitar') {
+    const form = await request.formData();
+    await removePasskey(kv, cleanString(form.get('id')));
+    return new Response(null, {
+      status: 303,
+      headers: { Location: '/panel/ajustes', 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' },
+    });
+  }
+
+  return new Response('Not Found', { status: 404 });
 }
 
 async function handleSettingsSave(context) {
   const { request } = context;
-  // La cookie de sesión es SameSite=Strict, así que un POST desde otro sitio
-  // ni siquiera la lleva. El origen se verifica igual, por las dudas.
+  // La cookie de sesión es SameSite=Lax, así que un POST desde otro sitio ni
+  // siquiera la lleva. El origen se verifica igual, por las dudas.
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin) {
     return new Response('Forbidden', { status: 403 });
@@ -921,6 +1048,7 @@ async function handleSettingsSave(context) {
   return htmlResponse(settingsPage(result.pickup, {
     saved: result.ok,
     error: result.ok ? '' : result.error,
+    passkeys: await listPasskeys(context.env?.AMADO_KV),
   }), { status: result.ok ? 200 : 500 });
 }
 
@@ -1516,6 +1644,8 @@ export async function onRequest(context) {
     return handleLogin(context, config);
   }
 
+  if (path.startsWith('/panel/passkey/')) return handlePasskey(context, config, path);
+
   if (path === '/panel/ajustes') {
     if (!['GET', 'POST'].includes(request.method)) {
       return new Response('Method Not Allowed', { status: 405 });
@@ -1526,7 +1656,9 @@ export async function onRequest(context) {
       }));
     }
     if (request.method === 'POST') return handleSettingsSave(context);
-    return htmlResponse(settingsPage(await loadPickup(context.env)));
+    return htmlResponse(settingsPage(await loadPickup(context.env), {
+      passkeys: await listPasskeys(context.env?.AMADO_KV),
+    }));
   }
 
   const avisoWhatsapp = /^\/panel\/aviso-whatsapp\/([^/]+)\/contactado$/.exec(path);
