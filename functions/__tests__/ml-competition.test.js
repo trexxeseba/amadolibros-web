@@ -306,3 +306,29 @@ test('una lista armada con el criterio anterior se rearma en la primera tanda, s
   assert.equal(r.targets, 2);
   assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM comp_targets').get().n, 2);
 });
+
+test('vendedor lento conocido cuenta a pedido aunque ML lo muestre inmediato; Amado Vintage no es competencia', async t => {
+  const db = await seed(t);
+  const state = { day: 1 }, base = fakeMl(state), pedidos = [];
+  const fetcher = async url => {
+    const u = new URL(String(url)); pedidos.push(u.pathname);
+    if (u.pathname === '/products/MLU999/items') {
+      const r = await (await base(url)).json();
+      r.results.push({ item_id: 'MLUH', seller_id: 471589392, price: 600, condition: 'new' }, { item_id: 'MLUV', seller_id: 2341378249, price: 650, condition: 'new' });
+      return Response.json(r);
+    }
+    return base(url);
+  };
+  const comp = createMlCompetition({ fetcher, tokenProvider: async () => 'tok', now: () => DAY1, loadCatalog: async () => catalog });
+  for (let i = 0; i < 5; i++) { const r = await comp.sync({ ORDERS_DB: db }, { calls: 50 }); if (r.state === 'done') break; }
+  assert.ok(!pedidos.includes('/items/MLUH/shipping_options'), 'no se consulta su plazo');
+  assert.ok(!pedidos.includes('/items/MLUV/shipping_options'));
+  const f = (await competitionByIsbn(db, [ISBN])).get(ISBN);
+  assert.equal(f.competidores_inmediatos, 1, 'Hermes a $600 vende a pedido: el único inmediato es el de $1000');
+  assert.equal(f.competidores_a_pedido, 2);
+  assert.equal(f.vendedores.find(v => /471589392/.test(v.vendedor)).dias_preparacion, 12);
+  assert.ok(!f.vendedores.some(v => /2341378249/.test(v.vendedor)), 'Amado Vintage queda afuera');
+  // Una foto vieja que lo guardó como inmediato se corrige al leer.
+  db.sqlite.prepare("UPDATE comp_snapshots SET manufacturing_days=0 WHERE seller_id='471589392'").run();
+  assert.equal((await competitionByIsbn(db, [ISBN])).get(ISBN).competidores_inmediatos, 1);
+});
