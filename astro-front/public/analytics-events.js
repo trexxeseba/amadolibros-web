@@ -285,6 +285,9 @@
     params.origen = whatsappOrigin(context, options.element);
     params.ruta = window.location.pathname;
     params.libro_id = productId || '';
+    // item_id = MLU del libro, igual que en add_to_cart, begin_checkout y purchase,
+    // para cruzar el clic de WhatsApp con el resto del embudo por producto.
+    if (productId) params.item_id = productId;
     params.transport_type = 'beacon';
 
     window.gtag('event', 'whatsapp_click', params);
