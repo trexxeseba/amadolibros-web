@@ -6,6 +6,7 @@ import { DatabaseSync } from 'node:sqlite';
 import {
     RUEDA_PREMIOS, validarPremios, drawPrize, randomInt, diaMontevideo, generarCodigo, normalizarCodigo,
     normalizarWhatsapp, hashWhatsapp, PREMIO_MIN_UYU, PREMIO_MAX_UYU, precioConPremio, CODIGO_RE, CODIGO_VIGENCIA_HORAS, mensajeCodigoWhatsapp,
+    PREMIO_MAX_TOTAL_DISCOUNT, PREMIO_PRICE_FLOOR_UYU, umbralPremioEntero,
 } from '../_shared/juego.js';
 import { MAX_TOTAL_DISCOUNT, PRICE_FLOOR_UYU } from '../_shared/descuentos.js';
 import { createRuedaHandler, PREVIEW_TABLE_SQL, RATE_LIMIT } from '../api/_rueda_handler.js';
@@ -19,6 +20,9 @@ function d1() {
     db.exec(readFileSync('migrations/0017_juego_codigos.sql', 'utf8'));
     db.exec(readFileSync('migrations/0018_juego_acertijo.sql', 'utf8'));
     db.exec(readFileSync('migrations/0019_juego_premios_en_pesos.sql', 'utf8'));
+    db.exec(readFileSync('migrations/0001_orders.sql', 'utf8'));
+    db.exec(readFileSync('migrations/0020_orders_premio.sql', 'utf8'));
+    db.exec(readFileSync('migrations/0021_juego_codigos_canje.sql', 'utf8'));
     return {
         raw: db,
         prepare(sql) {
@@ -89,42 +93,55 @@ test('número de WhatsApp: formas válidas y hash diario sin el número', async 
     assert.equal(diaMontevideo(new Date('2026-11-11T02:00:00Z')), '2026-11-10');
 });
 
-test('precio con premio: suma al 10 %, al tope de 25 % y al piso de $1.200', () => {
+test('precio con premio: suma al 10 %, con tope de 30 % y piso de $1.000', () => {
+    assert.equal(PREMIO_MAX_TOTAL_DISCOUNT, 0.30);
+    assert.equal(PREMIO_PRICE_FLOOR_UYU, 1000);
     // $2.000 habitual: 10 % ($200) + $150 = $350 → $1.650, sin transferencia.
     assert.deepEqual(precioConPremio(2000, 150), { ok: true, price: 1650, descuentoUyu: 350, totalPct: 18, transferSumada: false, reason: 'ok' });
-    // $3.000 habitual con $450: 10 % ($300) + $450 = $750 = 25 % justo.
+    // $3.000 habitual con $450: 10 % ($300) + $450 = $750 = 25 %, entra entero.
     assert.equal(precioConPremio(3000, 450).price, 2250);
-    // Un premio grande en un libro más barato se recorta en el tope de 25 %.
+    // Un premio grande en un libro más barato se recorta en el tope de 30 %.
     const tope = precioConPremio(2000, 450);
-    assert.equal(tope.price, 1500);
-    assert.equal(tope.totalPct, 25);
+    assert.equal(tope.price, 1400);
+    assert.equal(tope.totalPct, 30);
     // La transferencia suma 12 % hasta el tope, y nunca deja peor que sin premio.
     const baseTransf = precioConPremio(4000, 150, { transferencia: true });
-    assert.equal(baseTransf.price, 3000 + 0, 'con 4.000: 10 % + $150 + 12 % pasa el tope y queda en 25 %');
+    assert.equal(baseTransf.price, 2970, 'con 4.000: 10 % + $150 + 12 % = $1.030, debajo del tope');
     assert.equal(baseTransf.transferSumada, true);
     for (const p of RUEDA_PREMIOS) {
-        for (const h of [1300, 1500, 2000, 3500, 8000]) {
+        for (const h of [1100, 1300, 1500, 2000, 3500, 8000]) {
             const con = precioConPremio(h, p.monto, { transferencia: true });
             const sin = precioConPremio(h, p.monto, { transferencia: false });
             assert.ok(con.price <= sin.price, 'transferencia no encarece: ' + p.monto + ' sobre ' + h);
-            assert.ok(con.totalPct <= MAX_TOTAL_DISCOUNT * 100 + 1, 'tope: ' + p.monto + ' sobre ' + h);
-            assert.ok(con.price >= PRICE_FLOOR_UYU && sin.price >= PRICE_FLOOR_UYU, 'piso: ' + p.monto + ' sobre ' + h);
-            assert.ok(sin.price <= Math.ceil(h * 0.9) || sin.price === PRICE_FLOOR_UYU, 'nunca peor que el 10 % de liquidación');
+            assert.ok(con.totalPct <= PREMIO_MAX_TOTAL_DISCOUNT * 100 + 1, 'tope: ' + p.monto + ' sobre ' + h);
+            assert.ok(con.price >= PREMIO_PRICE_FLOOR_UYU && sin.price >= PREMIO_PRICE_FLOOR_UYU, 'piso: ' + p.monto + ' sobre ' + h);
+            assert.ok(sin.price <= Math.ceil(h * 0.9) || sin.price === PREMIO_PRICE_FLOOR_UYU, 'nunca peor que el 10 % de liquidación');
         }
     }
-    // Piso: se recorta el descuento para no bajar de $1.200, y bajo el piso no hay premio.
-    const recortado = precioConPremio(1500, 450);
-    assert.equal(recortado.price, 1200);
+    // Piso: se recorta el descuento para no bajar de $1.000, y en $1.000 o menos no hay premio.
+    const recortado = precioConPremio(1200, 300);
+    assert.equal(recortado.price, 1000);
     assert.equal(recortado.reason, 'recortado_por_piso');
-    assert.equal(precioConPremio(1200, 300).reason, 'bajo_piso');
-    assert.equal(precioConPremio(1000, 300).ok, false);
+    assert.equal(precioConPremio(1000, 300).reason, 'bajo_piso');
+    assert.equal(precioConPremio(900, 300).ok, false);
     assert.equal(precioConPremio('x', 200).reason, 'precio_invalido');
-    // Códigos viejos con porcentaje siguen valiendo (y nunca pasan el tope).
+    // Códigos viejos con porcentaje siguen valiendo (y nunca pasan el tope general de 25 %).
     assert.equal(precioConPremio(2000, { discount_pct: 15 }).price, 1700);
     assert.equal(precioConPremio(2000, { discount_pct: 99 }).totalPct, 25);
 });
 
-test('POST /api/rueda: el servidor decide el premio y entrega un código de 48 horas', async () => {
+test('umbral para aprovechar el premio entero, en el precio que ve el cliente', () => {
+    assert.deepEqual([150, 200, 250, 300, 350, 450].map(umbralPremioEntero), [1150, 1200, 1250, 1350, 1580, 2030]);
+    for (const p of RUEDA_PREMIOS) {
+        const precioLiq = umbralPremioEntero(p.monto);
+        const habitual = Math.ceil(precioLiq / 0.9);
+        const r = precioConPremio(habitual, p.monto);
+        assert.ok(Math.round(habitual * 0.9) - r.price >= p.monto - 1, 'entra entero desde el umbral: ' + p.monto);
+    }
+    assert.equal(umbralPremioEntero(0), null);
+});
+
+test('POST /api/rueda: el servidor decide el premio y entrega un código de 72 horas', async () => {
     const db = d1();
     const res = await handler({ roll: () => 97 })({ request: post({ whatsapp: '099 841 325' }), env: { ORDERS_DB: db } });
     assert.equal(res.status, 201);
@@ -132,7 +149,8 @@ test('POST /api/rueda: el servidor decide el premio y entrega un código de 48 h
     assert.equal(data.monto_uyu, 450);
     assert.match(data.code, CODIGO_RE);
     assert.equal(data.valid_hours, CODIGO_VIGENCIA_HORAS);
-    assert.equal(data.expires_at, '2026-11-12T15:00:00.000Z');
+    assert.equal(data.expires_at, '2026-11-13T15:00:00.000Z');
+    assert.equal(CODIGO_VIGENCIA_HORAS, 72);
     const row = db.raw.prepare('SELECT * FROM juego_codigos').get();
     assert.equal(row.origen, 'rueda');
     assert.equal(row.used_at, null);
@@ -189,7 +207,9 @@ test('la tabla de preview es la misma de la migración', () => {
     const norm = x => x.replace(/--.*$/gm, '').replace(/\s+/g, ' ').replace(/ ?\( ?/g, '(').replace(/ ?\) ?/g, ')').trim();
     const mig = readFileSync('migrations/0019_juego_premios_en_pesos.sql', 'utf8');
     const create = mig.match(/CREATE TABLE juego_codigos_nueva[\s\S]*?\n\);/)[0].replace(/;$/, '').replace('juego_codigos_nueva', 'IF NOT EXISTS juego_codigos');
-    assert.equal(norm(PREVIEW_TABLE_SQL), norm(create.replace('CREATE TABLE IF NOT EXISTS', 'CREATE TABLE IF NOT EXISTS')));
+    const nuevas = [...readFileSync('migrations/0021_juego_codigos_canje.sql', 'utf8').matchAll(/ALTER TABLE juego_codigos ADD COLUMN ([^;]+);/g)].map(m => m[1]);
+    const esperado = create.replace(/\n\)$/, ',\n' + nuevas.join(',\n') + '\n)');
+    assert.equal(norm(PREVIEW_TABLE_SQL), norm(esperado));
 });
 
 test('la migración de pesos conserva los códigos viejos con porcentaje', () => {
@@ -240,9 +260,9 @@ test('canje: la calculadora da el precio final con y sin transferencia', async (
     const res = await panel({ request: canjeReq(cookie, { codigo: code, accion: 'verificar', precio: '2000' }), env });
     const html = await res.text();
     assert.match(html, /Precio final para un libro de \$2\.000/);
-    assert.match(html, /Pagando por transferencia: <b>\$1\.500<\/b>/, 'con transferencia llega al tope de 25 %');
+    assert.match(html, /Pagando por transferencia: <b>\$1\.400<\/b>/, 'con transferencia llega al tope de 30 %');
     assert.match(html, /Otro medio de pago: <b>\$1\.550<\/b>/, '10 % ($200) + $250 = $450');
-    const bajo = await panel({ request: canjeReq(cookie, { codigo: code, accion: 'verificar', precio: '1200' }), env });
+    const bajo = await panel({ request: canjeReq(cookie, { codigo: code, accion: 'verificar', precio: '1000' }), env });
     assert.match(await bajo.text(), /no corresponde el premio/);
     const sinPrecio = await panel({ request: canjeReq(cookie, { codigo: code, accion: 'verificar' }), env });
     assert.doesNotMatch(await sinPrecio.text(), /Precio final para un libro/);

@@ -13,13 +13,34 @@ import {
   MAX_BODY_BYTES,
 } from './_orders_logic.js';
 import { verifyTurnstile } from './_turnstile.js';
+import {
+  PREMIO_MENSAJES,
+  PREMIO_SELECT,
+  calcularPremioPedido,
+  codigoPremioDelBody,
+  estadoPremio,
+  premioPublico,
+} from '../_shared/premio-web.js';
 import { resolveConfig, checkoutDisabledResponse } from './_env_config.js';
 
 const EXISTING_ORDER_SELECT =
   'SELECT id, public_code, status, payment_status, delivery_type, ' +
   'products_total_uyu, pickup_discount_uyu, shipping_cost_uyu, ' +
-  'payable_total_uyu, currency, expires_at, request_fingerprint ' +
+  'payable_total_uyu, currency, expires_at, request_fingerprint, ' +
+  'premio_code, premio_discount_uyu, premio_transfer_discount_uyu ' +
   'FROM orders WHERE idempotency_key = ?';
+
+// Reserva el premio para este pedido hasta que el pedido vence. Se puede tomar
+// un premio libre, uno cuya reserva venció, o uno reservado por un pedido que
+// nunca llegó a pagarse (el cliente volvió atrás y armó otro pedido).
+const PREMIO_RESERVA_SQL =
+  'UPDATE juego_codigos SET order_id = ?, reservado_hasta = ? ' +
+  'WHERE code = ? AND used_at IS NULL AND expires_at > ? AND (' +
+    'order_id IS NULL OR reservado_hasta IS NULL OR reservado_hasta <= ? OR ' +
+    "EXISTS (SELECT 1 FROM orders o WHERE o.id = juego_codigos.order_id AND o.payment_status = 'not_started' AND o.status <> 'paid')" +
+  ')';
+const PREMIO_LIBERAR_SQL =
+  'UPDATE juego_codigos SET order_id = NULL, reservado_hasta = NULL WHERE code = ? AND order_id = ? AND used_at IS NULL';
 
 export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), verifyTurnstileToken = verifyTurnstile }) {
   return async function onRequest(context) {
@@ -56,6 +77,11 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
 
     const validationError = validateBody(body);
     if (validationError) return json({ error: validationError }, 400);
+
+    const premioPedido = codigoPremioDelBody(body);
+    if (premioPedido.error) {
+      return json({ error: PREMIO_MENSAJES.formato, code: 'PREMIO_NO_DISPONIBLE', premio_estado: 'formato' }, 409);
+    }
 
     // Fail-closed: ORDERS_DB y TURNSTILE_SECRET_KEY deben estar presentes juntos.
     const db = env?.ORDERS_DB;
@@ -130,9 +156,28 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
       }, 422);
     }
 
+    let premio = null;
+    if (premioPedido.code) {
+      let row;
+      try {
+        row = await db.prepare(PREMIO_SELECT).bind(premioPedido.code).first();
+      } catch (error) {
+        console.error('[orders] premio lookup error', safeErrorName(error));
+        return json({ error: 'No pudimos revisar tu premio. Intentá de nuevo en unos segundos.' }, 503);
+      }
+      const estado = estadoPremio(row, now.toISOString());
+      if (estado !== 'vigente') {
+        return json({ error: PREMIO_MENSAJES[estado], code: 'PREMIO_NO_DISPONIBLE', premio_estado: estado }, 409);
+      }
+      premio = { code: premioPedido.code, calc: calcularPremioPedido(snapshot, row, now) };
+    }
+    const premioAplicado = Boolean(premio?.calc?.aplicado);
+    const premioDiscount = premioAplicado ? premio.calc.descuento_uyu : 0;
+    const premioTransferDiscount = premioAplicado ? premio.calc.descuento_transfer_uyu : 0;
+
     const { productsTotal, pickupDiscount, shippingCost, payableTotal } =
-      calculateTotals(snapshot, body.delivery_type);
-    const transferProductsTotal = transferProductsTotalForSnapshot(snapshot, now);
+      calculateTotals(snapshot, body.delivery_type, { premioDiscount });
+    const transferProductsTotal = transferProductsTotalForSnapshot(snapshot, now) - premioTransferDiscount;
 
     let publicCode = null;
     try {
@@ -157,6 +202,22 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
     const orderId = crypto.randomUUID();
     const createdAt = now.toISOString();
     const expiresAt = new Date(now.getTime() + EXPIRY_MINUTES * 60 * 1000).toISOString();
+
+    if (premioAplicado) {
+      let reservado = false;
+      try {
+        const res = await db.prepare(PREMIO_RESERVA_SQL)
+          .bind(orderId, expiresAt, premio.code, createdAt, createdAt)
+          .run();
+        reservado = Number(res?.meta?.changes) > 0;
+      } catch (error) {
+        console.error('[orders] premio reserve error', safeErrorName(error));
+        return json({ error: 'No pudimos revisar tu premio. Intentá de nuevo en unos segundos.' }, 503);
+      }
+      if (!reservado) {
+        return json({ error: PREMIO_MENSAJES.reservado, code: 'PREMIO_NO_DISPONIBLE', premio_estado: 'reservado' }, 409);
+      }
+    }
     const shipping = body.shipping || {};
     const analytics = normalizeAnalyticsAttribution(body.analytics);
 
@@ -170,7 +231,8 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
         'requested_delivery_date, requested_delivery_from, requested_delivery_to, delivery_notes, ' +
         'products_total_uyu, pickup_discount_uyu, shipping_cost_uyu, payable_total_uyu, ' +
         'transfer_products_total_uyu, ' +
-        'currency, created_at, expires_at, updated_at' +
+        'currency, created_at, expires_at, updated_at, ' +
+        'premio_code, premio_product_id, premio_discount_uyu, premio_transfer_discount_uyu' +
       ') VALUES (' +
         '?, ?, ?, ?, ' +
         "'open', 'not_started', " +
@@ -180,7 +242,8 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
         '?, ?, ?, ?, ' +
         '?, ?, ?, ?, ' +
         '?, ' +
-        "'UYU', ?, ?, ?" +
+        "'UYU', ?, ?, ?, " +
+        '?, ?, ?, ?' +
       ')'
     ).bind(
       orderId,
@@ -207,7 +270,11 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
       transferProductsTotal,
       createdAt,
       expiresAt,
-      createdAt
+      createdAt,
+      premioAplicado ? premio.code : null,
+      premioAplicado ? premio.calc.product_id : null,
+      premioDiscount,
+      premioTransferDiscount
     );
 
     const itemStmts = snapshot.map(item =>
@@ -241,6 +308,7 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
         delivery_type: body.delivery_type,
         products_total: productsTotal,
         payable_total: payableTotal,
+        ...(premioAplicado ? { premio_code: premio.code, premio_discount: premioDiscount } : {}),
       }),
       createdAt
     );
@@ -248,6 +316,9 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
     try {
       await db.batch([orderStmt, ...itemStmts, eventStmt]);
     } catch (batchError) {
+      if (premioAplicado) {
+        await db.prepare(PREMIO_LIBERAR_SQL).bind(premio.code, orderId).run().catch(() => {});
+      }
       // Ante una carrera, otra request pudo crear la orden entre el SELECT y el batch.
       try {
         const raceOrder = await findOrderByIdempotencyKey(db, idempotencyKey);
@@ -282,9 +353,12 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
         pickup_discount_uyu: pickupDiscount,
         shipping_cost_uyu: shippingCost,
         payable_total_uyu: payableTotal,
+        premio_discount_uyu: premioDiscount,
+        premio_transfer_discount_uyu: premioTransferDiscount,
         currency: 'UYU',
         expires_at: expiresAt,
       },
+      ...(premio ? { premio: premioPublico(premio.code, premio.calc) } : {}),
     }, 201);
   };
 }
@@ -343,6 +417,8 @@ function formatOrder(order) {
     pickup_discount_uyu: order.pickup_discount_uyu,
     shipping_cost_uyu: order.shipping_cost_uyu,
     payable_total_uyu: order.payable_total_uyu,
+    premio_discount_uyu: Number(order.premio_discount_uyu) || 0,
+    premio_transfer_discount_uyu: Number(order.premio_transfer_discount_uyu) || 0,
     currency: order.currency,
     expires_at: order.expires_at,
   };

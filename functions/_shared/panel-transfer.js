@@ -18,6 +18,7 @@
  */
 
 import { calculateTransferTotals } from '../api/_orders_logic.js';
+import { marcarPremioUsadoStmt } from './premio-web.js';
 
 export const TRANSFER_CONFIRMED_EVENT = 'transfer_confirmed';
 export const TRANSFER_PROVIDER = 'bank_transfer';
@@ -98,6 +99,7 @@ export async function confirmTransfer({ db, order, now = new Date() }) {
         `SELECT ?,?,'${TRANSFER_CONFIRMED_EVENT}',?,? WHERE EXISTS ` +
         "(SELECT 1 FROM orders WHERE id=? AND payment_provider=? AND payment_status='approved')"
       ).bind(transferEventId(order.id), order.id, payload, at, order.id, TRANSFER_PROVIDER),
+      ...(order.premio_code ? [marcarPremioUsadoStmt(db, order.id, at, { transferencia: true })] : []),
     ]);
   } catch {
     return { ok: false, message: 'No se pudo guardar. Probá de nuevo en un momento.' };

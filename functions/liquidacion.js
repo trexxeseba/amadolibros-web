@@ -25,6 +25,7 @@ import { liquidationPricingActive, transferDisplayPrice, LIQUIDACION_PRECIO, TRA
 import { buildWhatsAppMessage, whatsappHref } from '../shared/whatsapp-messages.js';
 import { RUEDA_SCRIPT, RUEDA_STYLES, ruedaHtml } from './_shared/rueda-ui.js';
 import { ACERTIJO_SCRIPT, ACERTIJO_STYLES, acertijoHtml } from './_shared/acertijo-ui.js';
+import { PREMIO_LIB_SCRIPT, PREMIO_LIQ_SCRIPT, PREMIO_STYLES, premioBannerHtml } from './_shared/premio-ui.js';
 
 export const PAGE_SIZE = 48;
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
@@ -119,7 +120,8 @@ function cardHtml(book, idx, env, topic = '') {
         ? `<img src="${escapeHtml(image.src)}"${responsive} alt="${title}" loading="${idx < 8 ? 'eager' : 'lazy'}" decoding="async" width="280" height="373">`
         : '<div class="rc-no-img" aria-hidden="true"></div>';
     const wa = whatsappHref(liquidationWhatsAppMessage(book, href));
-    return `<article class="rc-card">
+    const habitual = Number(book.original_price) > price ? Math.round(Number(book.original_price)) : price;
+    return `<article class="rc-card" data-precio="${price}" data-habitual="${habitual}">
   <a href="${escapeHtml(href)}" class="rc-img">${img}</a>
   <div class="rc-body">
     <span class="liq-badge">Liquidación</span>
@@ -282,6 +284,7 @@ export async function onRequest(ctx) {
     .empty{padding:2rem 0;color:#64748b}
     ${RUEDA_STYLES}
     ${ACERTIJO_STYLES}
+    ${PREMIO_STYLES}
   </style>
 </head>
 <body>
@@ -293,6 +296,7 @@ ${siteHeaderHtml({ current: 'liquidacion' })}
     <p>${lead}</p>
     <a href="${escapeHtml(generalWa)}" target="_blank" rel="noopener noreferrer" data-cta-location="liquidacion_hero">Pedinos una recomendación por WhatsApp</a>
   </section>
+  ${premioBannerHtml()}
   ${ruedaHtml()}
   ${acertijoHtml()}
   ${topicsHtml(topics, tema, selected.length)}
@@ -304,8 +308,10 @@ ${siteHeaderHtml({ current: 'liquidacion' })}
 ${footerHtml(new Date(now).getFullYear(), pagePath({ tema, page }))}
 ${waFloatHtml(null, pagePath({ tema, page }))}
 ${SITE_HEADER_SCRIPT}
+${PREMIO_LIB_SCRIPT}
 ${RUEDA_SCRIPT}
 ${ACERTIJO_SCRIPT}
+${PREMIO_LIQ_SCRIPT}
 </body>
 </html>`;
 

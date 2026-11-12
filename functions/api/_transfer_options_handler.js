@@ -146,7 +146,8 @@ export function createTransferOptionsHandler({
       order = await db.prepare(
         'SELECT id,public_code,status,payment_status,expires_at,buyer_name,buyer_phone,buyer_email,' +
         'delivery_type,address,locality,department,products_total_uyu,' +
-        'pickup_discount_uyu,shipping_cost_uyu,payable_total_uyu,transfer_products_total_uyu,currency ' +
+        'pickup_discount_uyu,shipping_cost_uyu,payable_total_uyu,transfer_products_total_uyu,currency,' +
+        'premio_code,premio_discount_uyu,premio_transfer_discount_uyu ' +
         'FROM orders WHERE public_code=? AND idempotency_key=?'
       ).bind(publicCode, idempotencyKey).first();
     } catch (error) {
@@ -194,6 +195,9 @@ export function createTransferOptionsHandler({
       transfer_products_total_uyu: transferProductsTotal,
       transfer_discount_uyu: transferDiscount,
       pickup_discount_uyu: pickupDiscount,
+      // Con premio, products_total_uyu ya lo descuenta: el premio se muestra en
+      // su propia línea y el "precio normal" es el de antes del premio.
+      premio_discount_uyu: Number(order.premio_discount_uyu) || 0,
       shipping_cost_uyu: shippingCost,
       list_total_uyu: payableTotal,
       transfer_total_uyu: transferPayableTotal,
@@ -211,6 +215,7 @@ export function createTransferOptionsHandler({
         payment: {
           method: payment.method,
           transfer_discount_uyu: payment.transfer_discount_uyu,
+          premio_discount_uyu: payment.premio_discount_uyu,
           total_uyu: payment.transfer_total_uyu,
         },
         now,

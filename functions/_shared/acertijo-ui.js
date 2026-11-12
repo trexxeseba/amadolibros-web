@@ -55,13 +55,9 @@ export const ACERTIJO_SCRIPT = `<script>
   }).catch(function(){});
   function mostrarAcierto(d){
     var link=waBase.replace(encodeURIComponent('__CODIGO__'),encodeURIComponent('Hola, tengo el código '+d.code+' para este libro'));
-    box.innerHTML='';
-    var t=document.createElement('p'); t.textContent=d.repeat?'Tu código de hoy sigue vigente:':'Acertaste. Ganaste $'+d.monto_uyu+' de descuento y un regalo: '+d.regalo+'. Tu código:';
-    var c=document.createElement('strong'); c.className='cod'; c.textContent=d.code;
-    var v=document.createElement('p'); v.textContent='Vale '+d.valid_hours+' horas y se usa una sola vez. Elegí tu libro de la liquidación y mandanos el código por WhatsApp.';
-    var a=document.createElement('a'); a.href=link; a.target='_blank'; a.rel='noopener noreferrer'; a.textContent='Mandar mi código por WhatsApp';
+    var titulo=d.repeat?null:'¡Acertaste! Ganaste $'+Number(d.monto_uyu).toLocaleString('es-UY')+' de descuento y un regalo: '+d.regalo+'.';
+    var a=amadoPintarPremio(box,d,link,titulo);
     a.addEventListener('click',function(){ev('codigo_enviado_whatsapp',{juego:'acertijo',premio:d.monto_uyu});});
-    box.appendChild(t); box.appendChild(c); box.appendChild(v); box.appendChild(a); box.hidden=false;
   }
   form.addEventListener('submit',function(e){
     e.preventDefault(); if(btn.disabled||!hoy) return;

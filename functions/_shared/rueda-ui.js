@@ -5,6 +5,7 @@
  */
 import { RUEDA_PREMIOS } from './juego.js';
 import { whatsappHref } from '../../shared/whatsapp-messages.js';
+import { PREMIO_GANADO_FN } from './premio-ui.js';
 
 const N = RUEDA_PREMIOS.length;
 const SLICE = 360 / N;
@@ -70,7 +71,7 @@ export function ruedaHtml() {
   <div>
     <p class="liq-eyebrow">La Rueda del Librero</p>
     <h2 id="rueda-titulo">Girá la rueda y llevate un descuento extra</h2>
-    <p>Un giro por día. Tu código te da entre $150 y $450 de descuento en un libro de la liquidación. Dura 48 horas y lo usás por WhatsApp.</p>
+    <p>Un giro por día. Ganás entre $150 y $450 de descuento en un libro de la liquidación. Tenés 72 horas para usarlo y se descuenta automáticamente al pagar en la web.</p>
     <form class="rueda-form" id="rueda-form" novalidate>
       <label for="rueda-wa">Tu número de WhatsApp</label>
       <input id="rueda-wa" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="099 123 456" required>
@@ -90,6 +91,7 @@ export function ruedaHtml() {
 export const RUEDA_PREMIOS_JSON = JSON.stringify(RUEDA_PREMIOS.map(p => p.monto));
 
 export const RUEDA_SCRIPT = `<script>
+${PREMIO_GANADO_FN}
 (function(){
   var root=document.getElementById('rueda'); if(!root) return;
   var premios=${RUEDA_PREMIOS_JSON}, slice=${SLICE};
@@ -110,13 +112,8 @@ export const RUEDA_SCRIPT = `<script>
     setTimeout(function(){
       root.classList.remove('is-spinning');
       var link=waBase.replace(encodeURIComponent('__CODIGO__'),encodeURIComponent('Hola, tengo el código '+d.code+' para este libro'));
-      box.innerHTML='';
-      var t=document.createElement('p'); t.textContent=d.repeat?'Tu código de hoy sigue vigente:':'Ganaste '+texto+' de descuento. Tu código:';
-      var c=document.createElement('strong'); c.className='cod'; c.textContent=d.code;
-      var v=document.createElement('p'); v.textContent='Vale '+d.valid_hours+' horas y se usa una sola vez. Elegí tu libro de la liquidación y mandanos el código por WhatsApp.';
-      var a=document.createElement('a'); a.href=link; a.target='_blank'; a.rel='noopener noreferrer'; a.textContent='Mandar mi código por WhatsApp';
+      var a=amadoPintarPremio(box,d,link);
       a.addEventListener('click',function(){ev('codigo_enviado_whatsapp',{juego:d.juego||'rueda',premio:d.monto_uyu});});
-      box.appendChild(t); box.appendChild(c); box.appendChild(v); box.appendChild(a); box.hidden=false;
       msg.textContent=''; msg.className='rueda-msg'; btn.disabled=false;
       if(!d.repeat) ev('rueda_girada',{juego:d.juego||'rueda',premio:d.monto_uyu});
     },espera);

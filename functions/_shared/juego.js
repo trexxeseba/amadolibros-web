@@ -3,15 +3,22 @@
  *
  * Reglas que no se rompen:
  * - El premio lo decide el servidor (drawPrize); el navegador solo lo anima.
- * - Ningún premio supera MAX_TOTAL_DISCOUNT: es la única constante de tope del sistema.
+ * - Una compra con premio tiene su propio tope (PREMIO_MAX_TOTAL_DISCOUNT, 30 %) y su
+ *   propio piso (PREMIO_PRICE_FLOOR_UYU, $1.000), decididos por Seba el 12/11/2026.
+ *   Sin premio rige el tope general de 25 % (MAX_TOTAL_DISCOUNT).
  * - Del número de WhatsApp solo se guarda un hash (con el día).
  */
-import { LIQUIDACION_PRECIO, MAX_TOTAL_DISCOUNT, PRICE_FLOOR_UYU, TRANSFER_DISCOUNT } from './descuentos.js';
+import { LIQUIDACION_PRECIO, MAX_TOTAL_DISCOUNT, TRANSFER_DISCOUNT } from './descuentos.js';
+
+/** Tope de descuento total de un libro con premio (sobre el precio habitual). */
+export const PREMIO_MAX_TOTAL_DISCOUNT = 0.30;
+/** Precio mínimo de un libro con premio. */
+export const PREMIO_PRICE_FLOOR_UYU = 1000;
 
 /**
  * Premios de la Rueda: descuento en pesos y probabilidad (en %). Suman 100.
  * El descuento se suma al de la liquidación, pero el total nunca pasa
- * MAX_TOTAL_DISCOUNT ni deja el precio bajo PRICE_FLOOR_UYU (ver precioConPremio).
+ * PREMIO_MAX_TOTAL_DISCOUNT ni deja el precio bajo PREMIO_PRICE_FLOOR_UYU (ver precioConPremio).
  */
 export const PREMIO_MIN_UYU = 150;
 export const PREMIO_MAX_UYU = 450;
@@ -24,7 +31,7 @@ export const RUEDA_PREMIOS = Object.freeze([
     Object.freeze({ monto: 450, peso: 5 }),
 ]);
 
-export const CODIGO_VIGENCIA_HORAS = 48;
+export const CODIGO_VIGENCIA_HORAS = 72;
 const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sin 0/O ni 1/I
 export const CODIGO_RE = /^LIB-[A-HJ-NP-Z2-9]{5}$/;
 
@@ -107,8 +114,8 @@ export function vencimiento(now = new Date(), horas = CODIGO_VIGENCIA_HORAS) {
  * `premio` es un monto en pesos, o { monto_uyu, discount_pct } de un código;
  * los códigos viejos con porcentaje reemplazan el descuento base.
  * - Con monto: total = base (10 %) + monto + transferencia (12 %, si paga así).
- * - El total nunca pasa MAX_TOTAL_DISCOUNT del precio habitual.
- * - El precio final nunca baja de PRICE_FLOOR_UYU: el descuento se recorta hasta ahí.
+ * - El total nunca pasa PREMIO_MAX_TOTAL_DISCOUNT del precio habitual.
+ * - El precio final nunca baja de PREMIO_PRICE_FLOOR_UYU: el descuento se recorta hasta ahí.
  * - Quien gana un premio nunca paga más que sin premio.
  * Devuelve { ok, price, descuentoUyu, totalPct, transferSumada, reason } con
  * reason = 'ok' | 'recortado_por_piso' | 'bajo_piso' | 'precio_invalido'.
@@ -118,7 +125,7 @@ export function precioConPremio(habitual, premio, { transferencia = false } = {}
     const vacio = reason => ({ ok: false, price: habitual, descuentoUyu: 0, totalPct: 0, transferSumada: false, reason });
     if (!Number.isFinite(h) || h <= 0) return vacio('precio_invalido');
     const cod = typeof premio === 'object' && premio ? premio : { monto_uyu: premio };
-    const tope = MAX_TOTAL_DISCOUNT * h;
+    const tope = PREMIO_MAX_TOTAL_DISCOUNT * h;
     const transf = transferencia ? TRANSFER_DISCOUNT * h : 0;
     const base = LIQUIDACION_PRECIO.discount * h;
     const bruto = cod.monto_uyu
@@ -129,12 +136,28 @@ export function precioConPremio(habitual, premio, { transferencia = false } = {}
     const transferSumada = descuento > sinTransf + 1e-9;
     let reason = 'ok';
     let price = Math.ceil(h - descuento);
-    if (price < PRICE_FLOOR_UYU) {
-        if (h <= PRICE_FLOOR_UYU) return vacio('bajo_piso');
-        price = PRICE_FLOOR_UYU;
+    if (price < PREMIO_PRICE_FLOOR_UYU) {
+        if (h <= PREMIO_PRICE_FLOOR_UYU) return vacio('bajo_piso');
+        price = PREMIO_PRICE_FLOOR_UYU;
         reason = 'recortado_por_piso';
     }
     return { ok: true, price, descuentoUyu: Math.round(h - price), totalPct: Math.round(((h - price) / h) * 100), transferSumada, reason };
+}
+
+/**
+ * Precio de liquidación (el que ve el cliente en la tarjeta) desde el que un
+ * premio en pesos entra entero, sin transferencia. Redondeado hacia arriba a la
+ * decena. Con habitual h, el precio de liquidación es h·(1 − base):
+ * - piso: h·(1 − base) − monto ≥ PREMIO_PRICE_FLOOR_UYU
+ * - tope: base·h + monto ≤ PREMIO_MAX_TOTAL_DISCOUNT·h
+ */
+export function umbralPremioEntero(monto) {
+    const m = Number(monto);
+    if (!Number.isFinite(m) || m <= 0) return null;
+    const base = LIQUIDACION_PRECIO.discount;
+    const porPiso = PREMIO_PRICE_FLOOR_UYU + m;
+    const porTope = (m * (1 - base)) / (PREMIO_MAX_TOTAL_DISCOUNT - base);
+    return Math.ceil(Math.max(porPiso, porTope) / 10 - 1e-9) * 10;
 }
 
 export function mensajeCodigoWhatsapp(code) {

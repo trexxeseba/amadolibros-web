@@ -832,11 +832,13 @@ ${actionFlash ? `<p class="${actionFlash.ok ? 'ok-box' : 'err'}" role="status">$
         <td>${escapeHtml(row.product_id)}</td>
         <td>${money(row.line_total_uyu)}</td></tr>`)}
   <dl class="totales">
-    <dt>Libros</dt><dd>${money(order.products_total_uyu)}</dd>
+    <dt>Libros</dt><dd>${money(Number(order.products_total_uyu) + (Number(order.premio_discount_uyu) || 0))}</dd>
     ${Number(order.shipping_cost_uyu) ? `<dt>Envío</dt><dd>${money(order.shipping_cost_uyu)}</dd>` : ''}
     ${Number(order.pickup_discount_uyu) ? `<dt>Descuento por retiro</dt><dd>−${money(order.pickup_discount_uyu)}</dd>` : ''}
+    ${order.premio_code ? `<dt>Premio ${escapeHtml(order.premio_code)}</dt><dd>−${money(order.premio_discount_uyu)}</dd>` : ''}
     <dt class="total">Total</dt><dd class="total">${money(order.payable_total_uyu)}</dd>
   </dl>
+  ${order.premio_code ? `<p class="muted">El premio se aplicó a ${escapeHtml(items.find(row => row.product_id === order.premio_product_id)?.title || 'un libro del pedido')}.</p>` : ''}
 </section>
 
 <section class="card">

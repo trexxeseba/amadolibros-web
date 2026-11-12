@@ -302,14 +302,14 @@ test('INSERT de pedidos: misma cantidad de columnas que de valores, y corre sobr
     assert.equal(cols.split(',').length, vals.split(',').length);
     const { DatabaseSync } = await import('node:sqlite');
     const db = new DatabaseSync(':memory:');
-    for (const name of readdirSync('migrations').filter(n => /^00(0\d|1[0-5])_/.test(n) && n.includes('orders')).sort()) {
+    for (const name of readdirSync('migrations').filter(n => /^00(0\d|1[0-5]|20)_/.test(n) && n.includes('orders')).sort()) {
         db.exec(readFileSync(`migrations/${name}`, 'utf8'));
     }
     const sample = {
         id: 'o1', public_code: 'AL-1', idempotency_key: 'k1', request_fingerprint: 'f1',
         buyer_name: 'Ana', buyer_phone: '099', delivery_type: 'pickup',
         products_total_uyu: 3500, pickup_discount_uyu: 0, shipping_cost_uyu: 0, payable_total_uyu: 3500,
-        transfer_products_total_uyu: 3260,
+        transfer_products_total_uyu: 3260, premio_discount_uyu: 0, premio_transfer_discount_uyu: 0,
         created_at: '2026-11-10T03:00:00.000Z', expires_at: '2026-11-10T04:00:00.000Z', updated_at: '2026-11-10T03:00:00.000Z',
     };
     const names = cols.split(',').map(c => c.trim());
