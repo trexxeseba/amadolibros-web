@@ -85,7 +85,7 @@ async function catalogo(ml, item, { necesitaTecho, sellerId, soloContraDemanda =
   return r;
 }
 
-async function ofertasCatalogo(ml, productId) {
+export async function ofertasCatalogo(ml, productId) {
   const todos = [];
   for (let offset = 0; offset < 500; offset += 50) {
     let d;

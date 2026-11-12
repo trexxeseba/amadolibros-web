@@ -91,29 +91,86 @@ const CAUSA = { precio: 'por precio', envio_gratis: 'por envío gratis', reputac
 const PALANCA = { bajar: 'bajar el precio', envio_gratis: 'poner envío gratis' };
 const FALTA = { free_shipping: 'envío gratis', fulfillment: 'Full', same_day_shipping: 'envío en el día', free_installments: 'cuotas sin interés', shipping_collect: 'colecta' };
 
-export async function enviarResumen({ cuenta, acum, resumen, fetcher = (...a) => globalThis.fetch(...a) }) {
+// ---------------------------------------------------------------------------------------
+// Reporte diario (Seba, 12/11/2026: "bien claro, sin dudas que me queden"). Se arma con lo
+// que cada corrida del día fue dejando en el acumulado (acum.cambios, acum.foto) y dice, en
+// este orden: cómo estamos, qué hizo el sistema, quién nos persigue, qué perdemos y por qué,
+// qué hay que decidir y si hubo problemas. Sin jerga: todo con título y precios.
+// ---------------------------------------------------------------------------------------
+const peso = n => (n === null || n === undefined || !Number.isFinite(Number(n))) ? '—' : '$ ' + Math.round(Number(n)).toLocaleString('es-UY');
+const VERBO = { bajar: 'bajó el precio para ganar', ajustar: 'ajustó el precio al rival', subir: 'subió porque ya ganaba', restaurar: 'volvió a su precio original' };
+const PORQUE = { precio: 'otro vendedor cobra menos', envio_gratis: 'el rival tiene envío gratis y nosotros no', reputacion_entrega: 'el rival tiene más reputación o entrega más rápido', otro: 'otro motivo' };
+
+export function armarReporteDiario({ cuenta, acum, resumen, ayer = null, fecha = fechaMontevideo() }) {
+  const suma = k => acum.corridas.reduce((s, c) => s + (Number(c[k]) || 0), 0);
+  const est = acum.foto?.estados ?? resumen?.catalogo?.estados ?? {};
+  const gana = (est.winning ?? 0) + (est.sharing_first_place ?? 0), pierde = est.competing ?? 0, total = gana + pierde;
+  const pct = total ? Math.round(gana / total * 1000) / 10 : null;
+  const estAyer = ayer?.foto?.estados, pctAyer = estAyer ? (() => { const g = (estAyer.winning ?? 0) + (estAyer.sharing_first_place ?? 0), t = g + (estAyer.competing ?? 0); return t ? Math.round(g / t * 1000) / 10 : null; })() : null;
+  const cambios = acum.cambios ?? [];
+  const porPub = new Map();
+  for (const c of cambios) { const v = porPub.get(c.id) ?? { id: c.id, titulo: c.titulo, n: 0, primero: c.antes, ultimo: c.despues }; v.n++; v.ultimo = c.despues; porPub.set(c.id, v); }
+  const persegidas = [...porPub.values()].filter(v => v.n >= 3).sort((a, b) => b.n - a.n);
+  const errores = suma('errores');
+  const perdiendo = acum.foto?.perdiendo ?? [];
+  const porCausa = {};
+  for (const p of perdiendo) porCausa[p.causa ?? 'otro'] = (porCausa[p.causa ?? 'otro'] ?? 0) + 1;
+  const ocultas = perdiendo.filter(p => p.contra_demanda);
+  const frenadas = perdiendo.filter(p => /^sin_tocar|^mantener_(umbral|piso)/.test(p.accion ?? ''));
+  const decidir = [];
+  if (frenadas.length) decidir.push(`${frenadas.length} libros pierden la ficha y el sistema NO los baja porque para ganar tendría que bajar más del 50 % o quedar por debajo de $ 500. Si querés ganar alguno igual, decime cuál.`);
+  if (ocultas.length) decidir.push(`${ocultas.length} libros están ocultos detrás de vendedores que tardan días: conviene armar una publicación fuera de catálogo (llega otro mail con la lista).`);
+  if (errores) decidir.push(`Hubo ${errores} errores hoy: ninguno dejó un precio equivocado, pero conviene revisarlos.`);
+  if (persegidas.length) decidir.push(`${persegidas.length} libros se movieron 3 veces o más hoy: un rival los está persiguiendo. Hoy el sistema sigue persiguiendo (decisión tuya del 12/11).`);
+
+  const L = [];
+  L.push(`REPORTE DEL DÍA · ${cuenta.nombre} · ${fecha}`, '');
+  L.push('1. CÓMO ESTAMOS');
+  L.push(`Ganamos la ficha de catálogo en ${gana} de ${total} publicaciones (${pct ?? '—'} %).${pctAyer !== null ? ` Ayer: ${pctAyer} %.` : ''}`);
+  L.push(`Perdemos ${pierde}. Compartimos el primer lugar en ${est.sharing_first_place ?? 0}.`, '');
+  L.push('2. QUÉ HIZO EL SISTEMA HOY');
+  if (!cambios.length) L.push('No cambió ningún precio.');
+  else {
+    L.push(`Cambió ${cambios.length} precios en ${porPub.size} libros (${suma('bajadas') + suma('ajustadas')} bajas, ${suma('subidas') + suma('restauradas')} subidas). Los de mayor movimiento:`);
+    for (const c of cambios.slice(0, 15)) L.push(`- ${c.titulo}: ${peso(c.antes)} → ${peso(c.despues)} (${VERBO[c.accion] ?? c.accion}, ${c.hora})`);
+    if (cambios.length > 15) L.push(`… y ${cambios.length - 15} cambios más (están en el detalle del repositorio privado).`);
+  }
+  L.push('');
+  L.push('3. QUIÉN NOS PERSIGUE');
+  if (!persegidas.length) L.push('Ningún libro se movió 3 veces o más hoy: no hay persecuciones.');
+  else for (const v of persegidas.slice(0, 10)) L.push(`- ${v.titulo}: ${v.n} cambios hoy, de ${peso(v.primero)} a ${peso(v.ultimo)}.`);
+  L.push('');
+  L.push('4. LO QUE PERDEMOS Y POR QUÉ');
+  if (!perdiendo.length) L.push('No perdemos ninguna ficha.');
+  else {
+    L.push(`Causas: ${Object.entries(porCausa).map(([k, v]) => `${v} porque ${PORQUE[k] ?? k}`).join('; ')}.`);
+    for (const p of [...perdiendo].sort((a, b) => ((b.precio - (b.ganador ?? b.precio)) / b.precio) - ((a.precio - (a.ganador ?? a.precio)) / a.precio)).slice(0, 8))
+      L.push(`- ${p.titulo}: nosotros ${peso(p.precio)}, el que gana ${peso(p.ganador)}${p.dias ? `, entrega en ${p.dias} días` : ''}.`);
+  }
+  L.push('');
+  L.push('5. PARA DECIDIR VOS');
+  if (!decidir.length) L.push('Nada. Todo en orden.'); else for (const d of decidir) L.push(`- ${d}`);
+  L.push('');
+  L.push('6. ¿HUBO PROBLEMAS?');
+  L.push(errores ? `Sí: ${errores} errores (revisar). Los precios cambiados se verificaron en Mercado Libre: ${suma('verificadas')} de ${suma('verificadas') + suma('no_verificadas')}.` : `No. ${suma('verificadas')} de ${suma('verificadas') + suma('no_verificadas')} cambios verificados en Mercado Libre, 0 errores.`);
+  L.push(`Corridas del día: ${acum.corridas.length}. Modo: ${acum.corridas.at(-1)?.modo === 'real' ? 'real' : 'prueba (no cambió nada)'}.`);
+  const texto = L.join('\n');
+  const escH = v => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const html = '<div style="font-family:sans-serif;font-size:15px;line-height:1.5;max-width:680px">' + L.map(l => !l ? '' : /^\d\. [A-ZÁÉÍÓÚ ]+$/.test(l) ? `<h3 style="margin:18px 0 4px">${escH(l)}</h3>` : l.startsWith('REPORTE') ? `<h2>${escH(l)}</h2>` : l.startsWith('- ') ? `<div style="margin-left:14px">• ${escH(l.slice(2))}</div>` : `<div>${escH(l)}</div>`).join('') + '</div>';
+  const asunto = `${cuenta.nombre}: ganamos ${pct ?? '—'} % de las fichas · ${cambios.length} cambios de precio${errores ? ` · ${errores} errores` : ''}`;
+  return { asunto, texto, html, datos: { gana, pierde, total, pct, cambios: cambios.length, persegidas: persegidas.length, ocultas: ocultas.length, errores } };
+}
+
+export async function enviarResumen({ cuenta, acum, resumen, ayer = null, fetcher = (...a) => globalThis.fetch(...a) }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return { status: 'sin_credenciales' };
-  const to = (process.env.PRECIO_GANADOR_EMAIL_TO || 'undiaes@gmail.com').split(',').map(s => s.trim()).filter(Boolean);
+  const to = (process.env.PRECIO_GANADOR_EMAIL_TO || 'undiaes@gmail.com').split(',').map(x => x.trim()).filter(Boolean);
   const from = process.env.REPORT_EMAIL_FROM || 'Amado Libros <web@notificaciones.amadolibros.com>';
-  const suma = k => acum.corridas.reduce((s, c) => s + (Number(c[k]) || 0), 0);
-  const ult = acum.corridas.at(-1) ?? {};
-  const filas = [
-    ['Corridas del día', acum.corridas.length], ['Marcadas (última corrida)', ult.marcadas ?? 0],
-    ['Bajadas al ganador', suma('bajadas')], ['Ajustadas al ganador', suma('ajustadas')],
-    ['Subidas o vueltas al original', suma('subidas') + suma('restauradas')],
-    ['Sin tocar por diferencia por encima del tope (última)', ult.sin_tocar_umbral ?? 0], ['Sin tocar por bajar más del 30 % (última)', ult.sin_tocar_pct ?? 0],
-    ['Salteadas por promoción (última)', ult.promo ?? 0], ['Errores', suma('errores')], ['Cambios de stock', suma('cambios_stock')],
-    ['Por qué pierden (última)', Object.entries(resumen.causas_perdida ?? {}).map(([k, v]) => `${CAUSA[k] ?? k}: ${v}`).join(' · ') || '—'],
-  ];
-  const est = resumen.catalogo?.estados ?? {};
-  filas.push(['Catálogo: ganando', est.winning ?? 0], ['Catálogo: comparten el primer lugar', est.sharing_first_place ?? 0], ['Catálogo: perdiendo', est.competing ?? 0], ['Catálogo: con alguna sugerencia de ML (Full, cuotas, etc.)', resumen.catalogo?.publicaciones_con_alguna_sugerencia ?? 0]);
-  const texto = filas.map(([k, v]) => `${k}: ${v}`).join('\n');
-  const html = `<h2>Precio Ganador · ${cuenta.nombre} · ${fechaMontevideo()}</h2><p>Modo: ${ult.modo === 'real' ? 'real' : 'prueba (DRY_RUN, no se cambió nada)'}</p><table cellpadding="6" style="border-collapse:collapse">${filas.map(([k, v]) => `<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join('')}</table><p>Si este correo no llega un día, algo se rompió: revisá el workflow Precio Ganador en GitHub.</p>`;
+  const { asunto, texto, html } = armarReporteDiario({ cuenta, acum, resumen, ayer });
   try {
     const res = await fetcher('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `precio-ganador-${cuenta.clave}-${fechaMontevideo()}-${process.env.GITHUB_RUN_ID ?? Date.now()}` },
-      body: JSON.stringify({ from, to, subject: `Precio Ganador ${cuenta.nombre}: ${suma('bajadas')} bajadas, ${suma('subidas') + suma('restauradas')} subidas, ${suma('errores')} errores`, html, text: texto }),
+      body: JSON.stringify({ from, to, subject: asunto, html, text: texto }),
       signal: AbortSignal.timeout(30000),
     });
     return res.ok ? { status: 'enviado' } : { status: 'error', http: res.status };
