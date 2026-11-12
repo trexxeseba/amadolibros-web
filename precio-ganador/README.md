@@ -8,7 +8,7 @@ como perdedoras y las vuelve a subir cuando dejan de estar marcadas.
 | Baja si la diferencia con el precio para ganar es | cualquiera (sin freno de pesos desde el 12/11/2026) | menor o igual a 400 |
 | Precio nuevo | el precio para ganar | el 99 % del precio para ganar, hacia abajo al peso |
 | Contra qué ganadores | cualquiera | sólo a demanda: si el ganador entrega de inmediato, o no se pudo leer su plazo, no se toca |
-| Tope de porcentaje | 50 % del precio original | sin tope |
+| Tope de porcentaje | sin tope (desde el 12/11/2026) | sin tope |
 | Piso | nunca menos de UYU 500 (y el de `pisos/libros.json`, si existe) | nunca menos de UYU 1.200 |
 | Stock | no se toca | a demanda: stock 5 al bajar, se restaura al revertir |
 | Freno de cambios por corrida | 400 | 5.000 |
