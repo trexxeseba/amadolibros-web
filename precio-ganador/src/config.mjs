@@ -21,10 +21,11 @@ export const CUENTAS = {
     token: { tabla: 'ml_oauth', appId: '4741021817925208' },
     // Libros: el stock no se toca nunca (tiene libros de estantería mezclados).
     tocarStockDemanda: false,
-    // Sin freno de pesos (Seba, 12/11/2026: "sacalo"): se baja lo que haga falta para
-    // ganar, con red: nunca más del 50 % del precio original ni por debajo de $500.
+    // Ganarles siempre (Seba, 12/11/2026: "todas, incluida Mister Fox, ganémosle siempre,
+    // sigamos bajando"): sin freno de pesos ni de porcentaje. Queda un solo piso: nunca
+    // por debajo de $500.
     umbral: 1e9,
-    topePct: 0.50,
+    topePct: null,
     minimo: 500,
     // Subir sólo si el salto es de 10 pesos o más (con la subida con memoria, 07/11/2026).
     pasoMinimoSubida: 10,
