@@ -25,9 +25,9 @@ on:
   workflow_dispatch:
     inputs:
       accion:
-        description: 'correr = corrida normal (con auditoría) · auditar = sólo la auditoría, no cambia nada · restaurar = volver todo al precio original'
+        description: 'correr = corrida normal (con auditoría) · auditar = sólo la auditoría, no cambia nada · restaurar = volver al precio original (todo, o sólo los IDs de abajo) · ventas = cruce de ventas, sólo lee'
         type: choice
-        options: [correr, auditar, restaurar, diagnosticar]
+        options: [correr, auditar, restaurar, diagnosticar, ventas]
         default: correr
       max_marcadas:
         description: 'Cortar al encontrar N marcadas (vacío = todas)'
@@ -73,7 +73,13 @@ jobs:
         shell: bash
         run: |
           saltar=no
+          # Una programada atrasada que cae fuera de horario (antes de las 09:00 o desde las
+          # 23:00 de Montevideo) no corre (Seba, 12/11/2026: la de la 1:00 bajó 30 precios).
           if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            hora=$(TZ=America/Montevideo date +%-H)
+            if [ "$hora" -lt 9 ] || [ "$hora" -ge 23 ]; then saltar=si; echo "Programada fuera de horario ($hora h de Montevideo): se saltea"; fi
+          fi
+          if [ "$saltar" = "no" ] && [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
             n=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/precio-ganador.yml/runs?branch=main&per_page=15" \
               --jq "[.workflow_runs[] | select(.id != $GITHUB_RUN_ID) | select(.event == \"schedule\" or .event == \"workflow_dispatch\") | select((now - (.created_at | fromdateiso8601)) < 3600) | select(.status != \"completed\" or .conclusion == \"success\")] | length" 2>/dev/null || echo 0)
             if [ "${n:-0}" -gt 0 ]; then saltar=si; echo "Ya hubo una corrida en la última hora: se saltea"; fi
@@ -160,7 +166,12 @@ jobs:
           echo "real=$REAL" >> "$GITHUB_OUTPUT"
           echo "Modo: $([ $REAL = si ] && echo REAL || echo DRY_RUN)"
           if [ "$IN_ACCION" = "restaurar" ]; then
+            if [ -n "$IN_IDS" ]; then ARGS+=(--ids "$IN_IDS"); fi
             node precio-ganador/src/restaurar.mjs "${ARGS[@]}"
+            exit $?
+          fi
+          if [ "$IN_ACCION" = "ventas" ]; then
+            node precio-ganador/src/ventas.mjs --cuenta "$CUENTA" --estado estado/state --salida estado/ultima
             exit $?
           fi
           if [ "$EVENTO" = "push" ] || [ "$REAL" = "no" ]; then SALIDA="estado/pruebas/$GITHUB_RUN_ID"; else SALIDA="estado/ultima"; fi
@@ -175,7 +186,7 @@ jobs:
       # todas las que el sistema bajó y la regla recalculada sobre las marcadas.
       # Si encuentra una discrepancia, el workflow falla y GitHub manda el mail.
       - name: Auditoría
-        if: success() && inputs.accion != 'restaurar' && inputs.accion != 'diagnosticar'
+        if: success() && inputs.accion != 'restaurar' && inputs.accion != 'diagnosticar' && inputs.accion != 'ventas'
         shell: bash
         env:
           CUENTA: ${{ matrix.cuenta }}

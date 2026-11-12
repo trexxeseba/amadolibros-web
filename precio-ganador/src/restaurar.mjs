@@ -1,10 +1,11 @@
 // Vuelve al precio original todas las publicaciones que el sistema bajó.
 //
-//   node precio-ganador/src/restaurar.mjs --cuenta libros [--real] [--estado DIR]
+//   node precio-ganador/src/restaurar.mjs --cuenta libros [--real] [--estado DIR] [--ids MLU1,MLU2]
 //
 // Sin --real sólo lista lo que haría. Toca únicamente las publicaciones cuyo
 // precio actual sigue siendo el que puso el sistema: si alguien lo cambió a
-// mano, se deja como está.
+// mano, se deja como está. Con --ids sólo esas publicaciones (Seba, 12/11/2026:
+// Fantastic Mr. Fox, que el competidor persigue).
 import { readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import { CUENTAS } from './config.mjs';
@@ -16,6 +17,7 @@ const opt = (n, d = null) => { const i = args.indexOf('--' + n); return i >= 0 ?
 const cuenta = CUENTAS[opt('cuenta')];
 if (!cuenta) { console.error('Usar --cuenta libros|vintage'); process.exit(2); }
 const real = args.includes('--real');
+const soloIds = (opt('ids') ?? '').split(',').map(x => x.trim()).filter(Boolean);
 const archivo = join(opt('estado', 'state'), `${cuenta.clave}.json`);
 const estado = JSON.parse(readFileSync(archivo, 'utf8'));
 const ml = crearCliente(fuenteTokenD1(cuenta), { concurrencia: 2 });
@@ -26,6 +28,7 @@ if (String(yo?.id) !== cuenta.sellerId) { console.error('token_de_otra_cuenta');
 const detalle = (id, texto) => console.log(process.env.GITHUB_ACTIONS ? id : `${id}: ${texto}`);
 const cuenta_ = { restauradas: 0, editadas_a_mano: 0, errores: 0, a_restaurar: 0 };
 for (const [id, e] of Object.entries(estado.publicaciones)) {
+  if (soloIds.length && !soloIds.includes(id)) continue;
   try {
     const item = await ml.get(`/items/${id}?attributes=id,price,available_quantity`);
     if (Number(item.price) !== Number(e.precio_aplicado)) { cuenta_.editadas_a_mano++; detalle(id, `precio actual ${item.price}, se deja`); continue; }
