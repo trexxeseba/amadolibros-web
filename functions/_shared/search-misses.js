@@ -53,8 +53,14 @@ export function normalizeSearchMiss(raw) {
     .trim()
     .slice(0, SEARCH_MISS_MAX_LENGTH)
     .trim();
+  // Búsquedas de prueba de nuestros propios controles (humo, rendimiento): no son
+  // demanda de clientes y llegaron a ser 52 de 243 en una semana.
+  if (SEARCH_PROBE_TERMS.has(normalized)) return '';
   return normalized;
 }
+
+/** Textos que usan los controles automáticos del sitio. Nunca cuentan como demanda. */
+export const SEARCH_PROBE_TERMS = new Set(['zzzinexistente999']);
 
 /**
  * Suma uno a la búsqueda del día. Devuelve si se escribió algo, para los
