@@ -194,9 +194,20 @@ export async function onRequest(context) {
  * permalink. No excluye por condición: los usados (`condition: 'used'`)
  * siguen publicándose con su condición real.
  */
+/**
+ * Merchant no admite libros digitales en Shopping. Un libro físico "+ Ebook" o
+ * "+ Digital Pack" se rechaza por ese motivo (hoy 16 productos), así que no se
+ * publica en el feed. La página y la venta por WhatsApp no cambian.
+ * Coincide con la palabra completa: "Coursebook" o "Poebooks" no cuentan.
+ */
+export function hasDigitalTitle(item) {
+    return /(?:^|[^a-z0-9])(?:e-?book|digital\s+pack)(?:$|[^a-z0-9])/i.test(String(item?.title || ''));
+}
+
 export function isEligibleForFeed(item) {
     if (!item || !item.id || !item.permalink) return false;
     if (!/^MLU\d+$/.test(String(item.id))) return false;
+    if (hasDigitalTitle(item)) return false;
     if (item.status !== 'active') return false;
     if (!(Number(item.available_quantity) > 0)) return false;
     if (!(Number(item.price) > 0)) return false;
@@ -641,6 +652,11 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
     const customLabelTag = liquidation instanceof Set && liquidation.has(String(item.id))
         ? `\n        <g:custom_label_0>${LIQUIDACION.feedLabel}</g:custom_label_0>`
         : '';
+    // custom_label_1 = tarot: mazos de tarot y libros de la subcategoría Tarot y oráculos,
+    // para armar el grupo de productos de Shopping sin listar IDs a mano.
+    const esTarot = /TAROT_CARDS/.test(String(item.domain_id || '').toUpperCase())
+        || merchantProductTypes(item.id, categoryData).some(type => /tarot y or[aá]culos/i.test(type));
+    const customLabel1Tag = esTarot ? '\n        <g:custom_label_1>tarot</g:custom_label_1>' : '';
 
     return `
     <item>
@@ -652,7 +668,7 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
         <g:availability>${availability}</g:availability>
         <g:price>${escapeXml(price)}</g:price>
         <g:condition>${escapeXml(cond)}</g:condition>
-        <g:google_product_category>${googleProductCategory(item)}</g:google_product_category>${gtinTag}${brandTag}${identifierExistsTag}${productTypeTags}${customLabelTag}
+        <g:google_product_category>${googleProductCategory(item)}</g:google_product_category>${gtinTag}${brandTag}${identifierExistsTag}${productTypeTags}${customLabelTag}${customLabel1Tag}
     </item>`;
 }
 

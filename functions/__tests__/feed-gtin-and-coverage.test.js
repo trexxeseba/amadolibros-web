@@ -13,6 +13,7 @@ import {
     isCardDeckProduct,
     feedGtin,
     googleProductCategory,
+    hasDigitalTitle,
     cleanIsbnRaw,
     isValidIsbn13,
     isValidIsbn10,
@@ -405,6 +406,46 @@ test('17d4. Categoría de Google: libros 784, tarot 499711, juegos de cartas 124
     assert.equal(googleProductCategory(it('MLU-BOARD_AND_CARD_GAMES')), '1247');
     assert.match(renderFeedItem(it('MLU-TAROT_CARDS')), /<g:google_product_category>499711<\/g:google_product_category>/);
     assert.match(renderFeedItem(it('MLU-BOOKS')), /<g:google_product_category>784<\/g:google_product_category>/);
+});
+
+test('17d5. Los libros con "+ Ebook" o "Digital Pack" no van al feed (Merchant no admite libros digitales)', () => {
+    const t = title => book({ title, isbn: '9788499809991' });
+    for (const titulo of [
+        "Wider World 3 - Student's Book + Ebook + Myenglishlab",
+        'Bright Ideas Starter - Sb + Digital Pack',
+        'Close-up B1 - Curso De Inglés Con Ebook Y Prácticas',
+        'Mi libro (E-book incluido)',
+    ]) {
+        assert.equal(hasDigitalTitle(t(titulo)), true, titulo);
+        assert.equal(isEligibleForFeed(t(titulo)), false, titulo);
+    }
+    for (const titulo of [
+        'Cambridge Igcse English As A Second Language Coursebook',
+        'All You Need Is Love. Editorial Poebooks, Tapa Blanda',
+        'Un libro físico cualquiera',
+        'Rayuela',
+    ]) {
+        assert.equal(hasDigitalTitle(t(titulo)), false, titulo);
+        assert.equal(isEligibleForFeed(t(titulo)), true, titulo);
+    }
+});
+
+test('17d6. custom_label_1 = tarot para mazos y libros de la subcategoría Tarot y oráculos', () => {
+    const categoryData = {
+        categories: [
+            { id: 'esoterismo', name: 'Esoterismo y tarot', subcategories: [{ id: 'tarot', name: 'Tarot y oráculos' }, { id: 'otros', name: 'Otros' }] },
+            { id: 'novela', name: 'Literatura y ficción', subcategories: [] },
+        ],
+        items: { MLU10: [['esoterismo', 'tarot']], MLU11: [['esoterismo', 'otros']], MLU12: [['novela', null]] },
+    };
+    const conTarot = xml => /<g:custom_label_1>tarot<\/g:custom_label_1>/.test(xml);
+    // Un mazo de tarot lo lleva aunque no tenga categoría de libros.
+    assert.equal(conTarot(renderFeedItem(book({ id: 'MLU1', domain_id: 'MLU-TAROT_CARDS', isbn: '9788499809991' }))), true);
+    assert.equal(conTarot(renderFeedItem(book({ id: 'MLU10' }), null, categoryData)), true);
+    assert.equal(conTarot(renderFeedItem(book({ id: 'MLU11' }), null, categoryData)), false);
+    assert.equal(conTarot(renderFeedItem(book({ id: 'MLU12' }), null, categoryData)), false);
+    // Un juego de cartas que no es de tarot no lo lleva.
+    assert.equal(conTarot(renderFeedItem(book({ id: 'MLU2', domain_id: 'MLU-BOARD_AND_CARD_GAMES', isbn: '9788499809991' }))), false);
 });
 
 test('17e. Producción publica sólo portadas primarias válidas y vigentes en R2', () => {
