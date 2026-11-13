@@ -1,4 +1,5 @@
 import { fetchActiveIndex, fetchPausedIndex } from '../_shared/catalog.js';
+import { matchCatalogQuery } from '../_shared/catalog-search.js';
 
 function normalize(value = '') {
   return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -30,8 +31,22 @@ export function buildSuggestions(items, rawQuery, limit = 10) {
       });
     }
   }
-  return candidates.sort((a, b) => a.score - b.score || a.value.localeCompare(b.value, 'es'))
+  const ordered = candidates.sort((a, b) => a.score - b.score || a.value.localeCompare(b.value, 'es'))
     .slice(0, limit).map(({ value, label }) => ({ value, label }));
+  if (ordered.length >= limit) return ordered;
+  // La frase exacta no alcanza: «el perro» no aparece seguida en ningún título
+  // aunque haya libros con las dos palabras. Se completa con los libros que
+  // tienen todas las palabras, en cualquier orden o con una letra de diferencia.
+  const { matches } = matchCatalogQuery(items, rawQuery);
+  for (const item of matches) {
+    const value = String(item.title || '').trim();
+    const key = `Título:${normalize(value)}`;
+    if (!value || seen.has(key)) continue;
+    seen.add(key);
+    ordered.push({ value, label: `Título: ${value}` });
+    if (ordered.length >= limit) break;
+  }
+  return ordered;
 }
 
 export async function onRequest(ctx) {
