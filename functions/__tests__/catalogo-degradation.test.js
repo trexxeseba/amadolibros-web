@@ -186,7 +186,7 @@ test('5. catalog.json válido pero sin coincidencias para la búsqueda → 200 c
   installCacheHits({ [CATALOG_URL]: VALID_CATALOG });
   const { response, html } = await render(`${BASE_URL}?q=zzzqqxyw999nadaquever`);
   assert.equal(response.status, 200);
-  assert.match(html, /No encontramos resultados\./);
+  assert.match(html, /No encontramos &ldquo;zzzqqxyw999nadaquever&rdquo; en el catálogo/);
 });
 
 test('5b. catalog.json válido y sin filtros con catálogo realmente vacío → 200, no 503', async () => {

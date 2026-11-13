@@ -72,6 +72,7 @@ import {
 } from './_shared/cloudflare-images.js';
 import { matchesCategoryPath } from './_shared/category-paths.js';
 import { deriveBookDisplayTitle } from './_shared/book-display-title.js';
+import { LIBRERO_SCRIPT, LIBRERO_STYLES, libreroHtml } from './_shared/librero-ui.js';
 import {
     RANK,
     matchCatalogQuery,
@@ -961,24 +962,24 @@ export async function onRequest(ctx) {
                 : page > 1
                     ? `Catálogo de libros — Página ${page} | Amado Libros`
                     : 'Comprar libros disponibles y por encargo | Amado Libros';
-    const emptyMessage = rawQ
-        ? `<p>Sin resultados para &ldquo;${safeQ}&rdquo;${filterLabel ? ` en ${filterLabel}` : ''}. Intentá con otras palabras${categoria ? ' o cambiá de categoría' : ''}.</p>
-    <section class="manual-request" aria-label="Pedir una búsqueda manual">
-      <strong>Que no aparezca acá no significa que no podamos encontrarlo.</strong>
-      <span>Contanos lo que sabés. Una persona de Amado Libros hace la búsqueda y verifica la edición antes de ofrecerte una opción.</span>
-      <div class="manual-request-actions">
-        <a class="manual-request-primary" href="/pedir-libro/?tipo=sin-resultados&amp;q=${encodeURIComponent(rawQ)}">Pedir que lo busquemos</a>
-        <a class="wa-link" href="${escapeHtml(whatsappHref(buildWhatsAppMessage({
-            greeting: 'Hola, busqué un libro en Amado Libros y quisiera que me ayudaran 😊',
-            motive: 'Búsqueda sin resultados',
-            book: rawQ,
-            situation: 'No apareció en el catálogo',
-            page: url.toString(),
-            closing: 'Quisiera saber si pueden conseguirlo y cuánto demoraría. Gracias.',
-        })))}" target="_blank" rel="noopener noreferrer">Ir directo a WhatsApp</a>
-      </div>
-    </section>`
-        : `<p>Todavía no hay resultados en esta categoría. <a href="/catalogo">Volvé a Todos los libros</a>.</p>`;
+    // Búsqueda sin ningún resultado en ninguna pestaña: una sola tarjeta de ayuda
+    // (asistente como acción principal, WhatsApp y formulario como alternativas).
+    const zeroSearch = Boolean(rawQ) && totalResults === 0 && availableCount + orderCount === 0;
+    const emptyMessage = zeroSearch
+        ? libreroHtml(rawQ, {
+            whatsappHref: whatsappHref(buildWhatsAppMessage({
+                greeting: 'Hola, busqué un libro en Amado Libros y quisiera que me ayudaran 😊',
+                motive: 'Búsqueda sin resultados',
+                book: rawQ,
+                situation: 'No apareció en el catálogo',
+                page: url.toString(),
+                closing: 'Quisiera saber si pueden conseguirlo y cuánto demoraría. Gracias.',
+            })),
+            formHref: `/pedir-libro/?tipo=sin-resultados&q=${encodeURIComponent(rawQ)}`,
+        })
+        : rawQ
+            ? `<p>No hay libros para &ldquo;${safeQ}&rdquo;${filterLabel ? ` en ${filterLabel}` : ''} con este filtro. Probá con otra pestaña${categoria ? ' o cambiá de categoría' : ''}.</p>`
+            : `<p>Todavía no hay resultados en esta categoría. <a href="/catalogo">Volvé a Todos los libros</a>.</p>`;
 
     // Chips de filtros activos — visibilidad clara de qué está aplicado.
     const chips = [];
@@ -1130,6 +1131,7 @@ export async function onRequest(ctx) {
     .rc-cta.rc-wa{color:#117a37;border-color:#b9dfc7;background:#effaf3}
     .rc-card:hover .rc-cta.rc-wa{background:#dcf5e5}
     .empty{padding:2rem 0;color:#64748b;font-size:.95rem}
+    ${zeroSearch ? LIBRERO_STYLES : ''}
     .manual-request{max-width:720px;margin-top:1.35rem;padding:1.25rem;border:1px solid #ead8cc;border-radius:1rem;background:#fff7f3;color:#1e293b}
     .manual-request strong,.manual-request span{display:block}
     .manual-request strong{font-size:1.05rem;line-height:1.35}
@@ -1149,19 +1151,20 @@ export async function onRequest(ctx) {
 <body>
 ${siteHeaderHtml({ current: 'libros', showSearch: false })}
 <div class="wrap">
-  ${topicNavHtml({ categories, categoria, subcategoria, disponibilidad })}
+  ${zeroSearch ? '' : topicNavHtml({ categories, categoria, subcategoria, disponibilidad })}
   ${filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, rawQ, safeQ, selectedCategory })}
-  ${availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, availableCount, orderCount })}
-  ${chipsHtml}
-  <h1>${heading}</h1>
-  <div class="results-bar">
+  ${zeroSearch ? '' : availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, availableCount, orderCount })}
+  ${zeroSearch ? '' : chipsHtml}
+  <h1>${zeroSearch ? `No encontramos &ldquo;${safeQ}&rdquo; en el catálogo` : heading}</h1>
+  ${zeroSearch ? '' : `<div class="results-bar">
     <p class="sub">${subText}</p>
     ${totalResults > 1 ? sortSelectHtml({ q: rawQ, categoria, subcategoria, disponibilidad, orden }) : ''}
-  </div>
+  </div>`}
   ${totalResults > 0
     ? `<div class="grid">\n${cards}\n</div>\n${paginationBlock}`
     : `<div class="empty">${emptyMessage}</div>`
   }
+  ${zeroSearch ? topicNavHtml({ categories, categoria, subcategoria, disponibilidad }) : ''}
   <footer>
     <a href="/">Inicio</a> · <a href="/libros-agotados-importados-uruguay">Libros agotados e importados</a> · <a href="/politicas/">Políticas</a> ·
     &copy; 2026 Amado Libros
@@ -1169,6 +1172,7 @@ ${siteHeaderHtml({ current: 'libros', showSearch: false })}
 </div>
 <script src="/search-autocomplete.js" defer></script>
 ${SITE_HEADER_SCRIPT}
+${zeroSearch ? LIBRERO_SCRIPT : ''}
 </body>
 </html>`;
 
