@@ -95,16 +95,20 @@ async function main() {
     }
     // Gasto TOTAL de cada anuncio en los 30 días, sin filtrar por campaña: un anuncio que se
     // movió de campaña (las de tramo del 11/11) suma lo gastado en las dos. Cada grupo una vez.
+    // Activos y pausados por separado: todos juntos (con los que están en espera) pasan el
+    // límite de 10.000 de la paginación de la API.
     const grupos = new Map();
-    let total = null;
-    for (let off = 0; off < 9950; off += 50) {
-      const r = await ml.get(`${base}/ad_groups/search?limit=50&offset=${off}&date_from=${desde}&date_to=${hoy}&metrics=${METRICAS}`, H);
-      total ??= Number(r?.paging?.total) || null;
-      for (const g of r?.results ?? []) if (String(g.campaign_id) !== CAMPANIA_FANTASMA) grupos.set(String(g.id), grupoDeMetricas(g, campanias, hoy, cfg));
-      if ((r?.results ?? []).length < 50) break;
+    for (const estado of ['active', 'paused']) {
+      let total = null;
+      for (let off = 0; off < 9950; off += 50) {
+        const r = await ml.get(`${base}/ad_groups/search?limit=50&offset=${off}&date_from=${desde}&date_to=${hoy}&metrics=${METRICAS}&filters[statuses]=${estado}`, H);
+        total ??= Number(r?.paging?.total) || null;
+        for (const g of r?.results ?? []) if (String(g.campaign_id) !== CAMPANIA_FANTASMA) grupos.set(String(g.id), grupoDeMetricas(g, campanias, hoy, cfg));
+        if ((r?.results ?? []).length < 50) break;
+      }
+      // Más de 9.950 de un estado no entran en una paginación: se corta en vez de evaluar a medias.
+      if (total !== null && total > 9950) throw Object.assign(new Error(`demasiados_anuncios_${estado}`), { code: `demasiados_anuncios_${estado}`, fatal: true });
     }
-    // Más de 9.950 anuncios no entran en una sola paginación: se corta en vez de evaluar a medias.
-    if (total !== null && total > 9950) throw Object.assign(new Error('demasiados_anuncios_para_paginar'), { code: 'demasiados_anuncios_para_paginar', fatal: true });
     if (!grupos.size) throw Object.assign(new Error('sin_anuncios_leidos'), { code: 'sin_anuncios_leidos', fatal: true });
 
     // ── Registro de la poda y semillas.
