@@ -356,10 +356,31 @@ export const LIBRERO_SCRIPT = `<script>
     actions.appendChild(button('Cambiar algo', function () { choose('Cambiar algo', function () { state.answers = {}; askUsed(); }); }));
   }
 
+  function ensureSession() {
+    if (state.sessionId) return Promise.resolve(true);
+    return api({ action: 'start', query: query }).then(function (r) {
+      if (r.status === 201 && r.data && r.data.session_id) { state.sessionId = r.data.session_id; return true; }
+      return false;
+    }).catch(function () { return false; });
+  }
+
   function send() {
     if (state.submitting) return;
-    if (!state.sessionId) { say('bot', 'No pude abrir la sesión. Escribinos por WhatsApp y lo vemos juntos.'); actions.appendChild(whatsappLink('Escribir por WhatsApp')); return; }
     state.submitting = true;
+    ensureSession().then(function (ok) {
+      if (!ok) {
+        state.submitting = false;
+        say('bot', 'No pudimos registrar el pedido ahora. Probá de nuevo o escribinos por WhatsApp y lo vemos juntos.');
+        clear();
+        actions.appendChild(button('Reintentar', function () { choose('Reintentar', send); }, true));
+        actions.appendChild(whatsappLink('Escribir por WhatsApp'));
+        return;
+      }
+      doSend();
+    });
+  }
+
+  function doSend() {
     if (!state.key) state.key = 'lib-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
     var a = state.answers;
     say('bot', 'Enviando tu pedido...');
