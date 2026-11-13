@@ -204,9 +204,12 @@ export const LIBRERO_SCRIPT = `<script>
   function shortQuery() { return query.length > 40 ? query.slice(0, 37) + '...' : query; }
 
   function offerSearch() {
-    say('bot', 'Pediste «' + query + '». ¿Querés que lo busquemos por vos? Una persona de Amado lo revisa y verifica la edición antes de ofrecerte una opción.');
+    say('bot', 'Pediste «' + query + '». En Amado nos dedicamos a buscar libros en distintas partes del mundo, así que podemos buscártelo sin compromiso: te contamos qué encontramos, con la edición verificada, y recién ahí decidís si lo querés.');
     clear();
-    actions.appendChild(button('Sí, que lo busquen', function () { choose('Sí, que lo busquen', askUsed); }, true));
+    actions.appendChild(button('Búsquenlo, sin compromiso', function () { choose('Búsquenlo, sin compromiso', askUsed); }, true));
+    actions.appendChild(button('Me sirve otra edición de este libro', function () {
+      choose('Me sirve otra edición de este libro', function () { state.answers.accepts_other_edition = true; track('answer', 'edicion:true'); askUsed(); });
+    }));
     actions.appendChild(button('Por ahora no', function () {
       choose('Por ahora no', function () {
         track('left', 'no-quiere-pedido');
@@ -220,7 +223,7 @@ export const LIBRERO_SCRIPT = `<script>
     clear();
     [['Sí, usado está bien', true], ['Prefiero nuevo', false], ['Me da igual', null]].forEach(function (o) {
       actions.appendChild(button(o[0], function () {
-        choose(o[0], function () { state.answers.accepts_used = o[1]; track('answer', 'usado:' + o[1]); askEdition(); });
+        choose(o[0], function () { state.answers.accepts_used = o[1]; track('answer', 'usado:' + o[1]); if (state.answers.accepts_other_edition === undefined) askEdition(); else askBudget(); });
       }));
     });
   }
@@ -238,43 +241,10 @@ export const LIBRERO_SCRIPT = `<script>
     clear();
     [['Hasta $500', 500], ['Hasta $1.000', 1000], ['Hasta $2.000', 2000], ['Hasta $5.000', 5000], ['No tengo un tope', null]].forEach(function (o) {
       actions.appendChild(button(o[0], function () {
-        choose(o[0], function () { state.answers.budget_uyu = o[1]; track('answer', 'presupuesto:' + o[1]); askMore(); });
+        choose(o[0], function () { state.answers.budget_uyu = o[1]; track('answer', 'presupuesto:' + o[1]); askDetails(); });
       }));
     });
   }
-  function askMore() {
-    var extra = state.answers.extra || (state.answers.extra = []);
-    say('bot', extra.length
-      ? '¿Querés sumar otro libro más a este pedido?'
-      : 'Ya que estamos: ¿querés que busquemos también otro libro, de este autor o de otro, junto con este pedido?');
-    clear();
-    actions.appendChild(button('Sí, sumar otro libro', function () {
-      choose('Sí, sumar otro libro', function () {
-        say('bot', '¿Cuál? Escribí el título, el autor o lo que recuerdes.');
-        clear();
-        var form = el('div', 'librero-form');
-        var input = el('input'); input.type = 'text'; input.maxLength = 150;
-        var row = el('div', 'librero-actions');
-        row.appendChild(button('Agregar', function () {
-          var v = input.value.trim();
-          if (!v) { input.focus(); return; }
-          extra.push(v);
-          track('answer', 'suma-otro');
-          say('me', v);
-          askMore();
-        }, true));
-        row.appendChild(button('Cancelar', function () { askMore(); }));
-        form.appendChild(field('Otro libro', input));
-        form.appendChild(row);
-        actions.appendChild(form);
-        input.focus();
-      });
-    }));
-    actions.appendChild(button(extra.length ? 'No, con esto alcanza' : 'No, solo este', function () {
-      choose(extra.length ? 'No, con esto alcanza' : 'No, solo este', askDetails);
-    }, true));
-  }
-
   function field(labelText, input) {
     var label = el('label', null, labelText);
     label.appendChild(input);
@@ -290,7 +260,6 @@ export const LIBRERO_SCRIPT = `<script>
     function next() {
       var parts = [];
       if (note.value.trim()) parts.push(note.value.trim());
-      if (state.answers.extra && state.answers.extra.length) parts.push('También busca: ' + state.answers.extra.join('; '));
       state.answers.notes = parts.join('\\n').slice(0, 900);
       say('me', note.value.trim() || 'Nada más');
       askContact();
