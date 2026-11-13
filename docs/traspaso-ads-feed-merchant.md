@@ -228,3 +228,51 @@ Pedido pendiente para el Claude de Chrome (tres tareas, en orden y avisando entr
 7. Errores propios que se corrigieron: se anunció "unos USD 12 por día" sin compararlo con el tope de USD 300;
    se creyó que faltaban los mazos en Merchant (ya estaban 72 de 103); el primer plan de "Psicología" duplicaba
    la campaña Psi Profesional.
+
+## 7. Sesión única de Ads, feed y Merchant (desde el 12/11/2026 por la noche)
+
+Seba decidió que **una sola sesión ejecuta** en Google Ads, Merchant Center y el feed (el chat
+"Google Ads + Merchant + Feed"). Las demás sesiones solo leen y analizan. Esta sección actualiza
+lo de arriba; si algo se contradice, vale esto.
+
+### 7.1 Hecho el 12/11 por esa sesión
+
+- **Aplicación automática de recomendaciones: desactivada** y verificada (0 de 7 y 0 de 14 tipos).
+  No se aplicó ninguna recomendación pendiente. Cierra el punto 2.4.1.
+- **Los 4 falsos positivos de Shopping: revisión pedida** ("No estoy de acuerdo", motivo "Mi producto
+  cumple los requisitos de la política"). Son Cannabis Consciente (MLU625822973) y Guía Completa de
+  Rastreo (MLU707859674) por "drogas ilegales"; De Crisálida a Mariposa (MLU479215404) y Libro Cáncer
+  de Mama (MLU700558594) por "conducta fraudulenta". Los 4 quedaron en "Revisión solicitada el 12 nov 2026".
+- **Remarketing: se pidió revisión de 151 limitados** por pedido expreso de Seba, pese a lo que dice 3.2:
+  132 de "dificultades personales" (en bloque) y 19 de "identidad y creencias" (uno por uno). No gasta
+  ni afecta Shopping. Si Google las rechaza hay que esperar unos días para volver a pedir. **No pedir
+  más revisiones de este tipo ni repetir estas.**
+- **PR #672**: el sync levanta la descripción de la ficha de Catálogo de ML (`short_description`) cuando
+  la publicación no tiene texto propio. Solo lectura contra ML. Rinde poco en el feed: de 163 fichas
+  consultadas de los productos sin descripción, 162 vinieron vacías.
+- **PR #673**: descripción editorial para 7 mazos de tarot (`functions/_shared/book-tarot-enrichments.js`),
+  con la página oficial de la editorial por ISBN exacto. Verificado en el feed de producción.
+
+### 7.2 Medido el 12/11
+
+- Feed en producción: 3.655 productos, 204 con `custom_label_1 = tarot`, 1.219 con `custom_label_0 = liquidacion`.
+  Unos 3.010 con descripción real y 644 con la plantilla título/autor/ISBN (630 son de Catálogo de ML).
+  De esos 644, 15 eran de tarot (7 ya resueltos por #673) y 56 de liquidación.
+- Merchant a las 16:40: última lectura 12/11 0:00 con 3.652 productos; "No se muestra en Google": 4.
+  Todavía figuraban los 16 "libros digitales" (Merchant no había releído el feed posterior a #662).
+- Ads por Windsor (7 días al 12/11): presupuestos como en la sección 2 (USD 10 por día). Tarot y Oráculos
+  en CPC manual; **Biblias en "Maximizar clics" y en aprendizaje**; Liquidación ya figura apta
+  (cierra el problema de 2.3); Psi limitada por presupuesto. No existe ninguna campaña de Shopping.
+
+### 7.3 Pendiente
+
+1. Crear **en pausa** "Shopping | Tarot y mazos" cuando Merchant muestre `custom_label_1 = tarot`. Activarla
+   exige el OK de Seba y decidir de dónde salen sus USD 3 por día (sección 2.4.2).
+2. Los 8 mazos de tarot que siguen con plantilla: Tarot Gestáltico (Mandala), El Tarot de los Filósofos
+   (Oberon), Visiones Etéreas (Trédaniel), Tarots of Druids (Lo Scarabeo) y cuatro con código EAN de
+   Fournier (Alchemy 1977, Tarot de los Ángeles, Gothic Tarot, Spanish Tarot). Falta la fuente oficial.
+3. Revisar el PR #664 (landing de anuncios, GA4 y feed con tema/sensible) antes de que se mergee.
+4. Decisión de Seba: estrategia de oferta de Biblias (dejar "Maximizar clics" o pasar a CPC manual).
+5. Lunes 16/11: términos de búsqueda, gasto y decisión sobre activar Shopping.
+6. Merchant ofrece "Vincular PayPal" y "agregar 3.050 productos encontrados": no se aceptó ninguno.
+   PayPal solo tiene sentido si la web cobra con PayPal.
