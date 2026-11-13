@@ -208,7 +208,7 @@ test('búsqueda que no matchea la categoría elegida da cero resultados, no igno
   const res = await catalogRequest(context('https://preview.example/catalogo?q=genero&categoria=esoterismo-tarot'));
   const html = await res.text();
   assert.doesNotMatch(html, /El Género En Disputa/);
-  assert.match(html, /No encontramos resultados/);
+  assert.match(html, /No encontramos &ldquo;genero&rdquo; en el catálogo/);
 });
 
 test('el selector conserva q al elegir categoría (value del input persiste)', async () => {
@@ -517,7 +517,7 @@ function searchMissContext(url, { userAgent = 'Mozilla/5.0 (iPhone) Safari/604.1
 test('una búsqueda sin resultados se anota normalizada; con resultados, filtro o robot no', async () => {
   const miss = searchMissContext('https://amadolibros.com/catalogo?q=Zzxqv%20Inexistente');
   const response = await catalogRequest(miss.ctx);
-  assert.match(await response.text(), /Sin resultados/);
+  assert.match(await response.text(), /No encontramos &ldquo;Zzxqv Inexistente&rdquo; en el catálogo/);
   await Promise.all(miss.pending);
   const writes = miss.writes.filter(w => w.sql.includes('search_misses'));
   assert.equal(writes.length, 1);
@@ -546,7 +546,11 @@ test('búsqueda sin resultados ofrece el asistente y mantiene los pedidos de sie
   const html = await res.text();
   assert.match(html, /id="librero"/);
   assert.match(html, /Ayudame a encontrarlo/);
-  assert.match(html, /Pedir que lo busquemos/);
+  assert.match(html, /Lo buscamos por vos, sin compromiso/);
+  assert.match(html, />Escribinos por WhatsApp</);
+  assert.match(html, /Prefiero dejar el pedido por escrito/);
+  assert.match(html, /href="\/pedir-libro\/\?tipo=sin-resultados&amp;q=xqzwinexistente"/);
+  assert.doesNotMatch(html, /Sin resultados para|Intentá con otras palabras|Que no aparezca acá/);
   assert.match(html, /fetch\('\/api\/librero'/);
   assert.doesNotMatch(html, /gtag\(/, 'el asistente no toca eventos de analítica');
 });

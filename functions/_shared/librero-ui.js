@@ -17,13 +17,21 @@ function escapeAttr(value) {
 }
 
 /** Botón de entrada y contenedor. Va arriba del bloque «Pedir que lo busquemos». */
-export function libreroHtml(rawQuery) {
+export function libreroHtml(rawQuery, { whatsappHref = '', formHref = '' } = {}) {
     const query = String(rawQuery ?? '').trim().slice(0, 200);
+    const secondary = [
+        whatsappHref ? `<a class="librero-btn" href="${escapeAttr(whatsappHref)}" target="_blank" rel="noopener noreferrer">Escribinos por WhatsApp</a>` : '',
+        formHref ? `<a class="librero-textlink" href="${escapeAttr(formHref)}">Prefiero dejar el pedido por escrito</a>` : '',
+    ].join('');
     return `<section class="librero" id="librero" data-query="${escapeAttr(query)}" data-wa="https://wa.me/${WHATSAPP_NUMBER}?text=" aria-label="Ayuda para encontrar tu libro">
-      <div class="librero-intro">
-        <strong>¿Te ayudo a encontrarlo?</strong>
-        <span>Charlamos un minuto, te muestro lo que se parezca y, si hace falta, armamos tu pedido para que lo busquemos.</span>
-        <button type="button" class="librero-open" id="librero-open">Ayudame a encontrarlo</button>
+      <div class="librero-intro" id="librero-intro">
+        <strong>Lo buscamos por vos, sin compromiso</strong>
+        <span>Rastreamos libros en distintas partes del mundo. Contanos lo que sabés y una persona de Amado Libros verifica la edición antes de ofrecerte una opción.</span>
+        <div class="librero-cta">
+          <button type="button" class="librero-open" id="librero-open">Ayudame a encontrarlo</button>
+          ${secondary}
+        </div>
+        <small class="librero-micro">Te contamos qué encontramos y recién ahí decidís si lo querés.</small>
       </div>
       <div class="librero-chat" id="librero-chat" hidden>
         <div class="librero-log" id="librero-log" role="log" aria-live="polite"></div>
@@ -40,7 +48,11 @@ export const LIBRERO_STYLES = `
     .librero-intro strong{font-size:1.1rem;line-height:1.35}
     .librero-intro span{margin-top:.45rem;color:#64748b;font-size:.9rem}
     .librero-open,.librero-btn{display:inline-flex;min-height:46px;align-items:center;justify-content:center;padding:.65rem 1.1rem;border:1px solid #d9c3b3;border-radius:.65rem;background:#fff;color:#18120e;font:inherit;font-weight:700;cursor:pointer}
-    .librero-open{margin-top:1rem;border-color:#18120e;background:#18120e;color:#fff}
+    .librero-open{border-color:#18120e;background:#18120e;color:#fff}
+    .librero-cta{display:flex;flex-wrap:wrap;align-items:center;gap:.7rem 1rem;margin-top:1rem}
+    .librero-cta a.librero-btn{text-decoration:none}
+    .librero-textlink{color:#a94e3d;font-size:.88rem;font-weight:600}
+    .librero-micro{display:block;margin-top:.75rem;color:#64748b;font-size:.82rem}
     .librero-btn.is-primary{border-color:#a94e3d;background:#a94e3d;color:#fff}
     .librero-open:focus-visible,.librero-btn:focus-visible,.librero input:focus-visible,.librero textarea:focus-visible{outline:2px solid #a94e3d;outline-offset:2px}
     .librero-log{display:flex;flex-direction:column;gap:.6rem}
@@ -128,6 +140,8 @@ export const LIBRERO_SCRIPT = `<script>
   function begin() {
     if (state.started) return;
     state.started = true;
+    var cta = document.getElementById('librero-intro');
+    if (cta) cta.hidden = true;
     openBtn.hidden = true;
     chat.hidden = false;
     say('bot', 'Hola, soy el Asistente de Amado Libros. Busquemos juntos «' + query + '».');
