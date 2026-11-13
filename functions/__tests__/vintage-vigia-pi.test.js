@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {watch,watchSignals,brakeOn,releaseBrake,isIp,similarTo,makeReact,blockedIds,blockedIsbns} from '../../scripts/vintage-cloud/vigia-pi.mjs';
+import {watch,watchSignals,isSerious,brakeOn,releaseBrake,isIp,similarTo,makeReact,blockedIds,blockedIsbns} from '../../scripts/vintage-cloud/vigia-pi.mjs';
 import {openDatabase} from '../../scripts/vintage-local/db.mjs';
 
 function d1(t){const db=openDatabase(':memory:');t.after(()=>db.close());return async(sql,params=[])=>{const st=db.prepare(sql).bind(...params);return /^\s*SELECT/i.test(sql)?(await st.all()).results:(await st.run(),[]);};}
@@ -138,4 +138,50 @@ test('catalog competition: one daily snapshot of a sample; it mails only when fe
  assert.equal(mails.length,0,'sin cambio no avisa');
  await watchSignals({query,getCompetencia:comp(12,8),send,now:d3});
  assert.equal(mails.length,1);assert.match(mails[0].texto,/60 %/);
+});
+
+test('real problems brake the publisher; photo, category, price and duplicate notices do not',async t=>{
+ // Infracciones: las de calidad no frenan, las graves sí.
+ for(const sub of ['PQT','FOTOS','DOMAIN','DESC','DUPLIS','DP','CATALOG'])assert.equal(isSerious(inf('x',sub)),false,sub);
+ for(const sub of ['COPIAS_REPLICAS','PI_FAKES','BRAND_PROTECTION','DENYLIST','TABACO','ALIMENTOS'])assert.equal(isSerious(inf('x',sub)),true,sub);
+ const query=d1(t);
+ await watch({query,getInfractions:pages([]),send:async()=>'enviado'});
+ const r=await watch({query,getInfractions:pages([inf('f1','PQT','La portada incumple tamaño'),inf('d1','DUPLIS','duplicada')]),send:async()=>'enviado'});
+ assert.equal(r.nuevas_pi,0);assert.equal(await brakeOn(query),null);
+ const r2=await watch({query,getInfractions:pages([inf('t1','TABACO','producto prohibido'),inf('f1','PQT')]),send:async()=>'enviado'});
+ assert.equal(r2.nuevas_pi,1);assert.ok(await brakeOn(query));
+});
+
+test('a warning notice (possible sanction) brakes even if it is not about intellectual property; an informative one does not',async t=>{
+ const query=d1(t),mails=[],send=async m=>{mails.push(m);return 'enviado';},now=Date.parse('2026-11-13T12:00:00Z');
+ await watchSignals({query,getNotices:async()=>[notice('1','Novedad de envíos','Ya podés buscar por el identificador')],send,now});
+ const info=await watchSignals({query,getNotices:async()=>[notice('2','Cambió el identificador de envío','Ahora las etiquetas muestran otro número'),notice('1','Novedad de envíos','x')],send,now});
+ assert.equal(info.avisos_nuevos,1);assert.equal(await brakeOn(query),null);
+ const grave=await watchSignals({query,getNotices:async()=>[notice('3','Recibiste compras de cuentas con las que te vinculas','Este comportamiento no está permitido y podríamos sancionar o suspender tu cuenta'),notice('2','x'),notice('1','x')],send,now});
+ assert.equal(grave.avisos_graves,1);assert.ok(await brakeOn(query));assert.match(mails.at(-1).asunto,/FRENADO/);
+});
+
+test('a worse reputation level, or cancellations or claims over the reference, brake; a better level does not',async t=>{
+ const mails=[],send=async m=>{mails.push(m);return 'enviado';};
+ const rep=(level,cancel,claims)=>({level_id:level,metrics:{sales:{completed:150},cancellations:{rate:cancel},claims:{rate:claims},delayed_handling_time:{rate:.007}}});
+ const d=Date.parse('2026-11-13T12:00:00Z'),day=86400000;
+ const q1=d1(t);
+ await watchSignals({query:q1,getReputation:async()=>rep('4_light_green',.006,0),send,now:d});
+ await watchSignals({query:q1,getReputation:async()=>rep('5_green',.006,0),send,now:d+day});
+ assert.equal(await brakeOn(q1),null,'subir de nivel no frena');
+ await watchSignals({query:q1,getReputation:async()=>rep('3_yellow',.006,0),send,now:d+2*day});
+ assert.ok(await brakeOn(q1),'bajar de nivel frena');
+ const q2=d1(t);
+ await watchSignals({query:q2,getReputation:async()=>rep('5_green',.006,0),send,now:d});
+ await watchSignals({query:q2,getReputation:async()=>rep('5_green',.03,0),send,now:d+day});
+ assert.ok(await brakeOn(q2),'cancelaciones sobre 1,5 % frenan');
+});
+
+test('an account without permission to sell or list brakes once and mails once',async t=>{
+ const query=d1(t),mails=[],send=async m=>{mails.push(m);return 'enviado';};
+ await watchSignals({query,getAccountStatus:async()=>({vender:true,publicar:true,codigos:[]}),send});
+ assert.equal(await brakeOn(query),null);
+ await watchSignals({query,getAccountStatus:async()=>({vender:false,publicar:true,codigos:['suspended']}),send});
+ await watchSignals({query,getAccountStatus:async()=>({vender:false,publicar:true,codigos:['suspended']}),send});
+ assert.ok(await brakeOn(query));assert.equal(mails.filter(m=>/restringió la cuenta/.test(m.asunto)).length,1);
 });

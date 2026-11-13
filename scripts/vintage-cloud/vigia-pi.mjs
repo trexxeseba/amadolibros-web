@@ -35,6 +35,11 @@ export function similarTo(denounced,candidates){
 }
 
 // ¿Es una infracción de propiedad intelectual? Por subgrupo o por el texto del motivo.
+// Infracciones que cuentan como problema real además de las de propiedad intelectual: productos prohibidos o
+// denuncias confirmadas. Las de fotos, categoría, precio, duplicadas y datos de contacto son avisos de calidad:
+// se anotan pero no frenan (Seba, 13/11/2026: sólo frenar ante un problema real).
+export const SERIOUS_SUBGROUP=/BRAND_PROTECTION|DENYLIST|TABACO|ALIMENTOS|ARMAS|MEDICAMENTOS/i;
+export const isSerious=infraction=>isIp(infraction)||SERIOUS_SUBGROUP.test(String(infraction?.filter_subgroup??''));
 export function isIp(infraction){
  const sub=String(infraction?.filter_subgroup??'');
  const reason=String(infraction?.reason??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
@@ -70,7 +75,7 @@ export async function watch({query,getInfractions,getItemTitle=async()=>null,get
    const id=String(inf.id??'');if(!id)continue;
    const seen=(await query(`SELECT id FROM ${SEEN} WHERE id=?`,[id]))[0];
    if(seen)continue;
-   const ip=isIp(inf)?1:0;
+   const ip=isSerious(inf)?1:0;
    await query(`INSERT OR IGNORE INTO ${SEEN}(id,item_id,subgroup,ip,created,seen_at) VALUES(?,?,?,?,?,?)`,[id,inf.element_id??inf.related_item_id??null,inf.filter_subgroup??null,ip,inf.date_created??null,now]);
    if(ip&&!baseline)fresh.push(inf);
   }
@@ -134,9 +139,13 @@ export function makeReact(ml,query){
 //    los valores de referencia de MercadoLíder (1,5 % y 2,5 %: no son umbrales de suspensión, sino alerta temprana).
 export const REP_CANCEL_ALERT=0.015,REP_CLAIMS_ALERT=0.025;
 const IP_NOTICE=/propiedad intelectual|replicas|falsific|copias no autorizadas|marca registrada|derechos de autor/i;
+// Avisos del panel que advierten de una sanción aunque no sean de propiedad intelectual (por ejemplo, compras de cuentas vinculadas).
+const SERIOUS_NOTICE=/sancion|suspend|suspens|inhabilit|retiramos|restring|no est[aá] permitido|prohibid/i;
+const setBrake=async(query,value,now)=>{const before=(await query(`SELECT value FROM ${FLAGS} WHERE key=?`,[FLAG]))[0];await query(`INSERT INTO ${FLAGS}(key,value,at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,at=excluded.at`,[FLAG,JSON.stringify(value),now]);return !before||JSON.parse(before.value)?.motivo!==value.motivo;};
+const levelNumber=level=>{const n=Number(String(level??'').match(/^\d+/)?.[0]);return Number.isFinite(n)?n:null;};
 const uyDay=ms=>new Date(ms-3*3600000).toISOString().slice(0,10);
 const plain=x=>String(x??'').replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
-export async function watchSignals({query,getNotices=async()=>[],getReputation=async()=>null,getCompetencia=async()=>null,send=sendMail,now=Date.now(),runUrl=null}){
+export async function watchSignals({query,getNotices=async()=>[],getReputation=async()=>null,getCompetencia=async()=>null,getAccountStatus=async()=>null,send=sendMail,now=Date.now(),runUrl=null}){
  await schema(query);
  const out={avisos_nuevos:0,avisos_pi:0,reputacion:null};
  // Avisos
@@ -156,8 +165,12 @@ export async function watchSignals({query,getNotices=async()=>[],getReputation=a
     const value={motivo:'aviso_pi',infracciones:[{id,item:null,title,subgroup:'AVISO_PANEL',reason:detail,fecha:null}],reaccion:null};
     await query(`INSERT INTO ${FLAGS}(key,value,at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,at=excluded.at`,[FLAG,JSON.stringify(value),now]);
     await send({asunto:'ALARMA: aviso nuevo de propiedad intelectual. Publicador FRENADO',texto:`Mercado Libre mandó un aviso nuevo a Amado Vintage:\n\n${title}\n${detail}\n\nEl publicador quedó frenado. Revisá las infracciones y las publicaciones antes de liberarlo.${runUrl?`\n\nDetalle: ${runUrl}`:''}`});
+   }else if(SERIOUS_NOTICE.test(title+' '+detail)){
+    out.avisos_graves=(out.avisos_graves??0)+1;
+    await setBrake(query,{motivo:'aviso_grave',infracciones:[{id,item:null,title,subgroup:'AVISO_PANEL',reason:detail,fecha:null}],reaccion:null},now);
+    await send({asunto:'ALARMA: aviso de advertencia de Mercado Libre. Publicador FRENADO',texto:`Mercado Libre mandó un aviso a Amado Vintage que advierte de una posible sanción:\n\n${title}\n${detail}\n\nEl publicador quedó frenado. Revisá el aviso en el panel y liberalo cuando lo hayas aclarado.${runUrl?`\n\nDetalle: ${runUrl}`:''}`});
    }else{
-    await send({asunto:`aviso nuevo de Mercado Libre: ${title.slice(0,80)}`,texto:`Mercado Libre mandó un aviso nuevo a Amado Vintage (no es de propiedad intelectual, el publicador no se frenó):\n\n${title}\n${detail}${runUrl?`\n\nDetalle: ${runUrl}`:''}`});
+    await send({asunto:`aviso nuevo de Mercado Libre: ${title.slice(0,80)}`,texto:`Mercado Libre mandó un aviso nuevo a Amado Vintage (no advierte de sanciones, el publicador no se frenó):\n\n${title}\n${detail}${runUrl?`\n\nDetalle: ${runUrl}`:''}`});
    }
   }
  }
@@ -173,10 +186,20 @@ export async function watchSignals({query,getNotices=async()=>[],getReputation=a
    if(snap.cancelaciones!==null&&snap.cancelaciones>REP_CANCEL_ALERT)motivos.push(`las cancelaciones están en ${(snap.cancelaciones*100).toFixed(1)} % (referencia 1,5 %)`);
    if(snap.reclamos!==null&&snap.reclamos>REP_CLAIMS_ALERT)motivos.push(`los reclamos están en ${(snap.reclamos*100).toFixed(1)} % (referencia 2,5 %)`);
    await query(`INSERT INTO ${FLAGS}(key,value,at) VALUES('reputacion',?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,at=excluded.at`,[JSON.stringify(snap),now]);
-   if(motivos.length)await send({asunto:'reputación de Vintage: '+motivos[0],texto:`Reputación de Amado Vintage al ${day}: ${motivos.join('; ')}.\n\nNivel ${snap.level}, ventas ${snap.ventas}, cancelaciones ${snap.cancelaciones===null?'sin dato':(snap.cancelaciones*100).toFixed(2)+' %'}, reclamos ${snap.reclamos===null?'sin dato':(snap.reclamos*100).toFixed(2)+' %'}, demoras de despacho ${snap.demoras===null?'sin dato':(snap.demoras*100).toFixed(2)+' %'}.\nLos valores de referencia son los de MercadoLíder: no son umbrales de suspensión, sino una alerta temprana.${runUrl?`\n\nDetalle: ${runUrl}`:''}`});
+   const peor=before&&levelNumber(before.level)!==null&&levelNumber(snap.level)!==null&&levelNumber(snap.level)<levelNumber(before.level);
+   const umbral=(snap.cancelaciones!==null&&snap.cancelaciones>REP_CANCEL_ALERT)||(snap.reclamos!==null&&snap.reclamos>REP_CLAIMS_ALERT);
+   if(peor||umbral){out.reputacion_frena=true;await setBrake(query,{motivo:'reputacion',infracciones:[{id:'reputacion',item:null,title:'Reputación de Vintage',subgroup:'REPUTACION',reason:motivos.join('; '),fecha:null}],reaccion:null},now);}
+   if(motivos.length)await send({asunto:(peor||umbral?'ALARMA: ':'')+'reputación de Vintage: '+motivos[0]+(peor||umbral?'. Publicador FRENADO':''),texto:`Reputación de Amado Vintage al ${day}: ${motivos.join('; ')}.\n\nNivel ${snap.level}, ventas ${snap.ventas}, cancelaciones ${snap.cancelaciones===null?'sin dato':(snap.cancelaciones*100).toFixed(2)+' %'}, reclamos ${snap.reclamos===null?'sin dato':(snap.reclamos*100).toFixed(2)+' %'}, demoras de despacho ${snap.demoras===null?'sin dato':(snap.demoras*100).toFixed(2)+' %'}.\nLos valores de referencia son los de MercadoLíder: no son umbrales de suspensión, sino una alerta temprana.${runUrl?`\n\nDetalle: ${runUrl}`:''}`});
   }
  }
 
+ // Estado de la cuenta: si Mercado Libre le sacó la venta o la publicación, es un problema real.
+ let cuenta=null;try{cuenta=await getAccountStatus();}catch{cuenta=null;}
+ if(cuenta&&(cuenta.vender===false||cuenta.publicar===false)){
+  out.cuenta_restringida=true;
+  const nuevo=await setBrake(query,{motivo:'cuenta_restringida',infracciones:[{id:'cuenta',item:null,title:'Estado de la cuenta',subgroup:'CUENTA',reason:`vender: ${cuenta.vender}, publicar: ${cuenta.publicar}, códigos: ${(cuenta.codigos??[]).join(', ')||'sin dato'}`,fecha:null}],reaccion:null},now);
+  if(nuevo)await send({asunto:'ALARMA: Mercado Libre restringió la cuenta de Vintage. Publicador FRENADO',texto:`Amado Vintage figura sin permiso para ${cuenta.vender===false?'vender':''}${cuenta.vender===false&&cuenta.publicar===false?' y ':''}${cuenta.publicar===false?'publicar':''}. Códigos: ${(cuenta.codigos??[]).join(', ')||'sin dato'}.\n\nEl publicador quedó frenado.${runUrl?`\n\nDetalle: ${runUrl}`:''}`});
+ }
  // Competencia en catálogo (price_to_win): una foto por día de una muestra de publicaciones. Seba (10/11/2026):
  // Mercado Libre marcó la cuenta como vendedor no confiable y no hay información pública de cuánto tarda en salir;
  // se mide acá. Avisa cuando aparece alguna que ya no tiene esa razón.
@@ -203,6 +226,7 @@ export function mlReaders(query){
   getItemTitle:async id=>{try{return (await ml.get(`/items/${id}?attributes=title`))?.title??null;}catch{return null;}},
   getNotices:async()=>{const r=await ml.get('/communications/notices?limit=50&offset=0');return Array.isArray(r?.results)?r.results:[];},
   getReputation:async()=>(await ml.get(`/users/${SELLER}`))?.seller_reputation??null,
+  getAccountStatus:async()=>{const u=await ml.get(`/users/${SELLER}`);return {vender:u?.status?.sell?.allow??null,publicar:u?.status?.list?.allow??null,codigos:[...(u?.status?.sell?.codes??[]),...(u?.status?.list?.codes??[])]};},
   getCompetencia:async()=>{
    if(!query)return null;
    const ids=(await query("SELECT item_id FROM ml_vintage_pub_receipts WHERE seller_id=? AND state='published' AND item_id IS NOT NULL ORDER BY RANDOM() LIMIT 20",[SELLER])).map(r=>r.item_id);
