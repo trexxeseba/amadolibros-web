@@ -16,7 +16,7 @@ export async function correr({query,runUrl=null,vigia=null,senales=null}={}){
   const result=vigia?await vigia():await (()=>{prepare();return watch({query:dq,...readers,runUrl});})();
   // Avisos del panel y reputación: si fallan no tumban el vigía de infracciones.
   let otras=null;
-  try{otras=senales?await senales():await (()=>{if(!dq)prepare();return watchSignals({query:dq,getNotices:readers.getNotices,getReputation:readers.getReputation,getCompetencia:readers.getCompetencia,runUrl});})();}
+  try{otras=senales?await senales():await (()=>{if(!dq)prepare();return watchSignals({query:dq,getNotices:readers.getNotices,getReputation:readers.getReputation,getCompetencia:readers.getCompetencia,getAccountStatus:readers.getAccountStatus,runUrl});})();}
   catch(error){otras={error:[error.code,error.message].find(x=>/^[a-z0-9_]{1,100}$/.test(x??''))??'senales_fallo'};}
   return {ok:true,vigia_pi:result,senales:otras};
  }catch(error){
