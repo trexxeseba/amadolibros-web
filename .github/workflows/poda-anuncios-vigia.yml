@@ -1,0 +1,29 @@
+name: Poda de anuncios (latido)
+
+# Comprueba que la poda haya corrido bien hoy. Pasadas las 13:00 de Montevideo, si no hay una
+# corrida exitosa de poda-anuncios.yml desde las 08:00 de hoy, manda un mail de alarma y falla.
+# Sólo lee la API de GitHub; no lleva montos.
+on:
+  schedule:
+    - cron: '10 16 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  vigia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Comprobar la corrida de hoy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          PODA_EMAIL_TO: undiaes@gmail.com
+        run: node poda/src/vigia.mjs
