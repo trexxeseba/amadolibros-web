@@ -72,6 +72,7 @@ import {
 } from './_shared/cloudflare-images.js';
 import { matchesCategoryPath } from './_shared/category-paths.js';
 import { deriveBookDisplayTitle } from './_shared/book-display-title.js';
+import { LIBRERO_SCRIPT, LIBRERO_STYLES, libreroHtml } from './_shared/librero-ui.js';
 import {
     RANK,
     matchCatalogQuery,
@@ -963,6 +964,7 @@ export async function onRequest(ctx) {
                     : 'Comprar libros disponibles y por encargo | Amado Libros';
     const emptyMessage = rawQ
         ? `<p>Sin resultados para &ldquo;${safeQ}&rdquo;${filterLabel ? ` en ${filterLabel}` : ''}. Intentá con otras palabras${categoria ? ' o cambiá de categoría' : ''}.</p>
+    ${libreroHtml(rawQ)}
     <section class="manual-request" aria-label="Pedir una búsqueda manual">
       <strong>Que no aparezca acá no significa que no podamos encontrarlo.</strong>
       <span>Contanos lo que sabés. Una persona de Amado Libros hace la búsqueda y verifica la edición antes de ofrecerte una opción.</span>
@@ -1130,6 +1132,7 @@ export async function onRequest(ctx) {
     .rc-cta.rc-wa{color:#117a37;border-color:#b9dfc7;background:#effaf3}
     .rc-card:hover .rc-cta.rc-wa{background:#dcf5e5}
     .empty{padding:2rem 0;color:#64748b;font-size:.95rem}
+    ${rawQ && totalResults === 0 ? LIBRERO_STYLES : ''}
     .manual-request{max-width:720px;margin-top:1.35rem;padding:1.25rem;border:1px solid #ead8cc;border-radius:1rem;background:#fff7f3;color:#1e293b}
     .manual-request strong,.manual-request span{display:block}
     .manual-request strong{font-size:1.05rem;line-height:1.35}
@@ -1169,6 +1172,7 @@ ${siteHeaderHtml({ current: 'libros', showSearch: false })}
 </div>
 <script src="/search-autocomplete.js" defer></script>
 ${SITE_HEADER_SCRIPT}
+${rawQ && totalResults === 0 ? LIBRERO_SCRIPT : ''}
 </body>
 </html>`;
 

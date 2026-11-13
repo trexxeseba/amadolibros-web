@@ -538,3 +538,34 @@ test('una búsqueda sin resultados se anota normalizada; con resultados, filtro 
   await Promise.all(robot.pending);
   assert.equal(robot.writes.filter(w => w.sql.includes('search_misses')).length, 0);
 });
+
+// ── LIBRERO-1: el asistente aparece solo cuando una búsqueda no da resultados ──
+
+test('búsqueda sin resultados ofrece el asistente y mantiene los pedidos de siempre', async () => {
+  const res = await catalogRequest(context('https://preview.example/catalogo?q=xqzwinexistente'));
+  const html = await res.text();
+  assert.match(html, /id="librero"/);
+  assert.match(html, /Ayudame a encontrarlo/);
+  assert.match(html, /Pedir que lo busquemos/);
+  assert.match(html, /fetch\('\/api\/librero'/);
+  assert.doesNotMatch(html, /gtag\(/, 'el asistente no toca eventos de analítica');
+});
+
+test('con resultados, o sin búsqueda, no se carga el asistente', async () => {
+  const withResults = await (await catalogRequest(context('https://preview.example/catalogo?q=tarot'))).text();
+  assert.doesNotMatch(withResults, /id="librero"|\/api\/librero/);
+  const noQuery = await (await catalogRequest(context('https://preview.example/catalogo'))).text();
+  assert.doesNotMatch(noQuery, /id="librero"|\/api\/librero/);
+});
+
+test('la consulta va escapada en el asistente', async () => {
+  const q = encodeURIComponent('"><img src=x onerror=alert(1)>');
+  const html = await (await catalogRequest(context(`https://preview.example/catalogo?q=${q}`))).text();
+  assert.doesNotMatch(html, /<img src=x onerror/);
+});
+
+test('el script del asistente es JavaScript válido', async () => {
+  const { LIBRERO_SCRIPT } = await import('../_shared/librero-ui.js');
+  const body = LIBRERO_SCRIPT.replace(/^<script>/, '').replace(/<\/script>$/, '');
+  assert.doesNotThrow(() => new Function(body));
+});
