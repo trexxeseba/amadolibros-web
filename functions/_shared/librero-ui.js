@@ -358,7 +358,7 @@ export const LIBRERO_SCRIPT = `<script>
       state.submitting = false;
       if (r.status === 201 || r.status === 200) {
         state.sent = true;
-        say('bot', 'Listo, tu pedido quedó registrado con el código ' + r.data.request_code + '.\\nUna persona de Amado lo va a revisar' + (a.contact_value ? ' y te escribimos al medio que dejaste cuando haya novedades.' : '. Guardá el código por si querés escribirnos.'));
+        say('bot', 'Listo, tu pedido quedó registrado con el código ' + r.data.request_code + '.\\nUna persona de Amado lo va a buscar y revisar' + (a.contact_value ? '. Te escribimos al medio que dejaste cuando haya novedades, y recién ahí decidís si lo querés: es sin compromiso.' : '. Guardá el código por si querés escribirnos: la búsqueda es sin compromiso.'));
         clear();
         actions.appendChild(whatsappLink('Escribir por WhatsApp con mi código', 'Código de pedido: ' + r.data.request_code));
         return;
