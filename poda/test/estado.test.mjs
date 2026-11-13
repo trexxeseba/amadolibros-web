@@ -97,3 +97,10 @@ test('contando: pasados 30 días se borra del registro', () => {
 });
 
 test('diasEntre', () => assert.equal(diasEntre('2026-11-01', '2026-11-13'), 12));
+
+test('lista de transparencia: con gasto de 150 o más que no se pausan, con el motivo', () => {
+  const r = calcularDia({ hoy, grupos: mapa(grupo(1, { gasto: 300, clics: 3, cpc: 100 }), grupo(2, { gasto: 400, clics: 20, cpc: 20, ventasAtribuidas: 1 }), grupo(3, { gasto: 260, clics: 12, cpc: 21 }), grupo(4, { estado: 'PAUSED', gasto: 200 })) });
+  const m = Object.fromEntries(r.listas.conGasto.map(f => [f.ad_group_id, f.motivo]));
+  assert.match(m['1'], /Menos de 5 clics/); assert.match(m['2'], /Venta atribuida/); assert.match(m['4'], /PAUSED/);
+  assert.equal(m['3'], undefined, 'el que se pausa no está en esta lista');
+});

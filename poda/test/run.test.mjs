@@ -62,3 +62,10 @@ test('SQL: comillas escapadas y nulos', () => {
   const s = sqlUpsert({ ad_group_id: '1', estado: 'pausado', origen: 'poda', titulo: "Libro 'raro'", item_ids: ['MLU1'] });
   assert.match(s, /ON CONFLICT\(ad_group_id\)/); assert.match(s, /'Libro ''raro'''/);
 });
+
+test('en modo prueba el mail lista lo que pausaría aunque venga en la lista de pausar (corrida correr)', () => {
+  const r = { contadores: { evaluados: 1, pausar: 1, pausaria: 0, pendientes_pausa: 0, reactivar: 0, observacion: 0 }, listas: { pausar: [{ titulo: 'Argentina Colonial', item_ids: ['MLU9'], precio_lista: 2200, gasto: 316, clics: 9, cpc: 35, tope: 220 }], pausaria: [], pendientesPausa: [], reactivar: [], clicCaro: [], observar: [], faltaPrecio: [], revisar: [], excedentes: [], conGasto: [{ titulo: 'Otro', item_ids: ['MLU8'], gasto: 353, clics: 3, motivo: 'Menos de 5 clics (3)' }] } };
+  const dato = armarFilaDiaria({ fecha: '2026-11-13', accion: 'correr', modo: 'dry-run', real: false, resultado: r }).fldwtSvMycZShRfJD;
+  assert.match(dato, /PAUSARÍA \(1\)/); assert.match(dato, /Argentina Colonial/);
+  assert.match(dato, /NO se pausan, y por qué \(1\)/); assert.match(dato, /Menos de 5 clics/);
+});
