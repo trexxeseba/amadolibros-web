@@ -1,4 +1,5 @@
 import { dispararPrecioGanador, CRONS_PRECIO_GANADOR } from './precio-ganador-trigger.js';
+import { dispararPoda, CRONS_PODA } from './poda-trigger.js';
 import { dispararVintageNube, dispararVintageVigia, CRON_VINTAGE_NUBE, CRON_VINTAGE_VIGIA } from './vintage-nube-trigger.js';
 import { IMAGE_SOURCE_POLICY_VERSION } from '../functions/_shared/image-source-policy.js';
 /**
@@ -180,6 +181,13 @@ export default {
     if (event?.cron === CRON_VINTAGE_VIGIA) {
       ctx.waitUntil(dispararVintageVigia(env).then(result => {
         console.log('[vintage vigia]', JSON.stringify(result));
+      }));
+      return;
+    }
+    // Poda de anuncios de Mercado Ads: 11:30 (correr) y 21:30 (auditar) de Montevideo.
+    if (CRONS_PODA.includes(event?.cron)) {
+      ctx.waitUntil(dispararPoda(env, { cron: event.cron }).then(result => {
+        console.log('[poda anuncios]', JSON.stringify(result));
       }));
       return;
     }

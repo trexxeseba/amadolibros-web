@@ -1,0 +1,99 @@
+name: Poda de anuncios (Mercado Ads)
+
+# Poda diaria de anuncios de Mercado Ads de Amado Libros. Sólo LEE la API: calcula con las
+# reglas del 11/11/2026 qué anuncios pausar y cuáles reactivar y deja la lista en la mesa
+# de decisiones; el Agente único la ejecuta en la consola. Detalle en poda/README.md.
+#
+# Modo: poda/modo.json ("real" | "dry-run" | "off"). Variable del repo PODA_DRY_RUN=true
+# lo fuerza a prueba. Arranca en dry-run: pasa a real sólo con un sí de Seba.
+#
+# El repo es público y estos logs también: sólo salen cantidades. Montos, títulos y
+# precios van a la base de Cloudflare (poda_registro, poda_corridas) y a la mesa.
+on:
+  schedule:
+    # 11:30 de Montevideo (UTC-3): la corrida del día. Respaldo del disparo del Worker.
+    - cron: '30 14 * * *'
+    # 21:30: auditoría, detecta ventas atribuidas tardías para reactivar.
+    - cron: '30 0 * * *'
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: 'correr = calcula y propone pausas y reactivaciones · auditar = sólo reactivaciones, no propone pausas · restaurar = propone reactivar todo lo que pausó la poda'
+        type: choice
+        options: [correr, auditar, restaurar]
+        default: correr
+      prueba:
+        description: 'Prueba: no registra nada en la base aunque el modo sea real'
+        type: boolean
+        default: false
+
+concurrency:
+  group: poda-anuncios
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  franja:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      saltar: ${{ steps.chequeo.outputs.saltar }}
+      accion: ${{ steps.chequeo.outputs.accion }}
+    steps:
+      - id: chequeo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IN_ACCION: ${{ inputs.accion }}
+        shell: bash
+        run: |
+          saltar=no
+          accion="${IN_ACCION:-correr}"
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            hora=$(TZ=America/Montevideo date +%-H)
+            # Fuera de 08:00 a 23:00 de Montevideo no corre (una programada muy atrasada).
+            if [ "$hora" -lt 8 ] || [ "$hora" -ge 23 ]; then saltar=si; echo "Programada fuera de horario: se saltea"; fi
+            # La de las 21:30 (00:30 UTC) es la auditoría.
+            if [ "$(date -u +%-H)" -lt 6 ]; then accion=auditar; fi
+            # No duplicar: si ya hubo una corrida exitosa de esta acción en la última hora, se saltea.
+            if [ "$saltar" = "no" ]; then
+              n=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/poda-anuncios.yml/runs?branch=main&per_page=10" \
+                --jq "[.workflow_runs[] | select(.id != $GITHUB_RUN_ID) | select((now - (.created_at | fromdateiso8601)) < 3600) | select(.status != \"completed\" or .conclusion == \"success\")] | length" 2>/dev/null || echo 0)
+              if [ "${n:-0}" -gt 0 ]; then saltar=si; echo "Ya hubo una corrida en la última hora: se saltea"; fi
+            fi
+          fi
+          echo "saltar=$saltar" >> "$GITHUB_OUTPUT"
+          echo "accion=$accion" >> "$GITHUB_OUTPUT"
+
+  poda:
+    needs: franja
+    if: needs.franja.outputs.saltar != 'si'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      PODA_EMAIL_TO: undiaes@gmail.com
+      PODA_DRY_RUN: ${{ vars.PODA_DRY_RUN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests
+        run: node --test poda/test/*.test.mjs
+      - name: Poda
+        env:
+          ACCION: ${{ needs.franja.outputs.accion }}
+          PRUEBA: ${{ inputs.prueba }}
+        run: |
+          ARGS=(--accion "$ACCION")
+          if [ "$PRUEBA" = "true" ]; then ARGS+=(--prueba); fi
+          node poda/src/run.mjs "${ARGS[@]}"
