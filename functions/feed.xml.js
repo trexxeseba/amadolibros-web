@@ -196,19 +196,35 @@ export async function onRequest(context) {
  * siguen publicándose con su condición real.
  */
 /**
- * Merchant no admite libros digitales en Shopping. Un libro físico "+ Ebook" o
- * "+ Digital Pack" se rechaza por ese motivo (hoy 16 productos), así que no se
- * publica en el feed. La página y la venta por WhatsApp no cambian.
- * Coincide con la palabra completa: "Coursebook" o "Poebooks" no cuentan.
+ * Merchant no admite libros digitales en Shopping, y un título que dice
+ * "+ Ebook" o "+ Digital Pack" se rechaza por ese motivo. Lo que se vende es el
+ * libro físico, así que el feed publica el título sin esa mención; la ficha, el
+ * id y el link no cambian. Coincide con la palabra completa: "Coursebook" o
+ * "Poebooks" no cuentan.
  */
 export function hasDigitalTitle(item) {
     return /(?:^|[^a-z0-9])(?:e-?book|digital\s+pack)(?:$|[^a-z0-9])/i.test(String(item?.title || ''));
 }
 
+/** Título para el feed: sin "+ Ebook", "+ Digital Pack" ni "Con Ebook y". */
+export function cleanFeedTitle(title) {
+    return String(title ?? '')
+        .replace(/\s*\+\s*(?:e-?book|digital\s+pack)(?![a-z0-9])/gi, '')
+        .replace(/\b(con)\s+e-?book\s+y\s+/gi, '$1 ')
+        .replace(/(^|[^a-z0-9])(?:e-?book|digital\s+pack)(?![a-z0-9])/gi, '$1')
+        .replace(/\(\s+/g, '(')
+        .replace(/\s+\)/g, ')')
+        .replace(/\s*\(\)/g, '')
+        .replace(/\s{2,}/g, ' ')
+        .replace(/[\s\-+,·]+$/, '')
+        .trim();
+}
+
 export function isEligibleForFeed(item) {
     if (!item || !item.id || !item.permalink) return false;
     if (!/^MLU\d+$/.test(String(item.id))) return false;
-    if (hasDigitalTitle(item)) return false;
+    // Si el título sigue siendo digital después de limpiarlo, no se publica.
+    if (hasDigitalTitle({ title: cleanFeedTitle(item.title) })) return false;
     if (item.status !== 'active') return false;
     if (!(Number(item.available_quantity) > 0)) return false;
     if (!(Number(item.price) > 0)) return false;
@@ -648,7 +664,7 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
         ? ''
         : `\n        <g:identifier_exists>no</g:identifier_exists>`;
 
-    const title = truncateMerchantText(item.title, 150);
+    const title = truncateMerchantText(cleanFeedTitle(item.title), 150);
     const description = truncateMerchantText(buildFeedDescription(item), MAX_MERCHANT_DESCRIPTION_CHARS);
     const productTypeTags = merchantProductTypes(item.id, categoryData)
         .map(productType => `\n        <g:product_type>${escapeXml(productType)}</g:product_type>`)
@@ -656,11 +672,16 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
     const customLabelTag = liquidation instanceof Set && liquidation.has(String(item.id))
         ? `\n        <g:custom_label_0>${LIQUIDACION.feedLabel}</g:custom_label_0>`
         : '';
-    // custom_label_1 = tarot: mazos de tarot y libros de la subcategoría Tarot y oráculos,
-    // para armar el grupo de productos de Shopping sin listar IDs a mano.
+    // custom_label_1 = tema (categoría principal), custom_label_2 = sensible (temas con
+    // política de publicidad personalizada de Google) y custom_label_3 = tarot (antes
+    // estaba en custom_label_1: mazos de tarot y libros de Tarot y oráculos). Sirven
+    // para armar los grupos de Shopping sin listar IDs a mano.
+    const tema = feedTema(item.id, categoryData);
+    const customLabel1Tag = tema ? `\n        <g:custom_label_1>${escapeXml(tema)}</g:custom_label_1>` : '';
+    const customLabel2Tag = feedSensible(item.id, categoryData) ? '\n        <g:custom_label_2>sensible</g:custom_label_2>' : '';
     const esTarot = /TAROT_CARDS/.test(String(item.domain_id || '').toUpperCase())
         || merchantProductTypes(item.id, categoryData).some(type => /tarot y or[aá]culos/i.test(type));
-    const customLabel1Tag = esTarot ? '\n        <g:custom_label_1>tarot</g:custom_label_1>' : '';
+    const customLabel3Tag = esTarot ? '\n        <g:custom_label_3>tarot</g:custom_label_3>' : '';
 
     return `
     <item>
@@ -672,8 +693,30 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
         <g:availability>${availability}</g:availability>
         <g:price>${escapeXml(price)}</g:price>
         <g:condition>${escapeXml(cond)}</g:condition>
-        <g:google_product_category>${googleProductCategory(item)}</g:google_product_category>${gtinTag}${brandTag}${identifierExistsTag}${productTypeTags}${customLabelTag}${customLabel1Tag}
+        <g:google_product_category>${googleProductCategory(item)}</g:google_product_category>${gtinTag}${brandTag}${identifierExistsTag}${productTypeTags}${customLabelTag}${customLabel1Tag}${customLabel2Tag}${customLabel3Tag}
     </item>`;
+}
+
+// Temas con política de publicidad personalizada de Google (salud, creencias
+// religiosas, afiliación política, salud sexual). Un libro es "sensible" si
+// CUALQUIERA de sus categorías lo es. Ids de data/active-categories.json.
+export const SENSITIVE_CATEGORIES = Object.freeze(['medicina-salud', 'psicologia', 'religion-espiritualidad', 'desarrollo-personal']);
+export const SENSITIVE_SUBCATEGORIES = Object.freeze({
+    'filosofia-ciencias-sociales': ['ciencia-politica'],
+    'infantil-juvenil': ['educacion-menstrual'],
+});
+
+/** custom_label_1: id de la categoría principal del libro, o '' si no tiene. */
+export function feedTema(itemId, categoryData) {
+    const first = normalizeCategoryPaths(categoryData?.items?.[itemId])[0];
+    return first ? first[0] : '';
+}
+
+/** custom_label_2: ¿alguna categoría del libro cae en un tema sensible? */
+export function feedSensible(itemId, categoryData) {
+    return normalizeCategoryPaths(categoryData?.items?.[itemId]).some(([categoryId, subcategoryId]) =>
+        SENSITIVE_CATEGORIES.includes(categoryId)
+        || (SENSITIVE_SUBCATEGORIES[categoryId] || []).includes(subcategoryId));
 }
 
 export function merchantProductTypes(itemId, categoryData) {

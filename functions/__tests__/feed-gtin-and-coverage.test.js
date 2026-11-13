@@ -14,6 +14,7 @@ import {
     feedGtin,
     googleProductCategory,
     hasDigitalTitle,
+    cleanFeedTitle,
     cleanIsbnRaw,
     isValidIsbn13,
     isValidIsbn10,
@@ -408,16 +409,22 @@ test('17d4. Categoría de Google: libros 784, tarot 499711, juegos de cartas 124
     assert.match(renderFeedItem(it('MLU-BOOKS')), /<g:google_product_category>784<\/g:google_product_category>/);
 });
 
-test('17d5. Los libros con "+ Ebook" o "Digital Pack" no van al feed (Merchant no admite libros digitales)', () => {
+test('17d5. "+ Ebook" y "Digital Pack" salen del título del feed, el libro sigue publicándose', () => {
     const t = title => book({ title, isbn: '9788499809991' });
-    for (const titulo of [
-        "Wider World 3 - Student's Book + Ebook + Myenglishlab",
-        'Bright Ideas Starter - Sb + Digital Pack',
-        'Close-up B1 - Curso De Inglés Con Ebook Y Prácticas',
-        'Mi libro (E-book incluido)',
-    ]) {
+    const casos = [
+        ["Wider World 3 - Student's Book + Ebook + Myenglishlab + Onli", "Wider World 3 - Student's Book + Myenglishlab + Onli"],
+        ['Bright Ideas Starter - Sb + Digital Pack', 'Bright Ideas Starter - Sb'],
+        ['Close-up B1 - Curso De Inglés Con Ebook Y Prácticas', 'Close-up B1 - Curso De Inglés Con Prácticas'],
+        ['Mi libro (E-book incluido)', 'Mi libro (incluido)'],
+    ];
+    for (const [titulo, limpio] of casos) {
         assert.equal(hasDigitalTitle(t(titulo)), true, titulo);
-        assert.equal(isEligibleForFeed(t(titulo)), false, titulo);
+        assert.equal(cleanFeedTitle(titulo), limpio, titulo);
+        assert.equal(hasDigitalTitle(t(cleanFeedTitle(titulo))), false, titulo);
+        assert.equal(isEligibleForFeed(t(titulo)), true, titulo);
+        const xml = renderFeedItem(t(titulo));
+        assert.ok(xml.includes(`<g:title>${escapeXml(limpio)}</g:title>`), titulo);
+        assert.doesNotMatch(xml, /<g:title>[^<]*(?:e-?book|digital pack)/i, titulo);
     }
     for (const titulo of [
         'Cambridge Igcse English As A Second Language Coursebook',
@@ -426,26 +433,70 @@ test('17d5. Los libros con "+ Ebook" o "Digital Pack" no van al feed (Merchant n
         'Rayuela',
     ]) {
         assert.equal(hasDigitalTitle(t(titulo)), false, titulo);
+        assert.equal(cleanFeedTitle(titulo), titulo, titulo);
         assert.equal(isEligibleForFeed(t(titulo)), true, titulo);
     }
 });
 
-test('17d6. custom_label_1 = tarot para mazos y libros de la subcategoría Tarot y oráculos', () => {
+test('17d5b. Limpiar el título no cambia id, precio ni link del producto', () => {
+    const item = book({ id: 'MLU628456890', title: 'Bright Ideas Starter - Sb + Digital Pack', price: 2517, isbn: '9788499809991' });
+    const xml = renderFeedItem(item);
+    assert.match(xml, /<g:id>MLU628456890<\/g:id>/);
+    assert.match(xml, /<g:price>2517 UYU<\/g:price>/);
+    // El link conserva el slug original: es el mismo de la ficha.
+    assert.match(xml, /<g:link>https:\/\/www\.amadolibros\.com\/libro\/MLU628456890\/bright-ideas-starter-sb-digital-pack<\/g:link>/);
+});
+
+test('17d6. custom_label_1 = tema, custom_label_2 = sensible, custom_label_3 = tarot', () => {
     const categoryData = {
         categories: [
-            { id: 'esoterismo', name: 'Esoterismo y tarot', subcategories: [{ id: 'tarot', name: 'Tarot y oráculos' }, { id: 'otros', name: 'Otros' }] },
-            { id: 'novela', name: 'Literatura y ficción', subcategories: [] },
+            { id: 'esoterismo-tarot', name: 'Esoterismo y tarot', subcategories: [{ id: 'tarot-oraculos', name: 'Tarot y oráculos' }, { id: 'astrologia', name: 'Astrología' }] },
+            { id: 'literatura-ficcion', name: 'Literatura y ficción', subcategories: [] },
+            { id: 'medicina-salud', name: 'Medicina y salud', subcategories: [{ id: 'nutricion', name: 'Nutrición' }] },
+            { id: 'psicologia', name: 'Psicología', subcategories: [] },
+            { id: 'religion-espiritualidad', name: 'Religión y espiritualidad', subcategories: [] },
+            { id: 'filosofia-ciencias-sociales', name: 'Filosofía y ciencias sociales', subcategories: [{ id: 'ciencia-politica', name: 'Ciencia política' }, { id: 'filosofia', name: 'Filosofía' }] },
+            { id: 'infantil-juvenil', name: 'Infantil y juvenil', subcategories: [{ id: 'educacion-menstrual', name: 'Pubertad' }, { id: 'literatura-infantil', name: 'Literatura infantil' }] },
         ],
-        items: { MLU10: [['esoterismo', 'tarot']], MLU11: [['esoterismo', 'otros']], MLU12: [['novela', null]] },
+        items: {
+            MLU10: [['esoterismo-tarot', 'tarot-oraculos']],
+            MLU11: [['esoterismo-tarot', 'astrologia']],
+            MLU12: [['literatura-ficcion', null]],
+            MLU13: [['medicina-salud', 'nutricion']],
+            MLU14: [['psicologia', null]],
+            MLU15: [['religion-espiritualidad', null]],
+            MLU16: [['filosofia-ciencias-sociales', 'ciencia-politica']],
+            MLU17: [['filosofia-ciencias-sociales', 'filosofia']],
+            MLU18: [['infantil-juvenil', 'educacion-menstrual']],
+            MLU19: [['infantil-juvenil', 'literatura-infantil']],
+            // Varias categorías: tema = la primera; sensible si cualquiera lo es.
+            MLU21: [['desarrollo-personal', null]],
+            MLU20: [['literatura-ficcion', null], ['psicologia', null]],
+        },
     };
-    const conTarot = xml => /<g:custom_label_1>tarot<\/g:custom_label_1>/.test(xml);
-    // Un mazo de tarot lo lleva aunque no tenga categoría de libros.
-    assert.equal(conTarot(renderFeedItem(book({ id: 'MLU1', domain_id: 'MLU-TAROT_CARDS', isbn: '9788499809991' }))), true);
-    assert.equal(conTarot(renderFeedItem(book({ id: 'MLU10' }), null, categoryData)), true);
-    assert.equal(conTarot(renderFeedItem(book({ id: 'MLU11' }), null, categoryData)), false);
-    assert.equal(conTarot(renderFeedItem(book({ id: 'MLU12' }), null, categoryData)), false);
+    const label = (xml, n) => (xml.match(new RegExp(`<g:custom_label_${n}>([^<]*)</g:custom_label_${n}>`)) || [])[1] ?? null;
+    const render = id => renderFeedItem(book({ id }), null, categoryData);
+
+    assert.equal(label(render('MLU10'), 1), 'esoterismo-tarot');
+    assert.equal(label(render('MLU10'), 3), 'tarot');
+    assert.equal(label(render('MLU11'), 3), null);
+    assert.equal(label(render('MLU12'), 1), 'literatura-ficcion');
+    for (const id of ['MLU12', 'MLU17', 'MLU19', 'MLU10', 'MLU11']) assert.equal(label(render(id), 2), null, id);
+    for (const id of ['MLU13', 'MLU14', 'MLU15', 'MLU16', 'MLU18', 'MLU20', 'MLU21']) assert.equal(label(render(id), 2), 'sensible', id);
+    assert.equal(label(render('MLU20'), 1), 'literatura-ficcion');
+    // custom_label_1 ya no es "tarot".
+    assert.doesNotMatch(render('MLU10'), /<g:custom_label_1>tarot</);
+    // Sin categoría: sin etiquetas de tema ni sensible.
+    const sin = renderFeedItem(book({ id: 'MLU99' }), null, categoryData);
+    assert.equal(label(sin, 1), null);
+    assert.equal(label(sin, 2), null);
+    // Un mazo de tarot lleva custom_label_3 aunque no tenga categoría de libros.
+    assert.equal(label(renderFeedItem(book({ id: 'MLU1', domain_id: 'MLU-TAROT_CARDS', isbn: '9788499809991' })), 3), 'tarot');
     // Un juego de cartas que no es de tarot no lo lleva.
-    assert.equal(conTarot(renderFeedItem(book({ id: 'MLU2', domain_id: 'MLU-BOARD_AND_CARD_GAMES', isbn: '9788499809991' }))), false);
+    assert.equal(label(renderFeedItem(book({ id: 'MLU2', domain_id: 'MLU-BOARD_AND_CARD_GAMES', isbn: '9788499809991' })), 3), null);
+    // Las etiquetas de tema y sensible no tocan precio ni identificadores.
+    assert.match(render('MLU13'), /<g:id>MLU13<\/g:id>/);
+    assert.match(render('MLU13'), /<g:price>1000 UYU<\/g:price>/);
 });
 
 test('17e. Producción publica sólo portadas primarias válidas y vigentes en R2', () => {

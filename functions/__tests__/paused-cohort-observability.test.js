@@ -75,6 +75,7 @@ test('whatsapp_click incluye availability_type en fichas sin enviar datos person
     origen: 'ficha_pausada',
     ruta: '/libro/MLU123/libro-de-prueba',
     libro_id: 'MLU123',
+    item_id: 'MLU123',
     transport_type: 'beacon',
   });
   assert.equal(JSON.stringify(event[2]).includes('@'), false);

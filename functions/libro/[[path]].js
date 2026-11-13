@@ -22,6 +22,7 @@ import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_FONTS_HEAD } from '../_shared/
 import { isGenericAuthor, realAuthor, stripGenericAuthorMention } from '../_shared/generic-author.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 import { promoAwareCacheControl, promoWasHtml } from '../_shared/web-promo.js';
+import { ADS_LANDING_SCRIPT, ADS_LANDING_STYLES } from '../_shared/ads-landing.js';
 import { transferDisplayPrice } from '../_shared/descuentos.js';
 // QW3A: misma validación de ISBN→GTIN que ya usa el feed de Merchant — nunca
 // inventa ni corrige dígitos, sólo evita publicar un ISBN mal formado.
@@ -792,6 +793,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
 
   <script type="application/ld+json">${safeJson(schemaProduct)}</script>
   <script type="application/ld+json">${safeJson(schemaBreadcrumb)}</script>
+  ${ADS_LANDING_SCRIPT}
   <script src="/cart.js" defer></script>
   <script src="/search-autocomplete.js" defer></script>
 
@@ -801,6 +803,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
          background:#faf7f2;color:#1e293b;line-height:1.6}
     a{color:#a94e3d}
     ${SITE_HEADER_STYLES}
+    ${ADS_LANDING_STYLES}
     nav{background:white;padding:.5rem 1.25rem;font-size:.85rem;
         border-bottom:1px solid #e2e8f0;color:#64748b}
     nav a{color:#a94e3d;text-decoration:none}
