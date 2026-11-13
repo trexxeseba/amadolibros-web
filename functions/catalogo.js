@@ -72,6 +72,13 @@ import {
 } from './_shared/cloudflare-images.js';
 import { matchesCategoryPath } from './_shared/category-paths.js';
 import { deriveBookDisplayTitle } from './_shared/book-display-title.js';
+import {
+    RANK,
+    matchCatalogQuery,
+    normalizeText,
+    onlyDigits,
+    relevanceRank,
+} from './_shared/catalog-search.js';
 
 const MAX_RESULTS = 48;
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
@@ -84,22 +91,6 @@ function escapeHtml(str) {
         .replace(/>/g,  '&gt;')
         .replace(/"/g,  '&quot;')
         .replace(/'/g,  '&#39;');
-}
-
-function normalizeText(value = '') {
-    return String(value)
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
-        .trim();
-}
-
-function tokenize(value = '') {
-    return normalizeText(value).split(/[^a-z0-9]+/).filter(Boolean);
-}
-
-function onlyDigits(value = '') {
-    return String(value).replace(/\D/g, '');
 }
 
 function validIsbnKey(value = '') {
@@ -152,87 +143,6 @@ export function dedupeCatalogResults(items) {
         seen.add(key);
         return true;
     });
-}
-
-function tokenMatches(queryToken, itemTokens) {
-    return itemTokens.some(t => t === queryToken || t.startsWith(queryToken));
-}
-
-function itemMatchesQuery(book, queryTokens, queryDigits) {
-    const textTokens = [
-        ...tokenize(book.title),
-        ...tokenize(book.author),
-    ];
-
-    const textMatch = queryTokens.length > 0
-        ? queryTokens.every(qt => tokenMatches(qt, textTokens))
-        : false;
-
-    const isbnMatch = queryDigits.length >= 3
-        ? onlyDigits(String(book.isbn ?? '')).includes(queryDigits)
-        : false;
-
-    return textMatch || isbnMatch;
-}
-
-// ── Orden de relevancia (CF-CATEGORÍAS-2C punto 5) ─────────────────────────
-// Rangos, de más a menos relevante. Todo lo que entra al resultado ya pasó
-// itemMatchesQuery (o no hay q) — esto solo decide el ORDEN entre lo que ya
-// matcheó, nunca agrega resultados nuevos.
-const RANK = {
-    ISBN_EXACT: 1,
-    TITLE_EXACT: 2,
-    TITLE_STARTS_WITH: 3,
-    TITLE_PHRASE: 4,
-    AUTHOR_EXACT: 5,
-    ALL_WORDS_EXACT: 6,
-    PARTIAL: 7,
-    FUZZY: 8,
-};
-
-function relevanceRank(book, ctx) {
-    const { normalizedQuery, queryTokens, queryDigits } = ctx;
-    if (!normalizedQuery) return RANK.PARTIAL;
-    const normTitle = normalizeText(book.title);
-    const normAuthor = normalizeText(book.author);
-    if (queryDigits.length >= 3 && onlyDigits(String(book.isbn ?? '')) === queryDigits) return RANK.ISBN_EXACT;
-    if (normTitle === normalizedQuery) return RANK.TITLE_EXACT;
-    if (normTitle.startsWith(normalizedQuery)) return RANK.TITLE_STARTS_WITH;
-    if (normTitle.includes(normalizedQuery)) return RANK.TITLE_PHRASE;
-    if (normAuthor === normalizedQuery) return RANK.AUTHOR_EXACT;
-    const titleWords = tokenize(book.title);
-    if (queryTokens.length > 0 && queryTokens.every(qt => titleWords.includes(qt))) return RANK.ALL_WORDS_EXACT;
-    return RANK.PARTIAL;
-}
-
-// Tolerancia liviana a errores de tipeo — CF-CATEGORÍAS-2C punto 5: "si se
-// implementa, debe ser liviana y estar acotada". Se usa SOLO como último
-// recurso, cuando la búsqueda estricta (itemMatchesQuery) no encontró nada,
-// y solo compara la palabra completa de la consulta contra palabras del
-// título de longitud similar (distancia de edición <= 1) — nunca sobre
-// fragmentos cortos (<4 letras), para no producir resultados absurdos.
-function levenshteinAtMost1(a, b) {
-    if (a === b) return true;
-    const la = a.length, lb = b.length;
-    if (Math.abs(la - lb) > 1) return false;
-    let i = 0, j = 0, edits = 0;
-    while (i < la && j < lb) {
-        if (a[i] === b[j]) { i++; j++; continue; }
-        edits++;
-        if (edits > 1) return false;
-        if (la === lb) { i++; j++; } // sustitución
-        else if (la > lb) i++; // borrado en a
-        else j++; // inserción en a
-    }
-    if (i < la || j < lb) edits++;
-    return edits <= 1;
-}
-
-function fuzzyMatches(book, queryTokens) {
-    if (queryTokens.length !== 1 || queryTokens[0].length < 4) return false;
-    const q = queryTokens[0];
-    const titleWords = tokenize(book.title);
-    return titleWords.some(w => w.length >= 4 && levenshteinAtMost1(q, w));
 }
 
 // CF-CATEGORÍAS-2D punto 3.4: el estado comercial solo desempata — a
@@ -842,25 +752,10 @@ export async function onRequest(ctx) {
     // filtro" — esa rama, no la herramienta de captura, era la causa de la
     // "lista textual en dos columnas" que vio Seba. Unificado: siempre
     // cards.
-    const queryTokens = tokenize(rawQ);
-    // Solo interpretar la consulta como ISBN cuando contiene únicamente
-    // números y separadores habituales. Una búsqueda alfanumérica como
-    // "zzzinexistente999" no debe coincidir con ISBN que contengan 999.
-    const queryDigits = /^[\d\s-]+$/.test(rawQ.trim()) ? onlyDigits(rawQ) : '';
-    const normalizedQuery = normalizeText(rawQ);
-    const rankCtx = { normalizedQuery, queryTokens, queryDigits };
-
     const searchStartedAt = perfNow();
-    let strictMatches = rawQ
-        ? eligibleItems.filter(b => itemMatchesQuery(b, queryTokens, queryDigits))
-        : eligibleItems;
-    // Tolerancia liviana a errores de tipeo: solo si la búsqueda estricta no
-    // encontró nada, con una sola palabra, y acotada a distancia 1.
-    let usedFuzzy = false;
-    if (rawQ && strictMatches.length === 0 && queryTokens.length === 1) {
-        const fuzzy = eligibleItems.filter(b => fuzzyMatches(b, queryTokens));
-        if (fuzzy.length > 0) { strictMatches = fuzzy; usedFuzzy = true; }
-    }
+    // Búsqueda estricta y, solo si no encontró nada, tolerante a errores de
+    // tipeo e iniciales: las reglas viven en _shared/catalog-search.js.
+    const { matches: strictMatches, usedFuzzy, context: rankCtx } = matchCatalogQuery(eligibleItems, rawQ);
     const scopedMatches = strictMatches
         .filter(b => (categoria ? matchesCategoryPath(categoryItems[b.id], categoria, subcategoria) : true));
     // Los contadores de pestañas deben medir el mismo universo visible que
