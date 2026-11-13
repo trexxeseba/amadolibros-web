@@ -109,6 +109,13 @@ export function calcularDia({ hoy, accion = 'correr', grupos, registro = [], sem
     L.excedentes = freno.excedentes;
   } else L.pausaria = candidatos;
 
+  // Transparencia: los que gastaron $150 o más y no se pausan, con el motivo.
+  const propuestos = new Set([...L.pausar, ...L.pendientesPausa, ...L.pausaria].map(f => f.ad_group_id));
+  L.conGasto = [...grupos.values()].filter(g => (g.gasto ?? 0) >= REGLAS.pisoTope && !propuestos.has(String(g.id))).sort((a, b) => b.gasto - a.gasto).map(g => {
+    const motivo = g.estado !== 'ACTIVE' ? `Estado ${g.estado}` : g.protegido ? g.protegido : (g.ventasAtribuidas ?? 0) > 0 ? `Venta atribuida (${g.ventasAtribuidas})` : (g.ventasOrdenes ?? 0) > 0 ? `Venta en órdenes (${g.ventasOrdenes})` : (g.clics ?? 0) < REGLAS.minClics ? `Menos de ${REGLAS.minClics} clics (${g.clics})` : L.excedentes.some(f => f.ad_group_id === String(g.id)) ? 'Excedente del freno' : 'Debajo del tope';
+    return { ...foto(g), motivo };
+  });
+
   const contadores = {
     evaluados: [...grupos.values()].filter(g => g.estado === 'ACTIVE' || g.estado === 'PAUSED').length,
     activos: [...grupos.values()].filter(g => g.estado === 'ACTIVE').length,

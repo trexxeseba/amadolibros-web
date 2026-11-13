@@ -17,7 +17,7 @@ export function armarFilaDiaria({ fecha, accion, modo, real, resultado }) {
   const dato = [
     cab, '',
     real ? 'Modo real: la lista queda en el registro de la nube. El Agente único pausa y reactiva EXACTAMENTE lo que figura abajo, sin calcular ni decidir.' : 'Modo prueba: nada se registró y no hay nada que ejecutar todavía.', '',
-    ...bloque(real ? 'A PAUSAR (nuevos)' : 'PAUSARÍA', real ? L.pausar : L.pausaria, ROTULO),
+    ...bloque(real ? 'A PAUSAR (nuevos)' : 'PAUSARÍA', [...L.pausar, ...(L.pausaria ?? [])], ROTULO),
     ...bloque('A PAUSAR (propuestos antes y todavía sin ejecutar)', L.pendientesPausa, ROTULO),
     ...bloque('A REACTIVAR', L.reactivar.map(f => ({ ...f })), ''),
     ...bloque('Clic caro (costo por clic mayor al 4 % del precio; sólo informa)', L.clicCaro),
@@ -25,6 +25,7 @@ export function armarFilaDiaria({ fecha, accion, modo, real, resultado }) {
     ...bloque('Falta precio (no se poda)', L.faltaPrecio),
     ...bloque('Revisar a mano', L.revisar),
     ...bloque('Excedentes del freno (NO propuestos)', L.excedentes),
+    ...(L.conGasto?.length ? [`Con gasto de $150 o más que NO se pausan, y por qué (${L.conGasto.length}):`, ...L.conGasto.slice(0, 80).map(f => `${linea(f)} | ${f.motivo}`), ''] : []),
   ].join('\n');
   return {
     [F.clave]: `poda|${fecha}${accion === 'auditar' ? '|auditoria' : ''}`, [F.propuesta]: cab, [F.fecha]: fecha, [F.rama]: 'Publicidad', [F.tarea]: 'Poda automatica', [F.tipo]: 'Hecho',
