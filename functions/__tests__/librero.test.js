@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 
 import {
-    LIMITS, PREVIEW_SCHEMA, buildCard, buildSummary, createLibreroHandler, suggestCandidates, validateRequest,
+    LIMITS, PREVIEW_SCHEMA, buildCard, buildSummary, createLibreroHandler, sameAuthorBooks, suggestCandidates, validateRequest,
 } from '../api/_librero_handler.js';
 
 const NOW = new Date('2026-11-13T15:00:00.000Z');
@@ -82,6 +82,23 @@ test('suggestCandidates ofrece libros del autor, con stock primero, sin inventar
 
 test('una palabra suelta que no coincide exacto no se adivina', () => {
     assert.deepEqual(suggestCandidates(ITEMS, 'borjes'), []);
+});
+
+test('sameAuthorBooks ofrece otros libros del mismo autor, con stock primero, sin repetir lo ya mostrado', () => {
+    const items = [
+        { id: 'A1', title: 'Cuentos de amor de locura y de muerte', author: 'Horacio Quiroga', status: 'active', available_quantity: 1, price: 400 },
+        { id: 'A2', title: 'Anaconda', author: 'Horacio Quiroga', status: 'paused', available_quantity: 0 },
+        { id: 'A3', title: 'El desierto', author: 'Horacio Quiroga', status: 'active', available_quantity: 2, price: 350 },
+        { id: 'A4', title: 'El desierto', author: 'Horacio Quiroga', status: 'active', available_quantity: 1, price: 350 },
+        { id: 'B1', title: 'Otro libro', author: 'Otro Autor', status: 'active', available_quantity: 1, price: 100 },
+    ];
+    const shown = [buildCard(items[0])];
+    const more = sameAuthorBooks(items, shown);
+    assert.equal(more.author, 'Horacio Quiroga');
+    assert.deepEqual(more.books.map(b => b.id), ['A3', 'A2']);
+    assert.equal(sameAuthorBooks(items, []), null);
+    assert.equal(sameAuthorBooks(items, [{ id: 'X', author: null }]), null);
+    assert.equal(sameAuthorBooks([items[0]], shown), null);
 });
 
 test('buildCard toma precio y stock del catálogo y no pone precio a lo que no hay', () => {

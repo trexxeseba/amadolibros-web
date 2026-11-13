@@ -151,9 +151,30 @@ export const LIBRERO_SCRIPT = `<script>
       say('bot', 'No encontré nada parecido en el catálogo. Eso no significa que no podamos conseguirlo.');
       return offerSearch();
     }
-    say('bot', 'Encontré esto que podría ser lo que buscás. Fijate si alguno es.');
+    say('bot', 'Pediste «' + query + '». Encontré esto que podría ser lo que buscás. Fijate si alguno es.');
+    cardsList(data.candidates, true);
+    track('candidates_shown', data.candidates.map(function (c) { return c.id; }).join(','));
+    clear();
+    var more = data.same_author;
+    if (more && more.author) { var p = more.author.split(','); if (p.length === 2) more.author = p[1].trim() + ' ' + p[0].trim(); }
+    if (more && more.books && more.books.length) {
+      actions.appendChild(button('Ver más libros de ' + more.author, function () {
+        choose('Ver más libros de ' + more.author, function () {
+          track('answer', 'mas-del-autor');
+          say('bot', 'Estos son otros libros de ' + more.author + ' que tenemos en el catálogo.');
+          cardsList(more.books, false);
+          afterBrowse();
+        });
+      }));
+    }
+    actions.appendChild(button('Ninguno es lo que busco', function () {
+      choose('Ninguno es lo que busco', function () { track('none_fit'); offerSearch(); });
+    }));
+  }
+
+  function cardsList(list, countClicks) {
     var cards = el('div', 'librero-cards');
-    data.candidates.forEach(function (c) {
+    list.forEach(function (c) {
       var card = el('div', 'librero-card');
       card.appendChild(el('b', null, c.title));
       if (c.author) card.appendChild(el('small', null, c.author));
@@ -165,15 +186,25 @@ export const LIBRERO_SCRIPT = `<script>
       cards.appendChild(card);
     });
     log.appendChild(cards);
-    track('candidates_shown', data.candidates.map(function (c) { return c.id; }).join(','));
-    clear();
-    actions.appendChild(button('Ninguno es', function () {
-      choose('Ninguno es', function () { track('none_fit'); offerSearch(); });
-    }));
   }
 
+  function afterBrowse() {
+    clear();
+    say('bot', '¿Alguno de esos era el que buscabas?');
+    actions.appendChild(button('No, quiero que busquen «' + shortQuery() + '»', function () {
+      choose('No, quiero que busquen lo que pedí', function () { track('none_fit'); offerSearch(); });
+    }, true));
+    actions.appendChild(button('Voy a mirar el catálogo', function () {
+      choose('Voy a mirar el catálogo', function () {
+        track('left', 'miro-catalogo');
+        say('bot', 'Perfecto, queda el catálogo a tu disposición cuando quieras.');
+      });
+    }));
+  }
+  function shortQuery() { return query.length > 40 ? query.slice(0, 37) + '...' : query; }
+
   function offerSearch() {
-    say('bot', '¿Querés que lo busquemos por vos? Una persona de Amado lo revisa y verifica la edición antes de ofrecerte una opción.');
+    say('bot', 'Pediste «' + query + '». ¿Querés que lo busquemos por vos? Una persona de Amado lo revisa y verifica la edición antes de ofrecerte una opción.');
     clear();
     actions.appendChild(button('Sí, que lo busquen', function () { choose('Sí, que lo busquen', askUsed); }, true));
     actions.appendChild(button('Por ahora no', function () {
@@ -196,11 +227,52 @@ export const LIBRERO_SCRIPT = `<script>
   function askEdition() {
     say('bot', 'Y si no está esa edición exacta, ¿te sirve otra?');
     clear();
-    [['Sí, otra edición está bien', true], ['Solo esa edición', false], ['Me da igual', null]].forEach(function (o) {
+    [['Sí, otra edición está bien', true], ['Quiero esa edición exacta', false], ['Me da igual', null]].forEach(function (o) {
       actions.appendChild(button(o[0], function () {
-        choose(o[0], function () { state.answers.accepts_other_edition = o[1]; track('answer', 'edicion:' + o[1]); askDetails(); });
+        choose(o[0], function () { state.answers.accepts_other_edition = o[1]; track('answer', 'edicion:' + o[1]); askBudget(); });
       }));
     });
+  }
+  function askBudget() {
+    say('bot', '¿Hasta cuánto pensabas invertir?');
+    clear();
+    [['Hasta $500', 500], ['Hasta $1.000', 1000], ['Hasta $2.000', 2000], ['Hasta $5.000', 5000], ['No tengo un tope', null]].forEach(function (o) {
+      actions.appendChild(button(o[0], function () {
+        choose(o[0], function () { state.answers.budget_uyu = o[1]; track('answer', 'presupuesto:' + o[1]); askMore(); });
+      }));
+    });
+  }
+  function askMore() {
+    var extra = state.answers.extra || (state.answers.extra = []);
+    say('bot', extra.length
+      ? '¿Querés sumar otro libro más a este pedido?'
+      : 'Ya que estamos: ¿querés que busquemos también otro libro, de este autor o de otro, junto con este pedido?');
+    clear();
+    actions.appendChild(button('Sí, sumar otro libro', function () {
+      choose('Sí, sumar otro libro', function () {
+        say('bot', '¿Cuál? Escribí el título, el autor o lo que recuerdes.');
+        clear();
+        var form = el('div', 'librero-form');
+        var input = el('input'); input.type = 'text'; input.maxLength = 150;
+        var row = el('div', 'librero-actions');
+        row.appendChild(button('Agregar', function () {
+          var v = input.value.trim();
+          if (!v) { input.focus(); return; }
+          extra.push(v);
+          track('answer', 'suma-otro');
+          say('me', v);
+          askMore();
+        }, true));
+        row.appendChild(button('Cancelar', function () { askMore(); }));
+        form.appendChild(field('Otro libro', input));
+        form.appendChild(row);
+        actions.appendChild(form);
+        input.focus();
+      });
+    }));
+    actions.appendChild(button(extra.length ? 'No, con esto alcanza' : 'No, solo este', function () {
+      choose(extra.length ? 'No, con esto alcanza' : 'No, solo este', askDetails);
+    }, true));
   }
 
   function field(labelText, input) {
@@ -209,56 +281,65 @@ export const LIBRERO_SCRIPT = `<script>
     return label;
   }
   function askDetails() {
-    say('bot', 'Contanos lo que sepas para encontrarlo mejor: autor, editorial, año, idioma. Todo es opcional.');
+    say('bot', '¿Sabés algo más que nos ayude a encontrarlo? Por ejemplo editorial, año o idioma. Si no, seguimos.');
     clear();
     var form = el('div', 'librero-form');
-    var note = el('textarea'); note.rows = 3; note.maxLength = 900;
-    var budget = el('input'); budget.type = 'number'; budget.min = '0'; budget.max = '10000000'; budget.inputMode = 'numeric';
-    form.appendChild(field('Lo que sepas del libro', note));
-    form.appendChild(field('Presupuesto en pesos uruguayos (opcional)', budget));
+    var note = el('textarea'); note.rows = 3; note.maxLength = 700;
+    form.appendChild(field('Lo que sepas del libro (opcional)', note));
     var row = el('div', 'librero-actions');
-    row.appendChild(button('Seguir', function () {
-      state.answers.notes = note.value.trim();
-      state.answers.budget_uyu = budget.value === '' ? null : Number(budget.value);
-      say('me', state.answers.notes || 'Sin más datos');
+    function next() {
+      var parts = [];
+      if (note.value.trim()) parts.push(note.value.trim());
+      if (state.answers.extra && state.answers.extra.length) parts.push('También busca: ' + state.answers.extra.join('; '));
+      state.answers.notes = parts.join('\\n').slice(0, 900);
+      say('me', note.value.trim() || 'Nada más');
       askContact();
-    }, true));
+    }
+    row.appendChild(button('Seguir', next, true));
     form.appendChild(row);
     actions.appendChild(form);
-    note.focus();
   }
 
   function askContact() {
-    say('bot', '¿Querés dejarnos un WhatsApp o un email para avisarte cuando tengamos novedades? Es opcional: también podés quedarte con el código del pedido.');
+    say('bot', '¿Cómo preferís que te avisemos cuando tengamos novedades? Es opcional: también podés quedarte con el código del pedido.');
+    clear();
+    [['Por WhatsApp', 'whatsapp'], ['Por email', 'email']].forEach(function (o) {
+      actions.appendChild(button(o[0], function () { choose(o[0], function () { askContactValue(o[1]); }); }, true));
+    });
+    actions.appendChild(button('Prefiero no dejar contacto', function () {
+      choose('Prefiero no dejar contacto', function () {
+        state.answers.contact_kind = null; state.answers.contact_value = null;
+        state.answers.contact_preferred_time = ''; state.answers.consent_reply = false;
+        confirmSummary();
+      });
+    }));
+  }
+
+  function askContactValue(kind) {
+    var isMail = kind === 'email';
+    say('bot', isMail ? '¿A qué email te escribimos?' : '¿A qué número de WhatsApp te escribimos?');
     clear();
     var form = el('div', 'librero-form');
-    var kind = el('select'); kind.className = 'librero-sel';
-    [['whatsapp', 'WhatsApp'], ['email', 'Email']].forEach(function (o) {
-      var opt = el('option', null, o[1]); opt.value = o[0]; kind.appendChild(opt);
-    });
-    var value = el('input'); value.type = 'text'; value.maxLength = 120; value.autocomplete = 'off';
-    var when = el('input'); when.type = 'text'; when.maxLength = 80;
-    when.placeholder = 'Por ejemplo: a la tarde';
+    var value = el('input'); value.type = isMail ? 'email' : 'tel'; value.maxLength = 120; value.autocomplete = isMail ? 'email' : 'tel';
     var consentBox = el('input'); consentBox.type = 'checkbox';
     var consent = el('label', 'librero-check');
     consent.appendChild(consentBox);
     consent.appendChild(el('span', null, 'Autorizo que me respondan por este medio sobre este pedido.'));
     var err = el('div', 'librero-err'); err.setAttribute('role', 'alert');
-    form.appendChild(field('Cómo preferís que te escribamos', kind));
-    form.appendChild(field('Tu WhatsApp o email', value));
-    form.appendChild(field('Cuándo te queda cómodo (opcional)', when));
+    form.appendChild(field(isMail ? 'Tu email' : 'Tu WhatsApp', value));
     form.appendChild(consent);
     form.appendChild(err);
     var row = el('div', 'librero-actions');
     row.appendChild(button('Revisar el pedido', function () {
       err.textContent = '';
       var v = value.value.trim();
-      if (v && !consentBox.checked) { err.textContent = 'Para guardar tu contacto, marcá que nos autorizás a responderte.'; return; }
-      state.answers.contact_kind = v ? kind.value : null;
-      state.answers.contact_value = v || null;
-      state.answers.contact_preferred_time = v ? when.value.trim() : '';
-      state.answers.consent_reply = v ? true : false;
-      say('me', v ? 'Mi ' + kind.options[kind.selectedIndex].text + ': ' + v : 'Prefiero no dejar contacto');
+      if (!v) { err.textContent = 'Escribí tu ' + (isMail ? 'email' : 'WhatsApp') + ' o elegí seguir sin contacto.'; return; }
+      if (!consentBox.checked) { err.textContent = 'Para guardar tu contacto, marcá que nos autorizás a responderte.'; return; }
+      state.answers.contact_kind = kind;
+      state.answers.contact_value = v;
+      state.answers.contact_preferred_time = '';
+      state.answers.consent_reply = true;
+      say('me', (isMail ? 'Mi email: ' : 'Mi WhatsApp: ') + v);
       confirmSummary();
     }, true));
     row.appendChild(button('Seguir sin contacto', function () {
@@ -269,6 +350,7 @@ export const LIBRERO_SCRIPT = `<script>
     }));
     form.appendChild(row);
     actions.appendChild(form);
+    value.focus();
   }
 
   function summaryLines() {
@@ -277,8 +359,8 @@ export const LIBRERO_SCRIPT = `<script>
     if (a.accepts_used === true) lines.push('Acepta usado');
     if (a.accepts_used === false) lines.push('Prefiere nuevo');
     if (a.accepts_other_edition === true) lines.push('Acepta otra edición');
-    if (a.accepts_other_edition === false) lines.push('Solo esa edición');
-    if (a.budget_uyu != null) lines.push('Presupuesto: $' + a.budget_uyu);
+    if (a.accepts_other_edition === false) lines.push('Quiere esa edición exacta');
+    if (a.budget_uyu != null) lines.push('Presupuesto: hasta $' + a.budget_uyu);
     if (a.notes) lines.push('Datos: ' + a.notes);
     lines.push(a.contact_value ? 'Contacto: ' + a.contact_value + (a.contact_preferred_time ? ' (' + a.contact_preferred_time + ')' : '') : 'Sin contacto: seguís con el código del pedido');
     return lines;
@@ -288,7 +370,7 @@ export const LIBRERO_SCRIPT = `<script>
     say('bot', 'Así quedaría tu pedido. ¿Lo enviamos?\\n\\n' + summaryLines().join('\\n'));
     clear();
     actions.appendChild(button('Sí, enviar el pedido', function () { choose('Sí, enviar el pedido', send); }, true));
-    actions.appendChild(button('Cambiar algo', function () { choose('Cambiar algo', askUsed); }));
+    actions.appendChild(button('Cambiar algo', function () { choose('Cambiar algo', function () { state.answers = {}; askUsed(); }); }));
   }
 
   function send() {

@@ -133,6 +133,31 @@ export function suggestCandidates(items, query, limit = LIMITS.maxCandidates) {
     return out;
 }
 
+/**
+ * Otros libros del autor del primer candidato (hasta 3, disponibles primero),
+ * para «ver más libros de ese autor». Sale del catálogo, nunca del navegador.
+ */
+export function sameAuthorBooks(items, candidates, limit = LIMITS.maxCandidates) {
+    const first = candidates?.[0];
+    const authorKey = first?.author ? tokenize(first.author).sort().join(' ') : '';
+    if (!authorKey) return null;
+    const shown = new Set(candidates.map(c => c.id));
+    const seen = new Set();
+    const pool = [];
+    for (const book of items) {
+        if (shown.has(book.id) || tokenize(book.author).sort().join(' ') !== authorKey) continue;
+        const key = tokenize(book.title).join(' ');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        pool.push(book);
+    }
+    pool.sort((a, b) =>
+        Number(b.status === 'active' && Number(b.available_quantity) > 0) - Number(a.status === 'active' && Number(a.available_quantity) > 0) ||
+        String(a.id).localeCompare(String(b.id)));
+    const books = pool.slice(0, limit).map(buildCard);
+    return books.length ? { author: first.author, books } : null;
+}
+
 async function defaultLoadItems(context) {
     const ctx = {
         env: context.env, request: context.request, data: {},
@@ -262,7 +287,10 @@ export function createLibreroHandler({
             'INSERT INTO librero_sessions (id, created_at, updated_at, query, candidate_ids, catalog_ok, outcome, ip_hash) ' +
             "VALUES (?, ?, ?, ?, ?, ?, 'open', ?)"
         ).bind(sessionId, iso, iso, query, JSON.stringify(candidates.map(c => c.id)), catalogOk ? 1 : 0, ipHash).run();
-        return json({ ok: true, session_id: sessionId, query, catalog_ok: catalogOk, candidates }, 201);
+        return json({
+            ok: true, session_id: sessionId, query, catalog_ok: catalogOk, candidates,
+            same_author: catalogOk ? sameAuthorBooks(items, candidates) : null,
+        }, 201);
     }
 
     async function event(db, body, now) {
