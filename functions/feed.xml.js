@@ -65,6 +65,7 @@ import {
     applyBookEnrichment,
     getBookEnrichmentByIsbn,
 } from './_shared/book-enrichment-registry.js';
+import { getTarotShortDescription } from './_shared/tarot-short-descriptions.js';
 
 const CANONICAL_BASE_URL = "https://www.amadolibros.com";
 const SITE_TITLE = "Amado Libros";
@@ -452,8 +453,11 @@ export function buildFeedDescription(item) {
         item.description && item.description.trim() && item.description.trim() !== title
     );
     let sentence;
+    const tarotShort = hasRealDescription ? null : getTarotShortDescription(item.isbn);
     if (hasRealDescription) {
         sentence = item.description.trim();
+    } else if (tarotShort) {
+        sentence = tarotShort;
     } else {
         const parts = [title ? `Libro "${title}"` : 'Libro'];
         // FICHAS-QUALITY-GUARD-1: nunca 'de Desconocido' en g:description.
