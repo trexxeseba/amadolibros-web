@@ -1,0 +1,35 @@
+name: Poda — sonda de escritura en Mercado Ads (no cambia nada)
+
+# Prueba si la API de Mercado Ads deja pausar un anuncio. Sólo manda "pausar" a anuncios
+# que ya están PAUSED (quedan igual) y relee el estado después de cada intento.
+# Detalle en poda/src/sonda-escritura.mjs. Log público: sólo códigos y errores de ML.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/gallant-noether-8szfod']
+    paths: ['poda/src/sonda-escritura.mjs', '.github/workflows/poda-sonda-escritura.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: poda-sonda-escritura
+  cancel-in-progress: false
+
+jobs:
+  sonda:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Sonda
+        run: node poda/src/sonda-escritura.mjs
