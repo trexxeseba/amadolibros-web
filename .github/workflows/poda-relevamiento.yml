@@ -1,0 +1,31 @@
+name: Poda — relevamiento de Mercado Ads (solo lectura)
+
+# Informe por mail: qué ventas trae de verdad cada anuncio (directas, indirectas,
+# orgánicas, antes del anuncio, lo que deja cada venta). No toca nada. Log público: cantidades.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/gallant-noether-8szfod']
+    paths: ['poda/src/relevamiento.mjs', '.github/workflows/poda-relevamiento.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  relevamiento:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      PODA_EMAIL_TO: undiaes@gmail.com
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node poda/src/relevamiento.mjs --dias 30
