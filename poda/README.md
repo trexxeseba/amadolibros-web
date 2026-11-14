@@ -28,8 +28,9 @@ de un anuncio, se enchufa acá sin tocar las reglas.
 | Tope de gasto sin venta | 10 % del precio, piso $150, techo $400 |
 | Clics que se aguantan | tope ÷ costo por clic, mínimo 5. Nunca se pausa con menos de 5 clics |
 | Se pausa | al llegar al tope de gasto o de clics sin ninguna venta atribuida en 30 días |
-| No se pausa | con una venta en 30 días, atribuida o no (órdenes sin canceladas) |
-| Se reactiva | venta atribuida tarde o en órdenes (regla 5); cambio de precio o promoción (regla 6, el gasto cuenta de cero) |
+| Venta cara (regla 10, 14/11) | con venta en 30 días igual se pausa si ya gastó su tope y el costo por venta (gasto / ventas) supera el 20 % del precio |
+| No se pausa | con venta en 30 días y costo por venta dentro del máximo |
+| Se reactiva | venta atribuida tarde o en órdenes (regla 5; si se pausó por venta cara, sólo una orden posterior a la pausa); baja de precio o promoción (regla 6, el gasto cuenta de cero). Una suba de precio no reactiva |
 | Clic caro | costo por clic mayor al 4 % del precio: sólo se informa |
 | Excepciones | campañas protegidas, sin precio legible, deshabilitados, y lo que pausó otra persona |
 

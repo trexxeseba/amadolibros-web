@@ -18,6 +18,13 @@
 //  7. Clic caro: costo por clic mayor al 4 % del precio. Sólo se informa.
 //  8. Excepciones: campañas protegidas, sin precio legible, deshabilitados.
 //  9. Con promoción se usa el precio de lista para el tope (no pausa de más).
+// 10. Venta cara (agregada el 14/11/2026): con venta en 30 días igual se pausa si ya
+//     gastó su tope y el costo por venta (gasto / ventas) supera pctCostoVenta del
+//     precio. Una venta sola no alcanza si costó más de lo que deja.
+//     Un anuncio pausado por venta cara se reactiva sólo con una venta en órdenes
+//     posterior a la pausa (sus ventas atribuidas de antes no cuentan).
+//  6 (ajuste del 14/11/2026): reactiva si el precio BAJÓ o entró en promoción. Una suba
+//     de precio no lo hace más fácil de vender: no reactiva.
 
 export const REGLAS = Object.freeze({
   pctTope: 0.10,
@@ -25,6 +32,8 @@ export const REGLAS = Object.freeze({
   techoTope: 400,
   minClics: 5,
   pctClicCaro: 0.04,
+  // Regla 10: costo por venta máximo, como fracción del precio (propuesta: 20 %).
+  pctCostoVenta: 0.20,
   // En observación: sin venta y con la mitad del tope o más gastado.
   pctObservacion: 0.5,
   maxPorCorrida: 25,
@@ -64,13 +73,20 @@ export function precioParaTope({ precio, precioLista }) {
   return p !== null && p > 0 ? p : null;
 }
 
+// Regla 10: costo por venta y su peso sobre el precio. Sin precio o sin ventas, null.
+export function costoPorVenta({ gasto, ventas, precio }) {
+  const g = num(gasto) ?? 0, v = num(ventas), p = num(precio);
+  if (!v || v <= 0 || p === null || p <= 0) return null;
+  return { porVenta: r2(g / v), pct: Math.round((g / v / p) * 1000) / 1000 };
+}
+
 // Reglas 1 a 4, 7 y 8 para un anuncio activo. Devuelve:
 //   { accion: 'pausar' | 'mantener' | 'observar' | 'no_aplica' | 'falta_precio' | 'protegido' | 'revisar',
 //     motivo, tope, topeClics, cpc, clicCaro }
 export function evaluarAnuncio(a) {
   const gasto = num(a.gasto) ?? 0, clics = num(a.clics) ?? 0;
   const cpc = costoPorClic({ cpc: a.cpc, gasto, clics });
-  const precio = precioParaTope({ precio: a.precio, precioLista: a.precioLista });
+  const precio = precioParaTope({ precio: a.precio, precioLista: a.precioLista ?? a.precioTope });
   const tope = topeGasto(precio);
   const tc = topeClics(tope, cpc);
   const clicCaro = precio !== null && cpc !== null && cpc > REGLAS.pctClicCaro * precio;
@@ -80,7 +96,16 @@ export function evaluarAnuncio(a) {
   if (a.estado !== 'ACTIVE') return res('no_aplica', `Estado ${a.estado ?? 'desconocido'}: no se poda.`);
   if (a.protegido) return res('protegido', a.protegido);
   const atribuidas = num(a.ventasAtribuidas) ?? 0, ordenes = num(a.ventasOrdenes) ?? 0;
-  if (atribuidas > 0 || ordenes > 0) return res('mantener', 'Tuvo venta en los últimos 30 días (regla 4).');
+  const ventas = Math.max(atribuidas, ordenes);
+  if (ventas > 0) {
+    const cv = costoPorVenta({ gasto, ventas, precio });
+    base.costoVenta = cv;
+    if (cv && tope !== null && gasto >= tope && cv.pct > REGLAS.pctCostoVenta) {
+      if (a.revisar) return res('revisar', a.revisar);
+      return { ...res('pausar', `Venta cara: gastó ${r2(gasto)} para ${ventas} venta${ventas > 1 ? 's' : ''}, ${Math.round(cv.porVenta)} por venta = ${Math.round(cv.pct * 100)} % del precio (máximo ${Math.round(REGLAS.pctCostoVenta * 100)} %, regla 10).`), ventaCara: true };
+    }
+    return res('mantener', cv ? `Tuvo venta; costo por venta ${Math.round(cv.pct * 100)} % del precio (regla 4).` : 'Tuvo venta en los últimos 30 días (regla 4).');
+  }
   if (clics < REGLAS.minClics) return res('mantener', `Menos de ${REGLAS.minClics} clics.`);
   if (tope === null) return res('falta_precio', 'No se pudo leer el precio: no se poda.');
   const porGasto = gasto >= tope, porClics = tc !== null && clics >= tc;
@@ -95,11 +120,13 @@ export function evaluarAnuncio(a) {
 // Reglas 5 y 6 para un anuncio pausado por la poda.
 //   registro: { precio_lista, promo } al pausar
 //   ahora: { ventasAtribuidas, ventasOrdenesDesdePausa, precioLista, promo }
+export const fuePorVentaCara = registro => /^Venta cara/i.test(String(registro?.motivo ?? ''));
+
 export function evaluarReactivacion(registro, ahora) {
-  if ((num(ahora.ventasAtribuidas) ?? 0) > 0) return { accion: 'reactivar', regla: 5, motivo: 'Venta atribuida tarde (regla 5).' };
+  if (!fuePorVentaCara(registro) && (num(ahora.ventasAtribuidas) ?? 0) > 0) return { accion: 'reactivar', regla: 5, motivo: 'Venta atribuida tarde (regla 5).' };
   if ((num(ahora.ventasOrdenesDesdePausa) ?? 0) > 0) return { accion: 'reactivar', regla: 5, motivo: 'Venta en órdenes después de la pausa (regla 5).' };
   const antes = num(registro?.precio_lista), hoy = num(ahora.precioLista);
-  if (antes !== null && hoy !== null && Math.abs(hoy - antes) >= 1) return { accion: 'reactivar', regla: 6, motivo: `Cambió el precio de ${antes} a ${hoy} (regla 6): el gasto se cuenta de cero.` };
+  if (antes !== null && hoy !== null && antes - hoy >= 1) return { accion: 'reactivar', regla: 6, motivo: `Bajó el precio de ${antes} a ${hoy} (regla 6): el gasto se cuenta de cero.` };
   if (ahora.promo && !registro?.promo) return { accion: 'reactivar', regla: 6, motivo: 'Entró en una promoción (regla 6): el gasto se cuenta de cero.' };
   return { accion: 'mantener', regla: null, motivo: 'Sigue pausado.' };
 }

@@ -10,7 +10,7 @@
 //   propuesta_reactivar la poda pidió reactivarlo (regla 5 o 6)
 //   contando            reactivado por la regla 6: el gasto se cuenta desde contar_desde
 // Un anuncio pausado que no está en el registro lo pausó otra persona: no se toca.
-import { evaluarAnuncio, evaluarReactivacion, aplicarFreno, REGLAS } from './reglas.mjs';
+import { evaluarAnuncio, evaluarReactivacion, aplicarFreno, costoPorVenta, precioParaTope, REGLAS } from './reglas.mjs';
 
 const DIA_MS = 86400000;
 export const diasEntre = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / DIA_MS);
@@ -25,6 +25,14 @@ export function foto(g, ev = {}) {
     gasto: g.gasto ?? 0, clics: g.clics ?? 0, cpc: ev.cpc ?? g.cpc ?? null,
     tope: ev.tope ?? null, tope_clics: ev.topeClics ?? null,
   };
+}
+
+// Motivo de los que vendieron y no se pausan, con el costo por venta si hay precio (regla 10).
+function motivoVenta(g) {
+  const atr = g.ventasAtribuidas ?? 0, ord = g.ventasOrdenes ?? 0;
+  const txt = atr > 0 ? `Venta atribuida (${atr})` : `Venta en órdenes (${ord})`;
+  const cv = costoPorVenta({ gasto: g.gasto, ventas: Math.max(atr, ord), precio: precioParaTope({ precio: g.precio, precioLista: g.precioTope }) });
+  return cv ? `${txt}, costo por venta $${Math.round(cv.porVenta)} = ${Math.round(cv.pct * 100)} % del precio` : txt;
 }
 
 // grupos: Map ad_group_id -> grupo leído (ver run.mjs). registro: filas de D1.
@@ -112,7 +120,7 @@ export function calcularDia({ hoy, accion = 'correr', grupos, registro = [], sem
   // Transparencia: los que gastaron $150 o más y no se pausan, con el motivo.
   const propuestos = new Set([...L.pausar, ...L.pendientesPausa, ...L.pausaria].map(f => f.ad_group_id));
   L.conGasto = [...grupos.values()].filter(g => (g.gasto ?? 0) >= REGLAS.pisoTope && !propuestos.has(String(g.id))).sort((a, b) => b.gasto - a.gasto).map(g => {
-    const motivo = g.estado !== 'ACTIVE' ? `Estado ${g.estado}` : g.protegido ? g.protegido : (g.ventasAtribuidas ?? 0) > 0 ? `Venta atribuida (${g.ventasAtribuidas})` : (g.ventasOrdenes ?? 0) > 0 ? `Venta en órdenes (${g.ventasOrdenes})` : (g.clics ?? 0) < REGLAS.minClics ? `Menos de ${REGLAS.minClics} clics (${g.clics})` : L.excedentes.some(f => f.ad_group_id === String(g.id)) ? 'Excedente del freno' : 'Debajo del tope';
+    const motivo = g.estado !== 'ACTIVE' ? `Estado ${g.estado}` : g.protegido ? g.protegido : (g.ventasAtribuidas ?? 0) > 0 || (g.ventasOrdenes ?? 0) > 0 ? motivoVenta(g) : (g.clics ?? 0) < REGLAS.minClics ? `Menos de ${REGLAS.minClics} clics (${g.clics})` : L.excedentes.some(f => f.ad_group_id === String(g.id)) ? 'Excedente del freno' : 'Debajo del tope';
     return { ...foto(g), motivo };
   });
 

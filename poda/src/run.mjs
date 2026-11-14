@@ -126,6 +126,8 @@ async function main() {
     const ids = new Set(registro.map(r => String(r.ad_group_id)));
     for (const s of semillas) for (const g of grupos.values()) if (g.external_id === s.external_id) ids.add(g.id);
     for (const g of grupos.values()) if (g.estado === 'ACTIVE' && g.clics >= REGLAS.minClics && g.ventasAtribuidas === 0 && g.gasto >= REGLAS.pisoTope * REGLAS.pctObservacion) ids.add(g.id);
+    // Regla 10: los que vendieron y ya gastaron el piso del tope necesitan precio para medir el costo por venta.
+    for (const g of grupos.values()) if (g.estado === 'ACTIVE' && g.ventasAtribuidas > 0 && g.gasto >= REGLAS.pisoTope) ids.add(g.id);
     let leidos = 0, fallidos = 0;
     for (const id of ids) {
       const g = grupos.get(id);
