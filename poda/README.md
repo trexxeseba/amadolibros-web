@@ -11,6 +11,11 @@ el 11/11 toda escritura en Ads por API respondió 401. Por eso este proceso **s�
 cliente rechaza cualquier método que no sea GET. Si Mercado Libre habilita el cambio de estado
 de un anuncio, se enchufa acá sin tocar las reglas.
 
+Comprobado el 14/11/2026 con `src/sonda-escritura.mjs` (mandó "pausar" a anuncios ya pausados,
+sin cambiar nada): la app tiene el permiso `urn:ml:mktp:ads:/read-write`, la ruta
+`PUT /advertising/MLU/product_ads/ad_groups/{id}` existe y responde **401 "User does not have
+permission to write."** El bloqueo es de Mercado Libre, no del código ni del token.
+
 ## Qué hace en cada corrida
 
 1. Lee anuncios (grupos de anuncios) y sus métricas de 30 días por campaña.
