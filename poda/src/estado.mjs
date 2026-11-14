@@ -81,7 +81,15 @@ export function calcularDia({ hoy, accion = 'correr', grupos, registro = [], sem
         if (Number(r.regla_reactivar) === 6) upsert({ ...r, estado: 'contando', contar_desde: r.fecha_reactivar_propuesta, fecha_reactivada: hoy });
         else borrar(id, 'Reactivado por venta (regla 5).');
         vistos.delete(id);
-      } else if (g.estado === 'PAUSED') L.reactivar.push({ ...foto(g), motivo: r.motivo, regla: Number(r.regla_reactivar) || null, origen: r.origen, desde: r.fecha_reactivar_propuesta });
+      } else if (g.estado === 'PAUSED') {
+        // Una propuesta por la regla 6 se vuelve a mirar: si ya no corresponde (por ejemplo,
+        // fue una suba de precio, que desde el 14/11 no reactiva), vuelve a pausado.
+        if (Number(r.regla_reactivar) === 6) {
+          const rv = evaluarReactivacion(r, { ventasAtribuidas: g.ventasAtribuidas, ventasOrdenesDesdePausa: g.ordenesDesde?.(r.fecha_pausa) ?? 0, precioLista: g.precioTope, promo: g.promo });
+          if (rv.accion !== 'reactivar') { upsert({ ...r, estado: 'pausado', regla_reactivar: null, fecha_reactivar_propuesta: null, motivo: 'Sigue pausado: la propuesta de reactivar ya no corresponde (regla 6).' }); continue; }
+        }
+        L.reactivar.push({ ...foto(g), motivo: r.motivo, regla: Number(r.regla_reactivar) || null, origen: r.origen, desde: r.fecha_reactivar_propuesta });
+      }
       continue;
     }
     if (r.estado === 'contando') {
