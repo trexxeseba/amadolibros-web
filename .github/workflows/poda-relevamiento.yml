@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   push:
     branches: ['claude/gallant-noether-8szfod']
-    paths: ['poda/src/relevamiento.mjs', '.github/workflows/poda-relevamiento.yml']
+    paths: ['poda/src/relevamiento-segmentos.mjs', '.github/workflows/poda-relevamiento.yml']
 
 permissions:
   contents: read
@@ -28,4 +28,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node poda/src/relevamiento.mjs --dias 30
+      - run: node poda/src/relevamiento-segmentos.mjs --dias 30
