@@ -17,11 +17,11 @@ on:
         default: '471589392'
         required: true
       accion:
-        description: 'foto (toma la foto y manda el informe) o informe (sólo manda el informe de las fotos que ya hay)'
+        description: 'foto (toma la foto y manda el informe), informe (sólo manda el informe de las fotos que ya hay) o sondeo (prueba qué rutas de la API responden)'
         default: 'foto'
         required: true
         type: choice
-        options: [foto, informe]
+        options: [foto, informe, sondeo]
 
 concurrency:
   group: competencia-catalogo
@@ -50,5 +50,9 @@ jobs:
           node-version: '22'
       - name: Tests del módulo
         run: node --experimental-sqlite --test scripts/__tests__/catalogo-competidor.test.mjs
+      - name: Sondeo de rutas de la API (sólo códigos de respuesta)
+        if: github.event.inputs.accion == 'sondeo'
+        run: node scripts/mercadolibre/sondeo-competidor.mjs --seller "${{ github.event.inputs.seller }}"
       - name: Foto del catálogo e informe
+        if: github.event.inputs.accion != 'sondeo'
         run: node scripts/mercadolibre/catalogo-competidor.mjs --seller "${{ github.event.inputs.seller || '471589392' }}" --accion "${{ github.event.inputs.accion || 'foto' }}" --max-minutes 150
