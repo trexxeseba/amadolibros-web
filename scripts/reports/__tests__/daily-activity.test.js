@@ -118,3 +118,88 @@ test('con pocas visitas no hay embudo y sin pedidos abiertos no hay «para segui
   assert.doesNotMatch(md, /Embudo del día/);
   assert.doesNotMatch(md, /Para seguir hoy/);
 });
+
+// Cruce entre canales: lo que miraron en la web contra Mercado Libre, WhatsApp y la web.
+import { airtableRows, buildCross, fetchAirtablePedidos, sameTitle } from '../daily/cross-sales.mjs';
+
+test('la semana del cruce son los 7 días hasta ayer, y sus consultas no leen datos personales', () => {
+  assert.equal(periods.week.startDate, '2026-09-28');
+  assert.equal(periods.week.endDate, '2026-10-04');
+  assert.equal(periods.week.endIso, '2026-10-05T03:00:00.000Z');
+  const queries = dailyQueries(periods);
+  assert.match(queries.ml_sales_week, /ml_sales_items/);
+  assert.match(queries.web_orders_week, /order_items/);
+  for (const sql of [queries.ml_sales_week, queries.web_orders_week]) {
+    assert.doesNotMatch(sql, /buyer|phone|email|address|nickname/i);
+  }
+});
+
+test('mismo libro por título: tolera tildes y palabras de relleno, no confunde libros distintos', () => {
+  assert.equal(sameTitle('Gold Foil Tarot - Edición Especial', 'Gold Foil Tarot'), true);
+  assert.equal(sameTitle('Biblia Católica Para Jóvenes Última Edición Tapa Dura', 'La biblia catolica para jovenes'), true);
+  assert.equal(sameTitle('Psicofarmacologia Practica - Gabriela Jufe - 3era Edición', 'Psicofarmacología Práctica Gabriela Jufe 5ta Edición'), true);
+  assert.equal(sameTitle('Biblia Rvr1960 Letra Grande Rosa Floral', 'Biblia De Jerusalén Manual'), false);
+  assert.equal(sameTitle('Tarot', 'Tarot de Marsella'), false);
+});
+
+test('el cruce junta vistas web con ventas de ML, consultas de Airtable y pedidos web', () => {
+  const cross = buildCross({
+    webItems: [
+      { itemId: 'MLU111', itemName: 'Gold Foil Tarot - Edición Especial', itemsViewed: 4, itemsAddedToCart: 1 },
+      { itemId: 'MLU222', itemName: 'Psicofarmacologia Practica - Gabriela Jufe', itemsViewed: 2, itemsAddedToCart: 0 },
+      { itemId: 'MLU333', itemName: 'Deleuze Y La Brujería', itemsViewed: 1, itemsAddedToCart: 0 },
+      { itemId: '(not set)', itemName: '(not set)', itemsViewed: 9, itemsAddedToCart: 0 },
+    ],
+    mlSales: [{ item_id: 'MLU111', title: 'Gold Foil Tarot Edición Especial', isbn: '9780738772011', quantity: 2, last_date: '2026-10-03T14:00:00.000-03:00' }],
+    webOrders: [{ product_id: 'MLU333', title: 'Deleuze Y La Brujería', quantity: 1, paid: 0 }],
+    airtable: [
+      { title: 'Psicofarmacología Práctica Gabriela Jufe 5ta Edición', isbn: '', estado: 'PASADO AL CLIENTE', canal: 'WhatsApp', fecha: '2026-10-02T17:22:00.000Z' },
+      { title: 'Tarot dorado', isbn: '9780738772011', estado: 'entregado', canal: 'Instagram', fecha: '2026-09-30T10:00:00.000Z' },
+    ],
+  });
+  assert.equal(cross.total, 3);
+  assert.equal(cross.soldMl, 1);
+  assert.equal(cross.askedWa, 2);
+  assert.equal(cross.boughtWa, 1);
+  assert.equal(cross.orderedWeb, 1);
+  const gold = cross.rows.find(r => r.title.startsWith('Gold'));
+  assert.equal(gold.ml, '2 vendidos (último 03/10)');
+  // Encontrado por el ISBN de la venta en Mercado Libre, aunque el título no coincida.
+  assert.equal(gold.wa, 'compró por Instagram 30/09');
+  assert.equal(cross.rows.find(r => r.title.startsWith('Psico')).wa, 'PASADO AL CLIENTE por WhatsApp 02/10');
+  assert.equal(cross.rows.find(r => r.title.startsWith('Deleuze')).web, '1 pedido (sin pagar)');
+});
+
+test('el informe muestra el cruce, y dice sin dato cuando falta una fuente', () => {
+  const md = buildActivityReport({
+    periods,
+    ga4: { yesterday: day(), lastWeek: day(), weekItems: [{ itemId: 'MLU1', itemName: 'Rayuela', itemsViewed: 5, itemsAddedToCart: 0 }] },
+    d1: { ...d1, ml_sales_week: [{ item_id: 'MLU1', title: 'Rayuela', quantity: 1, last_date: '2026-10-02T10:00:00.000-03:00' }], web_orders_week: [] },
+    airtable: { error: 'Airtable HTTP 403: sin permiso' },
+  });
+  assert.match(md, /## Cruce: lo que miraron en la web y dónde terminó/);
+  assert.match(md, /del lunes 28\/09 al domingo 04\/10/);
+  assert.match(md, /De 1 libros mirados: \*\*1 se vendieron en Mercado Libre\*\*/);
+  assert.match(md, /\| Rayuela \| 5 \| 0 \| — \| 1 vendido \(último 02\/10\) \| — \|/);
+  assert.match(md, /WhatsApp\/Airtable sin dato \(Airtable HTTP 403: sin permiso\)/);
+  const sinGa4 = buildActivityReport({ periods, ga4: { error: 'x' }, d1: {} });
+  assert.match(sinGa4, /## Cruce: lo que miraron en la web y dónde terminó\n\nSin dato de GA4/);
+});
+
+test('Airtable: lee solo título, ISBN, estado, canal y fecha, y pagina', async () => {
+  const urls = [];
+  const pages = [
+    { records: [{ fields: { 'Título': 'Rayuela', ISBN: 9788437604572, Estado: { name: 'entregado' }, Canal: { name: 'WhatsApp' }, 'Fecha consulta': '2026-10-01T10:00:00.000Z' } }], offset: 'p2' },
+    { records: [{ fields: { 'Título': 'Ficciones', Estado: 'cotizado' } }, { fields: {} }] },
+  ];
+  const fetchImpl = async url => { urls.push(url); const body = pages.shift(); return { ok: true, json: async () => body }; };
+  const rows = await fetchAirtablePedidos({ token: 't', sinceDate: '2026-09-28', fetchImpl });
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows[0], { title: 'Rayuela', isbn: '9788437604572', estado: 'entregado', canal: 'WhatsApp', fecha: '2026-10-01T10:00:00.000Z' });
+  assert.equal(urls.length, 2);
+  assert.match(decodeURIComponent(urls[0]), /fields\[\]=Título/);
+  assert.doesNotMatch(decodeURIComponent(urls[0]), /Cliente|Teléfono|Nombre/);
+  assert.match(urls[1], /offset=p2/);
+  assert.deepEqual(await fetchAirtablePedidos({ token: '', sinceDate: '2026-09-28' }), { error: 'falta AIRTABLE_TOKEN' });
+  assert.deepEqual(airtableRows([{ fields: { 'Título': '' } }]), []);
+});
