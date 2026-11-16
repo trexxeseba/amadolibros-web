@@ -154,6 +154,8 @@ jobs:
           GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Consultas de WhatsApp e Instagram para el cruce (solo título, estado y canal).
+          AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
           DAILY_OUTPUT_DIR: artifacts/commerce
         run: node scripts/reports/daily/fetch-activity.mjs
 
