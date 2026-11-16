@@ -1,0 +1,54 @@
+name: Competencia catálogo (foto semanal)
+
+# Toma una foto del catálogo de un vendedor competidor de Mercado Libre (por defecto
+# HERMES_PROMOSML, seller 471589392), la guarda en D1 y manda por mail qué se movió desde la
+# foto anterior: stock que bajó (venta probable), publicaciones que desaparecieron, nuevas y
+# cambios de precio. Sólo lee de Mercado Libre, con el token de Amado Vintage. Nunca publica
+# ni toca Amado Libros. Código: scripts/mercadolibre/catalogo-competidor.mjs y
+# docs/competencia-catalogo.md.
+on:
+  schedule:
+    # Domingos 06:10 UTC (03:10 en Montevideo).
+    - cron: '10 6 * * 0'
+  workflow_dispatch:
+    inputs:
+      seller:
+        description: 'seller_id del vendedor a fotografiar'
+        default: '471589392'
+        required: true
+      accion:
+        description: 'foto (toma la foto y manda el informe) o informe (sólo manda el informe de las fotos que ya hay)'
+        default: 'foto'
+        required: true
+        type: choice
+        options: [foto, informe]
+
+concurrency:
+  group: competencia-catalogo
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  fotografiar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests del módulo
+        run: node --experimental-sqlite --test scripts/__tests__/catalogo-competidor.test.mjs
+      - name: Foto del catálogo e informe
+        run: node scripts/mercadolibre/catalogo-competidor.mjs --seller "${{ github.event.inputs.seller || '471589392' }}" --accion "${{ github.event.inputs.accion || 'foto' }}" --max-minutes 150
