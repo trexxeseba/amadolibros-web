@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
-import {tomarFoto,movimiento,informe,asunto,correr,podar,serieVentas,leerVendedor,ofertaDelVendedor,preguntasRecientes,TABLES,DIA_MS} from '../mercadolibre/catalogo-competidor.mjs';
+import {tomarFoto,movimiento,informe,asunto,correr,podar,serieVentas,leerVendedor,ofertaDelVendedor,preguntasRecientes,pulso,TABLES,DIA_MS} from '../mercadolibre/catalogo-competidor.mjs';
 
 const HERMES='471589392',OTRO='555',NOSOTROS='2341378249';
 const DIA=d=>new Date(Date.UTC(2026,10,d,12)).toISOString();
@@ -13,10 +13,10 @@ function d1({productos=['MLU-P1','MLU-P2','MLU-P3'],dias=[]}={}){
  const db=new DatabaseSync(':memory:');
  db.exec(`CREATE TABLE comp_snapshots(snap_date TEXT,catalog_product_id TEXT,item_id TEXT,seller_id TEXT,price REAL,PRIMARY KEY(snap_date,catalog_product_id,item_id));
  CREATE TABLE comp_targets(catalog_product_id TEXT PRIMARY KEY,isbn TEXT,own_price REAL,priority INTEGER);
- CREATE TABLE comp_seller_days(snap_date TEXT,seller_id TEXT,nickname TEXT,transactions_completed INTEGER,PRIMARY KEY(snap_date,seller_id));
+ CREATE TABLE comp_vendedor_dias(fecha TEXT NOT NULL,seller_id TEXT NOT NULL,nickname TEXT,operaciones INTEGER,nivel TEXT,at INTEGER NOT NULL,PRIMARY KEY(fecha,seller_id));
  CREATE TABLE comp_catalogo_fotos(id INTEGER);`);
  productos.forEach((p,i)=>{db.prepare('INSERT INTO comp_snapshots VALUES(?,?,?,?,?)').run('2026-11-10',p,`MLU9${i}`,HERMES,500);db.prepare('INSERT INTO comp_targets VALUES(?,?,?,?)').run(p,`978000000000${i}`,900+i,1);});
- for(const [fecha,n] of dias)db.prepare('INSERT INTO comp_seller_days VALUES(?,?,?,?)').run(fecha,HERMES,'HERMES_PROMOSML',n);
+ for(const [fecha,n] of dias)db.prepare('INSERT INTO comp_vendedor_dias VALUES(?,?,?,?,?,?)').run(fecha,HERMES,'HERMES_PROMOSML',n,'gold',0);
  return async(sql,params=[])=>{const st=db.prepare(sql);return /^\s*(SELECT|PRAGMA|WITH)\b|\bRETURNING\b/i.test(sql)?st.all(...params).map(r=>({...r})):(st.run(...params),[]);};
 }
 // API de ML de mentira: ficha del vendedor, ofertas por producto, nombre del producto y preguntas.
@@ -25,7 +25,8 @@ function mlFalso({ofertas,transacciones=1200,ventas60=40,preguntas={}}){
  return {calls,stats:{llamadas:0},get:async path=>{
   calls.push(path);
   const u=new URL('https://api.mercadolibre.com'+path);
-  if(u.pathname===`/users/${HERMES}`)return {id:Number(HERMES),nickname:'HERMES_PROMOSML',seller_reputation:{power_seller_status:'gold',transactions:{completed:transacciones,total:transacciones+30},metrics:{sales:{period:'60 days',completed:ventas60}}}};
+  // De un tercero, Mercado Libre muestra sólo el total de operaciones y el nivel.
+  if(u.pathname===`/users/${HERMES}`)return {id:Number(HERMES),nickname:'HERMES_PROMOSML',seller_reputation:{level_id:'5_green',power_seller_status:'gold',transactions:{period:'historic',total:transacciones}}};
   let m=u.pathname.match(/^\/products\/([^/]+)\/items$/);
   if(m){const o=ofertas[m[1]];if(!o)throw Object.assign(new Error('http_404'),{status:404,code:'http_404'});return {results:o};}
   m=u.pathname.match(/^\/products\/([^/]+)$/);
@@ -42,7 +43,8 @@ const OFERTAS={
 };
 
 test('leerVendedor, ofertaDelVendedor y preguntasRecientes',()=>{
- assert.deepEqual(leerVendedor({nickname:'X',seller_reputation:{power_seller_status:'gold',transactions:{completed:'12'},metrics:{sales:{completed:3}}}}),{nickname:'X',transacciones:12,ventas_60d:3,nivel:'gold'});
+ assert.deepEqual(leerVendedor({nickname:'X',seller_reputation:{power_seller_status:'gold',transactions:{period:'historic',total:12}}}),{nickname:'X',transacciones:12,ventas_60d:null,nivel:'gold'});
+ assert.deepEqual(leerVendedor({nickname:'X',seller_reputation:{level_id:'5_green',transactions:{completed:'7',total:9},metrics:{sales:{completed:3}}}}),{nickname:'X',transacciones:9,ventas_60d:3,nivel:'5_green'});
  assert.deepEqual(leerVendedor(null),{nickname:null,transacciones:null,ventas_60d:null,nivel:null});
  const o=ofertaDelVendedor(OFERTAS['MLU-P1'],HERMES);
  assert.deepEqual(o,{item_id:'MLU90',precio:650,moneda:'UYU',cantidad:null,posicion:2,ofertas:3,precio_minimo:600,envio_gratis:0,logistica:'xd_drop_off'});
@@ -100,14 +102,14 @@ test('movimiento: desaparecidas, nuevas, precios y cantidad entre dos fotos; ser
  assert.deepEqual(serie.dias.map(d=>d.ventas),[50,10,30,10]);
  const texto=informe(mov,{serie});
  assert.match(texto,/HERMES_PROMOSML \(471589392\)/);
- assert.match(texto,/Última semana \(2026-11-09 a 2026-11-16\): 40 ventas/);
- assert.match(texto,/Entre las dos fotos .*: 10 ventas/);
+ assert.match(texto,/Última semana \(2026-11-09 a 2026-11-16\): 40 operaciones/);
+ assert.match(texto,/Entre las dos fotos .*: 10 operaciones/);
  assert.match(texto,/DESAPARECIDAS .*: 1\.\n- Libro MLU-P1 \| estaba \$650 en el puesto 2/);
  assert.match(texto,/BAJÓ LA CANTIDAD .*: 1\.\n- Libro MLU-P2 \| 3 -> 2 u\./);
  assert.match(texto,/NUEVAS: 1\.\n- Libro MLU-P3 \| \$290 \(nosotros \$902\)/);
  assert.match(texto,/CAMBIOS DE PRECIO: 1\.\n- Libro MLU-P2 \| \$800 -> \$780/);
  assert.match(texto,/_CustId_471589392/);
- assert.equal(asunto(mov,serie),'HERMES_PROMOSML: 40 ventas en la semana, 1 bajas y 1 nuevas en nuestros libros');
+ assert.equal(asunto(mov,serie),'HERMES_PROMOSML: 40 operaciones en la semana, 1 bajas y 1 nuevas en nuestros libros');
 });
 
 test('la primera foto ya informa ventas de la semana y avisa que el movimiento sale en la próxima',async()=>{
@@ -118,9 +120,10 @@ test('la primera foto ya informa ventas de la semana y avisa que el movimiento s
  assert.equal(mov.listado.length,2);
  const texto=informe(mov,{serie});
  assert.match(texto,/Es la primera foto/);
- assert.match(texto,/40 ventas en los últimos 60 días/);
+ assert.match(texto,/Hoy: 1\.200 operaciones en total\./);
+ assert.match(texto,/Mercado Libre muestra de un vendedor ajeno/);
  assert.match(texto,/SUS PUBLICACIONES EN NUESTROS LIBROS/);
- assert.equal(asunto(mov,serie),'HERMES_PROMOSML: 40 ventas en la semana, 2 publicaciones en nuestros libros');
+ assert.equal(asunto(mov,serie),'HERMES_PROMOSML: 40 operaciones en la semana, 2 publicaciones en nuestros libros');
 });
 
 test('un producto que falla no tira la foto: se cuenta como error',async()=>{
@@ -148,4 +151,20 @@ test('podar deja las últimas fotos',async()=>{
  assert.equal((await query(`SELECT COUNT(*) n FROM ${TABLES.fotos}`))[0].n,4);
  assert.equal(await podar(query,HERMES,2),2);
  assert.equal((await query(`SELECT COUNT(*) n FROM ${TABLES.items}`))[0].n,4);
+});
+
+test('la foto anota el día y el pulso diario arma la serie sin tomar foto',async()=>{
+ const query=d1();
+ await tomarFoto({ml:mlFalso({ofertas:OFERTAS,transacciones:1000}),query,seller:HERMES,now:()=>AHORA-7*DIA_MS,intervalMs:0});
+ for(let d=6;d>=1;d--)await pulso({ml:mlFalso({ofertas:OFERTAS,transacciones:1000+(7-d)*3}),query,seller:HERMES,now:()=>AHORA-d*DIA_MS});
+ const hoy=await pulso({ml:mlFalso({ofertas:OFERTAS,transacciones:1021}),query,seller:HERMES,now:()=>AHORA});
+ assert.equal(hoy.con_contador,true);
+ // Dos pulsos el mismo día: una sola fila, con el último valor.
+ await pulso({ml:mlFalso({ofertas:OFERTAS,transacciones:1022}),query,seller:HERMES,now:()=>AHORA+3600000});
+ assert.equal((await query(`SELECT COUNT(*) n FROM ${TABLES.dias}`))[0].n,8);
+ const serie=await serieVentas(query,HERMES);
+ assert.equal(serie.semana.ventas,22);
+ assert.deepEqual(serie.dias.map(d=>d.ventas),[3,3,3,3,3,3,4]);
+ const out=await correr({query,ml:mlFalso({ofertas:OFERTAS}),seller:HERMES,accion:'pulso',send:async()=>{throw new Error('el pulso no manda mail');},log:()=>{}});
+ assert.equal(out.pulso.evento,'pulso');
 });

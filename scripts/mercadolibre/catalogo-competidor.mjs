@@ -8,8 +8,9 @@
 // contador de operaciones concretadas), las ofertas de cada producto de catálogo
 // (/products/{id}/items, lo que ya usa la vigilancia de competencia del Worker) y las
 // preguntas por publicación. Sobre eso se arma:
-//  - Ventas del vendedor: el contador de operaciones concretadas, que el Worker guarda a
-//    diario en comp_seller_days. La diferencia entre dos fechas son sus ventas.
+//  - Ventas del vendedor: el contador de operaciones de su ficha (de un tercero ML muestra
+//    sólo el total, concretadas más canceladas). Un pulso diario lo anota en
+//    comp_vendedor_dias; la diferencia entre dos fechas son sus operaciones.
 //  - Sus publicaciones en los libros que vendemos nosotros: los productos de catálogo donde
 //    la vigilancia lo vio alguna vez (comp_snapshots) se vuelven a leer y se guarda su
 //    oferta: precio, posición, envío, cantidad si ML la informa, preguntas de la semana.
@@ -26,7 +27,7 @@ import {sendMail} from '../vintage-cloud/aviso.mjs';
 
 export const SELLER_HERMES='471589392';
 const T='comp_vendedor_';
-export const TABLES={fotos:T+'fotos',items:T+'items',movimientos:T+'movimientos'};
+export const TABLES={fotos:T+'fotos',items:T+'items',movimientos:T+'movimientos',dias:T+'dias'};
 // Tablas del primer intento (búsqueda por vendedor, cerrada por ML): se descartan.
 const VIEJAS=['comp_catalogo_fotos','comp_catalogo_tramos','comp_catalogo_items','comp_catalogo_movimientos'];
 const COLS=['foto_id','item_id','producto','isbn','nombre','precio','moneda','cantidad','posicion','ofertas','precio_minimo','nuestro_precio','envio_gratis','logistica','preguntas_7d'];
@@ -40,16 +41,34 @@ export async function schema(query){
  await query(`CREATE TABLE IF NOT EXISTS ${TABLES.fotos} (id INTEGER PRIMARY KEY AUTOINCREMENT,seller_id TEXT NOT NULL,nickname TEXT,started_at INTEGER NOT NULL,finished_at INTEGER,transacciones INTEGER,ventas_60d INTEGER,nivel TEXT,productos INTEGER,items INTEGER,errores INTEGER NOT NULL DEFAULT 0,completa INTEGER NOT NULL DEFAULT 0)`);
  await query(`CREATE TABLE IF NOT EXISTS ${TABLES.items} (foto_id INTEGER NOT NULL,item_id TEXT NOT NULL,producto TEXT,isbn TEXT,nombre TEXT,precio REAL,moneda TEXT,cantidad INTEGER,posicion INTEGER,ofertas INTEGER,precio_minimo REAL,nuestro_precio REAL,envio_gratis INTEGER,logistica TEXT,preguntas_7d INTEGER,PRIMARY KEY(foto_id,item_id))`);
  await query(`CREATE TABLE IF NOT EXISTS ${TABLES.movimientos} (foto_id INTEGER NOT NULL,item_id TEXT NOT NULL,tipo TEXT NOT NULL,nombre TEXT,antes TEXT,despues TEXT,PRIMARY KEY(foto_id,item_id,tipo))`);
+ await query(`CREATE TABLE IF NOT EXISTS ${TABLES.dias} (fecha TEXT NOT NULL,seller_id TEXT NOT NULL,nickname TEXT,operaciones INTEGER,nivel TEXT,at INTEGER NOT NULL,PRIMARY KEY(fecha,seller_id))`);
 }
 
 const num=v=>{const n=Number(v);return v==null||v===''||!Number.isFinite(n)?null:n;};
 const entero=v=>{const n=num(v);return n==null?null:Math.trunc(n);};
 async function enTandas(items,n,fn){for(let i=0;i<items.length;i+=n)await Promise.all(items.slice(i,i+n).map(fn));}
 
-// Ficha pública del vendedor: lo que importa para medir ventas y confianza.
+// Ficha pública del vendedor. De un tercero Mercado Libre sólo muestra transactions.total
+// (operaciones concretadas más canceladas) y el nivel; las concretadas y las ventas de 60 días
+// vienen sólo para la cuenta propia (sondeo del 16/11/2026). El total sirve igual como
+// contador: lo que crece de un día al otro son sus operaciones.
 export function leerVendedor(u){
  const r=u?.seller_reputation??{};
- return {nickname:typeof u?.nickname==='string'?u.nickname:null,transacciones:entero(r?.transactions?.completed),ventas_60d:entero(r?.metrics?.sales?.completed),nivel:r?.power_seller_status??r?.level_id??null};
+ return {nickname:typeof u?.nickname==='string'?u.nickname:null,transacciones:entero(r?.transactions?.total??r?.transactions?.completed),ventas_60d:entero(r?.metrics?.sales?.completed),nivel:r?.power_seller_status??r?.level_id??null};
+}
+// Una fila por día con el contador del vendedor (la toma el pulso diario y también cada foto).
+export async function anotarDia(query,seller,vendedor,now=Date.now()){
+ await query(`CREATE TABLE IF NOT EXISTS ${TABLES.dias} (fecha TEXT NOT NULL,seller_id TEXT NOT NULL,nickname TEXT,operaciones INTEGER,nivel TEXT,at INTEGER NOT NULL,PRIMARY KEY(fecha,seller_id))`);
+ await query(`INSERT INTO ${TABLES.dias}(fecha,seller_id,nickname,operaciones,nivel,at) VALUES(?,?,?,?,?,?) ON CONFLICT(fecha,seller_id) DO UPDATE SET nickname=excluded.nickname,operaciones=excluded.operaciones,nivel=excluded.nivel,at=excluded.at`,[fechaMontevideo(new Date(now)),String(seller),vendedor.nickname,vendedor.transacciones,vendedor.nivel,now]);
+}
+// Pulso diario: una llamada, una fila. Devuelve conteos.
+export async function pulso({ml,query,seller=SELLER_HERMES,now=Date.now,onStatus=()=>{}}){
+ await schema(query);
+ const vendedor=leerVendedor(await ml.get(`/users/${seller}`));
+ await anotarDia(query,seller,vendedor,now());
+ const out={evento:'pulso',seller:String(seller),con_contador:vendedor.transacciones!=null};
+ onStatus(out);
+ return out;
 }
 // Oferta del vendedor dentro de las ofertas de un producto de catálogo, con su posición por precio.
 export function ofertaDelVendedor(ofertas,seller){
@@ -70,6 +89,7 @@ export async function tomarFoto({ml,query,seller=SELLER_HERMES,now=Date.now,inte
  await schema(query);
  const t0=now();
  const vendedor=leerVendedor(await ml.get(`/users/${seller}`));
+ await anotarDia(query,seller,vendedor,t0);
  const foto=(await query(`INSERT INTO ${TABLES.fotos}(seller_id,nickname,started_at,transacciones,ventas_60d,nivel) VALUES(?,?,?,?,?,?) RETURNING *`,[String(seller),vendedor.nickname,t0,vendedor.transacciones,vendedor.ventas_60d,vendedor.nivel]))[0];
  const vistos=await query(`SELECT s.catalog_product_id producto,MAX(t.isbn) isbn,MAX(t.own_price) nuestro_precio FROM comp_snapshots s LEFT JOIN comp_targets t ON t.catalog_product_id=s.catalog_product_id WHERE s.seller_id=? GROUP BY s.catalog_product_id`,[String(seller)]);
  const previos=await query(`SELECT i.producto,MAX(i.isbn) isbn,MAX(i.nombre) nombre,MAX(i.nuestro_precio) nuestro_precio FROM ${TABLES.items} i JOIN ${TABLES.fotos} f ON f.id=i.foto_id WHERE f.seller_id=? AND i.producto IS NOT NULL GROUP BY i.producto`,[String(seller)]);
@@ -107,10 +127,10 @@ export async function podar(query,seller,conservar=FOTOS_A_CONSERVAR){
  return viejas.length;
 }
 
-// Serie diaria del contador de operaciones concretadas (comp_seller_days, lo carga el Worker).
+// Serie diaria del contador de operaciones (comp_vendedor_dias: pulso diario y fotos).
 export async function serieVentas(query,seller,dias=28){
  let rows=[];
- try{rows=await query(`SELECT snap_date,transactions_completed FROM comp_seller_days WHERE seller_id=? AND transactions_completed IS NOT NULL ORDER BY snap_date DESC LIMIT ?`,[String(seller),dias+1]);}catch{return {dias:[],semana:null,primera:null,ultima:null};}
+ try{rows=(await query(`SELECT fecha snap_date,operaciones transactions_completed FROM ${TABLES.dias} WHERE seller_id=? AND operaciones IS NOT NULL ORDER BY fecha DESC LIMIT ?`,[String(seller),dias+1]));}catch{return {dias:[],semana:null,primera:null,ultima:null};}
  rows=rows.slice().reverse();
  const out=[];
  for(let i=1;i<rows.length;i++)out.push({fecha:rows[i].snap_date,acumulado:rows[i].transactions_completed,ventas:Math.max(0,rows[i].transactions_completed-rows[i-1].transactions_completed)});
@@ -160,12 +180,14 @@ export function informe(mov,{serie=null,seller=mov.seller}={}){
  const quien=`${actual?.nickname??'vendedor'} (${seller})`;
  if(!actual)return `Competencia ${seller}: todavía no hay una foto completa.`;
  L.push(`${quien}. Foto del ${fecha(actual.finished_at)}.`,'');
- L.push('CUÁNTO VENDE (contador de operaciones concretadas de su ficha pública)');
- if(actual.transacciones!=null)L.push(`- Hoy: ${actual.transacciones.toLocaleString('es-UY')} operaciones concretadas en total${actual.ventas_60d!=null?`; ${actual.ventas_60d} ventas en los últimos 60 días según Mercado Libre`:''}.`);
- if(serie?.semana)L.push(`- Última semana (${serie.semana.desde} a ${serie.semana.hasta}): ${serie.semana.ventas} ventas.`);
- if(serie?.primera&&serie?.ultima&&serie.primera.snap_date!==serie.ultima.snap_date)L.push(`- Desde el ${serie.primera.snap_date}: ${serie.ultima.transactions_completed-serie.primera.transactions_completed} ventas en ${Math.round((Date.parse(serie.ultima.snap_date)-Date.parse(serie.primera.snap_date))/DIA_MS)} días.`);
+ L.push('CUÁNTO VENDE (contador de operaciones de su ficha pública: concretadas más canceladas, es lo que Mercado Libre muestra de un vendedor ajeno)');
+ if(actual.transacciones!=null)L.push(`- Hoy: ${actual.transacciones.toLocaleString('es-UY')} operaciones en total${actual.ventas_60d!=null?`; ${actual.ventas_60d} ventas en los últimos 60 días según Mercado Libre`:''}.`);
+ else L.push('- Mercado Libre no mostró el contador en esta foto.');
+ if(serie?.semana)L.push(`- Última semana (${serie.semana.desde} a ${serie.semana.hasta}): ${serie.semana.ventas} operaciones.`);
+ if(serie?.primera&&serie?.ultima&&serie.primera.snap_date!==serie.ultima.snap_date)L.push(`- Desde el ${serie.primera.snap_date}: ${serie.ultima.transactions_completed-serie.primera.transactions_completed} operaciones en ${Math.round((Date.parse(serie.ultima.snap_date)-Date.parse(serie.primera.snap_date))/DIA_MS)} días.`);
  if(serie?.dias?.length)L.push(`- Por día: ${serie.dias.map(d=>`${d.fecha.slice(5)}: ${d.ventas}`).join(' | ')}`);
- if(anterior?.transacciones!=null&&actual.transacciones!=null)L.push(`- Entre las dos fotos (${fecha(anterior.finished_at)} a ${fecha(actual.finished_at)}): ${actual.transacciones-anterior.transacciones} ventas.`);
+ else L.push('- La serie por día se arma con el pulso diario del workflow a partir de hoy.');
+ if(anterior?.transacciones!=null&&actual.transacciones!=null)L.push(`- Entre las dos fotos (${fecha(anterior.finished_at)} a ${fecha(actual.finished_at)}): ${actual.transacciones-anterior.transacciones} operaciones.`);
  L.push('',`EN NUESTROS LIBROS: compite en ${actual.items} publicaciones de ${actual.productos} productos de catálogo que vendemos nosotros.`);
  if(!anterior){
   L.push('Es la primera foto: el movimiento publicación por publicación sale en la próxima, comparando contra esta.');
@@ -192,7 +214,7 @@ export function informe(mov,{serie=null,seller=mov.seller}={}){
 export function asunto(mov,serie=null){
  if(!mov.actual)return 'competencia: sin foto completa';
  const quien=mov.actual.nickname??mov.seller;
- const semana=serie?.semana?`${serie.semana.ventas} ventas en la semana`:`${mov.actual.transacciones??'?'} ventas en total`;
+ const semana=serie?.semana?`${serie.semana.ventas} operaciones en la semana`:`${mov.actual.transacciones??'?'} operaciones en total`;
  if(!mov.anterior)return `${quien}: ${semana}, ${mov.actual.items} publicaciones en nuestros libros`;
  return `${quien}: ${semana}, ${mov.totales.desaparecidos} bajas y ${mov.totales.nuevos} nuevas en nuestros libros`;
 }
@@ -200,6 +222,7 @@ export function asunto(mov,serie=null){
 export async function correr({seller=SELLER_HERMES,accion='foto',intervalMs=200,query=null,ml=null,send=sendMail,runUrl=process.env.RUN_URL??null,log=x=>console.log(JSON.stringify(x))}={}){
  query??=d1Client();
  ml??=crearCliente(fuenteTokenD1(CUENTAS.vintage),{concurrencia:1});
+ if(accion==='pulso')return {pulso:await pulso({ml,query,seller,onStatus:log})};
  let foto=null;
  if(accion==='foto')foto=await tomarFoto({ml,query,seller,intervalMs,onStatus:log});
  const mov=await movimiento({query,seller});
@@ -215,7 +238,7 @@ async function main(){
  const seller=String(arg('--seller',SELLER_HERMES));
  if(!/^\d{3,15}$/.test(seller))throw new Error('seller_invalido');
  const accion=arg('--accion','foto');
- if(!['foto','informe'].includes(accion))throw new Error('accion_invalida');
+ if(!['foto','informe','pulso'].includes(accion))throw new Error('accion_invalida');
  try{
   await correr({seller,accion,intervalMs:Math.max(0,Number(arg('--interval-ms',200))||0)});
  }catch(e){
