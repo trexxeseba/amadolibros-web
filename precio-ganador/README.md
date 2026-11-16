@@ -94,6 +94,16 @@ espera 8 minutos y después falla.
 - Variable del repo `PRECIO_GANADOR_DRY_RUN` = `true`: pausa sin tocar código (solo informa).
 - También se puede desactivar el workflow **Precio Ganador** en Actions.
 
+## Cambiar un precio a mano
+
+Cuando Seba pide un precio puntual ("subí Mafalda a 1500, bajá Riso a 1100"): en Actions,
+**Precio manual**, *Run workflow*, con `cuenta`, `cambios` (`MLU123=1500,MLU456=1100`, hasta 50)
+y `prueba=true` primero (sólo lista). Misma conexión y mismos frenos que el motor: no toca
+publicaciones pausadas, con promoción, con descuento a la vista, administradas por ML o con
+variaciones; respeta el piso de la cuenta; escribe, relee y verifica; el stock no se toca.
+Si la publicación estaba en el estado del motor, el motor la saca solo en la próxima corrida
+(precio cambiado a mano). Código: `src/precio-manual.mjs`.
+
 ## Cómo volver todo al precio original
 
 En Actions, **Precio Ganador**, *Run workflow*, con acción `restaurar`:
