@@ -24,7 +24,11 @@ await api('search_q_generica',`/sites/MLU/search?q=libro&limit=1`);
 await api('search_q_mas_seller',`/sites/MLU/search?q=libro&seller_id=${seller}&limit=1`);
 await api('search_categoria_mas_seller',`/sites/MLU/search?category=MLU1196&seller_id=${seller}&limit=1`);
 await api('search_categoria_sola',`/sites/MLU/search?category=MLU1196&limit=1`);
-await api('users',`/users/${seller}`);
+const u=await api('users',`/users/${seller}`);
+// Estructura de la reputación: nombres de campos y tipo de cada valor, nunca los valores.
+const forma=(o,prof=0)=>o&&typeof o==='object'&&prof<3?Object.fromEntries(Object.entries(o).map(([k,v])=>[k,v&&typeof v==='object'?forma(v,prof+1):v===null?'null':typeof v])):typeof o;
+log({clave:'users_reputacion_forma',seller_reputation:forma(u?.seller_reputation),status:forma(u?.status),user_type:typeof u?.user_type});
+try{const d=(await query('SELECT COUNT(*) n,SUM(transactions_completed IS NOT NULL) con_dato,MIN(snap_date) desde,MAX(snap_date) hasta FROM comp_seller_days WHERE seller_id=?',[seller]))[0];log({clave:'d1_seller_days',...d});}catch(e){log({clave:'d1_seller_days',ok:false,code:e?.code??String(e)});}
 await api('users_items_search',`/users/${seller}/items/search?limit=1`);
 try{
  const c=(await query('SELECT COUNT(DISTINCT item_id) n,COUNT(DISTINCT catalog_product_id) productos,MIN(snap_date) desde,MAX(snap_date) hasta FROM comp_snapshots WHERE seller_id=?',[seller]))[0];
