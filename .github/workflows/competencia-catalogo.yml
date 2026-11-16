@@ -1,10 +1,11 @@
 name: Competencia catálogo (foto semanal)
 
-# Toma una foto del catálogo de un vendedor competidor de Mercado Libre (por defecto
-# HERMES_PROMOSML, seller 471589392), la guarda en D1 y manda por mail qué se movió desde la
-# foto anterior: stock que bajó (venta probable), publicaciones que desaparecieron, nuevas y
-# cambios de precio. Sólo lee de Mercado Libre, con el token de Amado Vintage. Nunca publica
-# ni toca Amado Libros. Código: scripts/mercadolibre/catalogo-competidor.mjs y
+# Foto semanal de un vendedor competidor de Mercado Libre (por defecto HERMES_PROMOSML,
+# seller 471589392): cuánto vende (contador de operaciones de su ficha pública) y qué hace en
+# los libros que vendemos nosotros (sus ofertas en nuestros productos de catálogo: precio,
+# posición, cantidad si ML la informa, preguntas). Guarda la foto en D1 y manda por mail el
+# movimiento desde la anterior. Sólo lee de Mercado Libre, con el token de Amado Vintage.
+# Nunca publica ni toca Amado Libros. Código: scripts/mercadolibre/catalogo-competidor.mjs y
 # docs/competencia-catalogo.md.
 on:
   schedule:
@@ -33,7 +34,7 @@ permissions:
 jobs:
   fotografiar:
     runs-on: ubuntu-latest
-    timeout-minutes: 170
+    timeout-minutes: 40
     env:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
@@ -55,4 +56,4 @@ jobs:
         run: node scripts/mercadolibre/sondeo-competidor.mjs --seller "${{ github.event.inputs.seller }}"
       - name: Foto del catálogo e informe
         if: github.event.inputs.accion != 'sondeo'
-        run: node scripts/mercadolibre/catalogo-competidor.mjs --seller "${{ github.event.inputs.seller || '471589392' }}" --accion "${{ github.event.inputs.accion || 'foto' }}" --max-minutes 150
+        run: node scripts/mercadolibre/catalogo-competidor.mjs --seller "${{ github.event.inputs.seller || '471589392' }}" --accion "${{ github.event.inputs.accion || 'foto' }}"

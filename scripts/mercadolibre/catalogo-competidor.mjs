@@ -1,17 +1,20 @@
-// Foto semanal del catálogo de un vendedor de Mercado Libre (competencia) y qué se movió
-// desde la foto anterior. Pensado para HERMES_PROMOSML (seller 471589392): +50 mil
-// publicaciones y pocas ventas, así que lo que importa no es qué publica sino qué baja de
-// stock o desaparece entre una semana y la otra.
+// Foto semanal de un vendedor competidor de Mercado Libre y qué se movió desde la foto
+// anterior. Pensado para HERMES_PROMOSML (seller 471589392): +50 mil publicaciones y pocas
+// ventas, así que lo revelador no es su catálogo sino qué se mueve de una semana a la otra.
 //
-// Cómo lo hace:
-//  - Lee /sites/MLU/search?seller_id=... con el token de Amado Vintage (sólo lectura).
-//    La búsqueda no deja pasar el offset 1000, así que el catálogo se parte en tramos
-//    (categoría, después rangos de precio) hasta que cada tramo entre en 1.050 resultados.
-//  - Guarda cada foto en D1 (tablas comp_catalogo_*). Si la corrida se corta, la próxima
-//    sigue la misma foto por los tramos pendientes.
-//  - Con dos fotos completas calcula el movimiento: stock que bajó (venta probable),
-//    publicaciones que desaparecieron, nuevas y cambios de precio. Lo deja en D1 y lo
-//    manda por mail.
+// Qué deja ver la API con nuestro token (sondeo del 16/11/2026, scripts/mercadolibre/
+// sondeo-competidor.mjs): la búsqueda /sites/MLU/search y la lectura de publicaciones ajenas
+// (/items, también en lote) responden 403. Sí abren: la ficha del vendedor (/users, con el
+// contador de operaciones concretadas), las ofertas de cada producto de catálogo
+// (/products/{id}/items, lo que ya usa la vigilancia de competencia del Worker) y las
+// preguntas por publicación. Sobre eso se arma:
+//  - Ventas del vendedor: el contador de operaciones concretadas, que el Worker guarda a
+//    diario en comp_seller_days. La diferencia entre dos fechas son sus ventas.
+//  - Sus publicaciones en los libros que vendemos nosotros: los productos de catálogo donde
+//    la vigilancia lo vio alguna vez (comp_snapshots) se vuelven a leer y se guarda su
+//    oferta: precio, posición, envío, cantidad si ML la informa, preguntas de la semana.
+//  - Movimiento entre fotos: desapareció (sin stock o pausada), nueva, cambio de precio,
+//    bajó la cantidad.
 // Los datos del vendedor quedan en D1 y en el mail a Seba: en los logs sólo van conteos.
 import {pathToFileURL} from 'node:url';
 import path from 'node:path';
@@ -22,230 +25,189 @@ import {d1Client} from '../vintage-cloud/d1.mjs';
 import {sendMail} from '../vintage-cloud/aviso.mjs';
 
 export const SELLER_HERMES='471589392';
-export const SITE='MLU';
-export const LIMIT=50;
-// Último offset que acepta la búsqueda para publicaciones de terceros.
-export const MAX_OFFSET=1000;
-export const ALCANZABLE=MAX_OFFSET+LIMIT;
-const T='comp_catalogo_';
-export const TABLES={fotos:T+'fotos',tramos:T+'tramos',items:T+'items',movimientos:T+'movimientos'};
-const COLS=['foto_id','item_id','titulo','precio','moneda','cantidad','categoria','dominio','tipo','producto'];
-const ROWS_PER_INSERT=9; // 9 filas x 10 columnas = 90 parámetros (D1 admite 100 por consulta)
-const LISTADO=300; // filas por tipo de movimiento que se guardan y se informan
-export const FOTOS_A_CONSERVAR=6;
+const T='comp_vendedor_';
+export const TABLES={fotos:T+'fotos',items:T+'items',movimientos:T+'movimientos'};
+// Tablas del primer intento (búsqueda por vendedor, cerrada por ML): se descartan.
+const VIEJAS=['comp_catalogo_fotos','comp_catalogo_tramos','comp_catalogo_items','comp_catalogo_movimientos'];
+const COLS=['foto_id','item_id','producto','isbn','nombre','precio','moneda','cantidad','posicion','ofertas','precio_minimo','nuestro_precio','envio_gratis','logistica','preguntas_7d'];
+const ROWS_PER_INSERT=6; // 6 filas x 15 columnas = 90 parámetros (D1 admite 100 por consulta)
+const LISTADO=300;
+export const FOTOS_A_CONSERVAR=12;
+export const DIA_MS=86400000;
 
 export async function schema(query){
- await query(`CREATE TABLE IF NOT EXISTS ${TABLES.fotos} (id INTEGER PRIMARY KEY AUTOINCREMENT,seller_id TEXT NOT NULL,started_at INTEGER NOT NULL,finished_at INTEGER,total_api INTEGER,items INTEGER,parciales INTEGER NOT NULL DEFAULT 0,completa INTEGER NOT NULL DEFAULT 0)`);
- await query(`CREATE TABLE IF NOT EXISTS ${TABLES.tramos} (foto_id INTEGER NOT NULL,clave TEXT NOT NULL,params TEXT NOT NULL,total INTEGER,offset INTEGER NOT NULL DEFAULT 0,estado TEXT NOT NULL,PRIMARY KEY(foto_id,clave))`);
- await query(`CREATE TABLE IF NOT EXISTS ${TABLES.items} (foto_id INTEGER NOT NULL,item_id TEXT NOT NULL,titulo TEXT,precio REAL,moneda TEXT,cantidad INTEGER,categoria TEXT,dominio TEXT,tipo TEXT,producto TEXT,PRIMARY KEY(foto_id,item_id))`);
- await query(`CREATE TABLE IF NOT EXISTS ${TABLES.movimientos} (foto_id INTEGER NOT NULL,item_id TEXT NOT NULL,tipo TEXT NOT NULL,titulo TEXT,antes TEXT,despues TEXT,PRIMARY KEY(foto_id,item_id,tipo))`);
+ for(const t of VIEJAS)await query(`DROP TABLE IF EXISTS ${t}`);
+ await query(`CREATE TABLE IF NOT EXISTS ${TABLES.fotos} (id INTEGER PRIMARY KEY AUTOINCREMENT,seller_id TEXT NOT NULL,nickname TEXT,started_at INTEGER NOT NULL,finished_at INTEGER,transacciones INTEGER,ventas_60d INTEGER,nivel TEXT,productos INTEGER,items INTEGER,errores INTEGER NOT NULL DEFAULT 0,completa INTEGER NOT NULL DEFAULT 0)`);
+ await query(`CREATE TABLE IF NOT EXISTS ${TABLES.items} (foto_id INTEGER NOT NULL,item_id TEXT NOT NULL,producto TEXT,isbn TEXT,nombre TEXT,precio REAL,moneda TEXT,cantidad INTEGER,posicion INTEGER,ofertas INTEGER,precio_minimo REAL,nuestro_precio REAL,envio_gratis INTEGER,logistica TEXT,preguntas_7d INTEGER,PRIMARY KEY(foto_id,item_id))`);
+ await query(`CREATE TABLE IF NOT EXISTS ${TABLES.movimientos} (foto_id INTEGER NOT NULL,item_id TEXT NOT NULL,tipo TEXT NOT NULL,nombre TEXT,antes TEXT,despues TEXT,PRIMARY KEY(foto_id,item_id,tipo))`);
 }
 
 const num=v=>{const n=Number(v);return v==null||v===''||!Number.isFinite(n)?null:n;};
 const entero=v=>{const n=num(v);return n==null?null:Math.trunc(n);};
-export function fila(fotoId,r){
- return [fotoId,String(r.id),String(r.title??'').slice(0,200),num(r.price),r.currency_id??null,entero(r.available_quantity),r.category_id??null,r.domain_id??null,r.listing_type_id??null,r.catalog_product_id??null];
-}
-export function rutaBusqueda(seller,params={},offset=0){
- const q=new URLSearchParams({seller_id:String(seller),limit:String(LIMIT),offset:String(offset)});
- if(params.category)q.set('category',params.category);
- if(params.price)q.set('price',params.price);
- if(params.sort)q.set('sort',params.sort);
- return `/sites/${SITE}/search?${q}`;
-}
-// Límites numéricos de un rango de precio "a-b" ("*" = abierto).
-export function limitesPrecio(price){
- const [a,b]=String(price??'*-*').split('-');
- return {lo:a==='*'||a===''?null:Number(a),hi:b==='*'||b===''?null:Number(b)};
-}
-const valoresFiltro=(page,id)=>{const f=(page?.available_filters??[]).find(x=>x?.id===id);return Array.isArray(f?.values)?f.values.filter(v=>v?.id!=null):[];};
-
-// En qué tramos hijos se parte un tramo que no entra en 1.050 resultados. Primero por
-// categoría (lo que ofrece la propia búsqueda), después por rangos de precio y, si hace
-// falta, partiendo el rango al medio. null = no se puede partir más.
-export async function dividir(params,page,{precioExtremo}){
- const cats=valoresFiltro(page,'category').filter(v=>v.id!==params.category);
- if(cats.length>1)return cats.map(c=>({params:{...params,category:c.id},nombre:`cat:${c.id}`}));
- if(!params.price){
-  const rangos=valoresFiltro(page,'price');
-  if(rangos.length>1)return rangos.map(r=>({params:{...params,price:r.id},nombre:`p:${r.id}`}));
- }
- let {lo,hi}=limitesPrecio(params.price);
- if(lo==null)lo=await precioExtremo(params,'price_asc');
- if(hi==null)hi=await precioExtremo(params,'price_desc');
- if(lo==null||hi==null||!(hi-lo>=1))return null;
- const mid=Math.floor((lo+hi)/2);
- return [{params:{...params,price:`${lo}-${mid}`},nombre:`p:${lo}-${mid}`},{params:{...params,price:`${mid}-${hi}`},nombre:`p:${mid}-${hi}`}];
-}
-
 async function enTandas(items,n,fn){for(let i=0;i<items.length;i+=n)await Promise.all(items.slice(i,i+n).map(fn));}
 
-// Toma (o sigue tomando) la foto del catálogo del vendedor. Devuelve conteos; nunca títulos.
-export async function tomarFoto({ml,query,seller=SELLER_HERMES,now=Date.now,maxMs=90*60000,intervalMs=250,sleep=ms=>new Promise(r=>setTimeout(r,ms)),reanudarHoras=96,onStatus=()=>{}}){
+// Ficha pública del vendedor: lo que importa para medir ventas y confianza.
+export function leerVendedor(u){
+ const r=u?.seller_reputation??{};
+ return {nickname:typeof u?.nickname==='string'?u.nickname:null,transacciones:entero(r?.transactions?.completed),ventas_60d:entero(r?.metrics?.sales?.completed),nivel:r?.power_seller_status??r?.level_id??null};
+}
+// Oferta del vendedor dentro de las ofertas de un producto de catálogo, con su posición por precio.
+export function ofertaDelVendedor(ofertas,seller){
+ const lista=(Array.isArray(ofertas)?ofertas:[]).filter(o=>typeof o?.item_id==='string').sort((a,b)=>(num(a.price)??Infinity)-(num(b.price)??Infinity));
+ const i=lista.findIndex(o=>String(o.seller_id??'')===String(seller));
+ if(i<0)return null;
+ const o=lista[i];
+ return {item_id:o.item_id,precio:num(o.price),moneda:o.currency_id??null,cantidad:entero(o.available_quantity),posicion:i+1,ofertas:lista.length,precio_minimo:num(lista[0]?.price),envio_gratis:o.shipping?.free_shipping?1:0,logistica:o.shipping?.logistic_type??null};
+}
+export function preguntasRecientes(data,now=Date.now(),dias=7){
+ const desde=now-dias*DIA_MS;
+ return (Array.isArray(data?.questions)?data.questions:[]).filter(q=>{const t=Date.parse(q?.date_created??'');return Number.isFinite(t)&&t>=desde;}).length;
+}
+
+// Toma la foto: ficha del vendedor y sus ofertas en los productos de catálogo nuestros donde
+// la vigilancia lo vio alguna vez. Devuelve conteos; nunca títulos.
+export async function tomarFoto({ml,query,seller=SELLER_HERMES,now=Date.now,intervalMs=200,sleep=ms=>new Promise(r=>setTimeout(r,ms)),onStatus=()=>{}}){
  await schema(query);
  const t0=now();
- const stats={llamadas:0,items:0,tramos:0,divididos:0,parciales:0,reanudada:false};
- let foto=(await query(`SELECT * FROM ${TABLES.fotos} WHERE seller_id=? AND completa=0 AND started_at>? ORDER BY id DESC LIMIT 1`,[String(seller),t0-reanudarHoras*3600000]))[0];
- if(foto)stats.reanudada=true;
- else{
-  foto=(await query(`INSERT INTO ${TABLES.fotos}(seller_id,started_at) VALUES(?,?) RETURNING *`,[String(seller),t0]))[0];
-  await query(`INSERT INTO ${TABLES.tramos}(foto_id,clave,params,estado) VALUES(?,?,?,?)`,[foto.id,'raiz','{}','pendiente']);
+ const vendedor=leerVendedor(await ml.get(`/users/${seller}`));
+ const foto=(await query(`INSERT INTO ${TABLES.fotos}(seller_id,nickname,started_at,transacciones,ventas_60d,nivel) VALUES(?,?,?,?,?,?) RETURNING *`,[String(seller),vendedor.nickname,t0,vendedor.transacciones,vendedor.ventas_60d,vendedor.nivel]))[0];
+ const vistos=await query(`SELECT s.catalog_product_id producto,MAX(t.isbn) isbn,MAX(t.own_price) nuestro_precio FROM comp_snapshots s LEFT JOIN comp_targets t ON t.catalog_product_id=s.catalog_product_id WHERE s.seller_id=? GROUP BY s.catalog_product_id`,[String(seller)]);
+ const previos=await query(`SELECT i.producto,MAX(i.isbn) isbn,MAX(i.nombre) nombre,MAX(i.nuestro_precio) nuestro_precio FROM ${TABLES.items} i JOIN ${TABLES.fotos} f ON f.id=i.foto_id WHERE f.seller_id=? AND i.producto IS NOT NULL GROUP BY i.producto`,[String(seller)]);
+ const productos=new Map();
+ for(const p of previos)productos.set(p.producto,{producto:p.producto,isbn:p.isbn,nombre:p.nombre,nuestro_precio:p.nuestro_precio});
+ for(const v of vistos){const prev=productos.get(v.producto)??{};productos.set(v.producto,{producto:v.producto,isbn:v.isbn??prev.isbn??null,nombre:prev.nombre??null,nuestro_precio:v.nuestro_precio??prev.nuestro_precio??null});}
+ const stats={productos:productos.size,items:0,errores:0,llamadas:0,con_cantidad:0};
+ const filas=[];
+ for(const p of productos.values()){
+  let ofertas=null;
+  try{stats.llamadas++;ofertas=(await ml.get(`/products/${encodeURIComponent(p.producto)}/items?limit=50`))?.results??[];}
+  catch(e){if(e?.status===404)ofertas=[];else{stats.errores++;onStatus({evento:'producto_error',code:e?.code??String(e)});continue;}}
+  const o=ofertaDelVendedor(ofertas,seller);
+  if(!o)continue;
+  if(!p.nombre){try{stats.llamadas++;p.nombre=String((await ml.get(`/products/${encodeURIComponent(p.producto)}`))?.name??'').slice(0,200)||null;}catch{}}
+  let preguntas=null;
+  try{stats.llamadas++;preguntas=preguntasRecientes(await ml.get(`/questions/search?item=${encodeURIComponent(o.item_id)}&limit=50&sort_fields=date_created&sort_types=DESC`),now());}catch{}
+  if(o.cantidad!=null)stats.con_cantidad++;
+  filas.push([foto.id,o.item_id,p.producto,p.isbn,p.nombre,o.precio,o.moneda,o.cantidad,o.posicion,o.ofertas,o.precio_minimo,p.nuestro_precio,o.envio_gratis,o.logistica,preguntas]);
+  stats.items++;
+  if(intervalMs)await sleep(intervalMs);
  }
- const buscar=async(params,offset)=>{stats.llamadas++;return await ml.get(rutaBusqueda(seller,params,offset));};
- const precioExtremo=async(params,sort)=>num((await buscar({...params,sort},0))?.results?.[0]?.price);
- const guardar=async results=>{
-  const filas=(results??[]).filter(r=>r?.id!=null).map(r=>fila(foto.id,r));
-  const grupos=[];for(let i=0;i<filas.length;i+=ROWS_PER_INSERT)grupos.push(filas.slice(i,i+ROWS_PER_INSERT));
-  await enTandas(grupos,4,g=>query(`INSERT OR IGNORE INTO ${TABLES.items}(${COLS.join(',')}) VALUES ${g.map(()=>`(${COLS.map(()=>'?').join(',')})`).join(',')}`,g.flat()));
-  stats.items+=filas.length;
- };
- const agotado=()=>now()-t0>maxMs;
- while(!agotado()){
-  const tramo=(await query(`SELECT * FROM ${TABLES.tramos} WHERE foto_id=? AND estado='pendiente' ORDER BY clave LIMIT 1`,[foto.id]))[0];
-  if(!tramo)break;
-  const params=JSON.parse(tramo.params);let offset=tramo.offset??0,total=tramo.total;
-  while(true){
-   const page=await buscar(params,offset);
-   const results=Array.isArray(page?.results)?page.results:[];
-   if(total==null)total=entero(page?.paging?.total)??results.length;
-   if(offset===0&&total>ALCANZABLE){
-    const hijos=await dividir(params,page,{precioExtremo});
-    if(hijos){
-     for(const h of hijos)await query(`INSERT OR IGNORE INTO ${TABLES.tramos}(foto_id,clave,params,estado) VALUES(?,?,?,?)`,[foto.id,`${tramo.clave}/${h.nombre}`,JSON.stringify(h.params),'pendiente']);
-     await query(`UPDATE ${TABLES.tramos} SET total=?,estado='dividido' WHERE foto_id=? AND clave=?`,[total,foto.id,tramo.clave]);
-     stats.divididos++;break;
-    }
-   }
-   await guardar(results);
-   offset+=LIMIT;
-   const fin=offset>=total||results.length<LIMIT||offset>MAX_OFFSET;
-   const estado=!fin?'pendiente':offset<total&&offset>MAX_OFFSET?'parcial':'listo';
-   await query(`UPDATE ${TABLES.tramos} SET total=?,offset=?,estado=? WHERE foto_id=? AND clave=?`,[total,offset,estado,foto.id,tramo.clave]);
-   if(fin){stats.tramos++;if(estado==='parcial')stats.parciales++;break;}
-   if(agotado())break;
-   await sleep(intervalMs);
-  }
-  onStatus({evento:'tramo',foto_id:foto.id,...stats});
- }
- const pendientes=(await query(`SELECT COUNT(*) n FROM ${TABLES.tramos} WHERE foto_id=? AND estado='pendiente'`,[foto.id]))[0].n;
- const n=(await query(`SELECT COUNT(*) n FROM ${TABLES.items} WHERE foto_id=?`,[foto.id]))[0].n;
- if(pendientes>0){onStatus({evento:'tiempo_agotado',foto_id:foto.id,pendientes,guardados:n,...stats});return {foto_id:foto.id,completa:false,pendientes,guardados:n,...stats};}
- const parciales=(await query(`SELECT COUNT(*) n FROM ${TABLES.tramos} WHERE foto_id=? AND estado='parcial'`,[foto.id]))[0].n;
- const raiz=(await query(`SELECT total FROM ${TABLES.tramos} WHERE foto_id=? AND clave='raiz'`,[foto.id]))[0];
- await query(`UPDATE ${TABLES.fotos} SET finished_at=?,total_api=?,items=?,parciales=?,completa=1 WHERE id=?`,[now(),raiz?.total??null,n,parciales,foto.id]);
+ const grupos=[];for(let i=0;i<filas.length;i+=ROWS_PER_INSERT)grupos.push(filas.slice(i,i+ROWS_PER_INSERT));
+ await enTandas(grupos,4,g=>query(`INSERT OR IGNORE INTO ${TABLES.items}(${COLS.join(',')}) VALUES ${g.map(()=>`(${COLS.map(()=>'?').join(',')})`).join(',')}`,g.flat()));
+ await query(`UPDATE ${TABLES.fotos} SET finished_at=?,productos=?,items=?,errores=?,completa=1 WHERE id=?`,[now(),stats.productos,stats.items,stats.errores,foto.id]);
  await podar(query,seller);
- const out={foto_id:foto.id,completa:true,total_api:raiz?.total??null,guardados:n,...stats,parciales};
+ const out={foto_id:foto.id,completa:true,...stats,transacciones:vendedor.transacciones,ventas_60d:vendedor.ventas_60d};
  onStatus({evento:'foto_completa',...out});
  return out;
 }
 
-// Borra fotos viejas (y sus filas) para que D1 no crezca sin fin.
 export async function podar(query,seller,conservar=FOTOS_A_CONSERVAR){
  const viejas=await query(`SELECT id FROM ${TABLES.fotos} WHERE seller_id=? AND completa=1 ORDER BY id DESC LIMIT -1 OFFSET ?`,[String(seller),conservar]);
- for(const {id} of viejas)for(const t of [TABLES.items,TABLES.tramos,TABLES.movimientos,TABLES.fotos])await query(`DELETE FROM ${t} WHERE ${t===TABLES.fotos?'id':'foto_id'}=?`,[id]);
+ for(const {id} of viejas)for(const t of [TABLES.items,TABLES.movimientos,TABLES.fotos])await query(`DELETE FROM ${t} WHERE ${t===TABLES.fotos?'id':'foto_id'}=?`,[id]);
  return viejas.length;
 }
 
-// Qué se movió entre las dos últimas fotos completas. Guarda el detalle en D1 y lo devuelve.
+// Serie diaria del contador de operaciones concretadas (comp_seller_days, lo carga el Worker).
+export async function serieVentas(query,seller,dias=28){
+ let rows=[];
+ try{rows=await query(`SELECT snap_date,transactions_completed FROM comp_seller_days WHERE seller_id=? AND transactions_completed IS NOT NULL ORDER BY snap_date DESC LIMIT ?`,[String(seller),dias+1]);}catch{return {dias:[],semana:null,primera:null,ultima:null};}
+ rows=rows.slice().reverse();
+ const out=[];
+ for(let i=1;i<rows.length;i++)out.push({fecha:rows[i].snap_date,acumulado:rows[i].transactions_completed,ventas:Math.max(0,rows[i].transactions_completed-rows[i-1].transactions_completed)});
+ const ultima=rows.at(-1)??null;
+ const hace7=rows.filter(r=>r.snap_date<=sumarDias(ultima?.snap_date,-7)).at(-1)??null;
+ return {dias:out.slice(-dias),semana:ultima&&hace7?{desde:hace7.snap_date,hasta:ultima.snap_date,ventas:ultima.transactions_completed-hace7.transactions_completed}:null,primera:rows[0]??null,ultima};
+}
+const sumarDias=(fecha,n)=>fecha?new Date(Date.parse(fecha+'T12:00:00Z')+n*DIA_MS).toISOString().slice(0,10):'';
+
+// Qué se movió entre las dos últimas fotos. Guarda el detalle en D1 y lo devuelve.
 export async function movimiento({query,seller=SELLER_HERMES}){
  await schema(query);
  const fotos=await query(`SELECT * FROM ${TABLES.fotos} WHERE seller_id=? AND completa=1 ORDER BY id DESC LIMIT 2`,[String(seller)]);
  const actual=fotos[0]??null,anterior=fotos[1]??null;
- const out={seller:String(seller),actual,anterior,vendidos:[],desaparecidos:[],nuevos:[],precios:[],totales:{vendidos:0,unidades:0,desaparecidos:0,nuevos:0,precios:0}};
- if(!actual||!anterior)return out;
- const I=TABLES.items,[b,a]=[actual.id,anterior.id];
- out.vendidos=await query(`SELECT a.item_id,a.titulo,a.precio precio_antes,b.precio precio_despues,a.cantidad cantidad_antes,b.cantidad cantidad_despues,a.categoria FROM ${I} a JOIN ${I} b ON b.foto_id=? AND b.item_id=a.item_id WHERE a.foto_id=? AND a.cantidad IS NOT NULL AND b.cantidad IS NOT NULL AND b.cantidad<a.cantidad ORDER BY (a.cantidad-b.cantidad) DESC,a.item_id LIMIT ?`,[b,a,LISTADO]);
- out.precios=await query(`SELECT a.item_id,a.titulo,a.precio precio_antes,b.precio precio_despues,a.categoria FROM ${I} a JOIN ${I} b ON b.foto_id=? AND b.item_id=a.item_id WHERE a.foto_id=? AND a.precio IS NOT NULL AND b.precio IS NOT NULL AND b.precio<>a.precio ORDER BY ABS(b.precio-a.precio) DESC,a.item_id LIMIT ?`,[b,a,LISTADO]);
- out.desaparecidos=await query(`SELECT a.item_id,a.titulo,a.precio,a.cantidad,a.categoria FROM ${I} a WHERE a.foto_id=? AND NOT EXISTS(SELECT 1 FROM ${I} b WHERE b.foto_id=? AND b.item_id=a.item_id) ORDER BY COALESCE(a.cantidad,999999) ASC,a.item_id LIMIT ?`,[a,b,LISTADO]);
- out.nuevos=await query(`SELECT b.item_id,b.titulo,b.precio,b.cantidad,b.categoria FROM ${I} b WHERE b.foto_id=? AND NOT EXISTS(SELECT 1 FROM ${I} a WHERE a.foto_id=? AND a.item_id=b.item_id) ORDER BY b.item_id LIMIT ?`,[b,a,LISTADO]);
- const cuenta=async(sql,args)=>(await query(sql,args))[0]?.n??0;
- out.totales={
-  vendidos:await cuenta(`SELECT COUNT(*) n FROM ${I} a JOIN ${I} b ON b.foto_id=? AND b.item_id=a.item_id WHERE a.foto_id=? AND b.cantidad<a.cantidad`,[b,a]),
-  unidades:await cuenta(`SELECT COALESCE(SUM(a.cantidad-b.cantidad),0) n FROM ${I} a JOIN ${I} b ON b.foto_id=? AND b.item_id=a.item_id WHERE a.foto_id=? AND b.cantidad<a.cantidad`,[b,a]),
-  precios:await cuenta(`SELECT COUNT(*) n FROM ${I} a JOIN ${I} b ON b.foto_id=? AND b.item_id=a.item_id WHERE a.foto_id=? AND b.precio<>a.precio`,[b,a]),
-  desaparecidos:await cuenta(`SELECT COUNT(*) n FROM ${I} a WHERE a.foto_id=? AND NOT EXISTS(SELECT 1 FROM ${I} b WHERE b.foto_id=? AND b.item_id=a.item_id)`,[a,b]),
-  nuevos:await cuenta(`SELECT COUNT(*) n FROM ${I} b WHERE b.foto_id=? AND NOT EXISTS(SELECT 1 FROM ${I} a WHERE a.foto_id=? AND a.item_id=b.item_id)`,[b,a]),
- };
+ const out={seller:String(seller),actual,anterior,listado:[],vendidos:[],desaparecidos:[],nuevos:[],precios:[],totales:{vendidos:0,desaparecidos:0,nuevos:0,precios:0}};
+ if(!actual)return out;
+ const I=TABLES.items;
+ out.listado=await query(`SELECT * FROM ${I} WHERE foto_id=? ORDER BY COALESCE(preguntas_7d,0) DESC,posicion ASC,item_id LIMIT ?`,[actual.id,LISTADO]);
+ if(!anterior)return out;
+ const [b,a]=[actual.id,anterior.id];
+ out.vendidos=await query(`SELECT a.item_id,a.nombre,a.precio precio_antes,b.precio precio_despues,a.cantidad cantidad_antes,b.cantidad cantidad_despues FROM ${I} a JOIN ${I} b ON b.foto_id=? AND b.item_id=a.item_id WHERE a.foto_id=? AND a.cantidad IS NOT NULL AND b.cantidad IS NOT NULL AND b.cantidad<a.cantidad ORDER BY (a.cantidad-b.cantidad) DESC,a.item_id LIMIT ?`,[b,a,LISTADO]);
+ out.precios=await query(`SELECT a.item_id,a.nombre,a.precio precio_antes,b.precio precio_despues,b.nuestro_precio FROM ${I} a JOIN ${I} b ON b.foto_id=? AND b.item_id=a.item_id WHERE a.foto_id=? AND a.precio IS NOT NULL AND b.precio IS NOT NULL AND b.precio<>a.precio ORDER BY ABS(b.precio-a.precio) DESC,a.item_id LIMIT ?`,[b,a,LISTADO]);
+ out.desaparecidos=await query(`SELECT a.item_id,a.nombre,a.precio,a.cantidad,a.posicion,a.preguntas_7d FROM ${I} a WHERE a.foto_id=? AND NOT EXISTS(SELECT 1 FROM ${I} b WHERE b.foto_id=? AND b.item_id=a.item_id) ORDER BY a.posicion ASC,a.item_id LIMIT ?`,[a,b,LISTADO]);
+ out.nuevos=await query(`SELECT b.item_id,b.nombre,b.precio,b.cantidad,b.posicion,b.nuestro_precio FROM ${I} b WHERE b.foto_id=? AND NOT EXISTS(SELECT 1 FROM ${I} a WHERE a.foto_id=? AND a.item_id=b.item_id) ORDER BY b.item_id LIMIT ?`,[b,a,LISTADO]);
+ out.totales={vendidos:out.vendidos.length,desaparecidos:out.desaparecidos.length,nuevos:out.nuevos.length,precios:out.precios.length};
  await query(`DELETE FROM ${TABLES.movimientos} WHERE foto_id=?`,[b]);
  const filas=[
-  ...out.vendidos.map(r=>[b,r.item_id,'vendido',r.titulo,String(r.cantidad_antes),String(r.cantidad_despues)]),
-  ...out.desaparecidos.map(r=>[b,r.item_id,'desaparecido',r.titulo,String(r.cantidad??''),'']),
-  ...out.nuevos.map(r=>[b,r.item_id,'nuevo',r.titulo,'',String(r.cantidad??'')]),
-  ...out.precios.map(r=>[b,r.item_id,'precio',r.titulo,String(r.precio_antes),String(r.precio_despues)]),
+  ...out.vendidos.map(r=>[b,r.item_id,'vendido',r.nombre,String(r.cantidad_antes),String(r.cantidad_despues)]),
+  ...out.desaparecidos.map(r=>[b,r.item_id,'desaparecido',r.nombre,String(r.precio??''),'']),
+  ...out.nuevos.map(r=>[b,r.item_id,'nuevo',r.nombre,'',String(r.precio??'')]),
+  ...out.precios.map(r=>[b,r.item_id,'precio',r.nombre,String(r.precio_antes),String(r.precio_despues)]),
  ];
  const grupos=[];for(let i=0;i<filas.length;i+=15)grupos.push(filas.slice(i,i+15));
- await enTandas(grupos,4,g=>query(`INSERT OR IGNORE INTO ${TABLES.movimientos}(foto_id,item_id,tipo,titulo,antes,despues) VALUES ${g.map(()=>'(?,?,?,?,?,?)').join(',')}`,g.flat()));
- return out;
-}
-
-export async function resumenCategorias(query,fotoId,limite=20){
- return query(`SELECT categoria,COUNT(*) n,ROUND(AVG(precio)) promedio,MIN(precio) minimo,MAX(precio) maximo,SUM(CASE WHEN cantidad IS NOT NULL THEN 1 ELSE 0 END) con_stock FROM ${TABLES.items} WHERE foto_id=? GROUP BY categoria ORDER BY n DESC LIMIT ?`,[fotoId,limite]);
-}
-export async function nombresCategorias(ml,ids){
- const out={};
- for(const id of [...new Set(ids.filter(Boolean))].slice(0,30)){try{out[id]=(await ml.get(`/categories/${id}`))?.name??id;}catch{out[id]=id;}}
+ await enTandas(grupos,4,g=>query(`INSERT OR IGNORE INTO ${TABLES.movimientos}(foto_id,item_id,tipo,nombre,antes,despues) VALUES ${g.map(()=>'(?,?,?,?,?,?)').join(',')}`,g.flat()));
  return out;
 }
 
 const pesos=v=>v==null?'-':`$${Math.round(Number(v)).toLocaleString('es-UY')}`;
 const link=id=>`https://articulo.mercadolibre.com.uy/${String(id).replace(/^MLU/,'MLU-')}`;
-const linea=(r,extra)=>`- ${r.titulo??r.item_id} | ${extra} | ${link(r.item_id)}`;
 const fecha=ms=>ms?fechaMontevideo(new Date(ms)):'?';
+const nombre=r=>r.nombre??(r.isbn?`ISBN ${r.isbn}`:r.item_id);
 
-// Texto del mail: primero lo que se vendió, después lo que desapareció, nuevos y precios.
-export function informe(mov,{categorias=[],nombres={},seller=mov.seller}={}){
+// Texto del mail: primero cuánto vende el vendedor, después qué se movió en nuestros libros.
+export function informe(mov,{serie=null,seller=mov.seller}={}){
  const L=[];
  const {actual,anterior,totales:t}=mov;
- const cat=id=>nombres[id]??id??'sin categoría';
- if(!actual)return `Competencia ${seller}: todavía no hay una foto completa del catálogo.`;
- L.push(`Vendedor ${seller}. Foto del ${fecha(actual.finished_at)}: ${actual.items} publicaciones guardadas (la búsqueda informa ${actual.total_api??'?'}).`);
- if(actual.parciales)L.push(`Aviso: ${actual.parciales} tramo(s) quedaron parciales porque tienen más de ${ALCANZABLE} publicaciones al mismo precio; faltan algunas.`);
+ const quien=`${actual?.nickname??'vendedor'} (${seller})`;
+ if(!actual)return `Competencia ${seller}: todavía no hay una foto completa.`;
+ L.push(`${quien}. Foto del ${fecha(actual.finished_at)}.`,'');
+ L.push('CUÁNTO VENDE (contador de operaciones concretadas de su ficha pública)');
+ if(actual.transacciones!=null)L.push(`- Hoy: ${actual.transacciones.toLocaleString('es-UY')} operaciones concretadas en total${actual.ventas_60d!=null?`; ${actual.ventas_60d} ventas en los últimos 60 días según Mercado Libre`:''}.`);
+ if(serie?.semana)L.push(`- Última semana (${serie.semana.desde} a ${serie.semana.hasta}): ${serie.semana.ventas} ventas.`);
+ if(serie?.primera&&serie?.ultima&&serie.primera.snap_date!==serie.ultima.snap_date)L.push(`- Desde el ${serie.primera.snap_date}: ${serie.ultima.transactions_completed-serie.primera.transactions_completed} ventas en ${Math.round((Date.parse(serie.ultima.snap_date)-Date.parse(serie.primera.snap_date))/DIA_MS)} días.`);
+ if(serie?.dias?.length)L.push(`- Por día: ${serie.dias.map(d=>`${d.fecha.slice(5)}: ${d.ventas}`).join(' | ')}`);
+ if(anterior?.transacciones!=null&&actual.transacciones!=null)L.push(`- Entre las dos fotos (${fecha(anterior.finished_at)} a ${fecha(actual.finished_at)}): ${actual.transacciones-anterior.transacciones} ventas.`);
+ L.push('',`EN NUESTROS LIBROS: compite en ${actual.items} publicaciones de ${actual.productos} productos de catálogo que vendemos nosotros.`);
  if(!anterior){
-  L.push('','Es la primera foto: el movimiento (qué vende) sale en la próxima, comparando contra esta.');
+  L.push('Es la primera foto: el movimiento publicación por publicación sale en la próxima, comparando contra esta.');
  }else{
-  L.push(`Comparada con la foto del ${fecha(anterior.finished_at)} (${anterior.items} publicaciones).`,'');
-  L.push(`VENTAS PROBABLES (bajó el stock): ${t.vendidos} publicaciones, ${t.unidades} unidades.`);
-  for(const r of mov.vendidos.slice(0,100))L.push(linea(r,`${r.cantidad_antes} -> ${r.cantidad_despues} u. | ${pesos(r.precio_despues)} | ${cat(r.categoria)}`));
-  L.push('',`DESAPARECIDAS (estaban y ya no se listan; agotadas o dadas de baja): ${t.desaparecidos}.`);
-  for(const r of mov.desaparecidos.slice(0,60))L.push(linea(r,`${r.cantidad??'?'} u. | ${pesos(r.precio)} | ${cat(r.categoria)}`));
+  L.push(`Movimiento desde la foto del ${fecha(anterior.finished_at)}:`,'');
+  L.push(`DESAPARECIDAS (se quedó sin stock o la pausó): ${t.desaparecidos}.`);
+  for(const r of mov.desaparecidos.slice(0,60))L.push(`- ${nombre(r)} | estaba ${pesos(r.precio)} en el puesto ${r.posicion??'?'} | ${link(r.item_id)}`);
+  L.push('',`BAJÓ LA CANTIDAD (venta probable): ${t.vendidos}.`);
+  for(const r of mov.vendidos.slice(0,60))L.push(`- ${nombre(r)} | ${r.cantidad_antes} -> ${r.cantidad_despues} u. | ${pesos(r.precio_despues)} | ${link(r.item_id)}`);
   L.push('',`NUEVAS: ${t.nuevos}.`);
-  for(const r of mov.nuevos.slice(0,40))L.push(linea(r,`${r.cantidad??'?'} u. | ${pesos(r.precio)} | ${cat(r.categoria)}`));
+  for(const r of mov.nuevos.slice(0,40))L.push(`- ${nombre(r)} | ${pesos(r.precio)} (nosotros ${pesos(r.nuestro_precio)}) | ${link(r.item_id)}`);
   L.push('',`CAMBIOS DE PRECIO: ${t.precios}.`);
-  for(const r of mov.precios.slice(0,40))L.push(linea(r,`${pesos(r.precio_antes)} -> ${pesos(r.precio_despues)} | ${cat(r.categoria)}`));
+  for(const r of mov.precios.slice(0,40))L.push(`- ${nombre(r)} | ${pesos(r.precio_antes)} -> ${pesos(r.precio_despues)} (nosotros ${pesos(r.nuestro_precio)}) | ${link(r.item_id)}`);
  }
- if(categorias.length){
-  L.push('','QUÉ PUBLICA, POR CATEGORÍA (las más grandes):');
-  for(const c of categorias)L.push(`- ${cat(c.categoria)}: ${c.n} publicaciones, precio promedio ${pesos(c.promedio)} (de ${pesos(c.minimo)} a ${pesos(c.maximo)})`);
- }
+ const conPreguntas=mov.listado.filter(r=>(r.preguntas_7d??0)>0);
+ L.push('',`PREGUNTAS RECIBIDAS EN LA SEMANA: ${conPreguntas.length} publicaciones con preguntas.`);
+ for(const r of conPreguntas.slice(0,40))L.push(`- ${nombre(r)} | ${r.preguntas_7d} pregunta(s) | ${pesos(r.precio)} | ${link(r.item_id)}`);
+ L.push('',`SUS PUBLICACIONES EN NUESTROS LIBROS (hasta 100): precio de ${actual.nickname??'él'} | nuestro precio | el más barato del producto | puesto entre las ofertas`);
+ for(const r of mov.listado.slice(0,100))L.push(`- ${nombre(r)} | ${pesos(r.precio)} | ${pesos(r.nuestro_precio)} | ${pesos(r.precio_minimo)} | ${r.posicion??'?'} de ${r.ofertas??'?'}${r.cantidad!=null?` | ${r.cantidad} u.`:''}${r.envio_gratis?' | envío gratis':''} | ${link(r.item_id)}`);
+ L.push('','NOTA: Mercado Libre cerró a las aplicaciones la búsqueda por vendedor y la lectura de publicaciones ajenas, así que su catálogo completo (más de 50 mil publicaciones) sólo se ve desde el navegador:',`https://listado.mercadolibre.com.uy/_CustId_${seller}`);
  return L.join('\n');
 }
 
-export function asunto(mov){
+export function asunto(mov,serie=null){
  if(!mov.actual)return 'competencia: sin foto completa';
- if(!mov.anterior)return `competencia ${mov.seller}: primera foto, ${mov.actual.items} publicaciones`;
- return `competencia ${mov.seller}: ${mov.totales.vendidos} ventas probables, ${mov.totales.desaparecidos} bajas, ${mov.totales.nuevos} nuevas`;
+ const quien=mov.actual.nickname??mov.seller;
+ const semana=serie?.semana?`${serie.semana.ventas} ventas en la semana`:`${mov.actual.transacciones??'?'} ventas en total`;
+ if(!mov.anterior)return `${quien}: ${semana}, ${mov.actual.items} publicaciones en nuestros libros`;
+ return `${quien}: ${semana}, ${mov.totales.desaparecidos} bajas y ${mov.totales.nuevos} nuevas en nuestros libros`;
 }
 
-export async function correr({seller=SELLER_HERMES,accion='foto',maxMinutes=150,intervalMs=250,query=null,ml=null,send=sendMail,runUrl=process.env.RUN_URL??null,log=x=>console.log(JSON.stringify(x))}={}){
+export async function correr({seller=SELLER_HERMES,accion='foto',intervalMs=200,query=null,ml=null,send=sendMail,runUrl=process.env.RUN_URL??null,log=x=>console.log(JSON.stringify(x))}={}){
  query??=d1Client();
  ml??=crearCliente(fuenteTokenD1(CUENTAS.vintage),{concurrencia:1});
  let foto=null;
- if(accion==='foto'){
-  foto=await tomarFoto({ml,query,seller,maxMs:maxMinutes*60000,intervalMs,onStatus:log});
-  if(!foto.completa){
-   log({evento:'foto_incompleta',...foto,ml:ml.stats});
-   await send({asunto:`competencia ${seller}: la foto quedó a medias`,texto:`Se guardaron ${foto.guardados} publicaciones y quedan ${foto.pendientes} tramos pendientes. La próxima corrida la sigue desde ahí.${runUrl?`\n\nCorrida: ${runUrl}`:''}`,prefijo:'Competencia ML'});
-   return {foto,mail:'foto_incompleta'};
-  }
- }
+ if(accion==='foto')foto=await tomarFoto({ml,query,seller,intervalMs,onStatus:log});
  const mov=await movimiento({query,seller});
- const categorias=mov.actual?await resumenCategorias(query,mov.actual.id):[];
- const ids=[...categorias.map(c=>c.categoria),...[...mov.vendidos,...mov.desaparecidos,...mov.nuevos,...mov.precios].map(r=>r.categoria)];
- const nombres=await nombresCategorias(ml,ids);
- const texto=informe(mov,{categorias,nombres,seller})+(runUrl?`\n\nCorrida: ${runUrl}`:'');
- const mail=await send({asunto:asunto(mov),texto,prefijo:'Competencia ML'});
- log({evento:'informe',foto_id:mov.actual?.id??null,anterior_id:mov.anterior?.id??null,totales:mov.totales,mail,ml:ml.stats});
- return {foto,mov,mail};
+ const serie=await serieVentas(query,seller);
+ const texto=informe(mov,{serie,seller})+(runUrl?`\n\nCorrida: ${runUrl}`:'');
+ const mail=await send({asunto:asunto(mov,serie),texto,prefijo:'Competencia ML'});
+ log({evento:'informe',foto_id:mov.actual?.id??null,anterior_id:mov.anterior?.id??null,totales:mov.totales,semana:serie?.semana?.ventas??null,mail,ml:ml.stats});
+ return {foto,mov,serie,mail};
 }
 
 async function main(){
@@ -255,7 +217,7 @@ async function main(){
  const accion=arg('--accion','foto');
  if(!['foto','informe'].includes(accion))throw new Error('accion_invalida');
  try{
-  await correr({seller,accion,maxMinutes:Math.max(1,Number(arg('--max-minutes',150))||150),intervalMs:Math.max(0,Number(arg('--interval-ms',250))||0)});
+  await correr({seller,accion,intervalMs:Math.max(0,Number(arg('--interval-ms',200))||0)});
  }catch(e){
   const code=e?.code??e?.message??'error';
   console.log(JSON.stringify({evento:'error',code,status:e?.status??null,detalle:e?.detalle??null}));

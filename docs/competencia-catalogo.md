@@ -1,45 +1,53 @@
-# Competencia: foto semanal del catálogo de un vendedor
+# Competencia: foto semanal de un vendedor
 
 Qué vende un competidor de Mercado Libre cuando las herramientas de terceros (Administrado)
 no lo toman por tener pocas ventas. Pensado para **HERMES_PROMOSML** (seller 471589392,
-cuenta de HERMESPROMOS): +50 mil publicaciones y poco más de 100 ventas, así que lo
-revelador no es su catálogo sino qué se mueve de una semana a la otra.
+la cuenta de HERMESPROMOS): +50 mil publicaciones y poco más de 100 ventas.
 
-## Qué hace
+## Qué deja ver Mercado Libre
+
+Sondeo del 16/11/2026 con el token de Amado Vintage (`scripts/mercadolibre/sondeo-competidor.mjs`,
+se repite con la acción `sondeo` del workflow):
+
+| Ruta | Respuesta |
+| --- | --- |
+| `/sites/MLU/search` (por vendedor, apodo, categoría o texto) | 403 en todas las variantes |
+| `/users/{id}/items/search` | 403 "Searching another user items is restricted" |
+| `/items/{id}` y `/items?ids=` de publicaciones ajenas | 403 (el lote responde 200 con 403 adentro) |
+| `/users/{id}` | OK: apodo, reputación, operaciones concretadas, ventas de 60 días |
+| `/products/{id}/items` | OK: ofertas de cada producto de catálogo (lo usa la vigilancia del Worker) |
+| `/questions/search?item=` | OK: preguntas de una publicación ajena, con fecha |
+
+Por eso el catálogo completo del vendedor no se puede bajar por API. Lo que sí se mide:
+
+1. **Cuánto vende.** El contador de operaciones concretadas de su ficha pública. El Worker lo
+   guarda a diario en `comp_seller_days` desde el 24/10/2026; la diferencia entre fechas son
+   sus ventas (por día, por semana, entre fotos).
+2. **Qué hace en nuestros libros.** Los productos de catálogo donde la vigilancia de
+   competencia lo vio alguna vez (`comp_snapshots`) se vuelven a leer con
+   `/products/{id}/items`: precio, puesto entre las ofertas, el más barato, nuestro precio,
+   envío, cantidad si ML la informa y preguntas recibidas en la semana.
+3. **Movimiento entre fotos**: desaparecida (sin stock o pausada), nueva, cambio de precio,
+   bajó la cantidad.
+
+## Cómo funciona
 
 Workflow `Competencia catálogo (foto semanal)` (`.github/workflows/competencia-catalogo.yml`),
 domingos 03:10 de Montevideo, código en `scripts/mercadolibre/catalogo-competidor.mjs`.
+Tablas en D1: `comp_vendedor_fotos`, `comp_vendedor_items`, `comp_vendedor_movimientos`
+(se conservan las últimas 12 fotos por vendedor). El informe llega por mail con asunto
+"Competencia ML: ...". En los logs de Actions van sólo conteos y códigos de error.
 
-1. Lee `/sites/MLU/search?seller_id=...` con el token de Amado Vintage (sólo lectura, el
-   mismo que usa el vigía). La búsqueda no deja pasar el offset 1000, así que el catálogo se
-   parte en tramos: primero por categoría, después por rangos de precio y, si hace falta,
-   partiendo el rango al medio hasta que cada tramo entre en 1.050 resultados.
-2. Guarda la foto en D1 (`comp_catalogo_fotos`, `comp_catalogo_tramos`, `comp_catalogo_items`).
-   Si la corrida se corta, la siguiente sigue la misma foto por los tramos pendientes
-   (hasta 96 horas después).
-3. Con dos fotos completas calcula el movimiento y lo guarda en `comp_catalogo_movimientos`:
-   - **vendido**: la cantidad disponible bajó (venta probable; la API ya no informa vendidos de terceros);
-   - **desaparecido**: estaba y ya no se lista (agotado o dado de baja);
-   - **nuevo** y **precio**.
-4. Manda el informe por mail a Seba (asunto "Competencia ML: ..."), con las ventas probables
-   primero y, al final, qué publica por categoría. La primera foto sólo avisa que el
-   movimiento sale en la próxima.
-
-Se conservan las últimas 6 fotos completas por vendedor. En los logs de Actions van sólo
-conteos y códigos de error; títulos y precios del vendedor quedan en D1 y en el mail.
-
-## Cómo usarlo
-
-- Otro vendedor: `Run workflow` con su `seller_id`.
-- Sólo volver a mandar el informe de las fotos que ya hay: `Run workflow` con acción `informe`.
-- A mano: `node scripts/mercadolibre/catalogo-competidor.mjs --seller 471589392 --max-minutes 150`
-  con los secretos de Cloudflare y Resend en el entorno.
+- Otro vendedor: `Run workflow` con su `seller_id`. Sólo sirve si la vigilancia del Worker
+  lo vio en algún producto nuestro; si no, la foto trae la ficha y cero publicaciones.
+- Sólo volver a mandar el informe: `Run workflow` con acción `informe`.
 - Tests: `node --experimental-sqlite --test scripts/__tests__/catalogo-competidor.test.mjs`.
 
-## Límites conocidos
+## Límites
 
-- Un tramo con más de 1.050 publicaciones al mismo precio dentro de una categoría queda
-  **parcial** (el informe lo avisa). Para HERMES no debería pasar.
-- `available_quantity` puede venir vacío en algunas publicaciones; esas sólo cuentan como
-  desaparecidas o nuevas, no como vendidas.
-- El mismo vendedor puede tener otras cuentas; sólo se mira la indicada.
+- El catálogo completo (los +50 mil) sólo se ve desde el navegador:
+  `https://listado.mercadolibre.com.uy/_CustId_471589392`, filtrable por categoría. No se
+  automatiza: desde servidores Mercado Libre responde con un muro de verificación.
+- `available_quantity` casi nunca viene en las ofertas de catálogo de terceros; el movimiento
+  se apoya sobre todo en desapariciones, altas y precios.
+- El mismo importador puede tener otras cuentas; sólo se mira la indicada.
