@@ -26,7 +26,14 @@ await api('search_categoria_mas_seller',`/sites/MLU/search?category=MLU1196&sell
 await api('search_categoria_sola',`/sites/MLU/search?category=MLU1196&limit=1`);
 await api('users',`/users/${seller}`);
 await api('users_items_search',`/users/${seller}/items/search?limit=1`);
+try{
+ const c=(await query('SELECT COUNT(DISTINCT item_id) n,COUNT(DISTINCT catalog_product_id) productos,MIN(snap_date) desde,MAX(snap_date) hasta FROM comp_snapshots WHERE seller_id=?',[seller]))[0];
+ log({clave:'d1_items_del_vendedor',...c});
+}catch(e){log({clave:'d1_items_del_vendedor',ok:false,code:e?.code??String(e)});}
 if(itemId){
+ const lote=await api('item_ajeno_multiget_todo',`/items?ids=${itemId}`);
+ const body=Array.isArray(lote)?lote[0]?.body:null;
+ log({clave:'item_ajeno_multiget_codigo',codigo:Array.isArray(lote)?lote[0]?.code??null:null,campos:body&&typeof body==='object'?Object.keys(body).slice(0,60):null,available_quantity:body?.available_quantity!==undefined,sold_quantity:body?.sold_quantity!==undefined,initial_quantity:body?.initial_quantity!==undefined});
  const it=await api('item_ajeno',`/items/${itemId}`);
  if(it)log({clave:'item_ajeno_campos_stock',available_quantity:it.available_quantity!==undefined,sold_quantity:it.sold_quantity!==undefined,initial_quantity:it.initial_quantity!==undefined,status:typeof it.status});
  await api('item_ajeno_multiget',`/items?ids=${itemId}&attributes=id,price,available_quantity,sold_quantity,status`);
