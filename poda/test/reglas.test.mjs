@@ -60,14 +60,44 @@ test('nunca se pausa con menos de 5 clics, aunque el gasto pase el tope', () => 
   assert.equal(evaluarAnuncio({ ...base, gasto: 400, clics: 5, cpc: 80 }).accion, 'pausar');
 });
 
-test('regla 4: con una venta atribuida no se pausa aunque llegue al tope', () => {
-  const r = evaluarAnuncio({ ...base, gasto: 900, clics: 60, cpc: 15, ventasAtribuidas: 1 });
+test('regla 4: con una venta y costo por venta dentro del máximo no se pausa', () => {
+  // libro de $2.500, tope 250: gastó 400 para 1 venta = 16 % del precio (máximo 20 %).
+  const r = evaluarAnuncio({ ...base, gasto: 400, clics: 30, cpc: 13, ventasAtribuidas: 1 });
+  assert.equal(r.accion, 'mantener');
+  assert.match(r.motivo, /16 %/);
+});
+
+test('regla 4: una venta no atribuida (en órdenes) también cuenta como venta', () => {
+  const r = evaluarAnuncio({ ...base, gasto: 400, clics: 30, cpc: 13, ventasOrdenes: 1 });
   assert.equal(r.accion, 'mantener');
 });
 
-test('regla 4: una venta no atribuida (en órdenes) también frena la pausa', () => {
-  const r = evaluarAnuncio({ ...base, gasto: 900, clics: 60, cpc: 15, ventasOrdenes: 1 });
-  assert.equal(r.accion, 'mantener');
+test('regla 10: una venta sola no alcanza si costó más del 20 % del precio', () => {
+  // libro de $2.500: gastó 900 para 1 venta = 36 % del precio.
+  const r = evaluarAnuncio({ ...base, gasto: 900, clics: 60, cpc: 15, ventasAtribuidas: 1 });
+  assert.equal(r.accion, 'pausar');
+  assert.equal(r.ventaCara, true);
+  assert.match(r.motivo, /^Venta cara/);
+  assert.match(r.motivo, /36 %/);
+});
+
+test('regla 10: con varias ventas se divide el gasto entre todas', () => {
+  // 900 / 4 ventas = 225 por venta = 9 % de $2.500: se mantiene.
+  assert.equal(evaluarAnuncio({ ...base, gasto: 900, clics: 60, cpc: 15, ventasAtribuidas: 4 }).accion, 'mantener');
+  // 1.500 / 2 = 750 = 30 %: se pausa. Cuenta la mayor entre atribuidas y órdenes.
+  assert.equal(evaluarAnuncio({ ...base, gasto: 1500, clics: 100, cpc: 15, ventasAtribuidas: 1, ventasOrdenes: 2 }).accion, 'pausar');
+});
+
+test('regla 10: no actúa antes de gastar el tope, ni sin precio, ni en protegidos', () => {
+  // libro de $1.000 (tope 150): gastó 140 para 1 venta = 14 %... y aunque fuera caro, no llegó al tope.
+  assert.equal(evaluarAnuncio({ ...base, precio: 500, gasto: 140, clics: 10, cpc: 14, ventasAtribuidas: 1 }).accion, 'mantener');
+  assert.equal(evaluarAnuncio({ ...base, precio: null, gasto: 900, clics: 60, cpc: 15, ventasAtribuidas: 1 }).accion, 'mantener');
+  assert.equal(evaluarAnuncio({ ...base, gasto: 900, clics: 60, cpc: 15, ventasAtribuidas: 1, protegido: 'Sin poda.' }).accion, 'protegido');
+});
+
+test('regla 9 en la corrida: el precio de lista llega como precioTope', () => {
+  // vende a 2.000 con promo, lista 2.500: tope 250, no 200.
+  assert.equal(evaluarAnuncio({ ...base, precio: 2000, precioTope: 2500, gasto: 220, clics: 15, cpc: 14 }).tope, 250);
 });
 
 test('debajo del tope se mantiene; desde la mitad queda en observación', () => {
@@ -103,7 +133,18 @@ test('regla 5: una venta atribuida tarde o una venta en órdenes reactiva', () =
   assert.equal(evaluarReactivacion({ precio_lista: 2500 }, { ventasAtribuidas: 0, ventasOrdenesDesdePausa: 0, precioLista: 2500 }).accion, 'mantener');
 });
 
-test('regla 6: cambio de precio o promoción nueva reactivan y el gasto se cuenta de cero', () => {
+test('regla 5 con venta cara: sus ventas atribuidas de antes no lo reactivan; una orden nueva sí', () => {
+  const reg = { precio_lista: 2500, motivo: 'Venta cara: gastó 900 para 1 venta...' };
+  assert.equal(evaluarReactivacion(reg, { ventasAtribuidas: 1, ventasOrdenesDesdePausa: 0, precioLista: 2500 }).accion, 'mantener');
+  assert.equal(evaluarReactivacion(reg, { ventasAtribuidas: 1, ventasOrdenesDesdePausa: 1, precioLista: 2500 }).regla, 5);
+});
+
+test('regla 6: una suba de precio NO reactiva (ajuste del 14/11)', () => {
+  assert.equal(evaluarReactivacion({ precio_lista: 3321 }, { precioLista: 3700 }).accion, 'mantener');
+  assert.equal(evaluarReactivacion({ precio_lista: 2868 }, { precioLista: 3200 }).accion, 'mantener');
+});
+
+test('regla 6: baja de precio o promoción nueva reactivan y el gasto se cuenta de cero', () => {
   const a = evaluarReactivacion({ precio_lista: 2500 }, { precioLista: 2000 });
   assert.equal(a.accion, 'reactivar'); assert.equal(a.regla, 6);
   const b = evaluarReactivacion({ precio_lista: 2500, promo: 0 }, { precioLista: 2500, promo: true });

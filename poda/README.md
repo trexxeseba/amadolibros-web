@@ -11,6 +11,11 @@ el 11/11 toda escritura en Ads por API respondió 401. Por eso este proceso **s�
 cliente rechaza cualquier método que no sea GET. Si Mercado Libre habilita el cambio de estado
 de un anuncio, se enchufa acá sin tocar las reglas.
 
+Comprobado el 14/11/2026 con `src/sonda-escritura.mjs` (mandó "pausar" a anuncios ya pausados,
+sin cambiar nada): la app tiene el permiso `urn:ml:mktp:ads:/read-write`, la ruta
+`PUT /advertising/MLU/product_ads/ad_groups/{id}` existe y responde **401 "User does not have
+permission to write."** El bloqueo es de Mercado Libre, no del código ni del token.
+
 ## Qué hace en cada corrida
 
 1. Lee anuncios (grupos de anuncios) y sus métricas de 30 días por campaña.
@@ -28,8 +33,9 @@ de un anuncio, se enchufa acá sin tocar las reglas.
 | Tope de gasto sin venta | 10 % del precio, piso $150, techo $400 |
 | Clics que se aguantan | tope ÷ costo por clic, mínimo 5. Nunca se pausa con menos de 5 clics |
 | Se pausa | al llegar al tope de gasto o de clics sin ninguna venta atribuida en 30 días |
-| No se pausa | con una venta en 30 días, atribuida o no (órdenes sin canceladas) |
-| Se reactiva | venta atribuida tarde o en órdenes (regla 5); cambio de precio o promoción (regla 6, el gasto cuenta de cero) |
+| Venta cara (regla 10, 14/11) | con venta en 30 días igual se pausa si ya gastó su tope y el costo por venta (gasto / ventas) supera el 20 % del precio |
+| No se pausa | con venta en 30 días y costo por venta dentro del máximo |
+| Se reactiva | venta atribuida tarde o en órdenes (regla 5; si se pausó por venta cara, sólo una orden posterior a la pausa); baja de precio o promoción (regla 6, el gasto cuenta de cero). Una suba de precio no reactiva |
 | Clic caro | costo por clic mayor al 4 % del precio: sólo se informa |
 | Excepciones | campañas protegidas, sin precio legible, deshabilitados, y lo que pausó otra persona |
 
