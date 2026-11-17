@@ -17,6 +17,7 @@ import { findPreviewCover } from '../_shared/preview-cover.js';
  */
 
 import { slugify } from '../_shared/slug.js';
+import { buscarReemplazo, fichaRetiradaResponse, librosParecidos } from '../_shared/ficha-retirada.js';
 import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_FONTS_HEAD } from '../_shared/site-header.js';
 // FICHAS-QUALITY-GUARD-1: fuente única sobre autoría genérica/ausente.
 import { isGenericAuthor, realAuthor, stripGenericAuthorMention } from '../_shared/generic-author.js';
@@ -1205,7 +1206,21 @@ export async function onRequest(context) {
             headers: { 'content-type': 'text/plain;charset=UTF-8' },
         });
     }
-    if (!item) return notFound();
+    if (!item) {
+        // Publicación finalizada: ni activa ni pausada. Si el mismo libro tiene
+        // otra publicación activa, se redirige; si no, ficha de "se agotó".
+        const items = activeCatalogAvailable ? catalog.items : [];
+        const reemplazo = providedSlug ? buscarReemplazo(items, providedSlug, id) : null;
+        if (reemplazo) {
+            const destination = new URL(`/libro/${reemplazo.id}/${slugify(reemplazo.title)}`, BASE);
+            return Response.redirect(destination.toString(), 301);
+        }
+        return fichaRetiradaResponse({
+            slug: providedSlug,
+            parecidos: providedSlug ? librosParecidos(items, providedSlug) : [],
+            useCloudflareImages: context.env?.APP_ENV === 'production',
+        });
+    }
 
     // El enriquecimiento sólo agrega datos bibliográficos verificados. El
     // título permanece intacto, por lo que el slug/canonical conserva la URL
