@@ -8,6 +8,9 @@ on:
       cantidad:
         description: 'Cuántas fichas probar'
         default: '3'
+      rama:
+        description: 'Rama con el código a probar (solo lectura)'
+        default: 'main'
 
 permissions:
   contents: read
@@ -23,6 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.rama }}
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
