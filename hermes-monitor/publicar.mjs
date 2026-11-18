@@ -34,8 +34,9 @@ async function validar(payload) {
 const [, , fichasPath, pubPath, ...flags] = process.argv;
 const real = flags.includes('--real');
 const max = Number(flags.find(f => f.startsWith('--max='))?.slice(6) || 1e9);
+const require_text = await fs.readFile(pubPath, 'utf8').catch(() => '');
 const fichas = JSON.parse(await fs.readFile(fichasPath, 'utf8'));
-const publicadas = JSON.parse(await fs.readFile(pubPath, 'utf8').catch(() => '{}'));
+const publicadas = (() => { try { return JSON.parse(require_text) ?? {}; } catch { return {}; } })();
 const fuente = fuenteTokenD1(CUENTAS.libros);
 const ml = crearCliente(fuente, {concurrencia: 1});
 const seller = CUENTAS.libros.sellerId;
