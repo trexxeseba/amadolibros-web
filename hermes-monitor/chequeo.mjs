@@ -11,6 +11,7 @@ import fs from 'node:fs/promises';
 import {CUENTAS} from '../precio-ganador/src/config.mjs';
 import {fuenteTokenD1} from '../precio-ganador/src/token.mjs';
 import {crearCliente} from '../precio-ganador/src/ml.mjs';
+import {exigirVintage} from './guardia.mjs';
 import {CUENTA_HERMES, ofertaDeHermes, estadoFicha, ultimosPorFicha, cambioDePrecio, fallaGeneral, hoyUy, armarResumen} from './lib.mjs';
 
 const PAUSA_MS = 500; // entre una consulta y otra, a propósito: en paralelo ML devuelve resultados cruzados
@@ -77,6 +78,7 @@ async function main() {
   const fichas = JSON.parse(await fs.readFile(fichasPath, 'utf8'));
   const historial = JSON.parse(await fs.readFile(histPath, 'utf8').catch(() => '[]'));
   const ml = crearCliente(fuenteTokenD1(CUENTAS[CUENTA_HERMES]), {concurrencia: 1});
+  if (real) await exigirVintage(ml);
   const r = await correr({fichas, historial, real, ml});
   // Una corrida por día: si ya había filas de hoy, se reemplazan.
   const resto = historial.filter(h => h.fecha !== r.fecha);
