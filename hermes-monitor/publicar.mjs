@@ -15,12 +15,29 @@ import {leerFicha} from './chequeo.mjs';
 import {precioMio, armarPayload} from './lib.mjs';
 
 const pausa = ms => new Promise(r => setTimeout(r, ms));
+
+// /items/validate con el cuerpo completo de las causas: 2xx acepta; un 400 acepta solo si todas las
+// causas son de tipo warning (misma regla que el publicador de la cola de Amado Libros).
+async function validar(payload) {
+  const res = await fetch('https://api.mercadolibre.com/items/validate', {
+    method: 'POST', signal: AbortSignal.timeout(25000),
+    headers: {Authorization: 'Bearer ' + await fuente.getToken(), Accept: 'application/json', 'Content-Type': 'application/json'},
+    body: JSON.stringify(payload),
+  }).catch(() => null);
+  if (!res) return {ok: false, causas: [{type: 'error', code: 'transporte'}]};
+  if (res.ok) return {ok: true, causas: []};
+  const j = await res.json().catch(() => null);
+  const causas = (Array.isArray(j?.cause) ? j.cause : []).map(c => ({type: c?.type ?? null, code: c?.code ?? null, message: String(c?.message ?? '').slice(0, 160)}));
+  const soloAdvertencias = res.status === 400 && causas.length > 0 && causas.every(c => c.type === 'warning');
+  return {ok: soloAdvertencias, causas, status: res.status};
+}
 const [, , fichasPath, pubPath, ...flags] = process.argv;
 const real = flags.includes('--real');
 const max = Number(flags.find(f => f.startsWith('--max='))?.slice(6) || 1e9);
 const fichas = JSON.parse(await fs.readFile(fichasPath, 'utf8'));
 const publicadas = JSON.parse(await fs.readFile(pubPath, 'utf8').catch(() => '{}'));
-const ml = crearCliente(fuenteTokenD1(CUENTAS.libros), {concurrencia: 1});
+const fuente = fuenteTokenD1(CUENTAS.libros);
+const ml = crearCliente(fuente, {concurrencia: 1});
 const seller = CUENTAS.libros.sellerId;
 
 const prefs = await ml.get(`/users/${seller}/shipping_preferences`).catch(() => null);
@@ -47,10 +64,13 @@ for (const f of fichas) {
   let valido = null, ultimo = null;
   for (const shipping of variantes) {
     await pausa(500);
-    try { await ml.post('/items/validate', {...payload, shipping}); valido = shipping; break; }
-    catch (e) { ultimo = e; if (!(e.detalle?.cause ?? []).some(c => /shipping/.test(String(c)))) break; }
+    const v = await validar({...payload, shipping});
+    if (v.ok) { valido = shipping; ultimo = v; break; }
+    ultimo = v;
+    if (!v.causas.some(c => /shipping/.test(String(c.code)))) break;
   }
-  if (!valido) { erroresSeguidos++; filas.push({n: f.n, resultado: 'no_valida', error: ultimo?.code, detalle: ultimo?.detalle}); console.log(`${f.n}\tNO VALIDA ${ultimo?.code} ${JSON.stringify(ultimo?.detalle)}`); continue; }
+  if (!valido) { erroresSeguidos++; filas.push({n: f.n, resultado: 'no_valida', causas: ultimo?.causas}); console.log(`${f.n}\tNO VALIDA ${JSON.stringify(ultimo?.causas)}`); continue; }
+  if (ultimo?.causas?.length) console.log(`${f.n}\tadvertencias ${JSON.stringify(ultimo.causas)}`);
   if (!real) { erroresSeguidos = 0; hechas++; filas.push({n: f.n, resultado: 'valida', precio}); console.log(`${f.n}\tvalida\tprecio ${precio} (Hermes ${lec.oferta.price})`); continue; }
   await pausa(1000);
   try {
