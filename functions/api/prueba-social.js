@@ -32,7 +32,7 @@ export async function onRequest(ctx) {
       .prepare(
         `SELECT i.title AS title, o.date_created_ms AS date_created_ms
            FROM ml_sales_orders o JOIN ml_sales_items i ON i.order_id = o.order_id
-          WHERE o.status = 'paid' AND o.date_created_ms >= ?1 AND i.title IS NOT NULL AND i.title <> ''
+          WHERE o.status = 'paid' AND o.date_created_ms >= ? AND i.title IS NOT NULL AND i.title <> ''
           ORDER BY o.date_created_ms DESC LIMIT 40`,
       )
       .bind(now - WINDOW_DAYS * DAY_MS)
