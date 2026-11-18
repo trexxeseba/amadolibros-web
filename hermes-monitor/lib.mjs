@@ -53,3 +53,19 @@ export function armarResumen({fecha, real, filas, pausadas, cambios, falla}) {
   L.push('', 'Nota: Mercado Libre no deja leer el stock de publicaciones ajenas; "sin stock" se detecta porque Hermes deja de ofrecer la ficha.');
   return L.join('\n');
 }
+
+// Precio de la publicación mía: 1 % menos que Hermes (decisión de Seba, 18/11/2026), en pesos enteros.
+export const DESCUENTO_SOBRE_HERMES = 0.01;
+export const precioMio = (precioHermes, descuento = DESCUENTO_SOBRE_HERMES) => Math.round(Number(precioHermes) * (1 - descuento));
+
+// Publicación de catálogo directa, 1 unidad. El envío lo decide Mercado Libre al validar (variantes A, B, C).
+export function armarPayload({producto, precio, categoria, nombre, familyName, usaFamilyName, isbn}) {
+  const p = {
+    site_id: 'MLU', category_id: categoria, price: precio, currency_id: 'UYU', available_quantity: 1,
+    buying_mode: 'buy_it_now', listing_type_id: 'gold_special', condition: 'new',
+    catalog_listing: true, catalog_product_id: producto, seller_custom_field: `HERMES-${producto}`,
+  };
+  if (usaFamilyName) p.family_name = String(familyName || nombre).slice(0, 60).trim(); else p.title = String(nombre).slice(0, 60).trim();
+  if (isbn) p.attributes = [{id: 'GTIN', value_name: isbn}];
+  return p;
+}

@@ -75,3 +75,18 @@ test('detecta cambio de precio contra el historial', async () => {
   assert.equal(r.cambios.length, 1);
   assert.match(r.resumen, /de \$800 a \$1000/);
 });
+
+import {precioMio, armarPayload} from '../../hermes-monitor/lib.mjs';
+test('precioMio es 1 % menos que Hermes, en pesos enteros', () => {
+  assert.equal(precioMio(1810), 1792);
+  assert.equal(precioMio(1000), 990);
+});
+test('armarPayload: catálogo directo, 1 unidad, UYU, nuevo, sin tocar nada más', () => {
+  const p = armarPayload({producto: 'MLU1', precio: 990, categoria: 'MLU1196', nombre: 'Libro', familyName: 'Fam', usaFamilyName: false, isbn: '978'});
+  assert.equal(p.available_quantity, 1);
+  assert.equal(p.catalog_listing, true);
+  assert.equal(p.catalog_product_id, 'MLU1');
+  assert.equal(p.currency_id, 'UYU');
+  assert.equal(p.title, 'Libro');
+  assert.equal(armarPayload({producto: 'MLU1', precio: 1, categoria: 'x', nombre: 'a', familyName: 'Fam', usaFamilyName: true}).family_name, 'Fam');
+});

@@ -15,7 +15,7 @@ on:
         default: false
 
 concurrency:
-  group: hermes-chequeo
+  group: hermes-datos
   cancel-in-progress: false
 
 permissions:
@@ -43,13 +43,15 @@ jobs:
           if git ls-remote --exit-code --heads origin hermes-datos >/dev/null 2>&1; then
             git fetch --depth=1 origin hermes-datos
             git show FETCH_HEAD:historial.json > "$RUNNER_TEMP/datos/historial.json" 2>/dev/null || echo '[]' > "$RUNNER_TEMP/datos/historial.json"
+            git show FETCH_HEAD:publicadas.json > "$RUNNER_TEMP/datos/publicadas.json" 2>/dev/null || echo '{}' > "$RUNNER_TEMP/datos/publicadas.json"
           else
             echo '[]' > "$RUNNER_TEMP/datos/historial.json"
+            echo '{}' > "$RUNNER_TEMP/datos/publicadas.json"
           fi
       - name: Leer el Excel
         run: |
           pip install -q openpyxl
-          python3 hermes-monitor/leer_excel.py hermes-monitor/data/hermes-top149-17-11.xlsx "$RUNNER_TEMP/fichas.json"
+          python3 hermes-monitor/leer_excel.py hermes-monitor/data/hermes-top149-17-11.xlsx "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/publicadas.json"
       - name: Chequear
         run: |
           REAL=""
@@ -60,7 +62,7 @@ jobs:
           cd "$RUNNER_TEMP/datos"
           git init -q && git checkout -q -b hermes-datos
           git config user.name "hermes-monitor" && git config user.email "hermes-monitor@users.noreply.github.com"
-          git add historial.json && git commit -q -m "Historial de Hermes $(date -u +%F)"
+          git add historial.json publicadas.json && git commit -q -m "Historial de Hermes $(date -u +%F)"
           git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" hermes-datos
       - name: Mandar el resumen
         if: always()
