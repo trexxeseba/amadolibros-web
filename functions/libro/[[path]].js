@@ -59,6 +59,7 @@ import {
 } from '../../shared/whatsapp-messages.js';
 import { isPausedProductInSeoCohort } from '../_shared/paused-seo-cohort.js';
 import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../../shared/delivery-badge.js';
+import { googleReviewsHtml } from '../../shared/google-reviews.js';
 
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
 
@@ -1027,6 +1028,7 @@ ${siteHeaderHtml()}
       ${actionHtml}
     </div>
     ${trustHtml}
+    ${inStock ? googleReviewsHtml({ limit: 3, seed: item.id, columns: 1, title: 'Lo que cuentan quienes ya compraron' }) : ''}
     ${editorialHtml}
     ${!inStock ? moreDetailsHtml : ''}
     ${seoOpportunityHtml}
