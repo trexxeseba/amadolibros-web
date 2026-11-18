@@ -47,8 +47,8 @@ jobs:
           echo '[]' > "$RUNNER_TEMP/datos/historial.json"; echo '{}' > "$RUNNER_TEMP/datos/publicadas.json"
           if git ls-remote --exit-code --heads origin hermes-datos >/dev/null 2>&1; then
             git fetch --depth=1 origin hermes-datos
-            git show FETCH_HEAD:historial.json > "$RUNNER_TEMP/datos/historial.json" 2>/dev/null || true
-            git show FETCH_HEAD:publicadas.json > "$RUNNER_TEMP/datos/publicadas.json" 2>/dev/null || true
+            git show FETCH_HEAD:historial.json > "$RUNNER_TEMP/datos/h.tmp" 2>/dev/null && mv "$RUNNER_TEMP/datos/h.tmp" "$RUNNER_TEMP/datos/historial.json" || true
+            git show FETCH_HEAD:publicadas.json > "$RUNNER_TEMP/datos/p.tmp" 2>/dev/null && mv "$RUNNER_TEMP/datos/p.tmp" "$RUNNER_TEMP/datos/publicadas.json" || true
           fi
       - name: Leer el Excel
         run: |
