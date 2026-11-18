@@ -40,6 +40,7 @@ const maxPedido = Number(flags.find(f => f.startsWith('--max='))?.slice(6) || 1e
 let max = maxPedido;
 const require_text = await fs.readFile(pubPath, 'utf8').catch(() => '');
 const fichas = JSON.parse(await fs.readFile(fichasPath, 'utf8'));
+const descartadas = new Set(JSON.parse(await fs.readFile(new URL('./descartadas.json', import.meta.url), 'utf8').catch(() => '{"descartadas":[]}')).descartadas.map(d => d.producto));
 const publicadas = (() => { try { return JSON.parse(require_text) ?? {}; } catch { return {}; } })();
 const cuenta = CUENTAS[CUENTA_HERMES];
 const fuente = fuenteTokenD1(cuenta);
@@ -72,7 +73,7 @@ let hechas = 0, erroresSeguidos = 0;
 const filas = [];
 for (const f of fichas) {
   if (hechas >= max || erroresSeguidos >= 5) break;
-  if (publicadas[f.producto] || f.mi_mlu) continue;
+  if (publicadas[f.producto] || f.mi_mlu || descartadas.has(f.producto)) continue;
   const lec = await leerFicha(ml, f.producto);
   if (!lec.oferta) { filas.push({n: f.n, resultado: 'hermes_no_ofrece'}); continue; }
   await pausa(500);
