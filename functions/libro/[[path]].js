@@ -60,6 +60,7 @@ import {
 import { isPausedProductInSeoCohort } from '../_shared/paused-seo-cohort.js';
 import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../../shared/delivery-badge.js';
 import { googleReviewsHtml } from '../../shared/google-reviews.js';
+import { pruebaSocialHtml } from '../../shared/prueba-social.js';
 
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
 
@@ -1145,7 +1146,7 @@ ${!inStock && waitlistSiteKey ? `
     }
   });
 }());<\/script>` : ''}
-
+${pruebaSocialHtml()}
 </body>
 </html>`;
 }
