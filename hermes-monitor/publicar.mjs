@@ -1,4 +1,4 @@
-// Republica en Amado Libros las fichas de catálogo de Hermes: 1 unidad, a 1 % menos que su precio.
+// Republica en Amado VINTAGE (nunca Amado Libros) las fichas de catálogo de Hermes: 1 unidad, a 1 % menos que su precio.
 //
 //   node hermes-monitor/publicar.mjs <fichas.json> <publicadas.json> [--real] [--max=N]
 //
@@ -12,7 +12,10 @@ import {CUENTAS} from '../precio-ganador/src/config.mjs';
 import {fuenteTokenD1} from '../precio-ganador/src/token.mjs';
 import {crearCliente} from '../precio-ganador/src/ml.mjs';
 import {leerFicha} from './chequeo.mjs';
-import {precioMio, armarPayload} from './lib.mjs';
+import {d1Client} from '../scripts/vintage-cloud/d1.mjs';
+import {brakeOn, blockedIsbns} from '../scripts/vintage-cloud/vigia-pi.mjs';
+import {ipRisk} from '../worker-sync/ip-risk.js';
+import {precioMio, armarPayload, CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, inicioDiaUy} from './lib.mjs';
 
 const pausa = ms => new Promise(r => setTimeout(r, ms));
 
@@ -33,13 +36,29 @@ async function validar(payload) {
 }
 const [, , fichasPath, pubPath, ...flags] = process.argv;
 const real = flags.includes('--real');
-const max = Number(flags.find(f => f.startsWith('--max='))?.slice(6) || 1e9);
+const maxPedido = Number(flags.find(f => f.startsWith('--max='))?.slice(6) || 1e9);
+let max = maxPedido;
 const require_text = await fs.readFile(pubPath, 'utf8').catch(() => '');
 const fichas = JSON.parse(await fs.readFile(fichasPath, 'utf8'));
 const publicadas = (() => { try { return JSON.parse(require_text) ?? {}; } catch { return {}; } })();
-const fuente = fuenteTokenD1(CUENTAS.libros);
+const cuenta = CUENTAS[CUENTA_HERMES];
+const fuente = fuenteTokenD1(cuenta);
 const ml = crearCliente(fuente, {concurrencia: 1});
-const seller = CUENTAS.libros.sellerId;
+const seller = cuenta.sellerId;
+const query = d1Client();
+
+// Protecciones de Vintage: freno del vigía de propiedad intelectual, ISBN bloqueados y techo diario
+// compartido con la subida de SBS (lo publicado hoy por SBS + lo de Hermes hoy no pasa del tope).
+const freno = await brakeOn(query);
+if (freno) { console.log('FRENO DEL VIGIA ACTIVO: no se publica nada.', JSON.stringify(freno).slice(0, 200)); process.exit(0); }
+const bloqueados = await blockedIsbns(query);
+const inicio = inicioDiaUy();
+const hoyHermes = Object.values(publicadas).filter(p => Number(p.ts) >= inicio).length;
+const hoySbs = Number((await query("SELECT COUNT(*) n FROM ml_vintage_pub_receipts WHERE seller_id=? AND state='published' AND created_at>=?", [seller, inicio]))[0]?.n ?? 0);
+let cupo = Math.max(0, TOPE_DIARIO_COMPARTIDO - hoySbs - hoyHermes);
+console.log(`hoy: SBS ${hoySbs}, Hermes ${hoyHermes}, tope compartido ${TOPE_DIARIO_COMPARTIDO}, cupo ${cupo}`);
+if (cupo === 0) { console.log('Sin cupo diario: no se publica nada.'); process.exit(0); }
+max = Math.min(maxPedido, cupo);
 
 const prefs = await ml.get(`/users/${seller}/shipping_preferences`).catch(() => null);
 const yo = await ml.get(`/users/${seller}`).catch(() => null);
@@ -60,6 +79,10 @@ for (const f of fichas) {
   const prod = await ml.get(`/products/${f.producto}`).catch(() => null);
   if (!prod || prod.status !== 'active') { filas.push({n: f.n, resultado: 'ficha_inactiva'}); continue; }
   const isbn = (prod.attributes ?? []).find(a => a.id === 'GTIN' || a.id === 'ISBN')?.value_name ?? null;
+  if (isbn && bloqueados.has(String(isbn))) { filas.push({n: f.n, resultado: 'isbn_bloqueado_por_denuncia'}); console.log(`${f.n}\tsalteada: ISBN bloqueado por denuncia`); continue; }
+  const editorial = (prod.attributes ?? []).find(a => ['BOOK_PUBLISHER', 'PUBLISHER'].includes(a.id))?.value_name;
+  const riesgo = ipRisk([prod.name, prod.family_name].filter(Boolean).join(' '), editorial);
+  if (riesgo) { filas.push({n: f.n, resultado: 'riesgo_pi_' + riesgo}); console.log(`${f.n}\tsalteada: riesgo de propiedad intelectual (${riesgo})`); continue; }
   const precio = precioMio(lec.oferta.price);
   const payload = armarPayload({producto: f.producto, precio, categoria: lec.oferta.category_id, nombre: prod.name, familyName: prod.family_name, usaFamilyName, isbn});
   let valido = null, ultimo = null;
@@ -76,7 +99,7 @@ for (const f of fichas) {
   await pausa(1000);
   try {
     const r = await ml.post('/items', {...payload, shipping: valido});
-    publicadas[f.producto] = {item_id: r?.id, precio, precio_hermes: lec.oferta.price, fecha: new Date().toISOString().slice(0, 10)};
+    publicadas[f.producto] = {item_id: r?.id, precio, precio_hermes: lec.oferta.price, fecha: new Date().toISOString().slice(0, 10), ts: Date.now(), cuenta: CUENTA_HERMES};
     await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1));
     erroresSeguidos = 0; hechas++;
     console.log(`${f.n}\tPUBLICADA ${r?.id} precio ${precio}`);
