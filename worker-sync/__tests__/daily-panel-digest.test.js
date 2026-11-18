@@ -134,3 +134,17 @@ test('"Subile el precio" dice cuántos libros con stock están muy por debajo de
   const sinTotal = buildDigestEmail({ ...base, brujula: { reponer: [], subir: [fila], agotan: [], perdida: [] } });
   assert.match(sinTotal.text, /  Subile el precio:\n/);
 });
+
+test('sección Brújula: "Volvieron a tener stock" y "Competidores que se quedaron sin stock" salen aunque no haya nada más', () => {
+  const brujula = {
+    reponer: [], pedidos: [], subir: [], agotan: [], perdida: [], ultimo: [], ultimoTotal: 0, subirTotal: 0,
+    repuestos: [{ isbn: '9789505181391', title: 'La fundación de lo inconciente', detalle: 'Ahora hay 2 ejemplares: alcanzan para unos 122 días de venta al ritmo de los últimos 12 meses (1 cada 61 días, 6 vendidos).' }],
+    competidores: [{ isbn: '9781365910753', title: 'Relato <del> psicoanálisis', detalle: 'Pocho dejó de ofrecer este libro en el catálogo. Vos tenés 1: te quedás con esa demanda, no lo dejes agotar.' }],
+  };
+  const { text, html } = buildDigestEmail({ toShip: [], unpaid: [], soldCount: 0, soldTotal: 0, createdCount: 0, brujula });
+  assert.match(text, /Volvieron a tener stock:\n  - La fundación de lo inconciente: Ahora hay 2 ejemplares/);
+  assert.match(text, /Competidores que se quedaron sin stock: tu oportunidad:\n  - Relato <del> psicoanálisis: Pocho dejó de ofrecer/);
+  assert.match(html, /Volvieron a tener stock/);
+  assert.match(html, /Relato &lt;del&gt; psicoanálisis/, 'el título va escapado');
+  assert.doesNotMatch(text, /Conviene reponer|Ya pedidos/, 'los bloques vacíos no aparecen');
+});

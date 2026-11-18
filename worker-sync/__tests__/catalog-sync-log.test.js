@@ -22,6 +22,7 @@ test('cuenta altas, bajas, subas, bajas de precio y cambios de stock', () => {
   assert.equal(diff.out_of_stock, 1);
   assert.equal(diff.back_in_stock, 1);
   assert.deepEqual(diff.samples.added.map(s => s.id), ['F']);
+  assert.deepEqual(diff.samples.back_in_stock.map(s => [s.id, s.qty]), [['E', 1]], 'E estaba agotado y volvió: se guarda para avisar por correo');
   assert.deepEqual(diff.samples.removed.map(s => s.id), ['A']);
   // El cambio más grande primero.
   assert.deepEqual(diff.samples.price_changes.map(s => [s.id, s.from, s.to]), [['B', 1000, 1200], ['C', 500, 400]]);
