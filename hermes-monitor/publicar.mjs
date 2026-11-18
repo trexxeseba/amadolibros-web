@@ -67,8 +67,9 @@ const hoyHermes = Object.values(publicadas).filter(p => p.item_id && Number(p.ts
 const hoySbs = Number((await query("SELECT COUNT(*) n FROM ml_vintage_pub_receipts WHERE seller_id=? AND state='published' AND created_at>=?", [seller, inicio]))[0]?.n ?? 0);
 let cupo = Math.max(0, TOPE_DIARIO_COMPARTIDO - hoySbs - hoyHermes);
 console.log(`hoy: SBS ${hoySbs}, Hermes+Arnoia ${hoyHermes}, tope compartido ${TOPE_DIARIO_COMPARTIDO}, cupo ${cupo}`);
-if (cupo === 0) { console.log('Sin cupo diario: no se publica nada.'); process.exit(0); }
-max = Math.min(maxPedido, cupo);
+// El cupo solo limita publicar de verdad; validar no crea nada y se puede hacer sin cupo.
+if (real && cupo === 0) { console.log('Sin cupo diario: no se publica nada.'); process.exit(0); }
+max = real ? Math.min(maxPedido, cupo) : maxPedido;
 
 const prefs = await ml.get(`/users/${seller}/shipping_preferences`).catch(() => null);
 const yo = await ml.get(`/users/${seller}`).catch(() => null);
