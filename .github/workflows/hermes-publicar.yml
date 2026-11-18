@@ -22,6 +22,10 @@ on:
         type: choice
         options: [validar, publicar]
         default: validar
+      tradicional:
+        description: 'Solo Arnoia: publicar los libros SIN ficha de catálogo, con su portada'
+        type: boolean
+        default: false
       cantidad:
         description: 'Cuántas fichas procesar'
         default: '1'
@@ -73,11 +77,13 @@ jobs:
           python3 hermes-monitor/leer_excel.py hermes-monitor/data/hermes-top149-17-11.xlsx "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/publicadas-vintage.json"
       - name: Validar o publicar
         env:
-          FUENTE: ${{ inputs.fuente || (github.event.schedule == '17 12-18 * * *' && 'arnoia' || 'hermes') }}
+          TRADICIONAL_IN: ${{ inputs.tradicional || (github.event.schedule == '27 12-18 * * *' && 'true' || 'false') }}
+          FUENTE: ${{ inputs.fuente || ((github.event.schedule == '17 12-18 * * *' || github.event.schedule == '27 12-18 * * *') && 'arnoia' || 'hermes') }}
         run: |
           REAL=""; [ "${{ inputs.modo || 'publicar' }}" = "publicar" ] && REAL="--real"
+          TRADICIONAL=""; [ "$TRADICIONAL_IN" = "true" ] && TRADICIONAL="--tradicional"
           if [ "$FUENTE" = "arnoia" ]; then
-            node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-semana-45.json "$RUNNER_TEMP/datos/publicadas-vintage.json" --fuente=arnoia $REAL --max=${{ inputs.cantidad || '25' }}
+            node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-semana-45.json "$RUNNER_TEMP/datos/publicadas-vintage.json" --fuente=arnoia ${TRADICIONAL} $REAL --max=${{ inputs.cantidad || '25' }}
           else
             node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/publicadas-vintage.json" $REAL --max=${{ inputs.cantidad || '25' }}
           fi
