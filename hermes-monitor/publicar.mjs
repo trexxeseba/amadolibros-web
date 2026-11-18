@@ -17,8 +17,9 @@ import {leerFicha} from './chequeo.mjs';
 import {d1Client} from '../scripts/vintage-cloud/d1.mjs';
 import {brakeOn, blockedIsbns} from '../scripts/vintage-cloud/vigia-pi.mjs';
 import {ipRisk} from '../worker-sync/ip-risk.js';
+import {normalizarTitulo, normalizarAutor, titulo1} from './lib.mjs';
 import {exigirVintage, exigirItemDeVintage} from './guardia.mjs';
-import {precioMio, armarPayload, CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, inicioDiaUy} from './lib.mjs';
+import {precioMio, armarPayload, armarPayloadTradicional, CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, inicioDiaUy} from './lib.mjs';
 
 const pausa = ms => new Promise(r => setTimeout(r, ms));
 
@@ -40,6 +41,7 @@ async function validar(payload) {
 const [, , fichasPath, pubPath, ...flags] = process.argv;
 const real = flags.includes('--real');
 const arnoia = flags.includes('--fuente=arnoia');
+const tradicional = flags.includes('--tradicional'); // solo libros SIN ficha de catálogo (publicación normal con portada)
 const maxPedido = Number(flags.find(f => f.startsWith('--max='))?.slice(6) || 1e9);
 let max = maxPedido;
 const require_text = await fs.readFile(pubPath, 'utf8').catch(() => '');
@@ -81,6 +83,14 @@ console.log(`modo ${real ? 'REAL' : 'solo validar'} | family_name ${usaFamilyNam
 
 let hechas = 0, erroresSeguidos = 0;
 const filas = [];
+// Portada pública por ISBN (Open Library, tamaño grande). Sin portada no se publica: una publicación sin foto no sirve.
+const buscarPortada = async ean => {
+  const url = `https://covers.openlibrary.org/b/isbn/${ean}-L.jpg`;
+  const r = await fetch(url + '?default=false', {method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(15000)}).catch(() => null);
+  return r?.ok && /image/.test(r.headers.get('content-type') ?? '') ? url : null;
+};
+const descripcionDe = f => `${normalizarTitulo(f.titulo)}${f.autor ? ', de ' + normalizarAutor(f.autor) : ''}.${f.editorial ? ' Editorial ' + titulo1(f.editorial) + '.' : ''}\n\nLibro nuevo, importado de España. Lo traemos especialmente para vos: la entrega se coordina en un plazo de ${PLAZO_DIAS} días. Envío a domicilio incluido.`;
+
 const resolverHermes = async f => {
   if (publicadas[f.producto] || f.mi_mlu || descartadas.has(f.producto)) return {omitir: true};
   const lec = await leerFicha(ml, f.producto);
@@ -96,7 +106,14 @@ const resolverArnoia = async f => {
   await pausa(500);
   const busq = await ml.get('/products/search?' + new URLSearchParams({site_id: 'MLU', status: 'active', product_identifier: f.ean})).catch(() => null);
   const id = busq?.results?.[0]?.id;
-  if (!/^MLU\d+$/.test(id ?? '')) return {etiqueta: f.ean, clave, saltar: 'sin_catalogo', marcar: {sin_catalogo: true}};
+  if (!/^MLU\d+$/.test(id ?? '')) {
+    if (!tradicional) return {etiqueta: f.ean, clave, saltar: 'sin_catalogo', marcar: {sin_catalogo: true}};
+    const portada = await buscarPortada(f.ean);
+    if (!portada) return {etiqueta: f.ean, saltar: 'sin_portada'};
+    const payload = armarPayloadTradicional({ean: f.ean, titulo: f.titulo, autor: f.autor, editorial: f.editorial, precio: f.precio, plazoDias: PLAZO_DIAS, usaFamilyName, imagenes: [portada]});
+    return {etiqueta: f.ean, clave, producto: null, prod: {attributes: []}, isbn: f.ean, precio: f.precio, payload, registro: {ean: f.ean, tradicional: true}, nota: f.titulo.slice(0, 30), titulo: f.titulo, editorial: f.editorial, descripcion: descripcionDe(f)};
+  }
+  if (tradicional) return {omitir: true};
   await pausa(500);
   const prod = await ml.get(`/products/${id}`).catch(() => null);
   if (!prod || prod.status !== 'active') return {etiqueta: f.ean, saltar: 'ficha_inactiva'};
@@ -115,13 +132,13 @@ for (const f of fichas) {
     continue;
   }
   const {prod} = ctx;
-  const isbn = (prod.attributes ?? []).find(a => a.id === 'GTIN' || a.id === 'ISBN')?.value_name ?? null;
+  const isbn = ctx.isbn ?? (prod.attributes ?? []).find(a => a.id === 'GTIN' || a.id === 'ISBN')?.value_name ?? null;
   if (isbn && bloqueados.has(String(isbn))) { filas.push({n: ctx.etiqueta, resultado: 'isbn_bloqueado_por_denuncia'}); console.log(`${ctx.etiqueta}\tsalteada: ISBN bloqueado por denuncia`); continue; }
   const editorial = (prod.attributes ?? []).find(a => ['BOOK_PUBLISHER', 'PUBLISHER'].includes(a.id))?.value_name;
   const riesgo = ipRisk([prod.name, prod.family_name, ctx.titulo].filter(Boolean).join(' '), editorial || ctx.editorial);
   if (riesgo) { filas.push({n: ctx.etiqueta, resultado: 'riesgo_pi_' + riesgo}); console.log(`${ctx.etiqueta}\tsalteada: riesgo de propiedad intelectual (${riesgo})`); continue; }
   const precio = ctx.precio;
-  const payload = armarPayload({producto: ctx.producto, precio, categoria: ctx.categoria, nombre: prod.name, familyName: prod.family_name, usaFamilyName, isbn, plazoDias: PLAZO_DIAS});
+  const payload = ctx.payload ?? armarPayload({producto: ctx.producto, precio, categoria: ctx.categoria, nombre: prod.name, familyName: prod.family_name, usaFamilyName, isbn, plazoDias: PLAZO_DIAS});
   let valido = null, ultimo = null;
   for (const shipping of variantes) {
     await pausa(500);
@@ -139,6 +156,7 @@ for (const f of fichas) {
     // Verificación posterior: si por cualquier razón quedó en otra cuenta, se pausa en el acto y se corta todo.
     try { exigirItemDeVintage(await ml.get(`/items/${r?.id}`)); }
     catch (e) { await ml.put(`/items/${r?.id}`, {status: 'paused'}).catch(() => {}); console.log(`${ctx.etiqueta}\tCORTE: ${e.code} (${r?.id}), se pausó y se frena todo`); process.exit(1); }
+    if (ctx.descripcion && r?.id) await ml.post(`/items/${r.id}/description`, {plain_text: ctx.descripcion}).catch(e => console.log(`${ctx.etiqueta}\tdescripción no cargada (${e.code})`));
     publicadas[ctx.clave] = {item_id: r?.id, precio, ...ctx.registro, fuente: arnoia ? 'arnoia' : 'hermes', fecha: new Date().toISOString().slice(0, 10), ts: Date.now(), cuenta: CUENTA_HERMES};
     await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1));
     erroresSeguidos = 0; hechas++;

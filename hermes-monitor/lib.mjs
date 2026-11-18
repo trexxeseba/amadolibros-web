@@ -78,3 +78,39 @@ export const CUENTA_HERMES = 'vintage';
 export const TOPE_DIARIO_COMPARTIDO = 1000;
 export const POR_CORRIDA = 25;
 export const inicioDiaUy = (now = Date.now()) => { const d = new Date(now - 3 * 3600e3); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) + 3 * 3600e3; };
+
+// ---- Publicación tradicional (sin ficha de catálogo): para los libros de Arnoia que Mercado Libre aún no tiene ----
+const ARTICULOS = 'LA|EL|LOS|LAS|UN|UNA|L\'|LES|LO';
+export const titulo1 = t => t.toLowerCase().replace(/(^|[\s(\-:¿¡"])([a-záéíóúñü])/g, (m, a, b) => a + b.toUpperCase());
+// "HORA ANTES DEL ALBA, LA (PREMIO PLANETA 2026)" -> "La Hora Antes Del Alba"
+export function normalizarTitulo(t) {
+  let x = String(t ?? '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+  const m = x.match(new RegExp(`^(.*),\\s*(${ARTICULOS})$`, 'i'));
+  if (m) x = `${m[2]} ${m[1]}`;
+  return titulo1(x).replace(/\s+/g, ' ');
+}
+// "ALLENDE, ISABEL" -> "Isabel Allende"
+export function normalizarAutor(a) {
+  const x = String(a ?? '').trim(); if (!x) return '';
+  const p = x.split(',').map(s => s.trim());
+  return titulo1(p.length === 2 ? `${p[1]} ${p[0]}` : x);
+}
+export function armarPayloadTradicional({ean, titulo, autor, editorial, precio, plazoDias, usaFamilyName, imagenes, idioma = 'Español'}) {
+  const t = normalizarTitulo(titulo), a = normalizarAutor(autor);
+  const nombre = (a && `${t} - ${a}`.length <= 60) ? `${t} - ${a}` : t;
+  const p = {
+    site_id: 'MLU', category_id: 'MLU1196', price: precio, currency_id: 'UYU', available_quantity: 1,
+    buying_mode: 'buy_it_now', listing_type_id: 'gold_special', condition: 'new', catalog_listing: false,
+    seller_custom_field: `ARNOIA-${ean}`,
+    pictures: imagenes.map(source => ({source})),
+    attributes: [
+      {id: 'GTIN', value_name: ean}, {id: 'BOOK_TITLE', value_name: t},
+      ...(a ? [{id: 'AUTHOR', value_name: a}] : []),
+      ...(editorial ? [{id: 'BOOK_PUBLISHER', value_name: titulo1(editorial)}] : []),
+      {id: 'LANGUAGE', value_name: idioma},
+    ],
+  };
+  if (plazoDias) p.sale_terms = [{id: 'MANUFACTURING_TIME', value_name: `${plazoDias} días`}];
+  if (usaFamilyName) p.family_name = nombre.slice(0, 60); else p.title = nombre.slice(0, 60);
+  return p;
+}
