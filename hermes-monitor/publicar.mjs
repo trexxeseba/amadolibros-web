@@ -108,9 +108,9 @@ const resolverArnoia = async f => {
   const id = busq?.results?.[0]?.id;
   if (!/^MLU\d+$/.test(id ?? '')) {
     if (!tradicional) return {etiqueta: f.ean, clave, saltar: 'sin_catalogo', marcar: {sin_catalogo: true}};
-    const portada = await buscarPortada(f.ean);
+    const portada = (!real && process.env.HERMES_PORTADA_PRUEBA) || await buscarPortada(f.ean); // la de prueba solo vale para validar, nunca para publicar
     if (!portada) return {etiqueta: f.ean, saltar: 'sin_portada'};
-    const payload = armarPayloadTradicional({ean: f.ean, titulo: f.titulo, autor: f.autor, editorial: f.editorial, precio: f.precio, plazoDias: PLAZO_DIAS, usaFamilyName, imagenes: [portada]});
+    const payload = armarPayloadTradicional({ean: f.ean, titulo: f.titulo, autor: f.autor, editorial: f.editorial, precio: f.precio, plazoDias: PLAZO_DIAS, usaFamilyName, imagenes: [portada], pesoGramos: f.peso_g});
     return {etiqueta: f.ean, clave, producto: null, prod: {attributes: []}, isbn: f.ean, precio: f.precio, payload, registro: {ean: f.ean, tradicional: true}, nota: f.titulo.slice(0, 30), titulo: f.titulo, editorial: f.editorial, descripcion: descripcionDe(f)};
   }
   if (tradicional) return {omitir: true};

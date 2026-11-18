@@ -9,7 +9,8 @@
 "autor": "ALLENDE, ISABEL",
 "editorial": "PLANETA",
 "precio": 2630,
-"unidades": 21414
+"unidades": 21414,
+"peso_g": 500
 },
 {
 "ean": "9788423370504",
@@ -17,7 +18,8 @@
 "autor": "REDONDO, DOLORES",
 "editorial": "DESTINO",
 "precio": 2670,
-"unidades": 7569
+"unidades": 7569,
+"peso_g": 500
 },
 {
 "ean": "9791387869380",
@@ -25,7 +27,8 @@
 "autor": "GARAND, MANUEL",
 "editorial": "TEMAS DE HOY",
 "precio": 2080,
-"unidades": 6098
+"unidades": 6098,
+"peso_g": 300
 },
 {
 "ean": "9791387846008",
@@ -33,7 +36,8 @@
 "autor": "PEREZ-REVERTE, ARTURO",
 "editorial": "ALFAGUARA",
 "precio": 2630,
-"unidades": 5337
+"unidades": 5337,
+"peso_g": 500
 },
 {
 "ean": "9788432251436",
@@ -41,7 +45,8 @@
 "autor": "S. PORTERO, ALANA",
 "editorial": "SEIX BARRAL",
 "precio": 2500,
-"unidades": 4329
+"unidades": 4329,
+"peso_g": 500
 },
 {
 "ean": "9788467083378",
@@ -49,7 +54,8 @@
 "autor": "MAXWELL, MEGAN",
 "editorial": "ESPASA",
 "precio": 2580,
-"unidades": 4278
+"unidades": 4278,
+"peso_g": 500
 },
 {
 "ean": "9788408325338",
@@ -57,7 +63,8 @@
 "autor": "MAAS, SARAH J.",
 "editorial": "CROSS BOOKS",
 "precio": 2460,
-"unidades": 3736
+"unidades": 3736,
+"peso_g": 500
 },
 {
 "ean": "9788408328858",
@@ -65,7 +72,8 @@
 "autor": "HERNANDEZ, SERGIO",
 "editorial": "PLANETA",
 "precio": 2630,
-"unidades": 3695
+"unidades": 3695,
+"peso_g": 500
 },
 {
 "ean": "9788466686884",
@@ -73,7 +81,8 @@
 "autor": "WILD, JORDI",
 "editorial": "EDICIONES B",
 "precio": 2660,
-"unidades": 2996
+"unidades": 2996,
+"peso_g": 500
 },
 {
 "ean": "9788410648371",
@@ -81,7 +90,8 @@
 "autor": "DE CERVANTES, MIGUEL",
 "editorial": "HARPERCOLLINS",
 "precio": 4680,
-"unidades": 2955
+"unidades": 2955,
+"peso_g": 1100
 },
 {
 "ean": "9788401033797",
@@ -89,7 +99,8 @@
 "autor": "NAVARRO, JULIA",
 "editorial": "PLAZA & JANES",
 "precio": 2590,
-"unidades": 2367
+"unidades": 2367,
+"peso_g": 500
 },
 {
 "ean": "9791388279119",
@@ -97,7 +108,8 @@
 "autor": "GARAND, MANUEL",
 "editorial": "TEMAS DE HOY",
 "precio": 2090,
-"unidades": 2317
+"unidades": 2317,
+"peso_g": 300
 },
 {
 "ean": "9791388153068",
@@ -105,7 +117,8 @@
 "autor": "RUFIAN, GABRIEL",
 "editorial": "NOW BOOKS",
 "precio": 2500,
-"unidades": 2206
+"unidades": 2206,
+"peso_g": 500
 },
 {
 "ean": "9788408324751",
@@ -113,7 +126,8 @@
 "autor": "MOLA, CARMEN",
 "editorial": "PLANETA",
 "precio": 2590,
-"unidades": 2162
+"unidades": 2162,
+"peso_g": 500
 },
 {
 "ean": "9791388279386",
@@ -121,7 +135,8 @@
 "autor": "GARAND, MANUEL",
 "editorial": "TEMAS DE HOY",
 "precio": 2090,
-"unidades": 1985
+"unidades": 1985,
+"peso_g": 300
 },
 {
 "ean": "9788448049591",
@@ -129,7 +144,8 @@
 "autor": "LA VECINA RUBIA",
 "editorial": "CUPULA",
 "precio": 2540,
-"unidades": 1955
+"unidades": 1955,
+"peso_g": 500
 },
 {
 "ean": "9788408318125",
@@ -137,7 +153,8 @@
 "autor": "DAVIES, BENJI",
 "editorial": "TIMUN MAS INFANTIL",
 "precio": 2590,
-"unidades": 1820
+"unidades": 1820,
+"peso_g": 500
 },
 {
 "ean": "9788410138407",
@@ -145,7 +162,8 @@
 "autor": "HAIG, MATT",
 "editorial": "ADN EDITORIAL GRUPO ANAYA",
 "precio": 1660,
-"unidades": 1582
+"unidades": 1582,
+"peso_g": 200
 },
 {
 "ean": "9788408326595",
@@ -153,7 +171,8 @@
 "autor": "SANCHEZ-GARNICA, PALOMA",
 "editorial": "PLANETA",
 "precio": 2630,
-"unidades": 1546
+"unidades": 1546,
+"peso_g": 500
 },
 {
 "ean": "9788427255951",
@@ -161,7 +180,8 @@
 "autor": "KINNEY, JEFF",
 "editorial": "MOLINO",
 "precio": 2170,
-"unidades": 1510
+"unidades": 1510,
+"peso_g": 500
 },
 {
 "ean": "9788433980830",
@@ -169,7 +189,8 @@
 "autor": "DE VIGAN, DELPHINE",
 "editorial": "ANAGRAMA",
 "precio": 2460,
-"unidades": 1509
+"unidades": 1509,
+"peso_g": 500
 },
 {
 "ean": "9791387869458",
@@ -177,7 +198,8 @@
 "autor": "KARBER, G. T.",
 "editorial": "TEMAS DE HOY",
 "precio": 1670,
-"unidades": 1504
+"unidades": 1504,
+"peso_g": 300
 },
 {
 "ean": "9798950291197",
@@ -185,7 +207,8 @@
 "autor": "SANRIG",
 "editorial": "CORAL HORIZON PUBLISHING",
 "precio": 2020,
-"unidades": 1451
+"unidades": 1451,
+"peso_g": 300
 },
 {
 "ean": "9791370224936",
@@ -193,7 +216,8 @@
 "autor": "VARIOS AUTORES",
 "editorial": "VICENS VIVES",
 "precio": 3990,
-"unidades": 1372
+"unidades": 1372,
+"peso_g": 800
 },
 {
 "ean": "9788410178595",
@@ -201,7 +225,8 @@
 "autor": "SOLLA SOBRAL, LUCIA",
 "editorial": "LIBROS DEL ASTEROIDE",
 "precio": 2460,
-"unidades": 1365
+"unidades": 1365,
+"peso_g": 500
 },
 {
 "ean": "9791388279409",
@@ -209,7 +234,8 @@
 "autor": "GARAND, MANUEL",
 "editorial": "TEMAS DE HOY",
 "precio": 2090,
-"unidades": 1343
+"unidades": 1343,
+"peso_g": 300
 },
 {
 "ean": "9788419981400",
@@ -217,7 +243,8 @@
 "autor": "ARIZA, ALMUDENA",
 "editorial": "SALAMANDRA GRAPHIC",
 "precio": 2820,
-"unidades": 1328
+"unidades": 1328,
+"peso_g": 350
 },
 {
 "ean": "9791388002045",
@@ -225,7 +252,8 @@
 "autor": "GARBER, STEPHANIE",
 "editorial": "PUCK",
 "precio": 2590,
-"unidades": 1325
+"unidades": 1325,
+"peso_g": 500
 },
 {
 "ean": "9788408326847",
@@ -233,7 +261,8 @@
 "autor": "YARROS, REBECCA",
 "editorial": "PLANETA",
 "precio": 2580,
-"unidades": 1218
+"unidades": 1218,
+"peso_g": 500
 },
 {
 "ean": "9791388154751",
@@ -241,7 +270,8 @@
 "autor": "LORENZO, SANTIAGO",
 "editorial": "BLACKIE BOOKS",
 "precio": 2590,
-"unidades": 1198
+"unidades": 1198,
+"peso_g": 500
 },
 {
 "ean": "9788408324683",
@@ -249,7 +279,8 @@
 "autor": "CARTER, ALLY",
 "editorial": "CROSS BOOKS",
 "precio": 2500,
-"unidades": 1191
+"unidades": 1191,
+"peso_g": 500
 },
 {
 "ean": "9788412763621",
@@ -257,7 +288,8 @@
 "autor": "SUKEGAWA, DURIAN",
 "editorial": "CHAI EDITORA",
 "precio": 2320,
-"unidades": 1190
+"unidades": 1190,
+"peso_g": 500
 },
 {
 "ean": "9791387975340",
@@ -265,7 +297,8 @@
 "autor": "MONTERO, ROSA",
 "editorial": "ALFAGUARA",
 "precio": 2460,
-"unidades": 1173
+"unidades": 1173,
+"peso_g": 500
 },
 {
 "ean": "9791388108389",
@@ -273,7 +306,8 @@
 "autor": "MOLINA, TAMARA",
 "editorial": "FAERIS EDITORIAL",
 "precio": 2630,
-"unidades": 1166
+"unidades": 1166,
+"peso_g": 500
 },
 {
 "ean": "9791388279324",
@@ -281,7 +315,8 @@
 "autor": "KARBER, G. T.",
 "editorial": "TEMAS DE HOY",
 "precio": 1670,
-"unidades": 1146
+"unidades": 1146,
+"peso_g": 300
 },
 {
 "ean": "9788425432026",
@@ -289,7 +324,8 @@
 "autor": "FRANKL, VIKTOR E.",
 "editorial": "HERDER",
 "precio": 1790,
-"unidades": 1145
+"unidades": 1145,
+"peso_g": 350
 },
 {
 "ean": "9788466351935",
@@ -297,7 +333,8 @@
 "autor": "MICHAELIDES, ALEX",
 "editorial": "DEBOLSILLO",
 "precio": 1630,
-"unidades": 1144
+"unidades": 1144,
+"peso_g": 200
 },
 {
 "ean": "9798178198513",
@@ -305,7 +342,8 @@
 "autor": "VERGEL, DANIEL",
 "editorial": "INDEPENDENTLY PUBLISHED",
 "precio": 2010,
-"unidades": 1099
+"unidades": 1099,
+"peso_g": 300
 },
 {
 "ean": "9788408326861",
@@ -313,7 +351,8 @@
 "autor": "YARROS, REBECCA",
 "editorial": "PLANETA",
 "precio": 2580,
-"unidades": 1076
+"unidades": 1076,
+"peso_g": 500
 },
 {
 "ean": "9788416588435",
@@ -321,7 +360,8 @@
 "autor": "MORENO, ELOY",
 "editorial": "NUBE DE TINTA",
 "precio": 2040,
-"unidades": 1044
+"unidades": 1044,
+"peso_g": 350
 },
 {
 "ean": "9791387740566",
@@ -329,7 +369,8 @@
 "autor": "ALMODOVAR, PEDRO",
 "editorial": "RESERVOIR BOOKS",
 "precio": 2500,
-"unidades": 1004
+"unidades": 1004,
+"peso_g": 500
 },
 {
 "ean": "9788466364003",
@@ -337,7 +378,8 @@
 "autor": "TRACY, BRIAN",
 "editorial": "DEBOLSILLO",
 "precio": 1620,
-"unidades": 1000
+"unidades": 1000,
+"peso_g": 200
 },
 {
 "ean": "9791387512446",
@@ -345,7 +387,8 @@
 "autor": "MCFADDEN, FREIDA",
 "editorial": "SUMA DE LETRAS",
 "precio": 2500,
-"unidades": 979
+"unidades": 979,
+"peso_g": 500
 },
 {
 "ean": "9791387574819",
@@ -353,7 +396,8 @@
 "autor": "DODSON, ZACHARY THOMAS",
 "editorial": "DUOMO",
 "precio": 3810,
-"unidades": 972
+"unidades": 972,
+"peso_g": 800
 },
 {
 "ean": "9791039582131",
@@ -361,7 +405,8 @@
 "autor": "STOYVA, MEI",
 "editorial": "AUZOU",
 "precio": 1710,
-"unidades": 962
+"unidades": 962,
+"peso_g": 350
 },
 {
 "ean": "9788401031380",
@@ -369,7 +414,8 @@
 "autor": "MARTIN, IBON",
 "editorial": "PLAZA & JANES",
 "precio": 2590,
-"unidades": 959
+"unidades": 959,
+"peso_g": 500
 },
 {
 "ean": "9788415906070",
@@ -377,7 +423,8 @@
 "autor": "CONEJERO, ALBERTO",
 "editorial": "ANTIGONA EDICIONES",
 "precio": 1990,
-"unidades": 956
+"unidades": 956,
+"peso_g": 350
 },
 {
 "ean": "9788410646797",
@@ -385,7 +432,8 @@
 "autor": "ITSPOLI",
 "editorial": "HARPERCOLLINS",
 "precio": 1960,
-"unidades": 945
+"unidades": 945,
+"peso_g": 300
 },
 {
 "ean": "9788432242120",
@@ -393,7 +441,8 @@
 "autor": "S. PORTERO, ALANA",
 "editorial": "SEIX BARRAL",
 "precio": 2460,
-"unidades": 925
+"unidades": 925,
+"peso_g": 500
 },
 {
 "ean": "9791387740382",
@@ -401,7 +450,8 @@
 "autor": "NESBO, JO",
 "editorial": "RESERVOIR BOOKS",
 "precio": 2630,
-"unidades": 925
+"unidades": 925,
+"peso_g": 500
 },
 {
 "ean": "9791388108365",
@@ -409,7 +459,8 @@
 "autor": "MOLINA, TAMARA",
 "editorial": "FAERIS EDITORIAL",
 "precio": 2460,
-"unidades": 913
+"unidades": 913,
+"peso_g": 500
 },
 {
 "ean": "9791388108341",
@@ -417,7 +468,8 @@
 "autor": "HAZELWOOD, ALI",
 "editorial": "FAERIS EDITORIAL",
 "precio": 2460,
-"unidades": 893
+"unidades": 893,
+"peso_g": 500
 },
 {
 "ean": "9788410346925",
@@ -425,7 +477,8 @@
 "autor": "DE SAINT-EXUPERY, ANTOINE",
 "editorial": "DUOMO",
 "precio": 1370,
-"unidades": 885
+"unidades": 885,
+"peso_g": 300
 },
 {
 "ean": "9788401040740",
@@ -433,7 +486,8 @@
 "autor": "GARCIA, MODESTO",
 "editorial": "PLAZA & JANES",
 "precio": 2120,
-"unidades": 868
+"unidades": 868,
+"peso_g": 300
 },
 {
 "ean": "9788419640871",
@@ -441,7 +495,8 @@
 "autor": "ALVAREZ, JORGE LUIS / DEL CERRO, JUAN CARLOS",
 "editorial": "EDIBESA",
 "precio": 1210,
-"unidades": 867
+"unidades": 867,
+"peso_g": 200
 },
 {
 "ean": "9791387809829",
@@ -449,7 +504,8 @@
 "autor": "RIPPIN, SALLY",
 "editorial": "MONTENA",
 "precio": 1540,
-"unidades": 864
+"unidades": 864,
+"peso_g": 300
 },
 {
 "ean": "9788427257702",
@@ -457,7 +513,8 @@
 "autor": "COLLINS, SUZANNE",
 "editorial": "MOLINO",
 "precio": 2890,
-"unidades": 853
+"unidades": 853,
+"peso_g": 500
 },
 {
 "ean": "9788437650098",
@@ -465,7 +522,8 @@
 "autor": "CONEJERO, ALBERTO",
 "editorial": "CATEDRA",
 "precio": 1950,
-"unidades": 852
+"unidades": 852,
+"peso_g": 200
 },
 {
 "ean": "9788449345845",
@@ -473,7 +531,8 @@
 "autor": "HAN, BYUNG-CHUL",
 "editorial": "PAIDOS IBERICA",
 "precio": 2090,
-"unidades": 848
+"unidades": 848,
+"peso_g": 350
 },
 {
 "ean": "9788408324980",
@@ -481,7 +540,8 @@
 "autor": "GALAN BERTRAND, (LUCIA, MI PEDRIATRA), LUCIA",
 "editorial": "PLANETA",
 "precio": 2610,
-"unidades": 842
+"unidades": 842,
+"peso_g": 500
 },
 {
 "ean": "9788408315247",
@@ -489,7 +549,8 @@
 "autor": "ONEGA, SONSOLES",
 "editorial": "PLANETA",
 "precio": 2630,
-"unidades": 842
+"unidades": 842,
+"peso_g": 500
 },
 {
 "ean": "9788408326632",
@@ -497,7 +558,8 @@
 "autor": "RUBIALES, INMA",
 "editorial": "PLANETA",
 "precio": 2620,
-"unidades": 840
+"unidades": 840,
+"peso_g": 500
 },
 {
 "ean": "9788417553036",
@@ -505,7 +567,8 @@
 "autor": "TIBULEAC, TATIANA",
 "editorial": "IMPEDIMENTA",
 "precio": 2560,
-"unidades": 840
+"unidades": 840,
+"peso_g": 500
 },
 {
 "ean": "9788411584135",
@@ -513,7 +576,8 @@
 "autor": "MARTI, MERITXELL",
 "editorial": "COMBEL",
 "precio": 1950,
-"unidades": 836
+"unidades": 836,
+"peso_g": 300
 },
 {
 "ean": "9788425371745",
@@ -521,7 +585,8 @@
 "autor": "REED, VIOLETA",
 "editorial": "GRIJALBO",
 "precio": 2540,
-"unidades": 806
+"unidades": 806,
+"peso_g": 500
 },
 {
 "ean": "9788410943872",
@@ -529,7 +594,8 @@
 "autor": "EYRE, PILAR",
 "editorial": "LA ESFERA DE LOS LIBROS",
 "precio": 2630,
-"unidades": 795
+"unidades": 795,
+"peso_g": 500
 },
 {
 "ean": "9788432251269",
@@ -537,7 +603,8 @@
 "autor": "RADDEN KEEFE, PATRICK",
 "editorial": "SEIX BARRAL",
 "precio": 2630,
-"unidades": 783
+"unidades": 783,
+"peso_g": 500
 },
 {
 "ean": "9791259578853",
@@ -545,7 +612,8 @@
 "autor": "VARIOS AUTORES",
 "editorial": "MAGAZZINI SALANI",
 "precio": 1280,
-"unidades": 758
+"unidades": 758,
+"peso_g": 300
 },
 {
 "ean": "9788418118036",
@@ -553,7 +621,8 @@
 "autor": "CLEAR, JAMES",
 "editorial": "DIANA",
 "precio": 2540,
-"unidades": 757
+"unidades": 757,
+"peso_g": 500
 },
 {
 "ean": "9788419942319",
@@ -561,7 +630,8 @@
 "autor": "UCLES, DAVID",
 "editorial": "SIRUELA",
 "precio": 2900,
-"unidades": 750
+"unidades": 750,
+"peso_g": 500
 },
 {
 "ean": "9788466435420",
@@ -569,7 +639,8 @@
 "autor": "GARAND, MANUEL",
 "editorial": "COLUMNA",
 "precio": 2070,
-"unidades": 750
+"unidades": 750,
+"peso_g": 300
 },
 {
 "ean": "9788467083316",
@@ -577,7 +648,8 @@
 "autor": "POSADAS, CARMEN",
 "editorial": "ESPASA",
 "precio": 2640,
-"unidades": 750
+"unidades": 750,
+"peso_g": 500
 },
 {
 "ean": "9788408325536",
@@ -585,7 +657,8 @@
 "autor": "LACKBERG, CAMILLA",
 "editorial": "PLANETA",
 "precio": 2630,
-"unidades": 742
+"unidades": 742,
+"peso_g": 500
 },
 {
 "ean": "9788408268130",
@@ -593,7 +666,8 @@
 "autor": "HOUSEL, MORGAN",
 "editorial": "BOOKET",
 "precio": 1630,
-"unidades": 740
+"unidades": 740,
+"peso_g": 200
 },
 {
 "ean": "9791388015830",
@@ -601,7 +675,8 @@
 "autor": "LUNA, CARLOS",
 "editorial": "NEWTON COMPTON",
 "precio": 1800,
-"unidades": 731
+"unidades": 731,
+"peso_g": 350
 },
 {
 "ean": "9791388015748",
@@ -609,7 +684,8 @@
 "autor": "DEFECO, HUMBERTO",
 "editorial": "NEWTON COMPTON",
 "precio": 1460,
-"unidades": 713
+"unidades": 713,
+"peso_g": 300
 },
 {
 "ean": "9788466390217",
@@ -617,7 +693,8 @@
 "autor": "CASTILLO, JAVIER",
 "editorial": "DEBOLSILLO",
 "precio": 1670,
-"unidades": 707
+"unidades": 707,
+"peso_g": 200
 },
 {
 "ean": "9788498381498",
@@ -625,7 +702,8 @@
 "autor": "DE SAINT-EXUPERY, ANTOINE",
 "editorial": "SALAMANDRA INFANTIL Y JUVENIL",
 "precio": 1500,
-"unidades": 704
+"unidades": 704,
+"peso_g": 300
 },
 {
 "ean": "9788491294283",
@@ -633,7 +711,8 @@
 "autor": "MCFADDEN, FREIDA",
 "editorial": "SUMA DE LETRAS",
 "precio": 2460,
-"unidades": 694
+"unidades": 694,
+"peso_g": 500
 },
 {
 "ean": "9788408327271",
@@ -641,7 +720,8 @@
 "autor": "BOLEYN, BRIAR",
 "editorial": "PLANETA",
 "precio": 2670,
-"unidades": 685
+"unidades": 685,
+"peso_g": 500
 },
 {
 "ean": "9788431615116",
@@ -649,7 +729,8 @@
 "autor": "DE ROJAS, FERNANDO",
 "editorial": "VICENS VIVES",
 "precio": 2110,
-"unidades": 684
+"unidades": 684,
+"peso_g": 350
 },
 {
 "ean": "9788425370700",
@@ -657,7 +738,8 @@
 "autor": "NGUYEN, JOSEPH",
 "editorial": "GRIJALBO",
 "precio": 2450,
-"unidades": 681
+"unidades": 681,
+"peso_g": 500
 },
 {
 "ean": "9788427054622",
@@ -665,7 +747,8 @@
 "autor": "GIL, EMMA",
 "editorial": "MARTINEZ ROCA",
 "precio": 2290,
-"unidades": 679
+"unidades": 679,
+"peso_g": 500
 },
 {
 "ean": "9788499890944",
@@ -673,7 +756,8 @@
 "autor": "ORWELL, GEORGE",
 "editorial": "DEBOLSILLO",
 "precio": 1590,
-"unidades": 667
+"unidades": 667,
+"peso_g": 200
 },
 {
 "ean": "9788466356138",
@@ -681,7 +765,8 @@
 "autor": "CAMUS, ALBERT",
 "editorial": "DEBOLSILLO",
 "precio": 1680,
-"unidades": 664
+"unidades": 664,
+"peso_g": 200
 },
 {
 "ean": "9788484452065",
@@ -689,7 +774,8 @@
 "autor": "TOLLE, ECKHART",
 "editorial": "GAIA",
 "precio": 1670,
-"unidades": 655
+"unidades": 655,
+"peso_g": 350
 },
 {
 "ean": "9791388056215",
@@ -697,7 +783,8 @@
 "autor": "PEYRO, IGNACIO",
 "editorial": "LIBROS DEL ASTEROIDE",
 "precio": 2300,
-"unidades": 650
+"unidades": 650,
+"peso_g": 500
 },
 {
 "ean": "9788419357373",
@@ -705,7 +792,8 @@
 "autor": "WALSH, CHLOE",
 "editorial": "MONTENA",
 "precio": 2460,
-"unidades": 650
+"unidades": 650,
+"peso_g": 500
 },
 {
 "ean": "9788449346033",
@@ -713,7 +801,8 @@
 "autor": "LOPEZ-OTIN, CARLOS",
 "editorial": "PAIDOS IBERICA",
 "precio": 2540,
-"unidades": 649
+"unidades": 649,
+"peso_g": 500
 },
 {
 "ean": "9791387812874",
@@ -721,7 +810,8 @@
 "autor": "CIENTOZERO, RUBEN",
 "editorial": "SEKOTIA",
 "precio": 2450,
-"unidades": 646
+"unidades": 646,
+"peso_g": 500
 },
 {
 "ean": "9788418483189",
@@ -729,7 +819,8 @@
 "autor": "RIPPIN, SALLY",
 "editorial": "MONTENA",
 "precio": 1540,
-"unidades": 641
+"unidades": 641,
+"peso_g": 300
 },
 {
 "ean": "9788426407184",
@@ -737,7 +828,8 @@
 "autor": "CARSON, ANNE",
 "editorial": "LUMEN",
 "precio": 2460,
-"unidades": 641
+"unidades": 641,
+"peso_g": 500
 },
 {
 "ean": "9788466685344",
@@ -745,7 +837,8 @@
 "autor": "FEIJOO, PEDRO",
 "editorial": "EDICIONES B",
 "precio": 2630,
-"unidades": 636
+"unidades": 636,
+"peso_g": 500
 },
 {
 "ean": "9788466435703",
@@ -753,7 +846,8 @@
 "autor": "REDONDO, DOLORES",
 "editorial": "COLUMNA",
 "precio": 2660,
-"unidades": 635
+"unidades": 635,
+"peso_g": 500
 },
 {
 "ean": "9788427055063",
@@ -761,7 +855,8 @@
 "autor": "JACOBSEN, PER",
 "editorial": "MARTINEZ ROCA",
 "precio": 2530,
-"unidades": 631
+"unidades": 631,
+"peso_g": 500
 },
 {
 "ean": "9791388279362",
@@ -769,7 +864,8 @@
 "autor": "GARAND, MANUEL",
 "editorial": "TEMAS DE HOY",
 "precio": 3440,
-"unidades": 628
+"unidades": 628,
+"peso_g": 300
 },
 {
 "ean": "9788466391610",
@@ -777,7 +873,8 @@
 "autor": "MCFADDEN, FREIDA",
 "editorial": "DEBOLSILLO",
 "precio": 1590,
-"unidades": 621
+"unidades": 621,
+"peso_g": 200
 },
 {
 "ean": "9788412932836",
@@ -785,7 +882,8 @@
 "autor": "GARCIA LORCA, FEDERICO",
 "editorial": "YA LO DIJO CASIMIRO PARKER",
 "precio": 1630,
-"unidades": 620
+"unidades": 620,
+"peso_g": 350
 },
 {
 "ean": "9788418050350",
@@ -793,7 +891,8 @@
 "autor": "MORENO, ELOY",
 "editorial": "NUBE DE TINTA",
 "precio": 2040,
-"unidades": 616
+"unidades": 616,
+"peso_g": 350
 },
 {
 "ean": "9791387724450",
@@ -801,7 +900,8 @@
 "autor": "SALANDER, JULIA",
 "editorial": "MONTENA",
 "precio": 2490,
-"unidades": 613
+"unidades": 613,
+"peso_g": 500
 },
 {
 "ean": "9788408326427",
@@ -809,7 +909,8 @@
 "autor": "ISERN, SUSANNA / DALMAU, CARLES / LOPEZ, NIL",
 "editorial": "DESTINO INFANTIL & JUVENIL",
 "precio": 2250,
-"unidades": 605
+"unidades": 605,
+"peso_g": 500
 },
 {
 "ean": "9791388002038",
@@ -817,7 +918,8 @@
 "autor": "GARBER, STEPHANIE",
 "editorial": "PUCK",
 "precio": 2550,
-"unidades": 593
+"unidades": 593,
+"peso_g": 500
 },
 {
 "ean": "9788420433424",
@@ -825,7 +927,8 @@
 "autor": "BAZTERRICA, AGUSTINA",
 "editorial": "ALFAGUARA",
 "precio": 2450,
-"unidades": 567
+"unidades": 567,
+"peso_g": 500
 },
 {
 "ean": "9788408271833",
@@ -833,7 +936,8 @@
 "autor": "ISERN, SUSANNA",
 "editorial": "DESTINO INFANTIL & JUVENIL",
 "precio": 1740,
-"unidades": 561
+"unidades": 561,
+"peso_g": 300
 },
 {
 "ean": "9788466389747",
@@ -841,7 +945,8 @@
 "autor": "MCFADDEN, FREIDA",
 "editorial": "DEBOLSILLO",
 "precio": 1590,
-"unidades": 561
+"unidades": 561,
+"peso_g": 200
 },
 {
 "ean": "9788410466135",
@@ -849,7 +954,8 @@
 "autor": "DINNIMAN, MATT",
 "editorial": "EDICIONES B",
 "precio": 2580,
-"unidades": 552
+"unidades": 552,
+"peso_g": 500
 },
 {
 "ean": "9788410352018",
@@ -857,7 +963,8 @@
 "autor": "CORUJO, LANA",
 "editorial": "RESERVOIR BOOKS",
 "precio": 2290,
-"unidades": 549
+"unidades": 549,
+"peso_g": 500
 },
 {
 "ean": "9798165625985",
@@ -865,7 +972,8 @@
 "autor": "MIGA DE PAPEL",
 "editorial": "INDEPENDENTLY PUBLISHED",
 "precio": 1610,
-"unidades": 547
+"unidades": 547,
+"peso_g": 350
 },
 {
 "ean": "9788423355655",
@@ -873,7 +981,8 @@
 "autor": "BARKER, J. D.",
 "editorial": "BOOKET",
 "precio": 1680,
-"unidades": 543
+"unidades": 543,
+"peso_g": 200
 },
 {
 "ean": "9788425451447",
@@ -881,7 +990,8 @@
 "autor": "HAN, BYUNG-CHUL",
 "editorial": "HERDER",
 "precio": 1730,
-"unidades": 542
+"unidades": 542,
+"peso_g": 350
 },
 {
 "ean": "9791387871642",
@@ -889,7 +999,8 @@
 "autor": "COLLINS, SUZANNE",
 "editorial": "B DE BOLSILLO",
 "precio": 1680,
-"unidades": 542
+"unidades": 542,
+"peso_g": 200
 },
 {
 "ean": "9791388002021",
@@ -897,7 +1008,8 @@
 "autor": "GARBER, STEPHANIE",
 "editorial": "PUCK",
 "precio": 2550,
-"unidades": 535
+"unidades": 535,
+"peso_g": 500
 },
 {
 "ean": "9788499138862",
@@ -905,7 +1017,8 @@
 "autor": "VARIOS AUTORES",
 "editorial": "TODOLIBRO",
 "precio": 1490,
-"unidades": 527
+"unidades": 527,
+"peso_g": 350
 },
 {
 "ean": "9791388154676",
@@ -913,7 +1026,8 @@
 "autor": "FORTUNEZ, CRISTOBAL / LOPEZ VALLE, DANIEL",
 "editorial": "BLACKIE BOOKS",
 "precio": 1750,
-"unidades": 524
+"unidades": 524,
+"peso_g": 300
 },
 {
 "ean": "9791387596491",
@@ -921,7 +1035,8 @@
 "autor": "HAIG, MATT",
 "editorial": "ADN EDITORIAL GRUPO ANAYA",
 "precio": 2590,
-"unidades": 524
+"unidades": 524,
+"peso_g": 500
 },
 {
 "ean": "9791387905309",
@@ -929,7 +1044,8 @@
 "autor": "BIARNES SIERRA (@NOSOLOVIERNES2), MARC",
 "editorial": "ROCA EDITORIAL",
 "precio": 2520,
-"unidades": 523
+"unidades": 523,
+"peso_g": 500
 },
 {
 "ean": "9791387641962",
@@ -937,7 +1053,8 @@
 "autor": "TIBULEAC, TATIANA",
 "editorial": "IMPEDIMENTA",
 "precio": 2530,
-"unidades": 518
+"unidades": 518,
+"peso_g": 500
 },
 {
 "ean": "9788425375118",
@@ -945,7 +1062,8 @@
 "autor": "MASTERSON, SHEILA",
 "editorial": "GRIJALBO",
 "precio": 2670,
-"unidades": 517
+"unidades": 517,
+"peso_g": 500
 },
 {
 "ean": "9791387810962",
@@ -953,7 +1071,8 @@
 "autor": "SILVER, ELSIE",
 "editorial": "CONTRALUZ",
 "precio": 2450,
-"unidades": 517
+"unidades": 517,
+"peso_g": 500
 },
 {
 "ean": "9788441440272",
@@ -961,7 +1080,8 @@
 "autor": "MARCO AURELIO",
 "editorial": "EDAF",
 "precio": 1540,
-"unidades": 510
+"unidades": 510,
+"peso_g": 350
 },
 {
 "ean": "9788499087122",
@@ -969,7 +1089,8 @@
 "autor": "SHARMA, ROBIN",
 "editorial": "DEBOLSILLO",
 "precio": 1630,
-"unidades": 510
+"unidades": 510,
+"peso_g": 200
 },
 {
 "ean": "9788466682770",
@@ -977,7 +1098,8 @@
 "autor": "ZAVALA, JOSE MARIA",
 "editorial": "EDICIONES B",
 "precio": 2670,
-"unidades": 507
+"unidades": 507,
+"peso_g": 500
 },
 {
 "ean": "9791387924386",
@@ -985,7 +1107,8 @@
 "autor": "SENLINYU",
 "editorial": "MONTENA",
 "precio": 4040,
-"unidades": 501
+"unidades": 501,
+"peso_g": 800
 },
 {
 "ean": "9788466683081",
@@ -993,7 +1116,8 @@
 "autor": "GOMEZ-JURADO, JUAN",
 "editorial": "EDICIONES B",
 "precio": 2670,
-"unidades": 499
+"unidades": 499,
+"peso_g": 500
 },
 {
 "ean": "9791387788490",
@@ -1001,7 +1125,8 @@
 "autor": "DEL BURGO, ARTURO",
 "editorial": "NEWTON COMPTON",
 "precio": 1420,
-"unidades": 498
+"unidades": 498,
+"peso_g": 200
 },
 {
 "ean": "9788419378927",
@@ -1009,7 +1134,8 @@
 "autor": "TIRADO, MIRIAM",
 "editorial": "B DE BLOK",
 "precio": 2210,
-"unidades": 498
+"unidades": 498,
+"peso_g": 500
 },
 {
 "ean": "9788423367344",
@@ -1017,7 +1143,8 @@
 "autor": "MARTI, PEDRO",
 "editorial": "DESTINO",
 "precio": 2580,
-"unidades": 496
+"unidades": 496,
+"peso_g": 500
 },
 {
 "ean": "9791388337000",
@@ -1025,7 +1152,8 @@
 "autor": "FESSER, GUILLERMO",
 "editorial": "CONTRALUZ",
 "precio": 2590,
-"unidades": 494
+"unidades": 494,
+"peso_g": 500
 },
 {
 "ean": "9791387928018",
@@ -1033,7 +1161,8 @@
 "autor": "BIEDERMANN, NELIO",
 "editorial": "SALAMANDRA",
 "precio": 2550,
-"unidades": 490
+"unidades": 490,
+"peso_g": 500
 },
 {
 "ean": "9791399153828",
@@ -1041,7 +1170,8 @@
 "autor": "SOTO CHICA, JOSE / AGUADO BLAZQUEZ, FRANCISCO",
 "editorial": "DESPERTA FERRO EDICIONES",
 "precio": 2680,
-"unidades": 489
+"unidades": 489,
+"peso_g": 500
 },
 {
 "ean": "9791370206079",
@@ -1049,7 +1179,8 @@
 "autor": "DOMINGUEZ (WALL STREET WOLVERINE), VICTOR",
 "editorial": "ALMUZARA",
 "precio": 2110,
-"unidades": 480
+"unidades": 480,
+"peso_g": 350
 },
 {
 "ean": "9788408304579",
@@ -1057,7 +1188,8 @@
 "autor": "HARDY, SAMARA",
 "editorial": "TIMUN MAS INFANTIL",
 "precio": 1670,
-"unidades": 479
+"unidades": 479,
+"peso_g": 300
 },
 {
 "ean": "9788466332286",
@@ -1065,7 +1197,8 @@
 "autor": "DICKER, JOEL",
 "editorial": "DEBOLSILLO",
 "precio": 1680,
-"unidades": 479
+"unidades": 479,
+"peso_g": 200
 },
 {
 "ean": "9788419835734",
@@ -1073,7 +1206,8 @@
 "autor": "MCFADDEN, FREIDA",
 "editorial": "SUMA DE LETRAS",
 "precio": 2500,
-"unidades": 478
+"unidades": 478,
+"peso_g": 500
 },
 {
 "ean": "9788408327370",
@@ -1081,7 +1215,8 @@
 "autor": "HUBERMAN, ANDREW",
 "editorial": "PLANETA",
 "precio": 2660,
-"unidades": 477
+"unidades": 477,
+"peso_g": 500
 },
 {
 "ean": "9788410496002",
@@ -1089,7 +1224,8 @@
 "autor": "DICKER, JOEL",
 "editorial": "ALFAGUARA",
 "precio": 2320,
-"unidades": 475
+"unidades": 475,
+"peso_g": 500
 },
 {
 "ean": "9788449333736",
@@ -1097,7 +1233,8 @@
 "autor": "SMITH, KERI",
 "editorial": "PAIDOS IBERICA",
 "precio": 1780,
-"unidades": 472
+"unidades": 472,
+"peso_g": 350
 },
 {
 "ean": "9791387724184",
@@ -1105,7 +1242,8 @@
 "autor": "RIPPIN, SALLY",
 "editorial": "MONTENA",
 "precio": 1540,
-"unidades": 469
+"unidades": 469,
+"peso_g": 300
 },
 {
 "ean": "9791388015434",
@@ -1113,7 +1251,8 @@
 "autor": "SHIGEMATSU, KIYOSHI",
 "editorial": "NEWTON COMPTON",
 "precio": 1540,
-"unidades": 468
+"unidades": 468,
+"peso_g": 350
 },
 {
 "ean": "9788498672220",
@@ -1121,7 +1260,8 @@
 "autor": "KINNEY, JEFF",
 "editorial": "MOLINO",
 "precio": 2170,
-"unidades": 467
+"unidades": 467,
+"peso_g": 500
 },
 {
 "ean": "9783912848045",
@@ -1129,7 +1269,8 @@
 "autor": "FALKNER, NIKLAS",
 "editorial": "RIDDLEHAUS",
 "precio": 1800,
-"unidades": 467
+"unidades": 467,
+"peso_g": 300
 },
 {
 "ean": "9788410647442",
@@ -1137,7 +1278,8 @@
 "autor": "CALVO POYATO, JOSE",
 "editorial": "HARPERCOLLINS",
 "precio": 2670,
-"unidades": 467
+"unidades": 467,
+"peso_g": 500
 },
 {
 "ean": "9791387962821",
@@ -1145,7 +1287,8 @@
 "autor": "HYUGANATSU",
 "editorial": "DISTRITO MANGA",
 "precio": 2130,
-"unidades": 464
+"unidades": 464,
+"peso_g": 350
 },
 {
 "ean": "9791388108327",
@@ -1153,7 +1296,8 @@
 "autor": "MAEHRER, HANNAH NICOLE",
 "editorial": "FAERIS EDITORIAL",
 "precio": 2460,
-"unidades": 459
+"unidades": 459,
+"peso_g": 500
 },
 {
 "ean": "9788419640888",
@@ -1161,7 +1305,8 @@
 "autor": "ALVAREZ, JORGE LUIS / DEL CERRO, JUAN CARLOS",
 "editorial": "EDIBESA",
 "precio": 1440,
-"unidades": 458
+"unidades": 458,
+"peso_g": 350
 },
 {
 "ean": "9791388015410",
@@ -1169,7 +1314,8 @@
 "autor": "KILMORE, R. L.",
 "editorial": "NEWTON COMPTON",
 "precio": 1540,
-"unidades": 458
+"unidades": 458,
+"peso_g": 350
 },
 {
 "ean": "9791399114812",
@@ -1177,7 +1323,8 @@
 "autor": "GROS, MICHEL",
 "editorial": "KAICRON",
 "precio": 1620,
-"unidades": 458
+"unidades": 458,
+"peso_g": 350
 },
 {
 "ean": "9791399059328",
@@ -1185,7 +1332,8 @@
 "autor": "CASTILLO Y OCSIERO, MARIANO",
 "editorial": "CALENDARIO ZARAGOZANO",
 "precio": 1400,
-"unidades": 456
+"unidades": 456,
+"peso_g": 350
 },
 {
 "ean": "9791388015427",
@@ -1193,7 +1341,8 @@
 "autor": "G. MILLER, DANIEL",
 "editorial": "NEWTON COMPTON",
 "precio": 1540,
-"unidades": 453
+"unidades": 453,
+"peso_g": 350
 },
 {
 "ean": "9788427054479",
@@ -1201,7 +1350,8 @@
 "autor": "ASHER, LAUREN",
 "editorial": "MARTINEZ ROCA",
 "precio": 2290,
-"unidades": 452
+"unidades": 452,
+"peso_g": 500
 },
 {
 "ean": "9788410317994",
@@ -1209,7 +1359,8 @@
 "autor": "DOSTOIEVSKI, FIODOR M.",
 "editorial": "GALAXIA GUTENBERG",
 "precio": 1630,
-"unidades": 451
+"unidades": 451,
+"peso_g": 350
 },
 {
 "ean": "9791388289088",
@@ -1217,7 +1368,8 @@
 "autor": "BASANTA, ANTONIO / CASTELLANOS, NAZARETH",
 "editorial": "SIRUELA",
 "precio": 2140,
-"unidades": 449
+"unidades": 449,
+"peso_g": 350
 },
 {
 "ean": "9788408286981",
@@ -1225,7 +1377,8 @@
 "autor": "SMART, JAMIE",
 "editorial": "DESTINO INFANTIL & JUVENIL",
 "precio": 1800,
-"unidades": 449
+"unidades": 449,
+"peso_g": 300
 },
 {
 "ean": "9791257741389",
@@ -1233,7 +1386,8 @@
 "autor": "BRENNER, KLAUS",
 "editorial": "ATERNAL",
 "precio": 2470,
-"unidades": 447
+"unidades": 447,
+"peso_g": 500
 },
 {
 "ean": "9788408324706",
@@ -1241,7 +1395,8 @@
 "autor": "HUANG, ANA",
 "editorial": "CROSS BOOKS",
 "precio": 2630,
-"unidades": 444
+"unidades": 444,
+"peso_g": 500
 },
 {
 "ean": "9788432176067",
@@ -1249,7 +1404,8 @@
 "autor": "OCARIZ, FERNANDO",
 "editorial": "RIALP",
 "precio": 1390,
-"unidades": 444
+"unidades": 444,
+"peso_g": 350
 },
 {
 "ean": "9788466435550",
@@ -1257,7 +1413,8 @@
 "autor": "GARAND, MANUEL",
 "editorial": "COLUMNA",
 "precio": 2080,
-"unidades": 443
+"unidades": 443,
+"peso_g": 300
 },
 {
 "ean": "9788401021527",
@@ -1265,7 +1422,8 @@
 "autor": "VAN VLIET, ELMA",
 "editorial": "PLAZA & JANES",
 "precio": 2040,
-"unidades": 442
+"unidades": 442,
+"peso_g": 350
 },
 {
 "ean": "9788419746993",
@@ -1273,7 +1431,8 @@
 "autor": "WALSH, CHLOE",
 "editorial": "MONTENA",
 "precio": 2450,
-"unidades": 440
+"unidades": 440,
+"peso_g": 500
 },
 {
 "ean": "9788408326342",
@@ -1281,7 +1440,8 @@
 "autor": "DIAZ REGUERA, RAQUEL",
 "editorial": "DESTINO INFANTIL & JUVENIL",
 "precio": 2160,
-"unidades": 439
+"unidades": 439,
+"peso_g": 500
 },
 {
 "ean": "9788426409836",
@@ -1289,7 +1449,8 @@
 "autor": "CARSON, ANNE",
 "editorial": "LUMEN",
 "precio": 2300,
-"unidades": 438
+"unidades": 438,
+"peso_g": 500
 },
 {
 "ean": "9788429333312",
@@ -1297,7 +1458,8 @@
 "autor": "SANCHEZ ADALID, JESUS",
 "editorial": "SAL TERRAE",
 "precio": 2530,
-"unidades": 438
+"unidades": 438,
+"peso_g": 500
 },
 {
 "ean": "9788417921378",
@@ -1305,7 +1467,8 @@
 "autor": "GOMEZ-JURADO, JUAN / MONTES, BARBARA",
 "editorial": "B DE BLOK",
 "precio": 2170,
-"unidades": 437
+"unidades": 437,
+"peso_g": 500
 },
 {
 "ean": "9788484644859",
@@ -1313,7 +1476,8 @@
 "autor": "RUBIO, ANTONIO",
 "editorial": "KALANDRAKA",
 "precio": 1600,
-"unidades": 435
+"unidades": 435,
+"peso_g": 300
 },
 {
 "ean": "9788408325062",
@@ -1321,7 +1485,8 @@
 "autor": "SANS SEGARRA, MANUEL",
 "editorial": "PLANETA",
 "precio": 2490,
-"unidades": 434
+"unidades": 434,
+"peso_g": 500
 },
 {
 "ean": "9788408326052",
@@ -1329,7 +1494,8 @@
 "autor": "REUS HUANG, MARIA",
 "editorial": "ESENCIA",
 "precio": 2450,
-"unidades": 433
+"unidades": 433,
+"peso_g": 500
 },
 {
 "ean": "9788410399426",
@@ -1337,7 +1503,8 @@
 "autor": "TACK, STELLA",
 "editorial": "INLOV",
 "precio": 2890,
-"unidades": 432
+"unidades": 432,
+"peso_g": 500
 },
 {
 "ean": "9788408223238",
@@ -1345,7 +1512,8 @@
 "autor": "MAÑAS, PEDRO",
 "editorial": "DESTINO INFANTIL & JUVENIL",
 "precio": 1710,
-"unidades": 431
+"unidades": 431,
+"peso_g": 300
 },
 {
 "ean": "9788408326304",
@@ -1353,7 +1521,8 @@
 "autor": "LAS AVENTURAS DE DANI Y EVAN",
 "editorial": "DESTINO INFANTIL & JUVENIL",
 "precio": 1960,
-"unidades": 429
+"unidades": 429,
+"peso_g": 300
 },
 {
 "ean": "9791388111006",
@@ -1361,7 +1530,8 @@
 "autor": "LUISELLI, VALERIA",
 "editorial": "FELTRINELLI EDITORES",
 "precio": 2540,
-"unidades": 426
+"unidades": 426,
+"peso_g": 500
 },
 {
 "ean": "9788494820694",
@@ -1369,7 +1539,8 @@
 "autor": "TIRADO, MIRIAM",
 "editorial": "CARAMBUCO EDICIONES",
 "precio": 1800,
-"unidades": 426
+"unidades": 426,
+"peso_g": 300
 },
 {
 "ean": "9788427248427",
@@ -1377,7 +1548,8 @@
 "autor": "COLLINS, SUZANNE",
 "editorial": "MOLINO",
 "precio": 2500,
-"unidades": 426
+"unidades": 426,
+"peso_g": 500
 },
 {
 "ean": "9791387810436",
@@ -1385,7 +1557,8 @@
 "autor": "ABBY, S. T.",
 "editorial": "CONTRALUZ",
 "precio": 1670,
-"unidades": 422
+"unidades": 422,
+"peso_g": 350
 },
 {
 "ean": "9788499744285",
@@ -1393,7 +1566,8 @@
 "autor": "VOX EDITORIAL",
 "editorial": "VOX",
 "precio": 2660,
-"unidades": 418
+"unidades": 418,
+"peso_g": 500
 },
 {
 "ean": "9791388108112",
@@ -1401,7 +1575,8 @@
 "autor": "MAEHRER, HANNAH NICOLE",
 "editorial": "FAERIS EDITORIAL",
 "precio": 2610,
-"unidades": 417
+"unidades": 417,
+"peso_g": 500
 },
 {
 "ean": "9788468299051",
@@ -1409,7 +1584,8 @@
 "autor": "ANGELIDOU, M.",
 "editorial": "VICENS VIVES",
 "precio": 1760,
-"unidades": 414
+"unidades": 414,
+"peso_g": 300
 },
 {
 "ean": "9791388015403",
@@ -1417,7 +1593,8 @@
 "autor": "MADI, SILVIA",
 "editorial": "NEWTON COMPTON",
 "precio": 1540,
-"unidades": 414
+"unidades": 414,
+"peso_g": 350
 },
 {
 "ean": "9788466362085",
@@ -1425,7 +1602,8 @@
 "autor": "ALLENDE, ISABEL",
 "editorial": "DEBOLSILLO",
 "precio": 1670,
-"unidades": 412
+"unidades": 412,
+"peso_g": 200
 },
 {
 "ean": "9788484645641",
@@ -1433,7 +1611,8 @@
 "autor": "GREJNIEC, MICHAEL",
 "editorial": "KALANDRAKA",
 "precio": 2180,
-"unidades": 410
+"unidades": 410,
+"peso_g": 500
 },
 {
 "ean": "9788410116214",
@@ -1441,7 +1620,8 @@
 "autor": "FILIPPINI, ANOUK",
 "editorial": "TBR",
 "precio": 2290,
-"unidades": 407
+"unidades": 407,
+"peso_g": 500
 },
 {
 "ean": "9788410116207",
@@ -1449,7 +1629,8 @@
 "autor": "KAFKA, CYNTHIA",
 "editorial": "TBR",
 "precio": 2290,
-"unidades": 407
+"unidades": 407,
+"peso_g": 500
 },
 {
 "ean": "9788418107801",
@@ -1457,7 +1638,8 @@
 "autor": "COLOMBANI, LAETITIA",
 "editorial": "SALAMANDRA",
 "precio": 2550,
-"unidades": 406
+"unidades": 406,
+"peso_g": 500
 },
 {
 "ean": "9788408072805",
@@ -1465,7 +1647,8 @@
 "autor": "RUIZ ZAFON, CARLOS",
 "editorial": "BOOKET",
 "precio": 1620,
-"unidades": 404
+"unidades": 404,
+"peso_g": 200
 },
 {
 "ean": "9791388056178",
@@ -1473,7 +1656,8 @@
 "autor": "BERGARECHE, JACOBO",
 "editorial": "LIBROS DEL ASTEROIDE",
 "precio": 2510,
-"unidades": 401
+"unidades": 401,
+"peso_g": 500
 },
 {
 "ean": "9788466373005",
@@ -1481,7 +1665,8 @@
 "autor": "KIYOSAKI, ROBERT T.",
 "editorial": "DEBOLSILLO",
 "precio": 1630,
-"unidades": 400
+"unidades": 400,
+"peso_g": 200
 },
 {
 "ean": "9788408324539",
@@ -1489,7 +1674,8 @@
 "autor": "COELHO, PAULO",
 "editorial": "PLANETA",
 "precio": 2450,
-"unidades": 399
+"unidades": 399,
+"peso_g": 500
 },
 {
 "ean": "9788420459547",
@@ -1497,7 +1683,8 @@
 "autor": "GARCIA-ROJO, PATRICIA",
 "editorial": "ALFAGUARA INFANTIL Y JUVENIL",
 "precio": 1670,
-"unidades": 399
+"unidades": 399,
+"peso_g": 300
 },
 {
 "ean": "9788419746979",
@@ -1505,7 +1692,8 @@
 "autor": "WALSH, CHLOE",
 "editorial": "MONTENA",
 "precio": 2450,
-"unidades": 398
+"unidades": 398,
+"peso_g": 500
 },
 {
 "ean": "9788499890951",
@@ -1513,7 +1701,8 @@
 "autor": "ORWELL, GEORGE",
 "editorial": "DEBOLSILLO",
 "precio": 1590,
-"unidades": 397
+"unidades": 397,
+"peso_g": 200
 },
 {
 "ean": "9788425373701",
@@ -1521,7 +1710,8 @@
 "autor": "OLIVA, JAVIER",
 "editorial": "GRIJALBO",
 "precio": 2670,
-"unidades": 395
+"unidades": 395,
+"peso_g": 500
 },
 {
 "ean": "9788408326380",
@@ -1529,7 +1719,8 @@
 "autor": "ESLAVA GALAN, JUAN",
 "editorial": "PLANETA",
 "precio": 2630,
-"unidades": 393
+"unidades": 393,
+"peso_g": 500
 },
 {
 "ean": "9788466389730",
@@ -1537,7 +1728,8 @@
 "autor": "MCFADDEN, FREIDA",
 "editorial": "DEBOLSILLO",
 "precio": 1590,
-"unidades": 393
+"unidades": 393,
+"peso_g": 200
 },
 {
 "ean": "9788419848222",
@@ -1545,7 +1737,8 @@
 "autor": "WALSH, CHLOE",
 "editorial": "MONTENA",
 "precio": 2540,
-"unidades": 392
+"unidades": 392,
+"peso_g": 500
 },
 {
 "ean": "9788494709203",
@@ -1553,7 +1746,8 @@
 "autor": "SUN TZU",
 "editorial": "DOJO",
 "precio": 1610,
-"unidades": 391
+"unidades": 391,
+"peso_g": 350
 },
 {
 "ean": "9791387839505",
@@ -1561,7 +1755,8 @@
 "autor": "IZAGIRRE, ANDER",
 "editorial": "LIBROS DEL K.O.",
 "precio": 2630,
-"unidades": 388
+"unidades": 388,
+"peso_g": 500
 },
 {
 "ean": "9788408315759",
@@ -1569,7 +1764,8 @@
 "autor": "DIAZ REGUERA, RAQUEL",
 "editorial": "DESTINO INFANTIL & JUVENIL",
 "precio": 2170,
-"unidades": 388
+"unidades": 388,
+"peso_g": 500
 },
 {
 "ean": "9788408319856",
@@ -1577,7 +1773,8 @@
 "autor": "SANS SEGARRA, MANUEL / CEBRIAN, JUAN CARLOS",
 "editorial": "BOOKET",
 "precio": 1540,
-"unidades": 387
+"unidades": 387,
+"peso_g": 200
 },
 {
 "ean": "9788466360111",
@@ -1585,7 +1782,8 @@
 "autor": "DICKER, JOEL",
 "editorial": "DEBOLSILLO",
 "precio": 1510,
-"unidades": 386
+"unidades": 386,
+"peso_g": 200
 },
 {
 "ean": "9788427055544",
@@ -1593,7 +1791,8 @@
 "autor": "UNZU, IKER",
 "editorial": "MARTINEZ ROCA",
 "precio": 2490,
-"unidades": 385
+"unidades": 385,
+"peso_g": 500
 },
 {
 "ean": "9788410298316",
@@ -1601,7 +1800,8 @@
 "autor": "WALSH, CHLOE",
 "editorial": "MONTENA",
 "precio": 2540,
-"unidades": 384
+"unidades": 384,
+"peso_g": 500
 },
 {
 "ean": "9788410299498",
@@ -1609,7 +1809,8 @@
 "autor": "DIAZ, SANTIAGO",
 "editorial": "ALFAGUARA",
 "precio": 2500,
-"unidades": 382
+"unidades": 382,
+"peso_g": 500
 },
 {
 "ean": "9791387711894",
@@ -1617,7 +1818,8 @@
 "autor": "ANDREWS, ILONA",
 "editorial": "HIDRA",
 "precio": 2900,
-"unidades": 379
+"unidades": 379,
+"peso_g": 500
 },
 {
 "ean": "9791387869052",
@@ -1625,7 +1827,8 @@
 "autor": "KARBER, G. T.",
 "editorial": "TEMAS DE HOY",
 "precio": 1670,
-"unidades": 379
+"unidades": 379,
+"peso_g": 300
 },
 {
 "ean": "9788408257103",
@@ -1633,7 +1836,8 @@
 "autor": "MAAS, SARAH J.",
 "editorial": "CROSS BOOKS",
 "precio": 2450,
-"unidades": 377
+"unidades": 377,
+"peso_g": 500
 },
 {
 "ean": "9788410298194",
@@ -1641,7 +1845,8 @@
 "autor": "WALSH, CHLOE",
 "editorial": "MONTENA",
 "precio": 2450,
-"unidades": 377
+"unidades": 377,
+"peso_g": 500
 },
 {
 "ean": "9788408279990",
@@ -1649,7 +1854,8 @@
 "autor": "YARROS, REBECCA",
 "editorial": "PLANETA",
 "precio": 2580,
-"unidades": 374
+"unidades": 374,
+"peso_g": 500
 },
 {
 "ean": "9788418054716",
@@ -1657,7 +1863,8 @@
 "autor": "TIRADO, MIRIAM",
 "editorial": "B DE BLOK",
 "precio": 1950,
-"unidades": 374
+"unidades": 374,
+"peso_g": 300
 },
 {
 "ean": "9788419822178",
@@ -1665,7 +1872,8 @@
 "autor": "HAZELWOOD, ALI",
 "editorial": "CONTRALUZ",
 "precio": 1590,
-"unidades": 373
+"unidades": 373,
+"peso_g": 200
 },
 {
 "ean": "9788432249747",
@@ -1673,7 +1881,8 @@
 "autor": "MENDOZA, EDUARDO",
 "editorial": "SEIX BARRAL",
 "precio": 2500,
-"unidades": 371
+"unidades": 371,
+"peso_g": 500
 },
 {
 "ean": "9788411078375",
@@ -1681,7 +1890,8 @@
 "autor": "BORRAZ, MARTA",
 "editorial": "TUSQUETS",
 "precio": 2460,
-"unidades": 370
+"unidades": 370,
+"peso_g": 500
 },
 {
 "ean": "9788423370450",
@@ -1689,7 +1899,8 @@
 "autor": "PEREZ GELLIDA, CESAR",
 "editorial": "DESTINO",
 "precio": 2630,
-"unidades": 369
+"unidades": 369,
+"peso_g": 500
 },
 {
 "ean": "9791388019906",
@@ -1697,7 +1908,8 @@
 "autor": "KALLIFATIDES, THEODOR",
 "editorial": "GALAXIA GUTENBERG",
 "precio": 2120,
-"unidades": 367
+"unidades": 367,
+"peso_g": 350
 },
 {
 "ean": "9788410096547",
@@ -1705,7 +1917,8 @@
 "autor": "GONZALEZ-HURTADO, JOSE CARLOS",
 "editorial": "ROCA EDITORIAL",
 "precio": 2580,
-"unidades": 365
+"unidades": 365,
+"peso_g": 500
 },
 {
 "ean": "9788430994403",
@@ -1713,7 +1926,8 @@
 "autor": "EDITORIAL TECNOS",
 "editorial": "TECNOS",
 "precio": 1730,
-"unidades": 364
+"unidades": 364,
+"peso_g": 350
 },
 {
 "ean": "9788408178866",
@@ -1721,7 +1935,8 @@
 "autor": "VARIOS AUTORES",
 "editorial": "TIMUN MAS INFANTIL",
 "precio": 1630,
-"unidades": 361
+"unidades": 361,
+"peso_g": 350
 },
 {
 "ean": "9781037200083",
@@ -1729,7 +1944,8 @@
 "autor": "MAAS, SARAH J.",
 "editorial": "BLOOMSBURY PUBLISHING",
 "precio": 2680,
-"unidades": 360
+"unidades": 360,
+"peso_g": 500
 },
 {
 "ean": "9788423369485",
@@ -1737,7 +1953,8 @@
 "autor": "REDONDO, DOLORES",
 "editorial": "BOOKET",
 "precio": 1720,
-"unidades": 359
+"unidades": 359,
+"peso_g": 200
 },
 {
 "ean": "9788419868909",
@@ -1745,7 +1962,8 @@
 "autor": "RIORDAN, RICK",
 "editorial": "SALAMANDRA INFANTIL Y JUVENIL",
 "precio": 2090,
-"unidades": 357
+"unidades": 357,
+"peso_g": 350
 },
 {
 "ean": "9791387783051",
@@ -1753,7 +1971,8 @@
 "autor": "DAVIES, BENJI",
 "editorial": "ESTRELLA POLAR",
 "precio": 2580,
-"unidades": 356
+"unidades": 356,
+"peso_g": 500
 },
 {
 "ean": "9788418483097",
@@ -1761,7 +1980,8 @@
 "autor": "RIPPIN, SALLY",
 "editorial": "MONTENA",
 "precio": 1540,
-"unidades": 354
+"unidades": 354,
+"peso_g": 300
 },
 {
 "ean": "9788411191067",
@@ -1769,7 +1989,8 @@
 "autor": "RUBIN, RICK",
 "editorial": "DIANA",
 "precio": 2890,
-"unidades": 354
+"unidades": 354,
+"peso_g": 500
 },
 {
 "ean": "9791039543965",
@@ -1777,7 +1998,8 @@
 "autor": "VARIOS AUTORES",
 "editorial": "AUZOU",
 "precio": 1710,
-"unidades": 352
+"unidades": 352,
+"peso_g": 350
 },
 {
 "ean": "9788432251467",
@@ -1785,7 +2007,8 @@
 "autor": "RAMIREZ DE LUCAS, JUAN",
 "editorial": "SEIX BARRAL",
 "precio": 2540,
-"unidades": 352
+"unidades": 352,
+"peso_g": 500
 },
 {
 "ean": "9788408316084",
@@ -1793,7 +2016,8 @@
 "autor": "YARROS, REBECCA",
 "editorial": "BOOKET",
 "precio": 1930,
-"unidades": 350
+"unidades": 350,
+"peso_g": 200
 },
 {
 "ean": "9798189882401",
@@ -1801,7 +2025,8 @@
 "autor": "THE PIXOLOGIST",
 "editorial": "INDEPENDENTLY PUBLISHED",
 "precio": 2060,
-"unidades": 349
+"unidades": 349,
+"peso_g": 350
 },
 {
 "ean": "9791387596415",
@@ -1809,7 +2034,8 @@
 "autor": "BURKE, CARO CLAIRE",
 "editorial": "ADN EDITORIAL GRUPO ANAYA",
 "precio": 2540,
-"unidades": 347
+"unidades": 347,
+"peso_g": 500
 },
 {
 "ean": "9788408271840",
@@ -1817,7 +2043,8 @@
 "autor": "ISERN, SUSANNA",
 "editorial": "DESTINO INFANTIL & JUVENIL",
 "precio": 1710,
-"unidades": 346
+"unidades": 346,
+"peso_g": 300
 },
 {
 "ean": "9788466392587",
@@ -1825,7 +2052,8 @@
 "autor": "MCFADDEN, FREIDA",
 "editorial": "DEBOLSILLO",
 "precio": 1590,
-"unidades": 345
+"unidades": 345,
+"peso_g": 200
 },
 {
 "ean": "9788432239939",
@@ -1833,7 +2061,8 @@
 "autor": "MONTERO, ROSA",
 "editorial": "BOOKET",
 "precio": 1590,
-"unidades": 344
+"unidades": 344,
+"peso_g": 200
 },
 {
 "ean": "9791387994303",
@@ -1841,7 +2070,8 @@
 "autor": "TIRADO, MIRIAM",
 "editorial": "B DE BLOK",
 "precio": 2210,
-"unidades": 344
+"unidades": 344,
+"peso_g": 500
 },
 {
 "ean": "9791387749330",
@@ -1849,7 +2079,8 @@
 "autor": "MARTINEZ, BELEN",
 "editorial": "UMBRIEL",
 "precio": 2880,
-"unidades": 343
+"unidades": 343,
+"peso_g": 500
 },
 {
 "ean": "9788490707180",
@@ -1857,7 +2088,8 @@
 "autor": "WEISS, BRIAN L.",
 "editorial": "B DE BOLSILLO",
 "precio": 1620,
-"unidades": 343
+"unidades": 343,
+"peso_g": 200
 },
 {
 "ean": "9788411732475",
@@ -1865,7 +2097,8 @@
 "autor": "RUFIAN, GABRIEL",
 "editorial": "ARA LLIBRES",
 "precio": 2490,
-"unidades": 342
+"unidades": 342,
+"peso_g": 500
 },
 {
 "ean": "9788408326724",
@@ -1873,7 +2106,8 @@
 "autor": "MERCERO, ANTONIO",
 "editorial": "BOOKET",
 "precio": 1640,
-"unidades": 342
+"unidades": 342,
+"peso_g": 200
 },
 {
 "ean": "9788466392570",
@@ -1881,7 +2115,8 @@
 "autor": "MCFADDEN, FREIDA",
 "editorial": "DEBOLSILLO",
 "precio": 1590,
-"unidades": 340
+"unidades": 340,
+"peso_g": 200
 },
 {
 "ean": "9788419522177",
@@ -1889,7 +2124,8 @@
 "autor": "TIRADO, MIRIAM",
 "editorial": "B DE BLOK",
 "precio": 2210,
-"unidades": 339
+"unidades": 339,
+"peso_g": 500
 },
 {
 "ean": "9788466356145",
@@ -1897,7 +2133,8 @@
 "autor": "CAMUS, ALBERT",
 "editorial": "DEBOLSILLO",
 "precio": 1680,
-"unidades": 339
+"unidades": 339,
+"peso_g": 200
 },
 {
 "ean": "9791388108419",
@@ -1905,7 +2142,8 @@
 "autor": "HELLMUND, WANDA",
 "editorial": "FAERIS EDITORIAL",
 "precio": 2620,
-"unidades": 339
+"unidades": 339,
+"peso_g": 500
 },
 {
 "ean": "9788417427535",
@@ -1913,7 +2151,8 @@
 "autor": "RUBIO SILVESTRE, RAMON",
 "editorial": "EDICIONES TECNICAS RUBIO",
 "precio": 1270,
-"unidades": 337
+"unidades": 337,
+"peso_g": 300
 },
 {
 "ean": "9788420479279",
@@ -1921,7 +2160,8 @@
 "autor": "LLAMAZARES, JULIO",
 "editorial": "ALFAGUARA",
 "precio": 2550,
-"unidades": 337
+"unidades": 337,
+"peso_g": 500
 },
 {
 "ean": "9788466685016",
@@ -1929,7 +2169,8 @@
 "autor": "AGUILERA, INMA",
 "editorial": "EDICIONES B",
 "precio": 2670,
-"unidades": 336
+"unidades": 336,
+"peso_g": 500
 },
 {
 "ean": "9788408286127",
@@ -1937,7 +2178,8 @@
 "autor": "HOOVER, COLLEEN",
 "editorial": "BOOKET",
 "precio": 1590,
-"unidades": 336
+"unidades": 336,
+"peso_g": 200
 },
 {
 "ean": "9788448865207",
@@ -1945,7 +2187,8 @@
 "autor": "SERRANO, LUCIA",
 "editorial": "BEASCOA",
 "precio": 2160,
-"unidades": 334
+"unidades": 334,
+"peso_g": 500
 },
 {
 "ean": "9791387846794",
@@ -1953,7 +2196,8 @@
 "autor": "SAVIANO, ROBERTO",
 "editorial": "ALFAGUARA",
 "precio": 2550,
-"unidades": 334
+"unidades": 334,
+"peso_g": 500
 },
 {
 "ean": "9791388042485",
@@ -1961,7 +2205,8 @@
 "autor": "CARRISI, DONATO",
 "editorial": "DUOMO",
 "precio": 2550,
-"unidades": 333
+"unidades": 333,
+"peso_g": 500
 },
 {
 "ean": "9788410396425",
@@ -1969,7 +2214,8 @@
 "autor": "RIPPIN, SALLY",
 "editorial": "MONTENA",
 "precio": 1540,
-"unidades": 331
+"unidades": 331,
+"peso_g": 300
 },
 {
 "ean": "9788408318682",
@@ -1977,7 +2223,8 @@
 "autor": "DUEÑAS, MARIA",
 "editorial": "BOOKET",
 "precio": 1720,
-"unidades": 329
+"unidades": 329,
+"peso_g": 200
 },
 {
 "ean": "9788408326472",
@@ -1985,7 +2232,8 @@
 "autor": "YARROS, REBECCA",
 "editorial": "BOOKET",
 "precio": 1920,
-"unidades": 328
+"unidades": 328,
+"peso_g": 200
 },
 {
 "ean": "9788419275851",
@@ -1993,7 +2241,8 @@
 "autor": "ROWLING, J. K.",
 "editorial": "SALAMANDRA INFANTIL Y JUVENIL",
 "precio": 3540,
-"unidades": 328
+"unidades": 328,
+"peso_g": 500
 },
 {
 "ean": "9788418599408",
@@ -2001,7 +2250,8 @@
 "autor": "SERRANO, LUCIA",
 "editorial": "NUBEOCHO EDICIONES",
 "precio": 1950,
-"unidades": 325
+"unidades": 325,
+"peso_g": 300
 },
 {
 "ean": "9791387845940",
@@ -2009,7 +2259,8 @@
 "autor": "BROWER, BETH",
 "editorial": "SUMA DE LETRAS",
 "precio": 2000,
-"unidades": 325
+"unidades": 325,
+"peso_g": 350
 },
 {
 "ean": "9791387788452",
@@ -2017,7 +2268,8 @@
 "autor": "ORWELL, GEORGE",
 "editorial": "NEWTON COMPTON",
 "precio": 1670,
-"unidades": 325
+"unidades": 325,
+"peso_g": 350
 },
 {
 "ean": "9788417427436",
@@ -2025,7 +2277,8 @@
 "autor": "RUBIO SILVESTRE, RAMON",
 "editorial": "EDICIONES TECNICAS RUBIO",
 "precio": 1270,
-"unidades": 323
+"unidades": 323,
+"peso_g": 300
 },
 {
 "ean": "9798575667285",
@@ -2033,7 +2286,8 @@
 "autor": "EDICION COLIBRIGAMI",
 "editorial": "INDEPENDENTLY PUBLISHED",
 "precio": 1730,
-"unidades": 320
+"unidades": 320,
+"peso_g": 350
 },
 {
 "ean": "9788420479286",
@@ -2041,7 +2295,8 @@
 "autor": "DIAZ, SANTIAGO",
 "editorial": "ALFAGUARA",
 "precio": 2490,
-"unidades": 319
+"unidades": 319,
+"peso_g": 500
 },
 {
 "ean": "9788467082647",
@@ -2049,7 +2304,8 @@
 "autor": "MAXWELL, MEGAN",
 "editorial": "ESPASA",
 "precio": 2580,
-"unidades": 319
+"unidades": 319,
+"peso_g": 500
 },
 {
 "ean": "9788408327134",
@@ -2057,7 +2313,8 @@
 "autor": "MARTIN, ANGEL",
 "editorial": "PLANETA",
 "precio": 2490,
-"unidades": 315
+"unidades": 315,
+"peso_g": 500
 },
 {
 "ean": "9788410257184",
@@ -2065,7 +2322,8 @@
 "autor": "MCFADDEN, FREIDA",
 "editorial": "SUMA DE LETRAS",
 "precio": 2490,
-"unidades": 313
+"unidades": 313,
+"peso_g": 500
 },
 {
 "ean": "9788411108911",
@@ -2073,7 +2331,8 @@
 "autor": "FEIJOO, PEDRO",
 "editorial": "XERAIS DE GALICIA",
 "precio": 2650,
-"unidades": 313
+"unidades": 313,
+"peso_g": 500
 },
 {
 "ean": "9791387749309",
@@ -2081,7 +2340,8 @@
 "autor": "GRACE, ADALYN",
 "editorial": "UMBRIEL",
 "precio": 2630,
-"unidades": 313
+"unidades": 313,
+"peso_g": 500
 },
 {
 "ean": "9788493375973",
@@ -2089,7 +2349,8 @@
 "autor": "RUBIO, ANTONIO",
 "editorial": "KALANDRAKA",
 "precio": 1600,
-"unidades": 313
+"unidades": 313,
+"peso_g": 300
 },
 {
 "ean": "9788408322764",
@@ -2097,7 +2358,8 @@
 "autor": "PLATEL, MARTA",
 "editorial": "PLANETA",
 "precio": 2630,
-"unidades": 312
+"unidades": 312,
+"peso_g": 500
 },
 {
 "ean": "9791388042225",
@@ -2105,7 +2367,8 @@
 "autor": "PERRIN, VALERIE",
 "editorial": "DUOMO",
 "precio": 2460,
-"unidades": 311
+"unidades": 311,
+"peso_g": 500
 },
 {
 "ean": "9788417427443",
@@ -2113,7 +2376,8 @@
 "autor": "RUBIO SILVESTRE, RAMON",
 "editorial": "EDICIONES TECNICAS RUBIO",
 "precio": 1270,
-"unidades": 310
+"unidades": 310,
+"peso_g": 300
 },
 {
 "ean": "9788466393690",
@@ -2121,7 +2385,8 @@
 "autor": "ROWLING, J. K.",
 "editorial": "DEBOLSILLO",
 "precio": 1640,
-"unidades": 308
+"unidades": 308,
+"peso_g": 200
 },
 {
 "ean": "9788497778213",
@@ -2129,7 +2394,8 @@
 "autor": "HILL, NAPOLEON",
 "editorial": "OBELISCO",
 "precio": 1530,
-"unidades": 308
+"unidades": 308,
+"peso_g": 350
 },
 {
 "ean": "9788408323167",
@@ -2137,7 +2403,8 @@
 "autor": "ALESGF",
 "editorial": "DESTINO INFANTIL & JUVENIL",
 "precio": 2290,
-"unidades": 308
+"unidades": 308,
+"peso_g": 500
 },
 {
 "ean": "9791387810566",
@@ -2145,7 +2412,8 @@
 "autor": "ABBY, S.T.",
 "editorial": "CONTRALUZ",
 "precio": 1670,
-"unidades": 308
+"unidades": 308,
+"peso_g": 350
 },
 {
 "ean": "9788420479361",
@@ -2153,7 +2421,8 @@
 "autor": "PEREZ DE LAS HERAS, NEREA",
 "editorial": "ALFAGUARA",
 "precio": 2460,
-"unidades": 307
+"unidades": 307,
+"peso_g": 500
 },
 {
 "ean": "9788491999195",
@@ -2161,7 +2430,8 @@
 "autor": "SEBAG MONTEFIORE, SIMON",
 "editorial": "CRITICA",
 "precio": 2900,
-"unidades": 307
+"unidades": 307,
+"peso_g": 500
 },
 {
 "ean": "9788466685238",
@@ -2169,7 +2439,8 @@
 "autor": "LARK, SARAH",
 "editorial": "EDICIONES B",
 "precio": 2680,
-"unidades": 307
+"unidades": 307,
+"peso_g": 500
 },
 {
 "ean": "9788419688361",
@@ -2177,7 +2448,8 @@
 "autor": "ROBERTS, LAUREN",
 "editorial": "ALFAGUARA INFANTIL Y JUVENIL",
 "precio": 2540,
-"unidades": 307
+"unidades": 307,
+"peso_g": 500
 },
 {
 "ean": "9791370090982",
@@ -2185,7 +2457,8 @@
 "autor": "HARPMAN, JACQUELINE",
 "editorial": "ALIANZA",
 "precio": 2320,
-"unidades": 306
+"unidades": 306,
+"peso_g": 500
 },
 {
 "ean": "9791387972486",
@@ -2193,7 +2466,8 @@
 "autor": "KENT, RINA",
 "editorial": "MONTENA",
 "precio": 2500,
-"unidades": 304
+"unidades": 304,
+"peso_g": 500
 },
 {
 "ean": "9788478086085",
@@ -2201,7 +2475,8 @@
 "autor": "EKER, T. HARV",
 "editorial": "SIRIO",
 "precio": 1790,
-"unidades": 303
+"unidades": 303,
+"peso_g": 350
 },
 {
 "ean": "9788408324294",
@@ -2209,7 +2484,8 @@
 "autor": "VALENTI, SUSANNE / PECKHAM, CAROLINE",
 "editorial": "CROSS BOOKS",
 "precio": 2670,
-"unidades": 303
+"unidades": 303,
+"peso_g": 500
 },
 {
 "ean": "9788408324485",
@@ -2217,7 +2493,8 @@
 "autor": "WOODS, AUTUMN",
 "editorial": "CROSS BOOKS",
 "precio": 2500,
-"unidades": 302
+"unidades": 302,
+"peso_g": 500
 },
 {
 "ean": "9788408325741",
@@ -2225,7 +2502,8 @@
 "autor": "SANS SEGARRA, MANUEL / CEBRIAN, JUAN CARLOS / CLOPES, JOSEP MARIA",
 "editorial": "BOOKET",
 "precio": 1550,
-"unidades": 302
+"unidades": 302,
+"peso_g": 200
 },
 {
 "ean": "9788413621654",
@@ -2233,7 +2511,8 @@
 "autor": "HAIG, MATT",
 "editorial": "ADN EDITORIAL GRUPO ANAYA",
 "precio": 2620,
-"unidades": 301
+"unidades": 301,
+"peso_g": 500
 },
 {
 "ean": "9791387871079",
@@ -2241,7 +2520,8 @@
 "autor": "SANTIAGO, MIKEL",
 "editorial": "B DE BOLSILLO",
 "precio": 1500,
-"unidades": 301
+"unidades": 301,
+"peso_g": 200
 },
 {
 "ean": "9788401039928",
@@ -2249,7 +2529,8 @@
 "autor": "SPENCER, CHARLES",
 "editorial": "PLAZA & JANES",
 "precio": 2630,
-"unidades": 299
+"unidades": 299,
+"peso_g": 500
 },
 {
 "ean": "9788410090200",
@@ -2257,7 +2538,8 @@
 "autor": "MARTI, MERITXELL",
 "editorial": "FLAMBOYANT",
 "precio": 2250,
-"unidades": 297
+"unidades": 297,
+"peso_g": 500
 },
 {
 "ean": "9791370313463",
@@ -2265,7 +2547,8 @@
 "autor": "BROWN, PIERCE",
 "editorial": "RBA",
 "precio": 4010,
-"unidades": 297
+"unidades": 297,
+"peso_g": 800
 },
 {
 "ean": "9788419357885",
@@ -2273,7 +2556,8 @@
 "autor": "RIPPIN, SALLY",
 "editorial": "MONTENA",
 "precio": 1540,
-"unidades": 295
+"unidades": 295,
+"peso_g": 300
 },
 {
 "ean": "9788419522979",
@@ -2281,7 +2565,8 @@
 "autor": "TIRADO, MIRIAM",
 "editorial": "B DE BLOK",
 "precio": 2210,
-"unidades": 294
+"unidades": 294,
+"peso_g": 500
 },
 {
 "ean": "9791388163258",
@@ -2289,7 +2574,8 @@
 "autor": "BROWER, BETH",
 "editorial": "SUMA DE LETRAS",
 "precio": 2000,
-"unidades": 294
+"unidades": 294,
+"peso_g": 350
 },
 {
 "ean": "9788419848260",
@@ -2297,7 +2583,8 @@
 "autor": "TOMFORDE, LIZ",
 "editorial": "MONTENA",
 "precio": 2460,
-"unidades": 294
+"unidades": 294,
+"peso_g": 500
 },
 {
 "ean": "9791387512835",
@@ -2305,7 +2592,8 @@
 "autor": "BENAVENT, ELISABET",
 "editorial": "SUMA DE LETRAS",
 "precio": 2540,
-"unidades": 293
+"unidades": 293,
+"peso_g": 500
 },
 {
 "ean": "9791370093273",
@@ -2313,7 +2601,8 @@
 "autor": "HARROW, ALIX E.",
 "editorial": "ALIANZA",
 "precio": 2590,
-"unidades": 293
+"unidades": 293,
+"peso_g": 500
 },
 {
 "ean": "9788408267324",
@@ -2321,7 +2610,8 @@
 "autor": "DAVIES, BENJI",
 "editorial": "TIMUN MAS INFANTIL",
 "precio": 1630,
-"unidades": 292
+"unidades": 292,
+"peso_g": 300
 },
 {
 "ean": "9788410647947",
@@ -2329,7 +2619,8 @@
 "autor": "DIAZ VILLANUEVA, FERNANDO",
 "editorial": "HARPERCOLLINS",
 "precio": 2480,
-"unidades": 291
+"unidades": 291,
+"peso_g": 500
 },
 {
 "ean": "9798185673669",
@@ -2337,7 +2628,8 @@
 "autor": "CRIADO NIETO-SANDOVAL, ANTONIO",
 "editorial": "INDEPENDENTLY PUBLISHED",
 "precio": 1350,
-"unidades": 290
+"unidades": 290,
+"peso_g": 350
 },
 {
 "ean": "9788401039560",
@@ -2345,7 +2637,8 @@
 "autor": "KING, STEPHEN / STRAUB, PETER",
 "editorial": "PLAZA & JANES",
 "precio": 3220,
-"unidades": 289
+"unidades": 289,
+"peso_g": 800
 },
 {
 "ean": "9788479532536",
@@ -2353,7 +2646,8 @@
 "autor": "RUIZ, MIGUEL",
 "editorial": "URANO",
 "precio": 1640,
-"unidades": 287
+"unidades": 287,
+"peso_g": 350
 },
 {
 "ean": "9788410647756",
@@ -2361,7 +2655,8 @@
 "autor": "VAQUERIZO, MARIO",
 "editorial": "HARPERCOLLINS",
 "precio": 2450,
-"unidades": 286
+"unidades": 286,
+"peso_g": 500
 },
 {
 "ean": "9788408326489",
@@ -2369,7 +2664,8 @@
 "autor": "MAXWELL, MEGAN",
 "editorial": "BOOKET",
 "precio": 1500,
-"unidades": 286
+"unidades": 286,
+"peso_g": 200
 },
 {
 "ean": "9788408320715",
@@ -2377,7 +2673,8 @@
 "autor": "BOTICARIA GARCIA / BUTRAGUEÑO, JAVIER",
 "editorial": "PLANETA",
 "precio": 2540,
-"unidades": 286
+"unidades": 286,
+"peso_g": 500
 },
 {
 "ean": "9791387810481",
@@ -2385,7 +2682,8 @@
 "autor": "ABBY, S. T.",
 "editorial": "CONTRALUZ",
 "precio": 1670,
-"unidades": 286
+"unidades": 286,
+"peso_g": 350
 },
 {
 "ean": "9788401036897",
@@ -2393,7 +2691,8 @@
 "autor": "STALLONE, SYLVESTER",
 "editorial": "PLAZA & JANES",
 "precio": 2580,
-"unidades": 285
+"unidades": 285,
+"peso_g": 500
 },
 {
 "ean": "9788410940840",
@@ -2401,7 +2700,8 @@
 "autor": "MORENO, BORJA",
 "editorial": "LA ESFERA DE LOS LIBROS",
 "precio": 2310,
-"unidades": 285
+"unidades": 285,
+"peso_g": 500
 },
 {
 "ean": "9788410466470",
@@ -2409,7 +2709,8 @@
 "autor": "DINNIMAN, MATT",
 "editorial": "EDICIONES B",
 "precio": 2890,
-"unidades": 284
+"unidades": 284,
+"peso_g": 500
 },
 {
 "ean": "9788408163435",
@@ -2417,7 +2718,8 @@
 "autor": "RUIZ ZAFON, CARLOS",
 "editorial": "BOOKET",
 "precio": 1710,
-"unidades": 283
+"unidades": 283,
+"peso_g": 200
 },
 {
 "ean": "9788433950819",
@@ -2425,7 +2727,8 @@
 "autor": "ABREU, ANDREA",
 "editorial": "ANAGRAMA",
 "precio": 2630,
-"unidades": 283
+"unidades": 283,
+"peso_g": 500
 },
 {
 "ean": "9788466389167",
@@ -2433,7 +2736,8 @@
 "autor": "NAVARRO, JULIA",
 "editorial": "DEBOLSILLO",
 "precio": 1720,
-"unidades": 282
+"unidades": 282,
+"peso_g": 200
 },
 {
 "ean": "9788410425224",
@@ -2441,7 +2745,8 @@
 "autor": "KENNEDY, ELLE",
 "editorial": "WONDERBOOKS",
 "precio": 1590,
-"unidades": 281
+"unidades": 281,
+"peso_g": 200
 },
 {
 "ean": "9788408317210",
@@ -2449,7 +2754,8 @@
 "autor": "IBAÑEZ, ANA",
 "editorial": "PLANETA",
 "precio": 2500,
-"unidades": 280
+"unidades": 280,
+"peso_g": 500
 },
 {
 "ean": "9791387964740",
@@ -2457,7 +2763,8 @@
 "autor": "ARGULLOL, RAFAEL",
 "editorial": "ACANTILADO",
 "precio": 3310,
-"unidades": 279
+"unidades": 279,
+"peso_g": 800
 },
 {
 "ean": "9788408253105",
@@ -2465,7 +2772,8 @@
 "autor": "COELHO, PAULO",
 "editorial": "BOOKET",
 "precio": 1590,
-"unidades": 277
+"unidades": 277,
+"peso_g": 200
 },
 {
 "ean": "9788417909581",
@@ -2473,7 +2781,8 @@
 "autor": "CANALS, ORIOL",
 "editorial": "ROSA DELS VENTS",
 "precio": 2530,
-"unidades": 276
+"unidades": 276,
+"peso_g": 500
 },
 {
 "ean": "9788408315278",
@@ -2481,7 +2790,8 @@
 "autor": "ONEGA, SONSOLES",
 "editorial": "BOOKET",
 "precio": 1720,
-"unidades": 274
+"unidades": 274,
+"peso_g": 200
 },
 {
 "ean": "9788408004349",
@@ -2489,7 +2799,8 @@
 "autor": "RUIZ ZAFON, CARLOS",
 "editorial": "BOOKET",
 "precio": 1620,
-"unidades": 273
+"unidades": 273,
+"peso_g": 200
 },
 {
 "ean": "9788408325161",
@@ -2497,7 +2808,8 @@
 "autor": "HOOVER, COLLEEN",
 "editorial": "PLANETA",
 "precio": 2620,
-"unidades": 273
+"unidades": 273,
+"peso_g": 500
 },
 {
 "ean": "9788425372469",
@@ -2505,7 +2817,8 @@
 "autor": "DISPENZA, JOE",
 "editorial": "GRIJALBO",
 "precio": 2500,
-"unidades": 269
+"unidades": 269,
+"peso_g": 500
 },
 {
 "ean": "9788410428515",
@@ -2513,7 +2826,8 @@
 "autor": "ROVIRA, ALEX / MIRALLES, FRANCESC / BOLINCHES, ANTONI",
 "editorial": "KITAERU LIBROS",
 "precio": 2450,
-"unidades": 268
+"unidades": 268,
+"peso_g": 500
 },
 {
 "ean": "9788408292456",
@@ -2521,7 +2835,8 @@
 "autor": "RUBIALES, INMA",
 "editorial": "BOOKET",
 "precio": 1630,
-"unidades": 267
+"unidades": 267,
+"peso_g": 200
 },
 {
 "ean": "9788408312345",
@@ -2529,7 +2844,8 @@
 "autor": "COELHO, PAULO",
 "editorial": "BOOKET",
 "precio": 1910,
-"unidades": 266
+"unidades": 266,
+"peso_g": 200
 },
 {
 "ean": "9788497594257",
@@ -2537,7 +2853,8 @@
 "autor": "HUXLEY. ALDOUS",
 "editorial": "DEBOLSILLO",
 "precio": 1670,
-"unidades": 264
+"unidades": 264,
+"peso_g": 200
 },
 {
 "ean": "9788449346026",
@@ -2545,7 +2862,8 @@
 "autor": "SMITH, KERI",
 "editorial": "PAIDOS IBERICA",
 "precio": 1800,
-"unidades": 262
+"unidades": 262,
+"peso_g": 350
 },
 {
 "ean": "9788423440078",
@@ -2553,7 +2871,8 @@
 "autor": "GARAT, KETTY",
 "editorial": "DEUSTO",
 "precio": 2590,
-"unidades": 262
+"unidades": 262,
+"peso_g": 500
 },
 {
 "ean": "9791388279096",
@@ -2561,7 +2880,8 @@
 "autor": "TORRES, MARUJA",
 "editorial": "TEMAS DE HOY",
 "precio": 2540,
-"unidades": 261
+"unidades": 261,
+"peso_g": 500
 },
 {
 "ean": "9788423357581",
@@ -2569,7 +2889,8 @@
 "autor": "BARKER, J. D.",
 "editorial": "BOOKET",
 "precio": 1670,
-"unidades": 261
+"unidades": 261,
+"peso_g": 200
 },
 {
 "ean": "9788430630547",
@@ -2577,7 +2898,8 @@
 "autor": "GARTON ASH, TIMOTHY",
 "editorial": "TAURUS",
 "precio": 2530,
-"unidades": 259
+"unidades": 259,
+"peso_g": 500
 },
 {
 "ean": "9788466359177",
@@ -2585,7 +2907,8 @@
 "autor": "PLATH, SYLVIA",
 "editorial": "DEBOLSILLO",
 "precio": 1680,
-"unidades": 259
+"unidades": 259,
+"peso_g": 200
 },
 {
 "ean": "9788410648401",
@@ -2593,7 +2916,8 @@
 "autor": "FRATTINI ALONSO, ERIC",
 "editorial": "HARPERCOLLINS",
 "precio": 2490,
-"unidades": 259
+"unidades": 259,
+"peso_g": 500
 },
 {
 "ean": "9788411081672",
@@ -2601,7 +2925,8 @@
 "autor": "MOORJANI, ANITA",
 "editorial": "GAIA",
 "precio": 1990,
-"unidades": 256
+"unidades": 256,
+"peso_g": 350
 },
 {
 "ean": "9788492917419",
@@ -2609,7 +2934,8 @@
 "autor": "YON, DANIEL",
 "editorial": "TENDENCIAS",
 "precio": 2300,
-"unidades": 256
+"unidades": 256,
+"peso_g": 500
 },
 {
 "ean": "9788467081480",
@@ -2617,7 +2943,8 @@
 "autor": "ROJAS, ENRIQUE",
 "editorial": "ESPASA",
 "precio": 2590,
-"unidades": 256
+"unidades": 256,
+"peso_g": 500
 },
 {
 "ean": "9791387574079",
@@ -2625,7 +2952,8 @@
 "autor": "HUNGRY MINDS",
 "editorial": "DUOMO",
 "precio": 8770,
-"unidades": 253
+"unidades": 253,
+"peso_g": 1100
 },
 {
 "ean": "9788410425248",
@@ -2633,7 +2961,8 @@
 "autor": "KENNEDY, ELLE",
 "editorial": "WONDERBOOKS",
 "precio": 1580,
-"unidades": 252
+"unidades": 252,
+"peso_g": 200
 },
 {
 "ean": "9788403526358",
@@ -2641,7 +2970,8 @@
 "autor": "ARANGO, PACO",
 "editorial": "AGUILAR",
 "precio": 2530,
-"unidades": 251
+"unidades": 251,
+"peso_g": 500
 },
 {
 "ean": "9788490322505",
@@ -2649,7 +2979,8 @@
 "autor": "KAHNEMAN, DANIEL",
 "editorial": "DEBOLSILLO",
 "precio": 1870,
-"unidades": 251
+"unidades": 251,
+"peso_g": 200
 },
 {
 "ean": "9798173423122",
@@ -2657,7 +2988,8 @@
 "autor": "GALDIEZ, AIRIN",
 "editorial": "INDEPENDENTLY PUBLISHED",
 "precio": 1730,
-"unidades": 248
+"unidades": 248,
+"peso_g": 300
 },
 {
 "ean": "9788494248214",
@@ -2665,7 +2997,8 @@
 "autor": "HAWKINS, DAVID R.",
 "editorial": "EL GRANO DE MOSTAZA",
 "precio": 2450,
-"unidades": 248
+"unidades": 248,
+"peso_g": 500
 },
 {
 "ean": "9788499899855",
@@ -2673,7 +3006,8 @@
 "autor": "HESSE, HERMANN",
 "editorial": "DEBOLSILLO",
 "precio": 1630,
-"unidades": 245
+"unidades": 245,
+"peso_g": 200
 },
 {
 "ean": "9788425375811",
@@ -2681,7 +3015,8 @@
 "autor": "SANTANDREU, RAFAEL",
 "editorial": "GRIJALBO",
 "precio": 2540,
-"unidades": 245
+"unidades": 245,
+"peso_g": 500
 },
 {
 "ean": "9791388147234",
@@ -2689,7 +3024,8 @@
 "autor": "GRACE, HANNAH",
 "editorial": "B DE BOLSILLO",
 "precio": 1500,
-"unidades": 245
+"unidades": 245,
+"peso_g": 200
 },
 {
 "ean": "9798188628109",
@@ -2697,7 +3033,8 @@
 "autor": "JIMENEZ VILA, MONTSERRAT / ORTOLL GRIFOLS, CARME / REGI RODRIGUEZ, CORAL",
 "editorial": "INDEPENDENTLY PUBLISHED",
 "precio": 1390,
-"unidades": 244
+"unidades": 244,
+"peso_g": 350
 },
 {
 "ean": "9788410354739",
@@ -2705,7 +3042,8 @@
 "autor": "BOTIA, JAVIER",
 "editorial": "ARCO PRESS",
 "precio": 2450,
-"unidades": 244
+"unidades": 244,
+"peso_g": 500
 },
 {
 "ean": "9791388234316",
@@ -2713,7 +3051,8 @@
 "autor": "GARCIA, FERNANDO",
 "editorial": "NPQ EDITORES",
 "precio": 2530,
-"unidades": 243
+"unidades": 243,
+"peso_g": 500
 },
 {
 "ean": "9788401041419",
@@ -2721,7 +3060,8 @@
 "autor": "TINTA, VIVI",
 "editorial": "PLAZA & JANES",
 "precio": 1700,
-"unidades": 241
+"unidades": 241,
+"peso_g": 350
 },
 {
 "ean": "9788410425231",
@@ -2729,7 +3069,8 @@
 "autor": "KENNEDY, ELLE",
 "editorial": "WONDERBOOKS",
 "precio": 1590,
-"unidades": 240
+"unidades": 240,
+"peso_g": 200
 },
 {
 "ean": "9788467053302",
@@ -2737,7 +3078,8 @@
 "autor": "ROJAS ESTAPE, MARIAN",
 "editorial": "ESPASA",
 "precio": 2540,
-"unidades": 239
+"unidades": 239,
+"peso_g": 500
 },
 {
 "ean": "9788483933916",
@@ -2745,7 +3087,8 @@
 "autor": "ENRIQUEZ, MARIANA",
 "editorial": "PAGINAS DE ESPUMA",
 "precio": 2460,
-"unidades": 238
+"unidades": 238,
+"peso_g": 500
 },
 {
 "ean": "9788413142722",
@@ -2753,7 +3096,8 @@
 "autor": "SANTIAGO, MIKEL",
 "editorial": "B DE BOLSILLO",
 "precio": 1630,
-"unidades": 238
+"unidades": 238,
+"peso_g": 200
 },
 {
 "ean": "9788429783780",
@@ -2761,7 +3105,8 @@
 "autor": "DUCH, MONTSERRAT",
 "editorial": "EDICIONS 62",
 "precio": 3240,
-"unidades": 234
+"unidades": 234,
+"peso_g": 800
 },
 {
 "ean": "9788408326915",
@@ -2769,7 +3114,8 @@
 "autor": "MOLINA (@XTAWIE), TAMARA",
 "editorial": "BOOKET",
 "precio": 1590,
-"unidades": 234
+"unidades": 234,
+"peso_g": 200
 },
 {
 "ean": "9788466373173",
@@ -2777,7 +3123,8 @@
 "autor": "DIAZ, SANTIAGO",
 "editorial": "DEBOLSILLO",
 "precio": 1670,
-"unidades": 233
+"unidades": 233,
+"peso_g": 200
 },
 {
 "ean": "9788410080423",
@@ -2785,7 +3132,8 @@
 "autor": "STUART, ANNA",
 "editorial": "NEWTON COMPTON",
 "precio": 1410,
-"unidades": 231
+"unidades": 231,
+"peso_g": 200
 },
 {
 "ean": "9788466395717",
@@ -2793,7 +3141,8 @@
 "autor": "MARTIN, IBON",
 "editorial": "DEBOLSILLO",
 "precio": 1510,
-"unidades": 231
+"unidades": 231,
+"peso_g": 200
 },
 {
 "ean": "9791387788193",
@@ -2801,7 +3150,8 @@
 "autor": "STUART, ANNA",
 "editorial": "NEWTON COMPTON",
 "precio": 1420,
-"unidades": 230
+"unidades": 230,
+"peso_g": 200
 },
 {
 "ean": "9788401042140",
@@ -2809,7 +3159,8 @@
 "autor": "GARCIA, MODESTO",
 "editorial": "PLAZA & JANES",
 "precio": 2130,
-"unidades": 230
+"unidades": 230,
+"peso_g": 300
 },
 {
 "ean": "9788411213554",
@@ -2817,7 +3168,8 @@
 "autor": "MELO, XAVIER / COMAS, LUJAN",
 "editorial": "KAIROS",
 "precio": 2530,
-"unidades": 230
+"unidades": 230,
+"peso_g": 500
 },
 {
 "ean": "9791388396267",
@@ -2825,7 +3177,8 @@
 "autor": "BOTIA, JAVIER",
 "editorial": "ARCO PRESS",
 "precio": 2490,
-"unidades": 229
+"unidades": 229,
+"peso_g": 500
 },
 {
 "ean": "9788420470078",
@@ -2833,7 +3186,8 @@
 "autor": "PEREZ-REVERTE, ARTURO",
 "editorial": "ALFAGUARA",
 "precio": 2630,
-"unidades": 229
+"unidades": 229,
+"peso_g": 500
 },
 {
 "ean": "9788467065244",
@@ -2841,7 +3195,8 @@
 "autor": "CHRISTIE, AGATHA",
 "editorial": "AUSTRAL",
 "precio": 1590,
-"unidades": 228
+"unidades": 228,
+"peso_g": 200
 },
 {
 "ean": "9788423369492",
@@ -2849,7 +3204,8 @@
 "autor": "REDONDO, DOLORES",
 "editorial": "BOOKET",
 "precio": 1720,
-"unidades": 228
+"unidades": 228,
+"peso_g": 200
 },
 {
 "ean": "9798272134844",
@@ -2857,7 +3213,8 @@
 "autor": "MORELI, ELENA",
 "editorial": "INDEPENDENTLY PUBLISHED",
 "precio": 1970,
-"unidades": 227
+"unidades": 227,
+"peso_g": 350
 },
 {
 "ean": "9788466394598",
@@ -2865,7 +3222,8 @@
 "autor": "COLOMBANI, LAETITIA",
 "editorial": "DEBOLSILLO",
 "precio": 1630,
-"unidades": 227
+"unidades": 227,
+"peso_g": 200
 },
 {
 "ean": "9791388236013",
@@ -2873,7 +3231,8 @@
 "autor": "PORTELA, EDURNE",
 "editorial": "GALAXIA GUTENBERG",
 "precio": 2110,
-"unidades": 227
+"unidades": 227,
+"peso_g": 350
 },
 {
 "ean": "9788408267621",
@@ -2881,7 +3240,8 @@
 "autor": "RUBIALES, INMA",
 "editorial": "BOOKET",
 "precio": 1630,
-"unidades": 226
+"unidades": 226,
+"peso_g": 200
 },
 {
 "ean": "9788423356980",
@@ -2889,7 +3249,8 @@
 "autor": "LAFORET, CARMEN",
 "editorial": "AUSTRAL",
 "precio": 1590,
-"unidades": 224
+"unidades": 224,
+"peso_g": 200
 },
 {
 "ean": "9788490661444",
@@ -2897,7 +3258,8 @@
 "autor": "STEINBECK, JOHN",
 "editorial": "AUSTRAL",
 "precio": 1680,
-"unidades": 224
+"unidades": 224,
+"peso_g": 200
 },
 {
 "ean": "9788408325437",
@@ -2905,7 +3267,8 @@
 "autor": "PASCUAL, (@LANENAHBRUGAL), NEREA",
 "editorial": "BOOKET",
 "precio": 1590,
-"unidades": 221
+"unidades": 221,
+"peso_g": 200
 },
 {
 "ean": "9788466373135",
@@ -2913,7 +3276,8 @@
 "autor": "DICKER, JOEL",
 "editorial": "DEBOLSILLO",
 "precio": 1680,
-"unidades": 221
+"unidades": 221,
+"peso_g": 200
 },
 {
 "ean": "9788408319757",
@@ -2921,7 +3285,8 @@
 "autor": "SANCHEZ-GARNICA, PALOMA",
 "editorial": "BOOKET",
 "precio": 1720,
-"unidades": 220
+"unidades": 220,
+"peso_g": 200
 },
 {
 "ean": "9791388147494",
@@ -2929,7 +3294,8 @@
 "autor": "WEIR, ANDY",
 "editorial": "B DE BOLSILLO",
 "precio": 1500,
-"unidades": 215
+"unidades": 215,
+"peso_g": 200
 },
 {
 "ean": "9788413141213",
@@ -2937,7 +3303,8 @@
 "autor": "ESTES, CLARISSA PINKOLA",
 "editorial": "B DE BOLSILLO",
 "precio": 1880,
-"unidades": 215
+"unidades": 215,
+"peso_g": 200
 },
 {
 "ean": "9788466389808",
@@ -2945,7 +3312,8 @@
 "autor": "GRISHAM, JOHN",
 "editorial": "DEBOLSILLO",
 "precio": 1510,
-"unidades": 215
+"unidades": 215,
+"peso_g": 200
 },
 {
 "ean": "9788491050063",
@@ -2953,7 +3321,8 @@
 "autor": "DOSTOIEVSKI, FIODOR M.",
 "editorial": "PENGUIN CLASICOS",
 "precio": 1680,
-"unidades": 212
+"unidades": 212,
+"peso_g": 200
 },
 {
 "ean": "9788408274483",
@@ -2961,7 +3330,8 @@
 "autor": "SANCHEZ-GARNICA, PALOMA",
 "editorial": "BOOKET",
 "precio": 1720,
-"unidades": 210
+"unidades": 210,
+"peso_g": 200
 },
 {
 "ean": "9788437622453",
@@ -2969,7 +3339,8 @@
 "autor": "GARCIA LORCA, FEDERICO",
 "editorial": "CATEDRA",
 "precio": 1610,
-"unidades": 207
+"unidades": 207,
+"peso_g": 200
 },
 {
 "ean": "9788423359745",
@@ -2977,7 +3348,8 @@
 "autor": "BARKER, J. D.",
 "editorial": "BOOKET",
 "precio": 1670,
-"unidades": 207
+"unidades": 207,
+"peso_g": 200
 },
 {
 "ean": "9788499894454",
@@ -2985,7 +3357,8 @@
 "autor": "SMITH, PATTI",
 "editorial": "DEBOLSILLO",
 "precio": 1580,
-"unidades": 206
+"unidades": 206,
+"peso_g": 200
 },
 {
 "ean": "9788433977366",
@@ -2993,7 +3366,8 @@
 "autor": "DE VIGAN, DELPHINE",
 "editorial": "ANAGRAMA",
 "precio": 1880,
-"unidades": 206
+"unidades": 206,
+"peso_g": 200
 },
 {
 "ean": "9788419822161",
@@ -3001,7 +3375,8 @@
 "autor": "PERRY, MATTHEW",
 "editorial": "CONTRALUZ",
 "precio": 1630,
-"unidades": 206
+"unidades": 206,
+"peso_g": 200
 },
 {
 "ean": "9788466391382",
@@ -3009,7 +3384,8 @@
 "autor": "CERCAS, JAVIER",
 "editorial": "DEBOLSILLO",
 "precio": 1720,
-"unidades": 204
+"unidades": 204,
+"peso_g": 200
 },
 {
 "ean": "9788408326830",
@@ -3017,7 +3393,8 @@
 "autor": "RUBIALES, INMA",
 "editorial": "BOOKET",
 "precio": 1920,
-"unidades": 203
+"unidades": 203,
+"peso_g": 200
 },
 {
 "ean": "9788408325451",
@@ -3025,7 +3402,8 @@
 "autor": "HOOVER, COLLEEN",
 "editorial": "BOOKET",
 "precio": 1590,
-"unidades": 201
+"unidades": 201,
+"peso_g": 200
 },
 {
 "ean": "9788448049638",
@@ -3033,7 +3411,8 @@
 "autor": "LA VECINA RUBIA",
 "editorial": "BOOKET",
 "precio": 1510,
-"unidades": 198
+"unidades": 198,
+"peso_g": 200
 },
 {
 "ean": "9788497595698",
@@ -3041,7 +3420,8 @@
 "autor": "KING, STEPHEN",
 "editorial": "DEBOLSILLO",
 "precio": 1620,
-"unidades": 194
+"unidades": 194,
+"peso_g": 200
 },
 {
 "ean": "9788408327011",
@@ -3049,7 +3429,8 @@
 "autor": "LONGARELA, ANDREA",
 "editorial": "BOOKET",
 "precio": 1930,
-"unidades": 191
+"unidades": 191,
+"peso_g": 200
 },
 {
 "ean": "9788408316787",
@@ -3057,7 +3438,8 @@
 "autor": "MOLA, CARMEN",
 "editorial": "BOOKET",
 "precio": 1680,
-"unidades": 191
+"unidades": 191,
+"peso_g": 200
 },
 {
 "ean": "9788408323297",
@@ -3065,7 +3447,8 @@
 "autor": "MAXWELL, MEGAN",
 "editorial": "BOOKET",
 "precio": 1640,
-"unidades": 190
+"unidades": 190,
+"peso_g": 200
 },
 {
 "ean": "9788411485166",
@@ -3073,7 +3456,8 @@
 "autor": "MILLER, MADELINE",
 "editorial": "ADN EDITORIAL GRUPO ANAYA",
 "precio": 1650,
-"unidades": 189
+"unidades": 189,
+"peso_g": 200
 },
 {
 "ean": "9788497592437",
@@ -3081,7 +3465,8 @@
 "autor": "GARCIA MARQUEZ, GABRIEL",
 "editorial": "DEBOLSILLO",
 "precio": 1640,
-"unidades": 189
+"unidades": 189,
+"peso_g": 200
 },
 {
 "ean": "9788411078245",
@@ -3089,7 +3474,8 @@
 "autor": "FERNANDEZ CUBAS, CRISTINA",
 "editorial": "MAXI-TUSQUETS",
 "precio": 1590,
-"unidades": 186
+"unidades": 186,
+"peso_g": 200
 },
 {
 "ean": "9788420651361",
@@ -3097,7 +3483,8 @@
 "autor": "KAFKA, FRANZ",
 "editorial": "ALIANZA",
 "precio": 1680,
-"unidades": 183
+"unidades": 183,
+"peso_g": 200
 },
 {
 "ean": "9788413621524",
@@ -3105,7 +3492,8 @@
 "autor": "MILLER, MADELINE",
 "editorial": "ADN EDITORIAL GRUPO ANAYA",
 "precio": 1650,
-"unidades": 183
+"unidades": 183,
+"peso_g": 200
 },
 {
 "ean": "9788497592208",
@@ -3113,7 +3501,8 @@
 "autor": "GARCIA MARQUEZ, GABRIEL",
 "editorial": "DEBOLSILLO",
 "precio": 1680,
-"unidades": 181
+"unidades": 181,
+"peso_g": 200
 },
 {
 "ean": "9788490328224",
@@ -3121,7 +3510,8 @@
 "autor": "PEN, PAUL",
 "editorial": "DEBOLSILLO",
 "precio": 1630,
-"unidades": 180
+"unidades": 180,
+"peso_g": 200
 },
 {
 "ean": "9788466393102",
@@ -3129,7 +3519,8 @@
 "autor": "FALCONES, ILDEFONSO",
 "editorial": "DEBOLSILLO",
 "precio": 1500,
-"unidades": 179
+"unidades": 179,
+"peso_g": 200
 },
 {
 "ean": "9788491056218",
@@ -3137,7 +3528,8 @@
 "autor": "TOLSTOI, LEON",
 "editorial": "PENGUIN CLASICOS",
 "precio": 1680,
-"unidades": 178
+"unidades": 178,
+"peso_g": 200
 },
 {
 "ean": "9788415140153",
@@ -3145,7 +3537,8 @@
 "autor": "ALBOM, MITCH",
 "editorial": "EMBOLSILLO",
 "precio": 1560,
-"unidades": 178
+"unidades": 178,
+"peso_g": 200
 },
 {
 "ean": "9788408304944",
@@ -3153,7 +3546,8 @@
 "autor": "RUBIALES, INMA",
 "editorial": "BOOKET",
 "precio": 1630,
-"unidades": 178
+"unidades": 178,
+"peso_g": 200
 },
 {
 "ean": "9788432222825",
@@ -3161,7 +3555,8 @@
 "autor": "WOOLF, VIRGINIA",
 "editorial": "AUSTRAL",
 "precio": 1630,
-"unidades": 175
+"unidades": 175,
+"peso_g": 200
 }
 ]
 }

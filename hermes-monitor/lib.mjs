@@ -95,7 +95,7 @@ export function normalizarAutor(a) {
   const p = x.split(',').map(s => s.trim());
   return titulo1(p.length === 2 ? `${p[1]} ${p[0]}` : x);
 }
-export function armarPayloadTradicional({ean, titulo, autor, editorial, precio, plazoDias, usaFamilyName, imagenes, idioma = 'Español'}) {
+export function armarPayloadTradicional({ean, titulo, autor, editorial, precio, plazoDias, usaFamilyName, imagenes, pesoGramos = 450, idioma = 'Español'}) {
   const t = normalizarTitulo(titulo), a = normalizarAutor(autor);
   const nombre = (a && `${t} - ${a}`.length <= 60) ? `${t} - ${a}` : t;
   const p = {
@@ -108,9 +108,19 @@ export function armarPayloadTradicional({ean, titulo, autor, editorial, precio, 
       ...(a ? [{id: 'AUTHOR', value_name: a}] : []),
       ...(editorial ? [{id: 'BOOK_PUBLISHER', value_name: titulo1(editorial)}] : []),
       {id: 'LANGUAGE', value_name: idioma},
+      ...paqueteDeVendedor(pesoGramos),
     ],
   };
   if (plazoDias) p.sale_terms = [{id: 'MANUFACTURING_TIME', value_name: `${plazoDias} días`}];
   if (usaFamilyName) p.family_name = nombre.slice(0, 60); else p.title = nombre.slice(0, 60);
   return p;
+}
+
+// Medidas y peso del paquete que exige Mercado Libre (misma regla que el publicador de la cola: bandas por peso).
+const PACKAGE_BANDS = [[.4, 25, 18, 4], [.8, 30, 22, 6], [1.5, 35, 25, 10], [Infinity, 40, 30, 15]];
+export function paqueteDeVendedor(pesoLibroGramos) {
+  const kg = (Number(pesoLibroGramos) + 100) / 1000; // + embalaje
+  const [, largo, ancho, alto] = PACKAGE_BANDS.find(([max]) => kg <= max);
+  const gramos = Math.ceil((Math.round(kg * 1000) + 150) / 100) * 100;
+  return [{id: 'SELLER_PACKAGE_HEIGHT', value_name: `${alto} cm`}, {id: 'SELLER_PACKAGE_LENGTH', value_name: `${largo} cm`}, {id: 'SELLER_PACKAGE_WIDTH', value_name: `${ancho} cm`}, {id: 'SELLER_PACKAGE_WEIGHT', value_name: `${gramos} g`}];
 }
