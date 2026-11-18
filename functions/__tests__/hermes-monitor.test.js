@@ -116,3 +116,18 @@ test('la lista de Arnoia: 395 libros, EAN únicos y precios sobre el mínimo de 
   assert.ok(d.libros.every(l => /^\d{13}$/.test(l.ean) && l.precio >= 1200));
   assert.equal(d.plazo_dias, 20);
 });
+
+import {armarPayloadTradicional, paqueteDeVendedor, normalizarTitulo, normalizarAutor} from '../../hermes-monitor/lib.mjs';
+test('publicación normal de Arnoia: sin catálogo, con portada, medidas del paquete y plazo', () => {
+  const p = armarPayloadTradicional({ean: '9788408328834', titulo: 'HORA ANTES DEL ALBA, LA (PREMIO PLANETA 2026)', autor: 'ALLENDE, ISABEL', editorial: 'PLANETA', precio: 2630, plazoDias: 20, usaFamilyName: false, imagenes: ['https://x/y.jpg'], pesoGramos: 500});
+  assert.equal(p.catalog_listing, false);
+  assert.equal(p.catalog_product_id, undefined);
+  assert.equal(p.title, 'La Hora Antes Del Alba - Isabel Allende');
+  assert.equal(p.available_quantity, 1);
+  assert.deepEqual(p.pictures, [{source: 'https://x/y.jpg'}]);
+  assert.deepEqual(p.sale_terms, [{id: 'MANUFACTURING_TIME', value_name: '20 días'}]);
+  assert.ok(['SELLER_PACKAGE_HEIGHT', 'SELLER_PACKAGE_LENGTH', 'SELLER_PACKAGE_WIDTH', 'SELLER_PACKAGE_WEIGHT'].every(id => p.attributes.some(a => a.id === id)));
+  assert.equal(paqueteDeVendedor(500).find(a => a.id === 'SELLER_PACKAGE_WEIGHT').value_name, '800 g');
+  assert.equal(normalizarAutor('ALLENDE, ISABEL'), 'Isabel Allende');
+  assert.equal(normalizarTitulo('MURDOKU: 80 ACERTIJOS'), 'Murdoku: 80 Acertijos');
+});

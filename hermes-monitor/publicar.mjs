@@ -83,11 +83,19 @@ console.log(`modo ${real ? 'REAL' : 'solo validar'} | family_name ${usaFamilyNam
 
 let hechas = 0, erroresSeguidos = 0;
 const filas = [];
-// Portada pública por ISBN (Open Library, tamaño grande). Sin portada no se publica: una publicación sin foto no sirve.
+// Portada por ISBN (decisión de Seba, 18/11/2026: tapas de una librería española). Casa del Libro primero, Open Library
+// como respaldo. Solo se acepta una imagen real: JPEG, de al menos 40 KB (una imagen genérica o de error pesa mucho menos),
+// y con las tapas revisadas a mano en la primera tanda. Sin portada no se publica.
+const MIN_BYTES_PORTADA = 40000;
 const buscarPortada = async ean => {
-  const url = `https://covers.openlibrary.org/b/isbn/${ean}-L.jpg`;
-  const r = await fetch(url + '?default=false', {method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(15000)}).catch(() => null);
-  return r?.ok && /image/.test(r.headers.get('content-type') ?? '') ? url : null;
+  const candidatas = [`https://imagessl3.casadellibro.com/a/l/t0/${ean.slice(-2)}/${ean}.jpg`, `https://covers.openlibrary.org/b/isbn/${ean}-L.jpg`];
+  for (const url of candidatas) {
+    const r = await fetch(url + (url.includes('openlibrary') ? '?default=false' : ''), {method: 'GET', redirect: 'follow', signal: AbortSignal.timeout(20000)}).catch(() => null);
+    if (!r?.ok || !/image\/jpeg/.test(r.headers.get('content-type') ?? '')) continue;
+    const bytes = (await r.arrayBuffer().catch(() => new ArrayBuffer(0))).byteLength;
+    if (bytes >= MIN_BYTES_PORTADA) return url;
+  }
+  return null;
 };
 const descripcionDe = f => `${normalizarTitulo(f.titulo)}${f.autor ? ', de ' + normalizarAutor(f.autor) : ''}.${f.editorial ? ' Editorial ' + titulo1(f.editorial) + '.' : ''}\n\nLibro nuevo, importado de España. Lo traemos especialmente para vos: la entrega se coordina en un plazo de ${PLAZO_DIAS} días. Envío a domicilio incluido.`;
 
