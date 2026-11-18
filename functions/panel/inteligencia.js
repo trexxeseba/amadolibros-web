@@ -4,7 +4,7 @@
 // Sólo lectura, con sesión del panel y en producción. HTML + SVG, sin JavaScript.
 import { deriveSessionSecret, hasValidSession, resolvePanelConfig } from '../_shared/panel-auth.js';
 import { fetchCatalogRaw as fetchCatalog } from '../_shared/catalog.js';
-import { loadBi } from '../_shared/panel-bi.js';
+import { loadBi, CONSTANTE_MIN_VENTAS_365, COBERTURA_AVISO_DIAS } from '../_shared/panel-bi.js';
 
 const ORIGIN = 'https://www.amadolibros.com';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -102,7 +102,19 @@ function inventoryBlock(s) {
       <p class="muted">Stock para menos de ${15 * 2} días al ritmo actual (el proveedor tarda ~15).</p>${list(v.coberturaBaja, b => `<tr><td>${link(b)}</td><td class="n">${b.dias} días</td></tr>`)}</div>
     <div class="card"><div class="kpi"><div class="l">Stock muerto</div><div class="v">${num(v.muertoCount)}</div></div>
       <p class="muted">${num(v.muertoUnidades)} unidades con stock y sin ventas en 6 meses: candidatos a promoción o rebaja.</p>${list(v.muerto, b => `<tr><td>${link(b)}</td><td class="n">${b.stock} u.</td></tr>`)}</div>
-  </div>${sinStockTable(v.aSinStock)}`;
+  </div>${constantesBlock(v.constantes)}${sinStockTable(v.aSinStock)}`;
+}
+
+// Lentos pero constantes: 2 o más ventas propias en 12 meses y stock para 75
+// días o menos. Es la lista para no quebrar los que venden 1 cada 60 días.
+function constantesBlock(c) {
+  if (!c) return '';
+  const rows = (c.lista ?? []).map(b => `<tr><td><a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a><br><small class="muted">${esc(b.isbn)}${b.clase ? ` · clase ${esc(b.clase)}` : ''}</small></td>
+    <td class="n">${num(b.u365p)}</td><td class="n">1 cada ${num(b.ritmo)} d</td><td class="n">${b.avgPrice ? money(b.avgPrice) : '—'}</td><td class="n">${b.stock === 0 ? '<span class="tag t-bad">0</span>' : b.stock}</td><td class="n">${b.cobertura} d</td><td class="n"><b>${num(b.pedir)}</b></td>
+    <td>${esc(b.mercado?.texto ?? '')}${b.compraReciente ? `<br><small class="muted">Compraste ${num(b.compraReciente.cantidad ?? 0)} hace ${num(b.compraReciente.dias)} días${b.compraReciente.proveedor ? ` (${esc(b.compraReciente.proveedor)})` : ''}.</small>` : ''}</td></tr>`).join('');
+  return `<div class="card"><div class="kpi"><div class="l">Lentos pero constantes: último ejemplar o agotados</div><div class="v">${num(c.total)}</div></div>
+    <p class="muted">Vendieron ${CONSTANTE_MIN_VENTAS_365} o más en 12 meses con stock propio y lo que queda alcanza para ${COBERTURA_AVISO_DIAS} días o menos (el proveedor tarda ~15 más 60 de colchón). Pedir = lo que falta para el objetivo del motor, mínimo 1.${c.enCamino ? ` ${num(c.enCamino)} ya tienen compra en camino y no se listan.` : ''}${c.error ? ` <b>No se pudo calcular: ${esc(c.error)}.</b>` : ''}</p>
+    ${rows ? `<div class="scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 12 m</th><th class="n">Ritmo</th><th class="n">Precio</th><th class="n">Stock</th><th class="n">Alcanza</th><th class="n">Pedir</th><th>Stock inmediato en Uruguay</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">Ninguno en riesgo hoy.</p>'}</div>`;
 }
 
 function purchasesBlock(s) {

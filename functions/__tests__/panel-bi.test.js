@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { loadBi, abc, priceRaises, withUnsoldBooks, brujulaDigest } from '../_shared/panel-bi.js';
+import { loadBi, abc, priceRaises, withUnsoldBooks, brujulaDigest, constantesEnRiesgo, stockObjetivo, ultimoDetalle } from '../_shared/panel-bi.js';
 import { renderBi, createBiPanel } from '../panel/inteligencia.js';
 import { SALES_SCHEMA } from '../../worker-sync/ml-sales.js';
 import { importPurchases } from '../../worker-sync/purchases.js';
@@ -74,7 +74,24 @@ test('inteligencia: KPIs, tendencia, ABC, inventario, compras y editoriales con 
   assert.equal(bi.inventario.data.aSinStock[0].mercado.estado, 'sin_dato');
   assert.equal(bi.inventario.data.aSinStock[0].compra.supplier, 'CELESA');
   assert.equal(bi.competencia.ok, false, 'sin tablas de competencia en el entorno de prueba el bloque falla solo');
+  // Lentos pero constantes: B vendió 5 propias en 12 meses (el encargo SBS no
+  // cuenta), 1 cada 73 días, queda 1: alcanza 73 días, menos que 75 → pedir 1.
+  // A está agotado y es constante: entra con cobertura 0 y la compra reciente
+  // a Celesa (hace 40 días, 4 u.) como aviso. C vendió 1: no es constante.
+  const cons = bi.inventario.data.constantes;
+  assert.deepEqual(cons.lista.map(b => b.isbn), [A, B]);
+  assert.equal(cons.lista[1].u365p, 5);
+  assert.equal(cons.lista[1].ritmo, 73);
+  assert.equal(cons.lista[1].cobertura, 73);
+  assert.equal(cons.lista[1].pedir, 1);
+  assert.equal(cons.lista[1].mercado.estado, 'sin_dato', 'sin tablas de competencia no se inventa stock inmediato');
+  assert.equal(cons.lista[0].stock, 0);
+  assert.equal(cons.lista[0].compraReciente.dias, 40);
+  assert.equal(cons.lista[0].compraReciente.cantidad, 4);
+  assert.equal(cons.lista[0].compraReciente.proveedor, 'CELESA');
   const html = renderBi(bi);
+  assert.match(html, /Lentos pero constantes/);
+  assert.match(html, /1 cada 73 d/);
   for (const h of ['Cómo va el negocio', 'Tendencia semanal', 'Qué libros hacen la plata', 'Dónde se pierde plata', 'Cómo rinden las compras', 'Editoriales', 'competencia', 'conviene reponer', '1 en 12 meses', 'subirles el precio']) assert.match(html, new RegExp(h));
   assert.match(html, /No se pudo calcular este bloque/);
   assert.ok(!/<script/i.test(html));
@@ -161,7 +178,11 @@ test('brujulaDigest: toma lo accionable de cada bloque y nada si no hay nada', a
       { isbn: 'a', title: 'A', u90: 6, mercado: { estado: 'sostenible', margenAlMin: 1100 } },
       { isbn: 'b', title: 'B', u90: 5, mercado: { estado: 'no_conviene' } },
       { isbn: 'c', title: 'C', u90: 4, mercado: { estado: 'solo' } },
-    ], coberturaBaja: [{ isbn: 'd', title: 'D', stock: 1, dias: 13 }] } },
+    ], coberturaBaja: [{ isbn: 'd', title: 'D', stock: 1, dias: 13 }],
+    constantes: { total: 2, enCamino: 0, lista: [
+      { isbn: 'a', title: 'A', u365p: 12, ritmo: 30, stock: 0, cobertura: 0, pedir: 2, avgPrice: 1500, mercado: { estado: 'solo', texto: 'nadie más lo tiene con entrega inmediata en Uruguay' } },
+      { isbn: 'k', title: 'Klein', u365p: 6, ritmo: 61, stock: 1, cobertura: 61, pedir: 1, avgPrice: 1700, mercado: { estado: 'con_stock', texto: '2 lo tienen con entrega inmediata en Uruguay (Librería Pocho a $ 1.600)' }, compraReciente: { dias: 20, cantidad: 2, proveedor: 'CELESA' } },
+    ] } } },
     precios: { ok: true, data: { lista: [{ isbn: 'e', title: 'E', agotado: true, actual: 600, sugerido: 2000, subaPct: 233, min: 2050 }, { isbn: 'f', title: 'F', agotado: false, actual: 900, sugerido: 1170, subaPct: 30, min: 1200 }] } },
     margen: { ok: true, data: { peores: [{ isbn: 'g', title: 'G', margin: -387, price: 1809, cost: 2196 }, { isbn: 'h', title: 'H', margin: 17, price: 596, cost: 579 }] } },
   };
@@ -171,7 +192,33 @@ test('brujulaDigest: toma lo accionable de cada bloque y nada si no hay nada', a
   assert.deepEqual(d.subir.map(r => r.isbn), ['f'], 'sólo los que tienen stock: se puede subir hoy');
   assert.match(d.agotan[0].detalle, /13 días/);
   assert.deepEqual(d.perdida.map(r => r.isbn), ['g']);
+  assert.deepEqual(d.ultimo.map(r => r.isbn), ['k'], 'A ya salió en "Conviene reponer": no se repite');
+  assert.equal(d.ultimo[0].detalle, 'vendiste 6 en 12 meses (1 cada 61 días) a $ 1.700; queda 1, alcanza unos 61 días: pedí 1. 2 lo tienen con entrega inmediata en Uruguay (Librería Pocho a $ 1.600). Ojo: compraste 2 hace 20 días (CELESA).');
+  assert.equal(d.ultimoTotal, 1);
   assert.equal(brujulaDigest({}), null);
+  const soloUltimo = brujulaDigest({ inventario: { ok: true, data: { aSinStock: [], coberturaBaja: [], constantes: { lista: [{ isbn: 'z', title: 'Z', u365p: 6, ritmo: 61, stock: 0, cobertura: 0, pedir: 2, avgPrice: null, mercado: { estado: 'sin_dato', texto: 'sin dato de competencia' } }] } } } });
+  assert.equal(soloUltimo.ultimo[0].detalle, 'vendiste 6 en 12 meses (1 cada 61 días); sin stock: pedí 2. Sin dato de competencia.');
+});
+
+test('lentos pero constantes: 2+ ventas propias al año y stock para 75 días o menos; 1 cada 60 días con el último ejemplar avisa, 1 cada 120 no', () => {
+  const books = [
+    { isbn: 'bleichmar', title: 'Fundación', u365p: 6, u90p: 1, stock: 1, avgPrice: 2650 }, // 1 cada 61 días, queda 1 → 61 ≤ 75: avisa
+    { isbn: 'lento', title: 'Lento', u365p: 3, u90p: 0, stock: 1, avgPrice: 900 }, // 1 cada 122 días, queda 1 → 122: no avisa (se repone al venderse)
+    { isbn: 'rapido', title: 'Rápido', u365p: 24, u90p: 6, stock: 2, avgPrice: 500 }, // 1 cada 15, quedan 2 → 30 días: avisa y el objetivo es 3
+    { isbn: 'agotado', title: 'Agotado', u365p: 4, u90p: 1, stock: 0, avgPrice: 1000 }, // sin stock y constante: primero
+    { isbn: 'unico', title: 'Una venta', u365p: 1, u90p: 1, stock: 0, avgPrice: 1000 }, // una sola venta: no es constante
+    { isbn: 'cubierto', title: 'Cubierto', u365p: 12, u90p: 3, stock: 4, avgPrice: 1000 }, // 1 cada 30, quedan 4 → 120 días: tranquilo
+  ];
+  const r = constantesEnRiesgo(books);
+  assert.deepEqual(r.map(b => b.isbn), ['agotado', 'rapido', 'bleichmar']);
+  const b = r.find(x => x.isbn === 'bleichmar');
+  assert.equal(b.ritmo, 61); assert.equal(b.cobertura, 61); assert.equal(b.objetivo, 2); assert.equal(b.pedir, 1);
+  const rap = r.find(x => x.isbn === 'rapido');
+  assert.equal(rap.objetivo, 3); assert.equal(rap.pedir, 1);
+  const ag = r.find(x => x.isbn === 'agotado');
+  assert.equal(ag.cobertura, 0); assert.equal(ag.ritmo, 91); assert.equal(ag.pedir, 1, 'ritmo 91: objetivo 1 y mínimo 1');
+  assert.equal(stockObjetivo(10, 5), 3); assert.equal(stockObjetivo(10, 2), 2); assert.equal(stockObjetivo(60), 2); assert.equal(stockObjetivo(75), 2); assert.equal(stockObjetivo(76), 1);
+  assert.match(ultimoDetalle({ ...b, mercado: { texto: 'nadie más lo tiene con entrega inmediata en Uruguay' } }), /^vendiste 6 en 12 meses \(1 cada 61 días\) a \$ 2\.650; queda 1, alcanza unos 61 días: pedí 1\. Nadie más/);
 });
 
 test('precios: si sos el único con entrega inmediata, el sugerido sale de los que venden a pedido', () => {
