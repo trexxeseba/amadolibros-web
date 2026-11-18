@@ -9,7 +9,6 @@ name: Hermes y Arnoia publicar (Amado Vintage)
 on:
   schedule:
     - cron: '7 12-18 * * *'    # Hermes: 09:07 a 15:07 de Montevideo; cuando no queda nada por publicar no hace nada
-    - cron: '17 12-18 * * *'   # Arnoia: 09:17 a 15:17 de Montevideo (mismo techo diario compartido)
   workflow_dispatch:
     inputs:
       fuente:
@@ -73,7 +72,7 @@ jobs:
           python3 hermes-monitor/leer_excel.py hermes-monitor/data/hermes-top149-17-11.xlsx "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/publicadas-vintage.json"
       - name: Validar o publicar
         env:
-          FUENTE: ${{ inputs.fuente || (github.event.schedule == '17 12-18 * * *' && 'arnoia' || 'hermes') }}
+          FUENTE: ${{ inputs.fuente || 'hermes' }}
         run: |
           REAL=""; [ "${{ inputs.modo || 'publicar' }}" = "publicar" ] && REAL="--real"
           if [ "$FUENTE" = "arnoia" ]; then
