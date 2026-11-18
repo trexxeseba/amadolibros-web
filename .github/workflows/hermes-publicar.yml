@@ -1,0 +1,68 @@
+name: Hermes publicar (Amado Libros)
+
+# Republica en Amado Libros las fichas de catálogo de Hermes: 1 unidad, a 1 % menos que su precio
+# (decisión de Seba, 18/11/2026). Solo manual. Por defecto SOLO VALIDA con Mercado Libre y no crea nada.
+# Lo publicado queda en la rama hermes-datos (publicadas.json) y el chequeo diario lo pausa cuando
+# Hermes deja de ofrecer la ficha. Código: hermes-monitor/publicar.mjs.
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'validar (no crea nada) o publicar (crea publicaciones)'
+        type: choice
+        options: [validar, publicar]
+        default: validar
+      cantidad:
+        description: 'Cuántas fichas procesar'
+        default: '1'
+      rama:
+        description: 'Rama con el código (main salvo pruebas)'
+        default: 'main'
+
+concurrency:
+  group: hermes-datos
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.rama }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Traer lo guardado (rama hermes-datos)
+        run: |
+          mkdir -p "$RUNNER_TEMP/datos"
+          echo '[]' > "$RUNNER_TEMP/datos/historial.json"; echo '{}' > "$RUNNER_TEMP/datos/publicadas.json"
+          if git ls-remote --exit-code --heads origin hermes-datos >/dev/null 2>&1; then
+            git fetch --depth=1 origin hermes-datos
+            git show FETCH_HEAD:historial.json > "$RUNNER_TEMP/datos/historial.json" 2>/dev/null || true
+            git show FETCH_HEAD:publicadas.json > "$RUNNER_TEMP/datos/publicadas.json" 2>/dev/null || true
+          fi
+      - name: Leer el Excel
+        run: |
+          pip install -q openpyxl
+          python3 hermes-monitor/leer_excel.py hermes-monitor/data/hermes-top149-17-11.xlsx "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/publicadas.json"
+      - name: Validar o publicar
+        run: |
+          REAL=""; [ "${{ inputs.modo }}" = "publicar" ] && REAL="--real"
+          node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/publicadas.json" $REAL --max=${{ inputs.cantidad }}
+      - name: Guardar lo publicado
+        if: always() && inputs.modo == 'publicar'
+        run: |
+          cd "$RUNNER_TEMP/datos"
+          git init -q && git checkout -q -b hermes-datos
+          git config user.name "hermes-monitor" && git config user.email "hermes-monitor@users.noreply.github.com"
+          git add historial.json publicadas.json && git commit -q -m "Publicadas de Hermes $(date -u +%F)"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" hermes-datos
