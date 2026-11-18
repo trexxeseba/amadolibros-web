@@ -5,9 +5,10 @@ import fs from 'node:fs/promises';
 import {CUENTAS} from '../precio-ganador/src/config.mjs';
 import {fuenteTokenD1} from '../precio-ganador/src/token.mjs';
 import {crearCliente} from '../precio-ganador/src/ml.mjs';
+import {CUENTA_HERMES} from './lib.mjs';
 
 const pausa=ms=>new Promise(r=>setTimeout(r,ms));
-const ml=crearCliente(fuenteTokenD1(CUENTAS.libros),{concurrencia:1});
+const ml=crearCliente(fuenteTokenD1(CUENTAS[CUENTA_HERMES]),{concurrencia:1});
 const fichas=JSON.parse(await fs.readFile(process.argv[2],'utf8')).slice(0,Number(process.argv[3]||3));
 const get=async(path)=>{await pausa(500);try{return await ml.get(path);}catch(e){console.log('ERR',path,e.code,JSON.stringify(e.detalle));return null;}};
 const campos=(o,ks)=>Object.fromEntries(ks.map(k=>[k,o?.[k]]));
