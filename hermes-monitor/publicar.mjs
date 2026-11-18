@@ -15,6 +15,7 @@ import {leerFicha} from './chequeo.mjs';
 import {d1Client} from '../scripts/vintage-cloud/d1.mjs';
 import {brakeOn, blockedIsbns} from '../scripts/vintage-cloud/vigia-pi.mjs';
 import {ipRisk} from '../worker-sync/ip-risk.js';
+import {exigirVintage, exigirItemDeVintage} from './guardia.mjs';
 import {precioMio, armarPayload, CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, inicioDiaUy} from './lib.mjs';
 
 const pausa = ms => new Promise(r => setTimeout(r, ms));
@@ -47,6 +48,9 @@ const fuente = fuenteTokenD1(cuenta);
 const ml = crearCliente(fuente, {concurrencia: 1});
 const seller = cuenta.sellerId;
 const query = d1Client();
+
+// Candado de cuenta: el token tiene que ser el de Vintage, verificado con Mercado Libre, antes de cualquier cosa.
+await exigirVintage(ml);
 
 // Protecciones de Vintage: freno del vigía de propiedad intelectual, ISBN bloqueados y techo diario
 // compartido con la subida de SBS (lo publicado hoy por SBS + lo de Hermes hoy no pasa del tope).
@@ -100,6 +104,9 @@ for (const f of fichas) {
   await pausa(1000);
   try {
     const r = await ml.post('/items', {...payload, shipping: valido});
+    // Verificación posterior: si por cualquier razón quedó en otra cuenta, se pausa en el acto y se corta todo.
+    try { exigirItemDeVintage(await ml.get(`/items/${r?.id}`)); }
+    catch (e) { await ml.put(`/items/${r?.id}`, {status: 'paused'}).catch(() => {}); console.log(`${f.n}\tCORTE: ${e.code} (${r?.id}), se pausó y se frena todo`); process.exit(1); }
     publicadas[f.producto] = {item_id: r?.id, precio, precio_hermes: lec.oferta.price, fecha: new Date().toISOString().slice(0, 10), ts: Date.now(), cuenta: CUENTA_HERMES};
     await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1));
     erroresSeguidos = 0; hechas++;
