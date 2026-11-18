@@ -1,4 +1,6 @@
-// Republica en Amado VINTAGE (nunca Amado Libros) las fichas de catálogo de Hermes: 1 unidad, a 1 % menos que su precio.
+// Publica en Amado VINTAGE (nunca Amado Libros) fichas de catálogo: 1 unidad.
+//  - Hermes: a 1 % menos que el precio de Hermes.
+//  - Arnoia (--fuente=arnoia): libros de la lista de Arnoia con el precio ya calculado, por EAN, plazo "a demanda".
 //
 //   node hermes-monitor/publicar.mjs <fichas.json> <publicadas.json> [--real] [--max=N]
 //
@@ -37,10 +39,13 @@ async function validar(payload) {
 }
 const [, , fichasPath, pubPath, ...flags] = process.argv;
 const real = flags.includes('--real');
+const arnoia = flags.includes('--fuente=arnoia');
 const maxPedido = Number(flags.find(f => f.startsWith('--max='))?.slice(6) || 1e9);
 let max = maxPedido;
 const require_text = await fs.readFile(pubPath, 'utf8').catch(() => '');
-const fichas = JSON.parse(await fs.readFile(fichasPath, 'utf8'));
+const datos = JSON.parse(await fs.readFile(fichasPath, 'utf8'));
+const fichas = arnoia ? datos.libros : datos;
+const PLAZO_DIAS = arnoia ? Number(datos.plazo_dias) || 20 : null;
 const descartadas = new Set(JSON.parse(await fs.readFile(new URL('./descartadas.json', import.meta.url), 'utf8').catch(() => '{"descartadas":[]}')).descartadas.map(d => d.producto));
 const publicadas = (() => { try { return JSON.parse(require_text) ?? {}; } catch { return {}; } })();
 const cuenta = CUENTAS[CUENTA_HERMES];
@@ -58,10 +63,10 @@ const freno = await brakeOn(query);
 if (freno) { console.log('FRENO DEL VIGIA ACTIVO: no se publica nada.', JSON.stringify(freno).slice(0, 200)); process.exit(0); }
 const bloqueados = await blockedIsbns(query);
 const inicio = inicioDiaUy();
-const hoyHermes = Object.values(publicadas).filter(p => Number(p.ts) >= inicio).length;
+const hoyHermes = Object.values(publicadas).filter(p => p.item_id && Number(p.ts) >= inicio).length;
 const hoySbs = Number((await query("SELECT COUNT(*) n FROM ml_vintage_pub_receipts WHERE seller_id=? AND state='published' AND created_at>=?", [seller, inicio]))[0]?.n ?? 0);
 let cupo = Math.max(0, TOPE_DIARIO_COMPARTIDO - hoySbs - hoyHermes);
-console.log(`hoy: SBS ${hoySbs}, Hermes ${hoyHermes}, tope compartido ${TOPE_DIARIO_COMPARTIDO}, cupo ${cupo}`);
+console.log(`hoy: SBS ${hoySbs}, Hermes+Arnoia ${hoyHermes}, tope compartido ${TOPE_DIARIO_COMPARTIDO}, cupo ${cupo}`);
 if (cupo === 0) { console.log('Sin cupo diario: no se publica nada.'); process.exit(0); }
 max = Math.min(maxPedido, cupo);
 
@@ -75,21 +80,47 @@ console.log(`modo ${real ? 'REAL' : 'solo validar'} | family_name ${usaFamilyNam
 
 let hechas = 0, erroresSeguidos = 0;
 const filas = [];
-for (const f of fichas) {
-  if (hechas >= max || erroresSeguidos >= 5) break;
-  if (publicadas[f.producto] || f.mi_mlu || descartadas.has(f.producto)) continue;
+const resolverHermes = async f => {
+  if (publicadas[f.producto] || f.mi_mlu || descartadas.has(f.producto)) return {omitir: true};
   const lec = await leerFicha(ml, f.producto);
-  if (!lec.oferta) { filas.push({n: f.n, resultado: 'hermes_no_ofrece'}); continue; }
+  if (!lec.oferta) return {etiqueta: f.n, saltar: 'hermes_no_ofrece'};
   await pausa(500);
   const prod = await ml.get(`/products/${f.producto}`).catch(() => null);
-  if (!prod || prod.status !== 'active') { filas.push({n: f.n, resultado: 'ficha_inactiva'}); continue; }
+  if (!prod || prod.status !== 'active') return {etiqueta: f.n, saltar: 'ficha_inactiva'};
+  return {etiqueta: f.n, clave: f.producto, producto: f.producto, prod, precio: precioMio(lec.oferta.price), categoria: lec.oferta.category_id, registro: {precio_hermes: lec.oferta.price}, nota: `Hermes ${lec.oferta.price}`, titulo: f.titulo};
+};
+const resolverArnoia = async f => {
+  const clave = 'arnoia:' + f.ean;
+  if (publicadas[clave]) return {omitir: true};
+  await pausa(500);
+  const busq = await ml.get('/products/search?' + new URLSearchParams({site_id: 'MLU', status: 'active', product_identifier: f.ean})).catch(() => null);
+  const id = busq?.results?.[0]?.id;
+  if (!/^MLU\d+$/.test(id ?? '')) return {etiqueta: f.ean, clave, saltar: 'sin_catalogo', marcar: {sin_catalogo: true}};
+  await pausa(500);
+  const prod = await ml.get(`/products/${id}`).catch(() => null);
+  if (!prod || prod.status !== 'active') return {etiqueta: f.ean, saltar: 'ficha_inactiva'};
+  if ((prod.children_ids ?? []).length) return {etiqueta: f.ean, saltar: 'ficha_con_variantes'};
+  return {etiqueta: f.ean, clave, producto: id, prod, precio: f.precio, categoria: 'MLU1196', registro: {ean: f.ean}, nota: f.titulo.slice(0, 30), titulo: f.titulo, editorial: f.editorial};
+};
+
+for (const f of fichas) {
+  if (hechas >= max || erroresSeguidos >= 5) break;
+  const ctx = await (arnoia ? resolverArnoia(f) : resolverHermes(f));
+  if (ctx.omitir) continue;
+  if (ctx.saltar) {
+    filas.push({n: ctx.etiqueta, resultado: ctx.saltar});
+    console.log(`${ctx.etiqueta}\tsalteada: ${ctx.saltar}`);
+    if (ctx.marcar && real) { publicadas[ctx.clave] = {...ctx.marcar, fecha: new Date().toISOString().slice(0, 10)}; await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1)); }
+    continue;
+  }
+  const {prod} = ctx;
   const isbn = (prod.attributes ?? []).find(a => a.id === 'GTIN' || a.id === 'ISBN')?.value_name ?? null;
-  if (isbn && bloqueados.has(String(isbn))) { filas.push({n: f.n, resultado: 'isbn_bloqueado_por_denuncia'}); console.log(`${f.n}\tsalteada: ISBN bloqueado por denuncia`); continue; }
+  if (isbn && bloqueados.has(String(isbn))) { filas.push({n: ctx.etiqueta, resultado: 'isbn_bloqueado_por_denuncia'}); console.log(`${ctx.etiqueta}\tsalteada: ISBN bloqueado por denuncia`); continue; }
   const editorial = (prod.attributes ?? []).find(a => ['BOOK_PUBLISHER', 'PUBLISHER'].includes(a.id))?.value_name;
-  const riesgo = ipRisk([prod.name, prod.family_name].filter(Boolean).join(' '), editorial);
-  if (riesgo) { filas.push({n: f.n, resultado: 'riesgo_pi_' + riesgo}); console.log(`${f.n}\tsalteada: riesgo de propiedad intelectual (${riesgo})`); continue; }
-  const precio = precioMio(lec.oferta.price);
-  const payload = armarPayload({producto: f.producto, precio, categoria: lec.oferta.category_id, nombre: prod.name, familyName: prod.family_name, usaFamilyName, isbn});
+  const riesgo = ipRisk([prod.name, prod.family_name, ctx.titulo].filter(Boolean).join(' '), editorial || ctx.editorial);
+  if (riesgo) { filas.push({n: ctx.etiqueta, resultado: 'riesgo_pi_' + riesgo}); console.log(`${ctx.etiqueta}\tsalteada: riesgo de propiedad intelectual (${riesgo})`); continue; }
+  const precio = ctx.precio;
+  const payload = armarPayload({producto: ctx.producto, precio, categoria: ctx.categoria, nombre: prod.name, familyName: prod.family_name, usaFamilyName, isbn, plazoDias: PLAZO_DIAS});
   let valido = null, ultimo = null;
   for (const shipping of variantes) {
     await pausa(500);
@@ -98,19 +129,19 @@ for (const f of fichas) {
     ultimo = v;
     if (!v.causas.some(c => /shipping/.test(String(c.code)))) break;
   }
-  if (!valido) { erroresSeguidos++; filas.push({n: f.n, resultado: 'no_valida', causas: ultimo?.causas}); console.log(`${f.n}\tNO VALIDA ${JSON.stringify(ultimo?.causas)}`); continue; }
-  if (ultimo?.causas?.length) console.log(`${f.n}\tadvertencias ${JSON.stringify(ultimo.causas)}`);
-  if (!real) { erroresSeguidos = 0; hechas++; filas.push({n: f.n, resultado: 'valida', precio}); console.log(`${f.n}\tvalida\tprecio ${precio} (Hermes ${lec.oferta.price})`); continue; }
+  if (!valido) { erroresSeguidos++; filas.push({n: ctx.etiqueta, resultado: 'no_valida', causas: ultimo?.causas}); console.log(`${ctx.etiqueta}\tNO VALIDA ${JSON.stringify(ultimo?.causas)}`); continue; }
+  if (ultimo?.causas?.length) console.log(`${ctx.etiqueta}\tadvertencias ${JSON.stringify(ultimo.causas)}`);
+  if (!real) { erroresSeguidos = 0; hechas++; filas.push({n: ctx.etiqueta, resultado: 'valida', precio}); console.log(`${ctx.etiqueta}\tvalida\tprecio ${precio} (${ctx.nota})`); continue; }
   await pausa(1000);
   try {
     const r = await ml.post('/items', {...payload, shipping: valido});
     // Verificación posterior: si por cualquier razón quedó en otra cuenta, se pausa en el acto y se corta todo.
     try { exigirItemDeVintage(await ml.get(`/items/${r?.id}`)); }
-    catch (e) { await ml.put(`/items/${r?.id}`, {status: 'paused'}).catch(() => {}); console.log(`${f.n}\tCORTE: ${e.code} (${r?.id}), se pausó y se frena todo`); process.exit(1); }
-    publicadas[f.producto] = {item_id: r?.id, precio, precio_hermes: lec.oferta.price, fecha: new Date().toISOString().slice(0, 10), ts: Date.now(), cuenta: CUENTA_HERMES};
+    catch (e) { await ml.put(`/items/${r?.id}`, {status: 'paused'}).catch(() => {}); console.log(`${ctx.etiqueta}\tCORTE: ${e.code} (${r?.id}), se pausó y se frena todo`); process.exit(1); }
+    publicadas[ctx.clave] = {item_id: r?.id, precio, ...ctx.registro, fuente: arnoia ? 'arnoia' : 'hermes', fecha: new Date().toISOString().slice(0, 10), ts: Date.now(), cuenta: CUENTA_HERMES};
     await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1));
     erroresSeguidos = 0; hechas++;
-    console.log(`${f.n}\tPUBLICADA ${r?.id} precio ${precio}`);
-  } catch (e) { erroresSeguidos++; console.log(`${f.n}\tERROR al publicar ${e.code} ${JSON.stringify(e.detalle)}`); }
+    console.log(`${ctx.etiqueta}\tPUBLICADA ${r?.id} precio ${precio}`);
+  } catch (e) { erroresSeguidos++; console.log(`${ctx.etiqueta}\tERROR al publicar ${e.code} ${JSON.stringify(e.detalle)}`); }
 }
 console.log('\nRESUMEN', JSON.stringify({modo: real ? 'real' : 'validar', procesadas: hechas, errores_seguidos: erroresSeguidos, llamadas: ml.stats.llamadas}));
