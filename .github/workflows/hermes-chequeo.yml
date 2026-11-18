@@ -1,0 +1,69 @@
+name: Hermes chequeo diario
+
+# Una vez por día mira las 149 fichas de HERMES_PROMOSML con la API oficial (una por vez, 500 ms de
+# pausa), guarda el historial en la rama hermes-datos, pausa SOLO las publicaciones propias asignadas
+# en el Excel cuando Hermes deja de ofrecer la ficha, y manda el resumen a adm@amadolibros.com.
+# No publica ni reactiva nada. Código y cómo apagarlo: hermes-monitor/README.md.
+on:
+  schedule:
+    - cron: '23 11 * * *'   # 08:23 de Montevideo
+  workflow_dispatch:
+    inputs:
+      real:
+        description: 'Pausar de verdad las publicaciones asignadas (si no, solo lee y avisa)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: hermes-datos
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  chequeo:
+    if: github.ref == 'refs/heads/main' && vars.HERMES_APAGADO != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      HERMES_EMAIL_TO: adm@amadolibros.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Traer el historial (rama hermes-datos)
+        run: |
+          mkdir -p "$RUNNER_TEMP/datos"
+          if git ls-remote --exit-code --heads origin hermes-datos >/dev/null 2>&1; then
+            git fetch --depth=1 origin hermes-datos
+            git show FETCH_HEAD:historial.json > "$RUNNER_TEMP/datos/historial.json" 2>/dev/null || echo '[]' > "$RUNNER_TEMP/datos/historial.json"
+            git show FETCH_HEAD:publicadas.json > "$RUNNER_TEMP/datos/publicadas.json" 2>/dev/null || echo '{}' > "$RUNNER_TEMP/datos/publicadas.json"
+          else
+            echo '[]' > "$RUNNER_TEMP/datos/historial.json"
+            echo '{}' > "$RUNNER_TEMP/datos/publicadas.json"
+          fi
+      - name: Leer el Excel
+        run: |
+          pip install -q openpyxl
+          python3 hermes-monitor/leer_excel.py hermes-monitor/data/hermes-top149-17-11.xlsx "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/publicadas.json"
+      - name: Chequear
+        run: |
+          REAL=""
+          if [ "${{ inputs.real }}" = "true" ] || { [ "${{ github.event_name }}" = "schedule" ] && [ "${{ vars.HERMES_REAL }}" = "true" ]; }; then REAL="--real"; fi
+          node hermes-monitor/chequeo.mjs "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/historial.json" $REAL
+      - name: Guardar el historial
+        run: |
+          cd "$RUNNER_TEMP/datos"
+          git init -q && git checkout -q -b hermes-datos
+          git config user.name "hermes-monitor" && git config user.email "hermes-monitor@users.noreply.github.com"
+          git add historial.json publicadas.json && git commit -q -m "Historial de Hermes $(date -u +%F)"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" hermes-datos
+      - name: Mandar el resumen
+        if: always()
+        run: node hermes-monitor/mail.mjs "$RUNNER_TEMP/datos/resumen.txt"
