@@ -31,6 +31,7 @@ const indexable  = indexableProp !== undefined ? indexableProp : import.meta.env
 const gaId       = import.meta.env.PUBLIC_GA_ID;
 const enableGA4  = (analyticsProp !== undefined ? analyticsProp : indexable) && !!gaId;
 const socialUrl  = canonical || 'https://www.amadolibros.com/';
+import { pruebaSocialHtml } from '../../../shared/prueba-social.js';
 ---
 <!doctype html>
 <html lang="es">
@@ -153,5 +154,6 @@ const socialUrl  = canonical || 'https://www.amadolibros.com/';
 </head>
 <body>
   <slot />
+  <Fragment set:html={pruebaSocialHtml()} />
 </body>
 </html>
