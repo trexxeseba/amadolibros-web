@@ -16,12 +16,17 @@ se detecta porque Hermes deja de ofrecer la ficha. El precio sí se lee.
 ## Cómo correrlo
 - Prueba (solo lee, registra y avisa): Actions > "Hermes chequeo diario" > Run workflow, con `real` sin tildar.
 - Con pausas reales a mano: mismo botón con `real` tildado.
-- Diario automático: solo registra y avisa hasta que se cree la variable del repo `HERMES_REAL` = `true` (Settings > Secrets and variables > Actions > Variables).
+- Diario automático: pausa de verdad las publicaciones asignadas. Para que solo registre y avise, crear la variable del repo `HERMES_REAL` = `false` (Settings > Secrets and variables > Actions > Variables).
 - Completar "Mi publicación (MLU)": en el Excel, columna I, un código por fila (por ejemplo MLU123456789).
 
 ## Cómo desactivarlo
 - Frenar todo: variable del repo `HERMES_APAGADO` = `true`.
-- Solo frenar las pausas: borrar o poner en `false` la variable `HERMES_REAL`.
+- Solo frenar las pausas: variable `HERMES_REAL` = `false`.
 - Borrarlo del todo: eliminar `.github/workflows/hermes-chequeo.yml`.
 
 Tests: `node --test functions/__tests__/hermes-monitor.test.js`.
+
+## Publicar las fichas (Amado Libros)
+Actions > "Hermes publicar (Amado Libros)": `validar` solo pregunta a Mercado Libre si sería válida, `publicar` crea las publicaciones
+(1 unidad, a 1 % menos que el precio de Hermes, de a una con pausa). Lo publicado queda en la rama `hermes-datos` (`publicadas.json`)
+y el chequeo diario lo toma solo para las pausas. No toca las que ya existen.
