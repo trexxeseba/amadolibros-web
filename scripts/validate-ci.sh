@@ -81,6 +81,8 @@ node --test scripts/categorize/__tests__/*.test.js
 # verdes que no defendían nada porque nunca se ejecutaban.
 node --test scripts/__tests__/*.test.js
 node --test scripts/reports/__tests__/*.test.js
+# Partes automáticos sin IA (scripts/partes/): parte de Vintage y control de Precio Ganador.
+node --test scripts/__tests__/partes.test.mjs
 # Agentes diarios de Mercado Libre en la nube (agentes-ml/): cliente, guardas y jobs.
 node --test agentes-ml/test/*.test.mjs
 node --test poda/test/*.test.mjs
