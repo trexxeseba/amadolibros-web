@@ -55,7 +55,7 @@ jobs:
       - name: Chequear
         run: |
           REAL=""
-          if [ "${{ inputs.real }}" = "true" ] || { [ "${{ github.event_name }}" = "schedule" ] && [ "${{ vars.HERMES_REAL }}" = "true" ]; }; then REAL="--real"; fi
+          if [ "${{ inputs.real }}" = "true" ] || { [ "${{ github.event_name }}" = "schedule" ] && [ "${{ vars.HERMES_REAL }}" != "false" ]; }; then REAL="--real"; fi
           node hermes-monitor/chequeo.mjs "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/historial.json" $REAL
       - name: Guardar el historial
         run: |
