@@ -101,3 +101,18 @@ test('inicioDiaUy cae a las 00:00 de Montevideo (03:00 UTC)', () => {
   const i = inicioDiaUy(Date.UTC(2026, 10, 18, 13, 0));
   assert.equal(new Date(i).toISOString(), '2026-11-18T03:00:00.000Z');
 });
+
+test('armarPayload con plazo declara disponibilidad a demanda y una sola unidad', () => {
+  const p = armarPayload({producto: 'MLU1', precio: 2040, categoria: 'MLU1196', nombre: 'Libro', familyName: 'Fam', usaFamilyName: false, isbn: '978', plazoDias: 20});
+  assert.deepEqual(p.sale_terms, [{id: 'MANUFACTURING_TIME', value_name: '20 días'}]);
+  assert.equal(p.available_quantity, 1);
+  assert.equal(armarPayload({producto: 'MLU1', precio: 1, categoria: 'x', nombre: 'a', familyName: 'f', usaFamilyName: false}).sale_terms, undefined);
+});
+test('la lista de Arnoia: 395 libros, EAN únicos y precios sobre el mínimo de Vintage', async () => {
+  const fs = await import('node:fs');
+  const d = JSON.parse(fs.readFileSync('hermes-monitor/data/arnoia-semana-45.json', 'utf8'));
+  assert.equal(d.libros.length, 395);
+  assert.equal(new Set(d.libros.map(l => l.ean)).size, 395);
+  assert.ok(d.libros.every(l => /^\d{13}$/.test(l.ean) && l.precio >= 1200));
+  assert.equal(d.plazo_dias, 20);
+});
