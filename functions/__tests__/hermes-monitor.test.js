@@ -41,7 +41,7 @@ const fichas = n => Array.from({length: n}, (_, i) => ({n: i + 1, titulo: `L${i 
 
 test('pausa la publicación mía solo si Hermes dejó de ofrecer y es de Amado Libros', async () => {
   const f = fichas(25);
-  const ml = mlFalso({ofrecen: f.slice(1).map(x => x.producto), items: {MLU900: {seller_id: 440298103, status: 'active'}}});
+  const ml = mlFalso({ofrecen: f.slice(1).map(x => x.producto), items: {MLU900: {seller_id: 2341378249, status: 'active'}}});
   const r = await correr({fichas: f, historial: [], real: true, ml, pausaMs: 0});
   assert.equal(r.pausadas.length, 1);
   assert.deepEqual(ml.puts, [['/items/MLU900', {status: 'paused'}]]);
@@ -50,19 +50,19 @@ test('pausa la publicación mía solo si Hermes dejó de ofrecer y es de Amado L
 
 test('sin --real no pausa y no toca publicaciones de otra cuenta', async () => {
   const f = fichas(25);
-  const ml = mlFalso({ofrecen: f.slice(1).map(x => x.producto), items: {MLU900: {seller_id: 440298103, status: 'active'}}});
+  const ml = mlFalso({ofrecen: f.slice(1).map(x => x.producto), items: {MLU900: {seller_id: 2341378249, status: 'active'}}});
   const r = await correr({fichas: f, historial: [], real: false, ml, pausaMs: 0});
   assert.equal(ml.puts.length, 0);
   assert.equal(r.pausadas[0].resultado, 'se_pausaria');
   const ml2 = mlFalso({ofrecen: f.slice(1).map(x => x.producto), items: {MLU900: {seller_id: 123, status: 'active'}}});
   const r2 = await correr({fichas: f, historial: [], real: true, ml: ml2, pausaMs: 0});
   assert.equal(ml2.puts.length, 0);
-  assert.equal(r2.pausadas[0].resultado, 'no_es_de_amado_libros_no_se_toca');
+  assert.equal(r2.pausadas[0].resultado, 'no_es_de_vintage_no_se_toca');
 });
 
 test('si casi todas desaparecen de golpe no pausa nada', async () => {
   const f = fichas(30);
-  const ml = mlFalso({ofrecen: [], items: {MLU900: {seller_id: 440298103, status: 'active'}}});
+  const ml = mlFalso({ofrecen: [], items: {MLU900: {seller_id: 2341378249, status: 'active'}}});
   const r = await correr({fichas: f, historial: [], real: true, ml, pausaMs: 0});
   assert.equal(r.falla, true);
   assert.equal(ml.puts.length, 0);
@@ -89,4 +89,15 @@ test('armarPayload: catálogo directo, 1 unidad, UYU, nuevo, sin tocar nada más
   assert.equal(p.currency_id, 'UYU');
   assert.equal(p.title, 'Libro');
   assert.equal(armarPayload({producto: 'MLU1', precio: 1, categoria: 'x', nombre: 'a', familyName: 'Fam', usaFamilyName: true}).family_name, 'Fam');
+});
+
+import {CUENTA_HERMES, inicioDiaUy} from '../../hermes-monitor/lib.mjs';
+import {CUENTAS} from '../../precio-ganador/src/config.mjs';
+test('Hermes va siempre a Amado Vintage y nunca a Amado Libros', () => {
+  assert.equal(CUENTA_HERMES, 'vintage');
+  assert.equal(CUENTAS[CUENTA_HERMES].sellerId, '2341378249');
+});
+test('inicioDiaUy cae a las 00:00 de Montevideo (03:00 UTC)', () => {
+  const i = inicioDiaUy(Date.UTC(2026, 10, 18, 13, 0));
+  assert.equal(new Date(i).toISOString(), '2026-11-18T03:00:00.000Z');
 });

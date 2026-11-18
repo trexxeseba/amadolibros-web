@@ -69,3 +69,10 @@ export function armarPayload({producto, precio, categoria, nombre, familyName, u
   if (isbn) p.attributes = [{id: 'GTIN', value_name: isbn}];
   return p;
 }
+
+// Hermes va SIEMPRE a Amado Vintage (Seba, 18/11/2026). Amado Libros no se toca: un test lo exige.
+export const CUENTA_HERMES = 'vintage';
+// Techo diario compartido con la subida de SBS (campaign.json, tope_diario): Hermes solo usa lo que queda.
+export const TOPE_DIARIO_COMPARTIDO = 300;
+export const POR_CORRIDA = 25;
+export const inicioDiaUy = (now = Date.now()) => { const d = new Date(now - 3 * 3600e3); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) + 3 * 3600e3; };
