@@ -12,7 +12,7 @@ import { ownStockIndex } from '../../worker-sync/reposicion-facts.js';
 import { competitionByIsbn } from '../../worker-sync/ml-competition.js';
 import { bookIsbn } from '../../worker-sync/isbn.js';
 import { latestFx } from '../../worker-sync/fx-rates.js';
-import { purchaseSummary } from '../../worker-sync/purchases.js';
+import { purchaseSummary, readCoverage, missingCoverage } from '../../worker-sync/purchases.js';
 
 const DAY = 86400000;
 const COUNTED = COUNTED_STATUSES.map(s => `'${s}'`).join(',');
@@ -104,11 +104,13 @@ export async function loadBookTable(db, catalog, now) {
     SUM(CASE WHEN o.date_created_ms>=p.c THEN i.quantity ELSE 0 END) AS u180,
     SUM(CASE WHEN i.currency_id='UYU' THEN i.quantity*i.unit_price ELSE 0 END) AS rev365,
     SUM(CASE WHEN o.date_created_ms>=p.b AND i.currency_id='UYU' THEN i.quantity*i.unit_price ELSE 0 END) AS rev90,
+    SUM(CASE WHEN o.date_created_ms>=p.d AND (i.seller_sku IS NULL OR i.seller_sku NOT LIKE 'AMADO-AR-%') THEN i.quantity ELSE 0 END) AS u30p,
+    MAX(CASE WHEN i.seller_sku IS NULL OR i.seller_sku NOT LIKE 'AMADO-AR-%' THEN o.date_created_ms END) AS last_msp,
     SUM(CASE WHEN i.seller_sku IS NULL OR i.seller_sku NOT LIKE 'AMADO-AR-%' THEN i.quantity ELSE 0 END) AS u365p,
     SUM(CASE WHEN o.date_created_ms>=p.b AND (i.seller_sku IS NULL OR i.seller_sku NOT LIKE 'AMADO-AR-%') THEN i.quantity ELSE 0 END) AS u90p,
     MAX(o.date_created_ms) AS last_ms, MAX(i.title) AS title
-    FROM (SELECT ? AS a, ? AS b, ? AS c) p, ml_sales_items i JOIN ml_sales_orders o ON o.order_id=i.order_id
-    WHERE o.status IN (${COUNTED}) AND o.date_created_ms>=p.a AND i.isbn IS NOT NULL GROUP BY i.isbn`, now - 365 * DAY, now - 90 * DAY, now - 180 * DAY);
+    FROM (SELECT ? AS a, ? AS b, ? AS c, ? AS d) p, ml_sales_items i JOIN ml_sales_orders o ON o.order_id=i.order_id
+    WHERE o.status IN (${COUNTED}) AND o.date_created_ms>=p.a AND i.isbn IS NOT NULL GROUP BY i.isbn`, now - 365 * DAY, now - 90 * DAY, now - 180 * DAY, now - 30 * DAY);
   const stock = ownStockIndex(catalog);
   const pubIndex = await publisherIndex(db);
   const meta = new Map();
@@ -122,7 +124,7 @@ export async function loadBookTable(db, catalog, now) {
   const books = sales.map(s => ({
     isbn: s.isbn, title: meta.get(s.isbn)?.title || s.title, publisher: pubIndex.get(s.isbn) || meta.get(s.isbn)?.publisher || null,
     u365: Number(s.u365) || 0, u180: Number(s.u180) || 0, u90: Number(s.u90) || 0, rev365: Math.round(Number(s.rev365) || 0), rev90: Math.round(Number(s.rev90) || 0),
-    u365p: Number(s.u365p) || 0, u90p: Number(s.u90p) || 0,
+    u365p: Number(s.u365p) || 0, u90p: Number(s.u90p) || 0, u30p: Number(s.u30p) || 0, lastOwnMs: Number(s.last_msp) || null,
     avgPrice: Number(s.u90) ? Math.round((Number(s.rev90) || 0) / Number(s.u90)) : Number(s.u365) ? Math.round((Number(s.rev365) || 0) / Number(s.u365)) : null, lastMs: Number(s.last_ms) || null, stock: stock.get(s.isbn)?.stock_propio ?? 0,
   }));
   return { books, stock, meta };
@@ -181,44 +183,120 @@ export function constantesEnRiesgo(books) {
     const cobertura = b.stock > 0 ? b.stock * ritmo : 0;
     if (cobertura > COBERTURA_AVISO_DIAS) continue;
     const objetivo = stockObjetivo(ritmo, b.u90p);
-    out.push({ isbn: b.isbn, title: b.title, clase: b.clase ?? null, u365p: b.u365p, u90p: b.u90p, ritmo, stock: b.stock, cobertura, objetivo,
-      pedir: Math.max(1, objetivo - b.stock), avgPrice: b.avgPrice ?? null, lastMs: b.lastMs ?? null });
+    out.push({ isbn: b.isbn, title: b.title, clase: b.clase ?? null, u365p: b.u365p, u90p: b.u90p, u30p: b.u30p ?? 0, u90: b.u90 ?? b.u90p, ritmo, stock: b.stock, cobertura, objetivo,
+      pedir: Math.max(1, objetivo - b.stock), avgPrice: b.avgPrice ?? null, lastMs: b.lastMs ?? null, lastOwnMs: b.lastOwnMs ?? null });
   }
   return out.sort((a, b) => a.cobertura - b.cobertura || b.u365p - a.u365p);
 }
 
-// Les suma lo que hace falta para decidir sin doble compra: compras en camino
-// (con esas, el aviso no sale), última compra reciente y si alguien lo vende
-// hoy con entrega inmediata desde Uruguay (vigilancia de competencia en D1).
+// Compras de cada ISBN en la forma que necesita el correo: qué se compró
+// último, cuánto se vendió desde entonces y si algo viene en camino. Las
+// ventas desde la compra son sólo de stock propio (el encargo SBS no consume
+// ejemplares). `faltan` = proveedores obligatorios sin 12 meses cargados: sin
+// eso, "sin compras registradas" no prueba que no esté pedido.
+const SUPPLIER_LABEL = { CELESA: 'Celesa', ARNOIA: 'Arnoia', CASASSA_Y_LORENZO: 'Casassa y Lorenzo', AMAZON_COM: 'Amazon.com', AMAZON_ES: 'Amazon.es', SBS: 'SBS' };
+const supplierLabel = v => String(v ?? '').split(',').map(x => SUPPLIER_LABEL[x.trim()] ?? x.trim()).filter(Boolean).join(', ');
+export async function comprasDe(db, isbns, now) {
+  const out = { byIsbn: new Map(), faltan: [] };
+  if (!isbns.length) return out;
+  const sums = await purchaseSummary(db, isbns, now);
+  for (const p of sums) {
+    if (!p.isbn) continue;
+    const f = p.ultima_compra_fecha;
+    out.byIsbn.set(p.isbn, {
+      enCamino: Number(p.en_transito_estimado) || 0, sinIsbn: Number(p.compras_sin_isbn_posibles) || 0,
+      ultima: f ? { fecha: f, dias: Math.floor((now - Date.parse(`${f}T12:00:00Z`)) / DAY), cantidad: p.ultima_compra_cantidad ?? null, proveedor: p.ultima_compra_proveedor ?? null, vendidasDesde: null } : null,
+    });
+  }
+  const since = [...out.byIsbn].filter(([, c]) => c.ultima).map(([isbn, c]) => ({ isbn, since: Date.parse(`${c.ultima.fecha}T00:00:00Z`) }));
+  if (since.length) {
+    try {
+      for (const r of await rows(db, `SELECT json_extract(j.value,'$.isbn') AS isbn,
+        (SELECT COALESCE(SUM(i.quantity),0) FROM ml_sales_items i JOIN ml_sales_orders o ON o.order_id=i.order_id
+          WHERE i.isbn=json_extract(j.value,'$.isbn') AND o.status IN (${COUNTED}) AND o.date_created_ms>=json_extract(j.value,'$.since')
+            AND (i.seller_sku IS NULL OR i.seller_sku NOT LIKE 'AMADO-AR-%')) AS q
+        FROM json_each(?) j`, JSON.stringify(since))) out.byIsbn.get(r.isbn).ultima.vendidasDesde = Number(r.q) || 0;
+    } catch { /* sin ventas: queda sin dato */ }
+  }
+  try { out.faltan = missingCoverage(await readCoverage(db), now); } catch { /* sin tabla de cobertura */ }
+  return out;
+}
+
+const fechaCorta = iso => iso ? `${String(iso).slice(8, 10)}/${String(iso).slice(5, 7)}/${String(iso).slice(2, 4)}` : '';
+const fechaMs = ms => ms ? fechaCorta(new Date(ms - 3 * 3600000).toISOString()) : '';
+const diasTxt = n => `${n} ${n === 1 ? 'día' : 'días'}`;
+
+// Estado de la compra en una frase. `c` viene de comprasDe (undefined = no se
+// pudo consultar). Nunca dice "no hay" sin avisar si faltan proveedores cargar.
+export function comprasTexto(c, faltan = [], stock = 0) {
+  if (!c) return 'No pude consultar las compras: confirmá que no esté pedido';
+  const u = c.ultima, cant = u?.cantidad != null ? `${u.cantidad} u.` : 'unidades';
+  let t;
+  if (c.enCamino > 0 && u) t = `YA PEDIDO: compraste ${cant} el ${fechaCorta(u.fecha)} (${supplierLabel(u.proveedor)}), hace ${diasTxt(u.dias)}; puede estar en camino`;
+  else if (u) {
+    t = `Última compra: ${cant} el ${fechaCorta(u.fecha)} (${supplierLabel(u.proveedor)}), hace ${diasTxt(u.dias)}`;
+    if (u.vendidasDesde != null) {
+      t += `; desde entonces vendiste ${u.vendidasDesde}`;
+      if (u.cantidad != null && u.vendidasDesde >= u.cantidad) t += ': se vendió todo lo que entró';
+      else if (u.cantidad != null && stock === 0 && u.dias <= 60) t += `: faltarían ${u.cantidad - u.vendidasDesde} por vender, revisá si llegaron`;
+    }
+  } else t = faltan.length ? `Sin compras registradas, pero faltan cargar las de ${faltan.map(supplierLabel).join(', ')}: confirmá que no esté pedido` : 'Sin compras registradas en los últimos 12 meses';
+  if (c.sinIsbn > 0) t += `. Hay ${c.sinIsbn} ${c.sinIsbn === 1 ? 'compra sin ISBN que podría ser' : 'compras sin ISBN que podrían ser'} este libro`;
+  return t;
+}
+
+// Competencia en una frase: sólo vendedores nacionales con entrega inmediata.
+export function mercadoCorto(m) {
+  if (!m || m.estado === 'sin_dato') return 'sin dato de competencia en Mercado Libre';
+  if (m.estado === 'solo') return `nadie más lo tiene con entrega inmediata en Uruguay${m.aPedido ? ` (${m.aPedido} lo venden a pedido)` : ''}`;
+  const n = m.nacionales ?? 0;
+  const quien = m.vendedor && m.min ? ` (${m.vendedor} a ${pesos(m.min)})` : m.min ? `, el más barato a ${pesos(m.min)}` : '';
+  return `${n} ${n === 1 ? 'lo tiene' : 'lo tienen'} con entrega inmediata en Uruguay${quien}${m.margenAlMin != null ? `; a ese precio ganás ${pesos(m.margenAlMin)} por libro` : ''}`;
+}
+
+// Línea completa de un libro para el correo: cuándo se agotó (última venta),
+// cuánto vendió, a qué precio, cuánto pedir, estado de la compra y competencia.
+export function detalleReposicion(b, faltan = []) {
+  const ultima = b.lastOwnMs ?? b.lastMs;
+  const hace = ultima ? Math.max(0, Math.floor((b.now - ultima) / DAY)) : null;
+  const ventas = `Vendiste ${b.u30p} en 30 días, ${b.u90p} en 90 y ${b.u365p} en 12 meses${b.ritmo ? ` (1 cada ${b.ritmo} días)` : ''}${b.avgPrice ? `, a ${pesos(b.avgPrice)}` : ''}${b.u90 > b.u90p ? `; más ${b.u90 - b.u90p} por encargo SBS en 90 días` : ''}`;
+  const estado = b.stock > 0
+    ? `Queda${b.stock === 1 ? '' : 'n'} ${b.stock}, alcanza${b.stock === 1 ? '' : 'n'} unos ${b.cobertura} días${ultima ? `; última venta el ${fechaMs(ultima)}` : ''}`
+    : `Sin stock${ultima ? `: última venta el ${fechaMs(ultima)} (hace ${hace === null ? '' : diasTxt(hace)})` : ''}`;
+  const mercado = mercadoCorto(b.mercado);
+  return `${estado}. ${ventas}. Pedí ${b.pedir}. ${comprasTexto(b.compras, faltan, b.stock)}. ${mercado.charAt(0).toUpperCase()}${mercado.slice(1)}.`;
+}
+
+// Cuánto pedir de un libro sin stock según su ritmo propio (365 / ventas del año).
+function ritmoPropio(b) { return b.u365p > 0 ? Math.round(365 / b.u365p) : null; }
+export function pedirSinStock(b) { const r = ritmoPropio(b); return r ? Math.max(1, stockObjetivo(r, b.u90p) - (b.stock || 0)) : 1; }
+
+// Lentos pero constantes en riesgo, ya con compras y competencia. Los que
+// tienen una compra en camino no se listan (se cuentan aparte).
 export async function loadConstantesEnRiesgo(db, books, now) {
   const base = constantesEnRiesgo(books);
-  if (!base.length) return { lista: [], total: 0, enCamino: 0 };
+  if (!base.length) return { lista: [], total: 0, enCamino: 0, faltan: [] };
   const isbns = base.map(b => b.isbn);
-  let compras = new Map();
-  try { compras = new Map((await purchaseSummary(db, isbns, now)).filter(p => p.isbn).map(p => [p.isbn, p])); } catch { /* sin compras cargadas */ }
+  let compras = { byIsbn: new Map(), faltan: [] };
+  try { compras = await comprasDe(db, isbns, now); } catch { /* sin compras cargadas */ }
   let comp = new Map();
   try { comp = await competitionByIsbn(db, isbns); } catch { /* sin vigilancia */ }
   let enCamino = 0;
   const lista = [];
   for (const b of base) {
-    const p = compras.get(b.isbn);
-    if (p?.en_transito_estimado > 0) { enCamino++; continue; }
-    const diasCompra = p?.ultima_compra_fecha ? Math.floor((now - Date.parse(`${p.ultima_compra_fecha}T12:00:00Z`)) / DAY) : null;
-    const compraReciente = diasCompra != null && diasCompra <= COMPRA_RECIENTE_DIAS
-      ? { dias: diasCompra, cantidad: p.ultima_compra_cantidad, proveedor: p.ultima_compra_proveedor } : null;
-    const f = comp.get(b.isbn);
-    let mercado;
-    if (!f) mercado = { estado: 'sin_dato', texto: 'sin dato de competencia' };
-    else if (!(f.competidores_inmediatos > 0)) mercado = { estado: 'solo', texto: `nadie más lo tiene con entrega inmediata en Uruguay${f.competidores_a_pedido ? ` (${f.competidores_a_pedido} a pedido)` : ''}` };
-    else {
-      const inmediatos = (f.vendedores ?? []).filter(v => v.dias_preparacion === 0 && v.precio > 0).sort((a, b) => a.precio - b.precio);
-      const barato = inmediatos[0];
-      mercado = { estado: 'con_stock', nacionales: f.competidores_inmediatos, min: barato?.precio ?? f.precio_minimo ?? null, vendedor: barato?.vendedor ?? null,
-        texto: `${f.competidores_inmediatos} ${f.competidores_inmediatos === 1 ? 'lo tiene' : 'lo tienen'} con entrega inmediata en Uruguay${barato ? ` (${barato.vendedor} a $ ${Math.round(barato.precio).toLocaleString('es-UY')})` : f.precio_minimo ? ` (desde $ ${Math.round(f.precio_minimo).toLocaleString('es-UY')})` : ''}` };
-    }
-    lista.push({ ...b, compraReciente, ultimaCompra: p?.ultima_compra_fecha ?? null, mercado });
+    const c = compras.byIsbn.get(b.isbn) ?? { enCamino: 0, sinIsbn: 0, ultima: null };
+    if (c.enCamino > 0) { enCamino++; continue; }
+    lista.push({ ...b, compras: c, mercado: mercadoDe(comp.get(b.isbn)) });
   }
-  return { lista, total: lista.length, enCamino };
+  return { lista, total: lista.length, enCamino, faltan: compras.faltan };
+}
+
+// Competencia de un ISBN (hechos de competitionByIsbn) en la forma del correo.
+export function mercadoDe(f) {
+  if (!f) return { estado: 'sin_dato' };
+  if (!(f.competidores_inmediatos > 0)) return { estado: 'solo', aPedido: f.competidores_a_pedido || 0 };
+  const barato = (f.vendedores ?? []).filter(v => v.dias_preparacion === 0 && v.precio > 0).sort((a, b) => a.precio - b.precio)[0];
+  return { estado: 'con_stock', nacionales: f.competidores_inmediatos, min: barato?.precio ?? f.precio_minimo ?? null, vendedor: barato?.vendedor ?? null };
 }
 
 // Rendimiento de compras de los últimos 90 días: cuánto de lo comprado ya se vendió.
@@ -421,7 +499,7 @@ export async function loadSinStockMarket(db, aSinStock, model = null) {
     if (!f) return { estado: 'sin_dato' };
     resumen.vigilados++;
     const nacionales = f.competidores_inmediatos ?? f.competidores_comparables ?? 0, min = f.precio_minimo;
-    if (!nacionales) { resumen.solo++; return { estado: 'solo', nacionales: 0, texto: `Nadie más lo tiene con entrega inmediata${f.competidores_a_pedido ? ` (${f.competidores_a_pedido} lo venden a pedido)` : ''}: reponer y quedarte con la venta.` }; }
+    if (!nacionales) { resumen.solo++; return { estado: 'solo', nacionales: 0, aPedido: f.competidores_a_pedido || 0, texto: `Nadie más lo tiene con entrega inmediata${f.competidores_a_pedido ? ` (${f.competidores_a_pedido} lo venden a pedido)` : ''}: reponer y quedarte con la venta.` }; }
     if (min == null) return { estado: 'sin_dato', texto: 'Hay vendedores con stock verificado, pero falta un precio comparable con el mismo envío. Revisar antes de reponer.' };
     const c = model?.costs.get(b.isbn), atMin = c ? marginOf(min, c.cost, model.feeRate) : null;
     if (atMin) {
@@ -462,8 +540,12 @@ export async function loadBi(db, catalog, now = Date.now()) {
         inv.data.aSinStock = inv.data.aSinStock.map(b => ({ ...b, ...by.get(b.isbn) }));
         inv.data.mercado = market.data.resumen;
       }
+      const cmp = await section(() => comprasDe(db, inv.data.aSinStock.map(b => b.isbn), now));
+      inv.data.comprasError = cmp.ok ? null : cmp.error;
+      inv.data.faltanCompras = cmp.ok ? cmp.data.faltan : [];
+      inv.data.aSinStock = inv.data.aSinStock.map(b => ({ ...b, now, compras: cmp.ok ? cmp.data.byIsbn.get(b.isbn) ?? { enCamino: 0, sinIsbn: 0, ultima: null } : undefined, ritmo: ritmoPropio(b), pedir: pedirSinStock(b), cobertura: 0 }));
       const constantes = await section(() => loadConstantesEnRiesgo(db, table.data.books, now));
-      inv.data.constantes = constantes.ok ? constantes.data : { lista: [], total: 0, enCamino: 0, error: constantes.error };
+      inv.data.constantes = constantes.ok ? { ...constantes.data, now } : { lista: [], total: 0, enCamino: 0, faltan: [], now, error: constantes.error };
     }
   }
   return { generado: new Date(now).toISOString(), kpis, weekly, abc: abcRes, inventario: inv, margen, precios, compras, editoriales: pubs, competencia };
@@ -473,22 +555,16 @@ export async function loadBi(db, catalog, now = Date.now()) {
 // bloque, sólo lo que pide una acción hoy. Recibe el resultado de loadBi.
 const DIGEST_ROWS = 5, ULTIMO_ROWS = 8;
 const pesos = v => `$ ${Math.round(v).toLocaleString('es-UY')}`;
-export function ultimoDetalle(b) {
-  const partes = [`vendiste ${b.u365p} en 12 meses (1 cada ${b.ritmo} días)${b.avgPrice ? ` a ${pesos(b.avgPrice)}` : ''}`];
-  partes.push(b.stock > 0 ? `queda${b.stock === 1 ? '' : 'n'} ${b.stock}, alcanza${b.stock === 1 ? '' : 'n'} unos ${b.cobertura} días: pedí ${b.pedir}` : `sin stock: pedí ${b.pedir}`);
-  const m = b.mercado?.texto ?? 'sin dato de competencia';
-  let s = `${partes.join('; ')}. ${m.charAt(0).toUpperCase()}${m.slice(1)}.`;
-  if (b.compraReciente) s += ` Ojo: compraste ${b.compraReciente.cantidad ?? ''} hace ${b.compraReciente.dias} ${b.compraReciente.dias === 1 ? 'día' : 'días'}${b.compraReciente.proveedor ? ` (${b.compraReciente.proveedor})` : ''}.`;
-  return s.replace(/\s+/g, ' ');
-}
+
 export function brujulaDigest(bi) {
   const inv = bi?.inventario?.ok ? bi.inventario.data : null;
-  const reponer = (inv?.aSinStock ?? [])
-    .filter(b => b.mercado && ['solo', 'sostenible'].includes(b.mercado.estado))
-    .slice(0, DIGEST_ROWS)
-    .map(b => ({ isbn: b.isbn, title: b.title, detalle: b.mercado.estado === 'solo'
-      ? `vendiste ${b.u90} en 90 días y nadie más lo tiene con entrega inmediata`
-      : `vendiste ${b.u90} en 90 días${b.mercado.margenAlMin != null ? `; al precio del más barato ganás $ ${b.mercado.margenAlMin.toLocaleString('es-UY')} por libro` : ''}` }));
+  // Sin stock y con ventas propias: "conviene reponer" salvo que ya esté pedido
+  // (esos van aparte: no hay que comprar dos veces).
+  const faltanSin = inv?.faltanCompras ?? [];
+  const sinStock = (inv?.aSinStock ?? []).filter(b => b.mercado && ['solo', 'sostenible'].includes(b.mercado.estado) && b.u365p > 0);
+  const fila = (b, faltan) => ({ isbn: b.isbn, title: b.title, detalle: detalleReposicion(b, faltan) });
+  const reponer = sinStock.filter(b => !(b.compras?.enCamino > 0)).slice(0, DIGEST_ROWS).map(b => fila(b, faltanSin));
+  const pedidos = sinStock.filter(b => b.compras?.enCamino > 0).slice(0, DIGEST_ROWS).map(b => fila(b, faltanSin));
   const subir = (bi?.precios?.ok && bi.precios.data ? bi.precios.data.lista : [])
     .filter(b => !b.agotado)
     .slice(0, DIGEST_ROWS)
@@ -503,12 +579,12 @@ export function brujulaDigest(bi) {
   // Lentos pero constantes con el último ejemplar (o ya agotados): ritmo, precio,
   // cuántos vendiste, cuánto pedir y si alguien lo tiene inmediato en Uruguay.
   // Los que ya salieron en "Conviene reponer" no se repiten.
-  const yaListados = new Set(reponer.map(r => r.isbn));
+  const yaListados = new Set([...reponer, ...pedidos].map(r => r.isbn));
   const ultimoLista = (inv?.constantes?.lista ?? []).filter(b => !yaListados.has(b.isbn));
-  const ultimo = ultimoLista.slice(0, ULTIMO_ROWS).map(b => ({ isbn: b.isbn, title: b.title, detalle: ultimoDetalle(b) }));
-  if (!reponer.length && !subir.length && !agotan.length && !perdida.length && !ultimo.length) return null;
+  const ultimo = ultimoLista.slice(0, ULTIMO_ROWS).map(b => ({ isbn: b.isbn, title: b.title, detalle: detalleReposicion({ ...b, now: inv.constantes.now ?? Date.now() }, inv.constantes.faltan ?? faltanSin) }));
+  if (!reponer.length && !pedidos.length && !subir.length && !agotan.length && !perdida.length && !ultimo.length) return null;
   // Cuántos libros con stock están muy por debajo del mercado en total: el correo
   // lista pocos y avisa que hay más en el panel.
   const subirTotal = bi?.precios?.ok && bi.precios.data ? bi.precios.data.conStock : 0;
-  return { reponer, subir, agotan, perdida, subirTotal, ultimo, ultimoTotal: ultimoLista.length };
+  return { reponer, pedidos, subir, agotan, perdida, subirTotal, ultimo, ultimoTotal: ultimoLista.length };
 }

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { loadBi, abc, priceRaises, withUnsoldBooks, brujulaDigest, constantesEnRiesgo, stockObjetivo, ultimoDetalle } from '../_shared/panel-bi.js';
+import { loadBi, abc, priceRaises, withUnsoldBooks, brujulaDigest, constantesEnRiesgo, stockObjetivo, detalleReposicion, comprasTexto, mercadoCorto } from '../_shared/panel-bi.js';
 import { renderBi, createBiPanel } from '../panel/inteligencia.js';
 import { SALES_SCHEMA } from '../../worker-sync/ml-sales.js';
 import { importPurchases } from '../../worker-sync/purchases.js';
@@ -86,9 +86,14 @@ test('inteligencia: KPIs, tendencia, ABC, inventario, compras y editoriales con 
   assert.equal(cons.lista[1].pedir, 1);
   assert.equal(cons.lista[1].mercado.estado, 'sin_dato', 'sin tablas de competencia no se inventa stock inmediato');
   assert.equal(cons.lista[0].stock, 0);
-  assert.equal(cons.lista[0].compraReciente.dias, 40);
-  assert.equal(cons.lista[0].compraReciente.cantidad, 4);
-  assert.equal(cons.lista[0].compraReciente.proveedor, 'CELESA');
+  assert.equal(cons.lista[0].compras.ultima.dias, 40);
+  assert.equal(cons.lista[0].compras.ultima.cantidad, 4);
+  assert.equal(cons.lista[0].compras.ultima.proveedor, 'CELESA');
+  assert.equal(cons.lista[0].compras.ultima.vendidasDesde, 28, 'A: 14 ventas de 2 u. desde la compra de hace 40 días');
+  assert.deepEqual(bi.inventario.data.faltanCompras, ['CELESA', 'ARNOIA', 'CASASSA_Y_LORENZO', 'AMAZON_COM'], 'sin cobertura cargada faltan todos los proveedores obligatorios');
+  const sinStockA = bi.inventario.data.aSinStock[0];
+  assert.equal(sinStockA.u30p, 20); assert.equal(sinStockA.pedir, 3, "ritmo 1 cada 8 días y 40 vendidas en 90: objetivo 3 con stock 0");
+  assert.equal(sinStockA.compras.ultima.vendidasDesde, 28);
   const html = renderBi(bi);
   assert.match(html, /Lentos pero constantes/);
   assert.match(html, /1 cada 73 d/);
@@ -173,31 +178,47 @@ test('precios: lista los libros muy por debajo del más barato, sugiere 2% debaj
 
 test('brujulaDigest: toma lo accionable de cada bloque y nada si no hay nada', async () => {
   const { brujulaDigest } = await import('../_shared/panel-bi.js');
+  const NOW = Date.parse('2026-11-18T15:00:00Z');
+  const sinStock = (isbn, title, extra = {}) => ({ isbn, title, now: NOW, stock: 0, u30p: 3, u90p: 8, u90: 8, u365p: 21, ritmo: 17, pedir: 3, avgPrice: 1250, lastMs: Date.parse('2026-11-12T15:00:00Z'), lastOwnMs: Date.parse('2026-11-12T15:00:00Z'),
+    compras: { enCamino: 0, sinIsbn: 0, ultima: { fecha: '2026-09-02', dias: 77, cantidad: 4, proveedor: 'CELESA', vendidasDesde: 11 } }, ...extra });
   const bi = {
-    inventario: { ok: true, data: { aSinStock: [
-      { isbn: 'a', title: 'A', u90: 6, mercado: { estado: 'sostenible', margenAlMin: 1100 } },
-      { isbn: 'b', title: 'B', u90: 5, mercado: { estado: 'no_conviene' } },
-      { isbn: 'c', title: 'C', u90: 4, mercado: { estado: 'solo' } },
+    inventario: { ok: true, data: { faltanCompras: [], aSinStock: [
+      sinStock('a', 'A', { mercado: { estado: 'sostenible', nacionales: 1, min: 1100, vendedor: 'Librería Pocho', margenAlMin: 1100 } }),
+      sinStock('b', 'B', { mercado: { estado: 'no_conviene' } }),
+      sinStock('c', 'C', { mercado: { estado: 'solo', aPedido: 1 }, compras: { enCamino: 4, sinIsbn: 0, ultima: { fecha: '2026-11-10', dias: 8, cantidad: 4, proveedor: 'CELESA', vendidasDesde: 0 } } }),
+      sinStock('z', 'Z sólo encargo', { mercado: { estado: 'solo' }, u365p: 0, u90p: 0 }),
     ], coberturaBaja: [{ isbn: 'd', title: 'D', stock: 1, dias: 13 }],
-    constantes: { total: 2, enCamino: 0, lista: [
-      { isbn: 'a', title: 'A', u365p: 12, ritmo: 30, stock: 0, cobertura: 0, pedir: 2, avgPrice: 1500, mercado: { estado: 'solo', texto: 'nadie más lo tiene con entrega inmediata en Uruguay' } },
-      { isbn: 'k', title: 'Klein', u365p: 6, ritmo: 61, stock: 1, cobertura: 61, pedir: 1, avgPrice: 1700, mercado: { estado: 'con_stock', texto: '2 lo tienen con entrega inmediata en Uruguay (Librería Pocho a $ 1.600)' }, compraReciente: { dias: 20, cantidad: 2, proveedor: 'CELESA' } },
+    constantes: { total: 2, enCamino: 0, faltan: ['ARNOIA'], now: NOW, lista: [
+      sinStock('a', 'A', { mercado: { estado: 'solo' } }),
+      sinStock('k', 'Klein', { stock: 1, cobertura: 61, u30p: 0, u90p: 1, u90: 1, u365p: 6, ritmo: 61, pedir: 1, avgPrice: 1700, mercado: { estado: 'con_stock', nacionales: 2, min: 1600, vendedor: 'Librería Pocho' },
+        compras: { enCamino: 0, sinIsbn: 0, ultima: { fecha: '2026-10-29', dias: 20, cantidad: 2, proveedor: 'CELESA', vendidasDesde: 1 } } }),
     ] } } },
     precios: { ok: true, data: { lista: [{ isbn: 'e', title: 'E', agotado: true, actual: 600, sugerido: 2000, subaPct: 233, min: 2050 }, { isbn: 'f', title: 'F', agotado: false, actual: 900, sugerido: 1170, subaPct: 30, min: 1200 }] } },
     margen: { ok: true, data: { peores: [{ isbn: 'g', title: 'G', margin: -387, price: 1809, cost: 2196 }, { isbn: 'h', title: 'H', margin: 17, price: 596, cost: 579 }] } },
   };
   const d = brujulaDigest(bi);
-  assert.deepEqual(d.reponer.map(r => r.isbn), ['a', 'c']);
-  assert.match(d.reponer[0].detalle, /ganás \$ 1\.100/);
+  assert.deepEqual(d.reponer.map(r => r.isbn), ['a'], 'C ya está pedido, B no conviene y Z sólo vende por encargo');
+  assert.equal(d.reponer[0].detalle, 'Sin stock: última venta el 12/11/26 (hace 6 días). Vendiste 3 en 30 días, 8 en 90 y 21 en 12 meses (1 cada 17 días), a $ 1.250. Pedí 3. Última compra: 4 u. el 02/09/26 (Celesa), hace 77 días; desde entonces vendiste 11: se vendió todo lo que entró. 1 lo tiene con entrega inmediata en Uruguay (Librería Pocho a $ 1.100); a ese precio ganás $ 1.100 por libro.');
+  assert.deepEqual(d.pedidos.map(r => r.isbn), ['c']);
+  assert.match(d.pedidos[0].detalle, /YA PEDIDO: compraste 4 u\. el 10\/11\/26 \(Celesa\), hace 8 días; puede estar en camino/);
+  assert.match(d.pedidos[0].detalle, /Nadie más lo tiene con entrega inmediata en Uruguay \(1 lo venden a pedido\)/);
   assert.deepEqual(d.subir.map(r => r.isbn), ['f'], 'sólo los que tienen stock: se puede subir hoy');
   assert.match(d.agotan[0].detalle, /13 días/);
   assert.deepEqual(d.perdida.map(r => r.isbn), ['g']);
   assert.deepEqual(d.ultimo.map(r => r.isbn), ['k'], 'A ya salió en "Conviene reponer": no se repite');
-  assert.equal(d.ultimo[0].detalle, 'vendiste 6 en 12 meses (1 cada 61 días) a $ 1.700; queda 1, alcanza unos 61 días: pedí 1. 2 lo tienen con entrega inmediata en Uruguay (Librería Pocho a $ 1.600). Ojo: compraste 2 hace 20 días (CELESA).');
+  assert.equal(d.ultimo[0].detalle, 'Queda 1, alcanza unos 61 días; última venta el 12/11/26. Vendiste 0 en 30 días, 1 en 90 y 6 en 12 meses (1 cada 61 días), a $ 1.700. Pedí 1. Última compra: 2 u. el 29/10/26 (Celesa), hace 20 días; desde entonces vendiste 1. 2 lo tienen con entrega inmediata en Uruguay (Librería Pocho a $ 1.600).');
   assert.equal(d.ultimoTotal, 1);
   assert.equal(brujulaDigest({}), null);
-  const soloUltimo = brujulaDigest({ inventario: { ok: true, data: { aSinStock: [], coberturaBaja: [], constantes: { lista: [{ isbn: 'z', title: 'Z', u365p: 6, ritmo: 61, stock: 0, cobertura: 0, pedir: 2, avgPrice: null, mercado: { estado: 'sin_dato', texto: 'sin dato de competencia' } }] } } } });
-  assert.equal(soloUltimo.ultimo[0].detalle, 'vendiste 6 en 12 meses (1 cada 61 días); sin stock: pedí 2. Sin dato de competencia.');
+  const soloUltimo = brujulaDigest({ inventario: { ok: true, data: { aSinStock: [], coberturaBaja: [], constantes: { now: NOW, faltan: ['CELESA', 'AMAZON_COM'], lista: [sinStock('z', 'Z', { u30p: 0, u90p: 0, u90: 0, u365p: 6, ritmo: 61, pedir: 2, avgPrice: null, lastOwnMs: null, lastMs: null, mercado: { estado: 'sin_dato' }, compras: { enCamino: 0, sinIsbn: 1, ultima: null } })] } } } });
+  assert.equal(soloUltimo.ultimo[0].detalle, 'Sin stock. Vendiste 0 en 30 días, 0 en 90 y 6 en 12 meses (1 cada 61 días). Pedí 2. Sin compras registradas, pero faltan cargar las de Celesa, Amazon.com: confirmá que no esté pedido. Hay 1 compra sin ISBN que podría ser este libro. Sin dato de competencia en Mercado Libre.');
+});
+
+test('comprasTexto: no afirma "no hay compras" sin avisar qué proveedores faltan cargar, ni da por llegado lo que no se sabe', () => {
+  assert.match(comprasTexto(undefined), /No pude consultar las compras/);
+  assert.equal(comprasTexto({ enCamino: 0, sinIsbn: 0, ultima: null }, []), 'Sin compras registradas en los últimos 12 meses');
+  assert.match(comprasTexto({ enCamino: 0, sinIsbn: 0, ultima: { fecha: '2026-11-01', dias: 17, cantidad: 3, proveedor: 'ARNOIA', vendidasDesde: 1 } }, [], 0), /desde entonces vendiste 1: faltarían 2 por vender, revisá si llegaron/);
+  assert.doesNotMatch(comprasTexto({ enCamino: 0, sinIsbn: 0, ultima: { fecha: '2026-11-01', dias: 17, cantidad: 3, proveedor: 'ARNOIA', vendidasDesde: 1 } }, [], 2), /faltarían/, 'con stock el resto está en la góndola');
+  assert.equal(mercadoCorto({ estado: 'solo', aPedido: 0 }), 'nadie más lo tiene con entrega inmediata en Uruguay');
 });
 
 test('lentos pero constantes: 2+ ventas propias al año y stock para 75 días o menos; 1 cada 60 días con el último ejemplar avisa, 1 cada 120 no', () => {
@@ -218,7 +239,7 @@ test('lentos pero constantes: 2+ ventas propias al año y stock para 75 días o 
   const ag = r.find(x => x.isbn === 'agotado');
   assert.equal(ag.cobertura, 0); assert.equal(ag.ritmo, 91); assert.equal(ag.pedir, 1, 'ritmo 91: objetivo 1 y mínimo 1');
   assert.equal(stockObjetivo(10, 5), 3); assert.equal(stockObjetivo(10, 2), 2); assert.equal(stockObjetivo(60), 2); assert.equal(stockObjetivo(75), 2); assert.equal(stockObjetivo(76), 1);
-  assert.match(ultimoDetalle({ ...b, mercado: { texto: 'nadie más lo tiene con entrega inmediata en Uruguay' } }), /^vendiste 6 en 12 meses \(1 cada 61 días\) a \$ 2\.650; queda 1, alcanza unos 61 días: pedí 1\. Nadie más/);
+  assert.match(detalleReposicion({ ...b, now: Date.parse('2026-11-18T15:00:00Z'), mercado: { estado: 'solo' }, compras: undefined }), /^Queda 1, alcanza unos 61 días\. Vendiste 0 en 30 días, 1 en 90 y 6 en 12 meses \(1 cada 61 días\), a \$ 2\.650\. Pedí 1\. No pude consultar las compras: confirmá que no esté pedido\. Nadie más/);
 });
 
 test('precios: si sos el único con entrega inmediata, el sugerido sale de los que venden a pedido', () => {

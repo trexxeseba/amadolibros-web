@@ -103,7 +103,8 @@ test('sección Brújula: qué reponer, subir precio, se agota y a pérdida, con 
     subir: [{ isbn: '9780000000001', title: 'Tarot X', detalle: 'de $ 900 a $ 1.170 (+30%)' }],
     agotan: [],
     perdida: [{ isbn: '9780000000002', title: 'ECG <Handbook>', detalle: 'lo vendés a $ 1.809 y reponerlo cuesta $ 2.196' }],
-    ultimo: [{ isbn: '9781365910753', title: 'Relato del psicoanálisis de un niño', detalle: 'vendiste 6 en 12 meses (1 cada 61 días) a $ 1.700; queda 1, alcanza unos 61 días: pedí 1. nadie más lo tiene con entrega inmediata en Uruguay.' }],
+    pedidos: [{ isbn: '9780000000003', title: 'Ya pedido X', detalle: 'YA PEDIDO: compraste 4 u. el 10/11/26 (Celesa), hace 8 días; puede estar en camino.' }],
+    ultimo: [{ isbn: '9781365910753', title: 'Relato del psicoanálisis de un niño', detalle: 'Queda 1, alcanza unos 61 días. Vendiste 1 en 90 y 6 en 12 meses a $ 1.700. Pedí 1.' }],
     ultimoTotal: 9,
   };
   const { text, html } = buildDigestEmail({ toShip: [], unpaid: [], soldCount: 0, soldTotal: 0, createdCount: 0, brujula });
@@ -111,7 +112,8 @@ test('sección Brújula: qué reponer, subir precio, se agota y a pérdida, con 
   assert.match(text, /Conviene reponer:\n  - Biblia RVR: vendiste 6/);
   assert.match(text, /Subile el precio/);
   assert.doesNotMatch(text, /Se agotan pronto/, 'un bloque vacío no aparece');
-  assert.match(text, /Último ejemplar de un libro que se vende: pedilo \(1 de 9; todos en el panel\):\n  - Relato del psicoanálisis de un niño: vendiste 6 en 12 meses \(1 cada 61 días\) a \$ 1\.700; queda 1/);
+  assert.match(text, /Ya pedidos: esperando que lleguen:\n  - Ya pedido X: YA PEDIDO: compraste 4 u\./);
+  assert.match(text, /Último ejemplar de un libro que se vende: pedilo \(1 de 9; todos en el panel\):\n  - Relato del psicoanálisis de un niño: Queda 1, alcanza unos 61 días\./);
   assert.match(html, /reposicion\?q=9781365910753/);
   assert.match(html, /Brújula Amado: qué hacer hoy/);
   assert.match(html, /reposicion\?q=9781644732168/);

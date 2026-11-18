@@ -98,6 +98,7 @@ export async function loadDigestData(db, now = new Date(), { catalog = null } = 
 const BRUJULA_URL = `${PANEL_URL}/inteligencia`;
 const BRUJULA_BLOCKS = [
   ['reponer', 'Conviene reponer'],
+  ['pedidos', 'Ya pedidos: esperando que lleguen'],
   ['ultimo', 'Último ejemplar de un libro que se vende: pedilo'],
   ['subir', 'Subile el precio'],
   ['agotan', 'Se agotan pronto: pedilos'],
