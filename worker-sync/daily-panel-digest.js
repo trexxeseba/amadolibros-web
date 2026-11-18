@@ -16,7 +16,7 @@
 
 import { readSalesHealth, evaluateSalesHealth } from './sales-health.js';
 import { competitionEvents } from './ml-competition.js';
-import { loadBi, brujulaDigest } from '../functions/_shared/panel-bi.js';
+import { loadBi, brujulaDigest, competidoresSinStock, loadRepuestos } from '../functions/_shared/panel-bi.js';
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const EMAIL_TIMEOUT_MS = 7000;
@@ -73,12 +73,19 @@ export async function loadDigestData(db, now = new Date(), { catalog = null } = 
     all(db, `SELECT whatsapp, product_title FROM stock_waitlist_whatsapp
               WHERE status = 'waiting' ORDER BY created_at DESC LIMIT 100`).catch(() => []),
     readSalesHealth(db).catch(() => null),
-    competitionEvents(db, { limit: 5 }).catch(() => null),
+    competitionEvents(db, { limit: 200 }).catch(() => null),
   ]);
   // Brújula: qué reponer, a qué subirle el precio, qué se agota y qué se vende
   // a pérdida. Si algo falla, el correo sale igual sin esta parte.
   let brujula = null;
   if (catalog) { try { brujula = brujulaDigest(await loadBi(db, catalog, now.getTime())); } catch { brujula = null; } }
+  // Libros que volvieron a tener stock y competidores que se quedaron sin él.
+  // Cada parte falla sola: el correo sale igual.
+  const repuestos = await loadRepuestos(db, now.getTime()).catch(() => []);
+  const competidores = catalog && competencia?.eventos?.length ? competidoresSinStock(competencia.eventos, catalog) : [];
+  if (repuestos.length || competidores.length) {
+    brujula = { reponer: [], pedidos: [], subir: [], agotan: [], perdida: [], ultimo: [], ultimoTotal: 0, subirTotal: 0, ...(brujula ?? {}), repuestos, competidores };
+  }
   return {
     yesterday,
     toShip,
@@ -90,7 +97,7 @@ export async function loadDigestData(db, now = new Date(), { catalog = null } = 
     // Sólo los problemas: el correo no se llena de estado cuando todo anda bien.
     systemProblems: salesHealth ? evaluateSalesHealth(salesHealth, now.getTime()).problemas : [],
     // Sólo si hubo novedades de competencia en la última foto.
-    competition: competencia?.eventos?.length ? competencia : null,
+    competition: competencia?.eventos?.length ? { ...competencia, eventos: competencia.eventos.slice(0, 5) } : null,
     brujula,
   };
 }
@@ -98,11 +105,13 @@ export async function loadDigestData(db, now = new Date(), { catalog = null } = 
 const BRUJULA_URL = `${PANEL_URL}/inteligencia`;
 const BRUJULA_BLOCKS = [
   ['reponer', 'Conviene reponer'],
+  ['repuestos', 'Volvieron a tener stock'],
   ['pedidos', 'Ya pedidos: esperando que lleguen'],
   ['ultimo', 'Último ejemplar de un libro que se vende: pedilo'],
   ['subir', 'Subile el precio'],
   ['agotan', 'Se agotan pronto: pedilos'],
   ['perdida', 'Se venden a pérdida'],
+  ['competidores', 'Competidores que se quedaron sin stock: tu oportunidad'],
 ];
 const bookLink = isbn => `${PANEL_URL}/reposicion?q=${encodeURIComponent(isbn)}`;
 // "Subile el precio" lista pocos: si hay más libros con stock muy por debajo del

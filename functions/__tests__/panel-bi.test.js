@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { loadBi, abc, priceRaises, withUnsoldBooks, brujulaDigest, constantesEnRiesgo, stockObjetivo, detalleReposicion, comprasTexto, mercadoCorto } from '../_shared/panel-bi.js';
+import { loadBi, abc, priceRaises, withUnsoldBooks, brujulaDigest, constantesEnRiesgo, stockObjetivo, detalleReposicion, comprasTexto, mercadoCorto, competidoresSinStock, loadRepuestos, ventasPorMes } from '../_shared/panel-bi.js';
 import { renderBi, createBiPanel } from '../panel/inteligencia.js';
 import { SALES_SCHEMA } from '../../worker-sync/ml-sales.js';
 import { importPurchases } from '../../worker-sync/purchases.js';
@@ -94,6 +94,9 @@ test('inteligencia: KPIs, tendencia, ABC, inventario, compras y editoriales con 
   const sinStockA = bi.inventario.data.aSinStock[0];
   assert.equal(sinStockA.u30p, 20); assert.equal(sinStockA.pedir, 3, "ritmo 1 cada 8 días y 40 vendidas en 90: objetivo 3 con stock 0");
   assert.equal(sinStockA.compras.ultima.vendidasDesde, 28);
+  assert.deepEqual(sinStockA.ventasMes, [0, 0, 0, 0, 20, 20], 'A: 10 ventas de 2 u. en cada uno de los 2 meses más recientes (de 30 días)');
+  assert.deepEqual(cons.lista[1].ventasMes, [0, 0, 0, 0, 2, 3], 'B: 3 ventas en el último mes y 2 en el anterior; el encargo SBS no cuenta');
+  assert.deepEqual([...(await ventasPorMes(db, ['9780000000000'], NOW)).values()], [[0, 0, 0, 0, 0, 0]], 'sin ventas: seis ceros');
   const html = renderBi(bi);
   assert.match(html, /Lentos pero constantes/);
   assert.match(html, /1 cada 73 d/);
@@ -229,9 +232,12 @@ test('lentos pero constantes: 2+ ventas propias al año y stock para 75 días o 
     { isbn: 'agotado', title: 'Agotado', u365p: 4, u90p: 1, stock: 0, avgPrice: 1000 }, // sin stock y constante: primero
     { isbn: 'unico', title: 'Una venta', u365p: 1, u90p: 1, stock: 0, avgPrice: 1000 }, // una sola venta: no es constante
     { isbn: 'cubierto', title: 'Cubierto', u365p: 12, u90p: 3, stock: 4, avgPrice: 1000 }, // 1 cada 30, quedan 4 → 120 días: tranquilo
+    { isbn: 'dos', title: 'Dos ejemplares', u365p: 9, u90p: 2, stock: 2, avgPrice: 800 }, // 1 cada 41, quedan 2 → 82 días: con el aviso a 90 días ya sale
   ];
   const r = constantesEnRiesgo(books);
-  assert.deepEqual(r.map(b => b.isbn), ['agotado', 'rapido', 'bleichmar']);
+  assert.deepEqual(r.map(b => b.isbn), ['agotado', 'rapido', 'bleichmar', 'dos']);
+  const dos = r.find(x => x.isbn === 'dos');
+  assert.equal(dos.cobertura, 82); assert.equal(dos.pedir, 1);
   const b = r.find(x => x.isbn === 'bleichmar');
   assert.equal(b.ritmo, 61); assert.equal(b.cobertura, 61); assert.equal(b.objetivo, 2); assert.equal(b.pedir, 1);
   const rap = r.find(x => x.isbn === 'rapido');
@@ -280,4 +286,40 @@ test('libros vigilados sin ventas en 12 meses: entran a "muy barato" con el stoc
   assert.equal(digest.subirTotal, 2);
   assert.match(digest.subir[1].detalle, /de \$ 1\.395 a \$ 1\.850 \(\+33%; sos el único con entrega inmediata/);
   assert.equal(withUnsoldBooks(null, table), table.books);
+});
+
+test('detalleReposicion suma el costo de la última compra, las ventas por mes y el competidor que se quedó sin stock', () => {
+  const d = detalleReposicion({ now: Date.parse('2026-11-18T15:00:00Z'), stock: 0, u30p: 2, u90p: 5, u365p: 20, u90: 5, ritmo: 18, pedir: 2, avgPrice: 1500,
+    lastOwnMs: Date.parse('2026-11-14T15:00:00Z'), costo: 1100, costoProveedor: 'CELESA', ventasMes: [1, 2, 0, 3, 4, 5], compras: undefined,
+    mercado: { estado: 'solo', aPedido: 0, salieron: ['Librería Pocho dejó de ofrecer este libro en el catálogo (probablemente lo vendió).'] } });
+  assert.match(d, /Últimos 6 meses, del más viejo al más nuevo: 1, 2, 0, 3, 4, 5\./);
+  assert.match(d, /Pedí 2\. Costo de la última compra: \$ 1\.100 \(Celesa, al cambio de hoy\)\./);
+  assert.match(d, /Nadie más lo tiene con entrega inmediata en Uruguay\. Ojo: Librería Pocho dejó de ofrecer este libro en el catálogo \(probablemente lo vendió\)\.$/);
+  const sin = detalleReposicion({ now: Date.parse('2026-11-18T15:00:00Z'), stock: 0, u30p: 0, u90p: 0, u365p: 3, u90: 0, ritmo: 122, pedir: 1, avgPrice: null, lastOwnMs: null, compras: undefined, mercado: { estado: 'sin_dato' } });
+  assert.doesNotMatch(sin, /Últimos 6 meses|Costo de la última compra/, 'sin dato no inventa renglones');
+});
+
+test('competidores que se quedaron sin stock: primero los libros que vos tenés, con lo que tenés', () => {
+  const evento = (isbn, tipo = 'competidor_sin_stock') => ({ isbn, tipo, texto: `Pocho dejó de ofrecer ${isbn} (probablemente lo vendió).` });
+  const r = competidoresSinStock([evento(A), evento(B), evento(B), evento(C, 'precio_arriba')], catalog);
+  assert.deepEqual(r.map(x => x.isbn), [B, A], 'B (tenés 1) antes que A (sin stock); C no es de este tipo; B no se repite');
+  assert.equal(r[0].title, 'Libro B');
+  assert.match(r[0].detalle, /Vos tenés 1: te quedás con esa demanda, no lo dejes agotar\./);
+  assert.match(r[1].detalle, /Hoy vos no tenés stock: reponerlo es la oportunidad\./);
+  assert.deepEqual(competidoresSinStock([], catalog), []);
+});
+
+test('repuestos: libros agotados que volvieron a tener stock, con para cuántos días de venta alcanzan', async t => {
+  const db = await seed(t);
+  db.sqlite.exec('CREATE TABLE catalog_sync_log (id TEXT PRIMARY KEY, synced_at TEXT NOT NULL, samples_json TEXT)');
+  const log = db.sqlite.prepare('INSERT INTO catalog_sync_log VALUES (?,?,?)');
+  log.run('sync:1', new Date(NOW - 4 * 3600000).toISOString(), JSON.stringify({ back_in_stock: [{ id: 'MLU1', title: 'Libro A', isbn: A, qty: 2 }, { id: 'MLU9', title: 'Libro A (catálogo)', isbn: A, qty: 2 }, { id: 'MLU3', title: 'Libro C', isbn: C, qty: 1 }, { id: 'MLUX', title: 'Sin ISBN', isbn: null, qty: 1 }] }));
+  log.run('sync:viejo', new Date(NOW - 3 * 86400000).toISOString(), JSON.stringify({ back_in_stock: [{ id: 'MLU4', title: 'Viejo', isbn: D, qty: 9 }] }));
+  const r = await loadRepuestos(db, NOW);
+  assert.deepEqual(r.map(x => x.title), ['Libro A', 'Libro C', 'Sin ISBN'], 'A una sola vez aunque la publicación esté duplicada; el sync de hace 3 días no entra');
+  assert.equal(r[0].detalle, 'Ahora hay 2 ejemplares: alcanzan para unos 16 días de venta al ritmo de los últimos 12 meses (1 cada 8 días, 45 vendidos).');
+  assert.equal(r[1].detalle, 'Ahora hay 1 ejemplar: alcanzan para unos 365 días de venta al ritmo de los últimos 12 meses (1 cada 365 días, 1 vendidos).');
+  assert.equal(r[2].detalle, 'Ahora hay 1 ejemplar: no tuvo ventas propias en los últimos 12 meses.');
+  db.sqlite.exec('DELETE FROM catalog_sync_log');
+  assert.deepEqual(await loadRepuestos(db, NOW), []);
 });
