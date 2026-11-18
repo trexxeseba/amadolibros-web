@@ -98,6 +98,7 @@ export async function loadDigestData(db, now = new Date(), { catalog = null } = 
 const BRUJULA_URL = `${PANEL_URL}/inteligencia`;
 const BRUJULA_BLOCKS = [
   ['reponer', 'Conviene reponer'],
+  ['ultimo', 'Último ejemplar de un libro que se vende: pedilo'],
   ['subir', 'Subile el precio'],
   ['agotan', 'Se agotan pronto: pedilos'],
   ['perdida', 'Se venden a pérdida'],
@@ -106,7 +107,8 @@ const bookLink = isbn => `${PANEL_URL}/reposicion?q=${encodeURIComponent(isbn)}`
 // "Subile el precio" lista pocos: si hay más libros con stock muy por debajo del
 // mercado, el título dice cuántos son en total.
 const blockTitle = (b, key, title) => key === 'subir' && b.subirTotal > b.subir.length
-  ? `${title} (${b.subir.length} de ${b.subirTotal} con stock muy por debajo del mercado; todos en el panel)` : title;
+  ? `${title} (${b.subir.length} de ${b.subirTotal} con stock muy por debajo del mercado; todos en el panel)`
+  : key === 'ultimo' && b.ultimoTotal > b.ultimo.length ? `${title} (${b.ultimo.length} de ${b.ultimoTotal}; todos en el panel)` : title;
 
 function brujulaText(b) {
   if (!b) return [];
