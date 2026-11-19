@@ -1,0 +1,55 @@
+name: Vintage promos volumen (renovar LIKI)
+
+# Renueva "igual" la promoción de volumen de Amado Vintage (2341378249): crea la nueva desde que
+# termina la actual y le suma los mismos libros. Pedido de Seba el 19/11/2026 (LIKI, llevando 2, 30 %).
+# prueba = no escribe nada (lee y muestra el plan) · real = escribe, sólo desde main.
+# Verifica con /users/me que el token es de Vintage. Código: vintage-promos/src/renovar-volumen.mjs.
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'prueba = no escribe · real = escribe (sólo desde main)'
+        type: choice
+        options: [prueba, real]
+        default: prueba
+      promocion:
+        description: 'Nombre de la promoción de volumen'
+        default: 'LIKI'
+      porcentaje:
+        description: 'Porcentaje aprobado; si la actual es otro, no se renueva'
+        default: '30'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vintage-promos-volumen
+  cancel-in-progress: false
+
+jobs:
+  renovar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      MODO: ${{ inputs.modo }}
+      PROMO_NOMBRE: ${{ inputs.promocion }}
+      PORCENTAJE: ${{ inputs.porcentaje }}
+    steps:
+      - name: Modo real sólo desde main
+        if: inputs.modo == 'real' && github.ref != 'refs/heads/main'
+        run: |
+          echo "El modo real sólo corre desde main."
+          exit 1
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests
+        run: node --test vintage-promos/test/*.test.mjs
+      - name: Renovar
+        run: node vintage-promos/src/renovar-volumen.mjs
