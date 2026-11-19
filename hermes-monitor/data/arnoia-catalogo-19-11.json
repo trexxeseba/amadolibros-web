@@ -46967,7 +46967,172 @@
 "unidades": 0,
 "fecha": "8 oct 2026",
 "piso": true
+},
+{
+"ean": "9791387948160",
+"titulo": "Bienvenido, bebé",
+"autor": "CHAPMAN, JANE",
+"editorial": "DEL PIRATA, EDICIONS",
+"precio": 1810,
+"peso_g": 350,
+"unidades": 0,
+"fecha": "21 oct 2026",
+"liberado_del_filtro": true
+},
+{
+"ean": "9788410673410",
+"titulo": "CEREBRO Y ESTILO DE VIDA",
+"autor": "TREJO, JOSE LUIS",
+"editorial": "CATARATA",
+"precio": 1910,
+"peso_g": 258,
+"unidades": 0,
+"fecha": "9 nov 2026",
+"liberado_del_filtro": true
+},
+{
+"ean": "9791387948221",
+"titulo": "Donde estan los calzoncillos de Papa Noel",
+"autor": "DAVIES, BECKY",
+"editorial": "DEL PIRATA, EDICIONS",
+"precio": 1810,
+"peso_g": 350,
+"unidades": 0,
+"fecha": "11 nov 2026",
+"liberado_del_filtro": true
+},
+{
+"ean": "9791370093365",
+"titulo": "EL ESTILO CLÁSICO HAYDN, MOZARTM BEETHOVEN",
+"autor": "Rosen, Charles",
+"editorial": "ALIANZA",
+"precio": 2480,
+"peso_g": 500,
+"unidades": 0,
+"fecha": "15 oct 2026",
+"liberado_del_filtro": true
+},
+{
+"ean": "9788427255913",
+"titulo": "El faro del pirata Capicaries (Max Marea 2)",
+"autor": "José Carlos Andrés",
+"editorial": "RBA MOLINO",
+"precio": 1520,
+"peso_g": 133,
+"unidades": 0,
+"fecha": "10 sept 2026",
+"liberado_del_filtro": true
+},
+{
+"ean": "9791387948214",
+"titulo": "Este no era el plan",
+"autor": "CHAPMAN, JANE",
+"editorial": "DEL PIRATA, EDICIONS",
+"precio": 1810,
+"peso_g": 350,
+"unidades": 0,
+"fecha": "28 oct 2026",
+"liberado_del_filtro": true
+},
+{
+"ean": "9788428575935",
+"titulo": "IMITACION DE CRISTO, LA",
+"autor": "DE KEMPIS, TOMAS",
+"editorial": "SAN PABLO EDITORIAL",
+"precio": 2240,
+"peso_g": 588,
+"unidades": 0,
+"fecha": "1 nov 2026",
+"liberado_del_filtro": true
+},
+{
+"ean": "9791387948313",
+"titulo": "La Escuela del Circo 01 - ¿Que esta pasando aqui?",
+"autor": "OLIVETTI, MAX",
+"editorial": "DEL PIRATA, EDICIONS",
+"precio": 1460,
+"peso_g": 102,
+"unidades": 0,
+"fecha": "18 nov 2026",
+"liberado_del_filtro": true
+},
+{
+"ean": "9791387948337",
+"titulo": "La Escuela del Circo 02 - El misterio de la senora Enigma",
+"autor": "OLIVETTI, MAX",
+"editorial": "DEL PIRATA, EDICIONS",
+"precio": 1460,
+"peso_g": 102,
+"unidades": 0,
+"fecha": "18 nov 2026",
+"liberado_del_filtro": true
+},
+{
+"ean": "9789464993097",
+"titulo": "Laksa. 65 reconfortantes sopas de fideos al estilo asiático",
+"autor": "VV.AA.",
+"editorial": "LIBRERO",
+"precio": 1680,
+"peso_g": 237,
+"unidades": 0,
+"fecha": "1 sept 2026",
+"liberado_del_filtro": true
+},
+{
+"ean": "9788419898616",
+"titulo": "Las catanas de los samurais",
+"autor": "ORTIZ CASAS, JORDI",
+"editorial": "DEL PIRATA, EDICIONS",
+"precio": 1810,
+"peso_g": 350,
+"unidades": 0,
+"fecha": "30 sept 2026",
+"liberado_del_filtro": true
+},
+{
+"ean": "9788419898739",
+"titulo": "Mi familia es especial (Libro de carton)",
+"autor": "RAYO, ANNA",
+"editorial": "DEL PIRATA, EDICIONS",
+"precio": 1700,
+"peso_g": 350,
+"unidades": 0,
+"fecha": "14 oct 2026",
+"liberado_del_filtro": true
+},
+{
+"ean": "9791387948191",
+"titulo": "Necesito tanto tanto hacer caca",
+"autor": "NEWSON, KARL",
+"editorial": "DEL PIRATA, EDICIONS",
+"precio": 1810,
+"peso_g": 350,
+"unidades": 0,
+"fecha": "21 oct 2026",
+"liberado_del_filtro": true
+},
+{
+"ean": "9788441445314",
+"titulo": "SUPERA LA DIABETES TIPO 2",
+"autor": "RANGEL MARTINEZ, DRA. SANDRA",
+"editorial": "EDAF EDITORIAL",
+"precio": 2040,
+"peso_g": 341,
+"unidades": 0,
+"fecha": "1 oct 2026",
+"liberado_del_filtro": true
+},
+{
+"ean": "9791387948207",
+"titulo": "Te quiero tanto tanto tantisimo",
+"autor": "NEWSON, KARL",
+"editorial": "DEL PIRATA, EDICIONS",
+"precio": 1810,
+"peso_g": 350,
+"unidades": 0,
+"fecha": "14 oct 2026",
+"liberado_del_filtro": true
 }
 ],
-"nota": "Los libros que daban menos de $1.200 se publican a $1.200 (decisión de Seba, 19/11/2026). Solo libros con disponibilidad \"Disponible\" en Arnoia."
+"nota": "Los libros que daban menos de $1.200 se publican a $1.200 (decisión de Seba, 19/11/2026). Solo libros con disponibilidad \"Disponible\" en Arnoia. 19/11: se suman 16 libros liberados del filtro (falsos positivos de pirata, estilo, tipo, imitación)."
 }

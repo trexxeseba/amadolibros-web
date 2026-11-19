@@ -37,3 +37,34 @@ test('school and language textbook publishers are blocked even with a clean titl
  assert.ok(ipRisk('Dieci A1','Alma Edizioni'));
  assert.equal(ipRisk('Cien años de soledad','Penguin Random House'),null);
 });
+
+test('alertas de la investigación del 19/11/2026: contacto externo, sexo/kama sutra, medicamentos e imitación se retienen',()=>{
+ assert.equal(ipRisk('Kama Sutra ilustrado'),'adulto');
+ assert.equal(ipRisk('Amor y sexo en España contado para escépticos'),'adulto');
+ assert.equal(ipRisk('Prozac Nation','Anagrama'),'medicamento');
+ assert.equal(ipRisk('Clonazepam: guía'),'medicamento');
+ assert.equal(ipRisk('Escribime por WhatsApp para pagar por fuera'),'contacto');
+ assert.equal(ipRisk('Libro nuevo, contacto vendedor@gmail.com'),'contacto');
+ assert.equal(ipRisk('Escribime por t.me/vendedor'),'contacto');
+ assert.equal(ipRisk('Counterfeit edition'),'imitacion');
+ assert.equal(ipRisk('Libro escaneado'),'imitacion');
+});
+
+test('los títulos editoriales verdaderos siguen pasando',()=>{
+ assert.equal(ipRisk('La hora antes del alba','Planeta'),null);
+ assert.equal(ipRisk('Todas las noches, todas las ciudades','Destino'),null);
+ assert.equal(ipRisk('El hombre en busca del sentido','Herder'),null);
+});
+
+test('"pirata", "estilo", "tipo" e "imitación" ya no frenan libros legítimos, pero las marcas y las ediciones pirata siguen frenadas',()=>{
+ assert.equal(ipRisk('Te quiero tanto tanto tantisimo','DEL PIRATA, EDICIONS'),null);
+ assert.equal(ipRisk('Daniela Pirata y el barco fantasma','Nubeocho'),null);
+ assert.equal(ipRisk('Supera la diabetes tipo 2','EDAF'),null);
+ assert.equal(ipRisk('Cerebro y estilo de vida','Catarata'),null);
+ assert.equal(ipRisk('La imitación de Cristo','San Pablo'),null);
+ assert.equal(ipRisk('Edición pirata del bestseller'),'copia');
+ assert.equal(ipRisk('Libro pirata'),'copia');
+ assert.equal(ipRisk('Referentes estilo. Chanel nº 5','Blume'),'marca');
+ assert.equal(ipRisk('Referentes estilo. Hermes Birkin','Blume'),'marca');
+ assert.equal(ipRisk('Imitación de un bolso de marca'),'copia');
+});
