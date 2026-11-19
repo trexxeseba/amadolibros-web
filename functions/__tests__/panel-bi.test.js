@@ -356,3 +356,9 @@ test('si no se pueden leer las compras, la línea lo dice en vez de afirmar que 
   assert.equal(r.lista[0].compras, undefined);
   assert.match(detalleReposicion({ ...r.lista[0], now: NOW }), /No pude consultar las compras: confirmá que no esté pedido/);
 });
+
+test('una venta de hoy dice "hoy" y no "hace 0 días"', () => {
+  const base = { now: Date.parse('2026-11-18T15:00:00Z'), stock: 0, u30p: 1, u90p: 1, u365p: 3, u90: 1, ritmo: 122, pedir: 1, avgPrice: 2518, compras: undefined, mercado: { estado: 'sin_dato' } };
+  assert.match(detalleReposicion({ ...base, lastOwnMs: Date.parse('2026-11-18T12:00:00Z') }), /^Sin stock: última venta el 18\/11\/26 \(hoy\)\./);
+  assert.match(detalleReposicion({ ...base, lastOwnMs: Date.parse('2026-11-17T12:00:00Z') }), /^Sin stock: última venta el 17\/11\/26 \(hace 1 día\)\./);
+});
