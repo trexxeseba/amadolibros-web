@@ -141,3 +141,9 @@ test('la lista nueva de Arnoia (19/11): libros disponibles, sin riesgo de propie
   assert.ok(d.libros[0].unidades >= d.libros[100].unidades);
   assert.equal(d.plazo_dias, 20);
 });
+
+test('la lista de Arnoia solo trae libros disponibles', async () => {
+  const fs = await import('node:fs');
+  const d = JSON.parse(fs.readFileSync('hermes-monitor/data/arnoia-catalogo-19-11.json', 'utf8'));
+  assert.match(d.nota, /Disponible/);
+});
