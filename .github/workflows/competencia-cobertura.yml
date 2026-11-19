@@ -24,5 +24,5 @@ jobs:
           resp=$(curl -sS --max-time 120 -H "Authorization: Bearer $SYNC_SECRET" -w '\n%{http_code}' "$WORKER/competition/coverage")
           code=$(printf '%s' "$resp" | tail -n1); json=$(printf '%s' "$resp" | sed '$d')
           echo "HTTP $code"
-          printf '%s' "$json" | jq -c '{vigilados, dias, con_foto_vigente, foto_de_hoy, solo_foto_de_ayer, sin_foto, foto_no_vigente, con_dato, sin_evidencia, error}' | tee -a "$GITHUB_STEP_SUMMARY"
+          printf '%s' "$json" | jq -c '{vigilados, dias, con_foto_vigente, foto_de_hoy, solo_foto_de_ayer, sin_foto, foto_no_vigente, recuperables_con_foto_de_ayer, con_dato, sin_evidencia, error}' | tee -a "$GITHUB_STEP_SUMMARY"
           [ "$code" = 200 ]

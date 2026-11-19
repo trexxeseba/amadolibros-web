@@ -226,6 +226,7 @@ function fakeMlAmplio(state) {
   return async url => {
     const u = new URL(String(url));
     if (u.pathname === '/products/MLU888/items') {
+      if (state.tailErrorsLeft > 0) { state.tailErrorsLeft--; return new Response('boom', { status: 500 }); }
       if (state.tailPartial) return Response.json({ paging: { total: 99 }, results: [{ item_id: 'MLU3', seller_id: Number(OWN), price: 1395, condition: 'new' }] });
       return Response.json({ paging: { total: 2 }, results: [{ item_id: 'MLU3', seller_id: Number(OWN), price: 1395, condition: 'new' }, { item_id: 'MLUD', seller_id: 88, price: 1890, condition: 'new' }] });
     }
@@ -353,4 +354,46 @@ test('cobertura: cuenta por qué un producto vigilado queda sin dato (sin foto, 
   assert.deepEqual(r.foto_no_vigente, { partial: 1, 'ok:version_vieja': 1, error: 1 });
   assert.equal(r.con_dato + r.sin_evidencia, r.con_foto_vigente);
   assert.ok(!JSON.stringify(r).includes('9780'), 'sólo conteos: ningún ISBN');
+});
+
+test('con tolerarFotoDeAyer, un producto cuya foto de hoy quedó parcial usa la de ayer y lo dice; sin la opción sigue sin dato', async t => {
+  const db = await seed(t);
+  const state = { day: 1 };
+  await diaCompleto(db, state, DAY1);
+  state.day = 2;
+  await amplio(state, DAY2).sync({ ORDERS_DB: db }, { calls: 1 });
+  state.tailPartial = true;
+  await amplio(state, DAY2 + 300000).sync({ ORDERS_DB: db }, { calls: 50 });
+  assert.equal((await competitionByIsbn(db, [TAIL])).has(TAIL), false, 'por defecto no se tapa con la de ayer');
+  const f = (await competitionByIsbn(db, [TAIL], { tolerarFotoDeAyer: true })).get(TAIL);
+  assert.equal(f.foto, montevideoDate(DAY1));
+  assert.equal(f.foto_vieja, true);
+  assert.equal(f.foto_anterior, null, 'no compara días: sólo cuenta lo que había ayer');
+  assert.equal(f.precio_minimo_a_pedido, 1890);
+  const ok = (await competitionByIsbn(db, [ISBN], { tolerarFotoDeAyer: true })).get(ISBN);
+  assert.equal(ok.foto_vieja, false, 'el que tiene foto de hoy no se marca');
+  const cov = await competitionCoverage(db);
+  assert.equal(cov.recuperables_con_foto_de_ayer, 1);
+  assert.deepEqual(cov.foto_no_vigente, { partial: 1 });
+});
+
+test('un error momentáneo de ML en un producto se reintenta el mismo día y queda con dato', async t => {
+  const db = await seed(t);
+  const state = { day: 1, tailErrorsLeft: 1 };   // la primera consulta de la cola responde 500
+  const r = await diaCompleto(db, state, DAY1);
+  assert.equal(r.state, 'done');
+  assert.equal(db.sqlite.prepare("SELECT status FROM comp_product_days WHERE catalog_product_id='MLU888' AND snap_date=?").get(montevideoDate(DAY1)).status, 'ok', 'el segundo intento lo completó');
+  assert.equal((await competitionByIsbn(db, [TAIL])).has(TAIL), true);
+  assert.equal(state.tailErrorsLeft, 0);
+  const st = await competitionStatus(db);
+  assert.equal(st.cursor.retries, 1, 'un solo reintento, de ese producto');
+});
+
+test('el reintento diario se hace una sola vez por producto: si sigue parcial no se insiste', async t => {
+  const db = await seed(t);
+  const state = { day: 1, tailPartial: true };
+  const r = await diaCompleto(db, state, DAY1);
+  assert.equal(r.state, 'done');
+  assert.equal((await competitionStatus(db)).cursor.retries, 1);
+  assert.equal(db.sqlite.prepare("SELECT status FROM comp_product_days WHERE catalog_product_id='MLU888' AND snap_date=?").get(montevideoDate(DAY1)).status, 'partial');
 });

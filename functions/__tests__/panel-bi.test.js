@@ -400,3 +400,8 @@ test('agotados de las últimas 48 horas: todo lo que Administrado avisa, aunque 
   assert.deepEqual(digest.hoy.map(x => x.title), ['Libro E con una sola venta', 'Libro S sin ISBN', 'Ya salió arriba']);
   assert.equal(digest.hoyTotal, 3);
 });
+
+test('la competencia que viene de la foto de ayer lo dice en la línea del correo', () => {
+  assert.equal(mercadoCorto({ estado: 'solo', aPedido: 0, fotoVieja: true }), 'nadie más lo tiene con entrega inmediata en Uruguay (dato de ayer: la foto de hoy no llegó a completarse)');
+  assert.equal(mercadoCorto({ estado: 'con_stock', nacionales: 1, min: 900, vendedor: 'Pocho', fotoVieja: false }), '1 lo tiene con entrega inmediata en Uruguay (Pocho a $ 900)');
+});
