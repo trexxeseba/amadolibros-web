@@ -274,7 +274,7 @@ export function detalleReposicion(b, faltan = []) {
   const ventas = `Vendiste ${b.u30p} en 30 días, ${b.u90p} en 90 y ${b.u365p} en 12 meses${b.ritmo ? ` (1 cada ${b.ritmo} días)` : ''}${b.avgPrice ? `, a ${pesos(b.avgPrice)}` : ''}${b.u90 > b.u90p ? `; más ${b.u90 - b.u90p} por encargo SBS en 90 días` : ''}`;
   const estado = b.stock > 0
     ? `Queda${b.stock === 1 ? '' : 'n'} ${b.stock}, alcanza${b.stock === 1 ? '' : 'n'} unos ${b.cobertura} días${ultima ? `; última venta el ${fechaMs(ultima)}` : ''}`
-    : `Sin stock${ultima ? `: última venta el ${fechaMs(ultima)} (hace ${hace === null ? '' : diasTxt(hace)})` : ''}`;
+    : `Sin stock${ultima ? `: última venta el ${fechaMs(ultima)} (${hace === 0 ? 'hoy' : `hace ${diasTxt(hace)}`})` : ''}`;
   const mercado = mercadoCorto(b.mercado);
   const meses = Array.isArray(b.ventasMes) ? ` Últimos 6 meses, del más viejo al más nuevo: ${b.ventasMes.join(', ')}.` : '';
   const prov = supplierLabel(b.costoProveedor ?? b.compra?.supplier);
