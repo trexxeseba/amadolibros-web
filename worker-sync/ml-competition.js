@@ -454,6 +454,36 @@ export async function competitionEvents(db, { limit = 30 } = {}) {
   return { foto, vigilados: targets.length, por_tipo: porTipo, eventos: eventos.slice(0, limit) };
 }
 
+// Cobertura de la vigilancia: de los productos vigilados, cuántos tienen una foto
+// utilizable (hoy, o la de ayer si la de hoy todavía no llegó) y cuántos terminan
+// con dato de competencia en el correo. Sirve para saber por qué una línea dice
+// "sin dato de competencia". Sólo conteos: los registros de Actions son públicos.
+export async function competitionCoverage(db) {
+  const targets = (await db.prepare('SELECT isbn,catalog_product_id FROM comp_targets').all()).results;
+  const days = (await db.prepare('SELECT DISTINCT snap_date FROM comp_product_days ORDER BY snap_date DESC LIMIT 2').all()).results.map(r => r.snap_date);
+  const [today, prev] = days;
+  const byDay = new Map();
+  if (days.length) {
+    const rows = (await db.prepare(`SELECT snap_date,catalog_product_id,status,snapshot_version FROM comp_product_days WHERE snap_date IN (${days.map(() => '?').join(',')})`).bind(...days).all()).results;
+    for (const p of rows) byDay.set(`${p.catalog_product_id}|${p.snap_date}`, p);
+  }
+  const vigente = p => p?.status === 'ok' && p.snapshot_version === SNAPSHOT_VERSION;
+  const out = { vigilados: targets.length, dias: days, con_foto_vigente: 0, foto_de_hoy: 0, solo_foto_de_ayer: 0, sin_foto: 0, foto_no_vigente: {}, con_dato: 0, sin_evidencia: 0 };
+  const conFoto = [];
+  for (const t of targets) {
+    const hoy = byDay.get(`${t.catalog_product_id}|${today}`) ?? null, ayer = prev ? byDay.get(`${t.catalog_product_id}|${prev}`) ?? null : null;
+    const pd = hoy ?? ayer;  // igual que competitionByIsbn: si la de hoy existe y no sirve, no se tapa con la de ayer
+    if (!pd) { out.sin_foto++; continue; }
+    if (!vigente(pd)) { const k = `${pd.status}${pd.snapshot_version === SNAPSHOT_VERSION ? '' : ':version_vieja'}`; out.foto_no_vigente[k] = (out.foto_no_vigente[k] ?? 0) + 1; continue; }
+    out.con_foto_vigente++;
+    if (hoy) out.foto_de_hoy++; else out.solo_foto_de_ayer++;
+    conFoto.push(t.isbn);
+  }
+  for (let i = 0; i < conFoto.length; i += 400) out.con_dato += (await competitionByIsbn(db, conFoto.slice(i, i + 400))).size;
+  out.sin_evidencia = out.con_foto_vigente - out.con_dato;
+  return out;
+}
+
 export async function competitionStatus(db) {
   try {
     const s = await db.prepare('SELECT cursor_json,updated_at,last_result_json FROM comp_state WHERE name=?').bind('daily').first();

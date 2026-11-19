@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { createMlCompetition, competitionByIsbn, competitionEvents, competitionStatus, montevideoDate } from '../../worker-sync/ml-competition.js';
+import { createMlCompetition, competitionByIsbn, competitionEvents, competitionStatus, competitionCoverage, COMPETITION_SCHEMA, montevideoDate } from '../../worker-sync/ml-competition.js';
 import { createReposicionFacts } from '../../worker-sync/reposicion-facts.js';
 import { SALES_SCHEMA } from '../../worker-sync/ml-sales.js';
 import { importPurchases } from '../../worker-sync/purchases.js';
@@ -331,4 +331,26 @@ test('vendedor lento conocido cuenta a pedido aunque ML lo muestre inmediato; Am
   // Una foto vieja que lo guardó como inmediato se corrige al leer.
   db.sqlite.prepare("UPDATE comp_snapshots SET manufacturing_days=0 WHERE seller_id='471589392'").run();
   assert.equal((await competitionByIsbn(db, [ISBN])).get(ISBN).competidores_inmediatos, 1);
+});
+
+test('cobertura: cuenta por qué un producto vigilado queda sin dato (sin foto, foto que no sirve, o foto de ayer)', async t => {
+  const db = database(t);
+  await db.batch(COMPETITION_SCHEMA.map(sql => db.prepare(sql)));
+  db.sqlite.exec('ALTER TABLE comp_product_days ADD COLUMN snapshot_version INTEGER');
+  const target = db.sqlite.prepare('INSERT INTO comp_targets(catalog_product_id,isbn,own_item_ids,priority,updated_at) VALUES(?,?,?,?,0)');
+  const day = db.sqlite.prepare('INSERT INTO comp_product_days(snap_date,catalog_product_id,status,fetched_at,snapshot_version) VALUES(?,?,?,0,?)');
+  ['A', 'B', 'C', 'D', 'E', 'F'].forEach((p, i) => target.run(`MLU${p}`, `97800000000${i}0`, '[]', 10 - i));
+  day.run('2026-11-19', 'MLUA', 'ok', 7);       // foto de hoy que sirve
+  day.run('2026-11-19', 'MLUB', 'partial', 7);  // foto de hoy incompleta: no se tapa con la de ayer
+  day.run('2026-11-18', 'MLUB', 'ok', 7);
+  day.run('2026-11-18', 'MLUC', 'ok', 7);       // sólo la de ayer: sirve
+  day.run('2026-11-19', 'MLUD', 'ok', 3);       // versión vieja de la foto
+  day.run('2026-11-18', 'MLUE', 'error', 7);    // sólo la de ayer y falló
+  const r = await competitionCoverage(db);       // MLUF no tiene ninguna foto
+  assert.equal(r.vigilados, 6);
+  assert.deepEqual(r.dias, ['2026-11-19', '2026-11-18']);
+  assert.deepEqual([r.con_foto_vigente, r.foto_de_hoy, r.solo_foto_de_ayer, r.sin_foto], [2, 1, 1, 1]);
+  assert.deepEqual(r.foto_no_vigente, { partial: 1, 'ok:version_vieja': 1, error: 1 });
+  assert.equal(r.con_dato + r.sin_evidencia, r.con_foto_vigente);
+  assert.ok(!JSON.stringify(r).includes('9780'), 'sólo conteos: ningún ISBN');
 });
