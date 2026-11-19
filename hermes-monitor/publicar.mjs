@@ -22,6 +22,7 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import os from 'node:os';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {exigirVintage, exigirItemDeVintage} from './guardia.mjs';
 import {precioMio, armarPayload, armarPayloadTradicional, CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, inicioDiaUy} from './lib.mjs';
 
@@ -105,6 +106,26 @@ async function leerTextoDeTapa(bytes) {
   try { return (await execFileP('tesseract', [f, 'stdout', '-l', 'spa+eng', '--psm', '11'], {timeout: 90000, maxBuffer: 4e6})).stdout; }
   finally { await fs.rm(f, {force: true}); }
 }
+// Borra de la tapa lo no permitido (hermes-monitor/limpiar_tapa.py: OCR con posiciones + inpaint) y vuelve a comprobar. Devuelve los bytes o null.
+async function limpiarTapa(bytes) {
+  const base = path.join(os.tmpdir(), `tapa-${process.pid}-${Date.now()}`);
+  const entrada = base + '-in.jpg', salida = base + '-out.jpg';
+  await fs.writeFile(entrada, Buffer.from(bytes));
+  try {
+    const {stdout} = await execFileP('python3', [fileURLToPath(new URL('./limpiar_tapa.py', import.meta.url)), entrada, salida], {timeout: 240000, maxBuffer: 4e6});
+    const r = JSON.parse(stdout.trim().split('\n').pop());
+    return r.estado === 'borrada' ? await fs.readFile(salida) : null;
+  } finally { await fs.rm(entrada, {force: true}); await fs.rm(salida, {force: true}); }
+}
+// Sube una foto a Mercado Libre (pictures/items/upload) y devuelve su id. Con ella se publica {id} en vez de una URL externa.
+async function subirFoto(buf) {
+  const form = new FormData();
+  form.append('file', new Blob([buf], {type: 'image/jpeg'}), 'tapa.jpg');
+  const res = await fetch('https://api.mercadolibre.com/pictures/items/upload', {method: 'POST', headers: {Authorization: 'Bearer ' + await fuente.getToken()}, body: form, signal: AbortSignal.timeout(60000)});
+  if (!res.ok) return null;
+  const j = await res.json().catch(() => null);
+  return typeof j?.id === 'string' ? j.id : null;
+}
 const buscarPortada = async ean => {
   const candidatas = [`https://imagessl3.casadellibro.com/a/l/t0/${ean.slice(-2)}/${ean}.jpg`, `https://covers.openlibrary.org/b/isbn/${ean}-L.jpg`];
   for (const url of candidatas) {
@@ -116,7 +137,14 @@ const buscarPortada = async ean => {
     let texto;
     try { texto = await leerTextoDeTapa(bytes); } catch { return {rechazada: 'lector_de_texto_no_disponible', sinMarca: true}; }
     const motivo = textoNoPermitido(texto);
-    return motivo ? {rechazada: motivo} : {url};
+    if (!motivo) return {url};
+    // Mercado Libre pide sacar de las fotos los datos de contacto y las referencias externas: se borran de la tapa y se sube la limpia.
+    // Si no se puede limpiar del todo (por ejemplo, un desplegable de caja con QR y domicilios), el libro se salta.
+    const limpia = await limpiarTapa(bytes).catch(() => null);
+    if (!limpia) return {rechazada: motivo};
+    const id = await subirFoto(limpia).catch(() => null);
+    if (id) console.log(`${ean}\ttapa limpiada (se borró: ${motivo}) y subida a Mercado Libre`);
+    return id ? {pictureId: id, limpiada: motivo} : {rechazada: 'no_se_pudo_subir_la_tapa_limpia'};
   }
   return null;
 };
@@ -149,9 +177,9 @@ const resolverArnoia = async f => {
     const por = await buscarPortada(f.ean); // la portada de prueba solo vale para validar, nunca para publicar
     if (!por) return {etiqueta: f.ean, clave, saltar: 'sin_portada', marcar: {sin_portada: true}};
     if (por.rechazada) return {etiqueta: f.ean, clave, saltar: 'portada_con_' + por.rechazada, ...(por.sinMarca ? {} : {marcar: {portada_rechazada: por.rechazada}})};
-    const portada = por.url;
+    const portada = por.pictureId ? {id: por.pictureId} : por.url;
     const payload = armarPayloadTradicional({ean: f.ean, titulo: f.titulo, autor: f.autor, editorial: f.editorial, precio: f.precio, plazoDias: PLAZO_DIAS, usaFamilyName, imagenes: [portada], pesoGramos: f.peso_g});
-    return {etiqueta: f.ean, clave, producto: null, prod: {attributes: []}, isbn: f.ean, precio: f.precio, payload, registro: {ean: f.ean, tradicional: true}, nota: f.titulo.slice(0, 30), titulo: f.titulo, editorial: f.editorial, descripcion: descripcionDe(f), aprobado: f.aprobado_por_seba === true};
+    return {etiqueta: f.ean, clave, producto: null, prod: {attributes: []}, isbn: f.ean, precio: f.precio, payload, registro: {ean: f.ean, tradicional: true, ...(por.limpiada ? {portada_limpiada: por.limpiada} : {})}, nota: f.titulo.slice(0, 30), titulo: f.titulo, editorial: f.editorial, descripcion: descripcionDe(f), aprobado: f.aprobado_por_seba === true};
   }
   if (tradicional) return {omitir: true};
   await pausa(500);

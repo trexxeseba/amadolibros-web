@@ -102,7 +102,7 @@ export function armarPayloadTradicional({ean, titulo, autor, editorial, precio, 
     site_id: 'MLU', category_id: 'MLU1196', price: precio, currency_id: 'UYU', available_quantity: 1,
     buying_mode: 'buy_it_now', listing_type_id: 'gold_special', condition: 'new', catalog_listing: false,
     seller_custom_field: `ARNOIA-${ean}`,
-    pictures: imagenes.map(source => ({source})),
+    pictures: imagenes.map(i => (typeof i === 'string' ? {source: i} : i)), // una URL o {id} de una foto ya subida
     attributes: [
       {id: 'GTIN', value_name: ean}, {id: 'BOOK_TITLE', value_name: t},
       ...(a ? [{id: 'AUTHOR', value_name: a}] : []),
@@ -134,6 +134,7 @@ export function textoNoPermitido(texto) {
   if (/\bwww\b|https?|\bwww\.|\.(com|net|org|es|uy|ar|mx|cl|co|io|me)\b/.test(t)) return 'direccion_web';
   if (/instagram|facebook|twitter|tiktok|youtube|whatsapp|telegram|pinterest/.test(t)) return 'red_social';
   if (/mercado ?libre|mercadolibre|mercado ?pago|mercado ?envios|envio gratis|\bfull\b/.test(t)) return 'etiqueta_mercado_libre';
+  if (/\bdomicilio\b|\bimportador\b|\bcuit\b|\bcuil\b/.test(t)) return 'domicilio_o_datos_fiscales';
   // teléfono: una racha de 8 o más dígitos que no sea un ISBN (978/979)
   for (const m of t.matchAll(/\+?\d[\d\s().-]{6,}\d/g)) {
     const digitos = m[0].replace(/\D/g, '');
