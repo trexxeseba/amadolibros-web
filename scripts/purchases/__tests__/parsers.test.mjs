@@ -27,6 +27,7 @@ test('Celesa: lee cabecera, líneas, envío y verifica unidades y total', () => 
   assert.deepEqual(doc.items.map(i => [i.isbn, i.quantity, i.unit_price, i.discount_pct, i.line_total]), [['9780000000002', 1, 45.18, 30, 31.63], ['9780000000019', 3, 12.98, 34, 25.7]]);
   assert.equal(doc.items[1].title, 'LIBRO DE PRUEBA DOS 2', 'el título conserva sus dígitos');
   assert.equal(doc.items[0].publisher, 'EDITORIAL UNO');
+  assert.deepEqual(doc.related_order_ids, ['C-47738941-C'], 'los números de pedido de las líneas permiten reemplazar un pedido ya cargado');
 });
 
 test('Celesa: si no cuadran las unidades o el total, no devuelve nada', () => {

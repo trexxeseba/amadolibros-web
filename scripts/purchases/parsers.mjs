@@ -40,8 +40,10 @@ export function parseCelesaText(text, { reference = null } = {}) {
   const units = Number(totals[1]), total = money(totals[2]);
   if (items.reduce((n, i) => n + i.quantity, 0) !== units) throw new Error('celesa_unidades_no_cuadran');
   if (!near(items.reduce((n, i) => n + i.line_total, 0) + shipping, total)) throw new Error('celesa_total_no_cuadra');
+  // Números de pedido de cada línea (C-47738941-C): permiten reemplazar el pedido que ya estuviera cargado.
+  const related = [...new Set(text.match(/\bC-\d{6,}-C(?:-C)?\b/g) ?? [])];
   return { supplier: 'CELESA', document_type: 'invoice', document_number: number, document_date: isoDate(head[2], head[3], head[4]),
-    currency: 'EUR', total_amount: total, source_type: 'pdf', source_reference: reference, items };
+    currency: 'EUR', total_amount: total, source_type: 'pdf', source_reference: reference, related_order_ids: related, items };
 }
 
 // Notificación de pedido de SBS Distribuidora (PE). Los pedidos a SBS se hacen
