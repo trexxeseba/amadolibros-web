@@ -264,7 +264,7 @@ export function mercadoCorto(m) {
   const quien = m.vendedor && m.min ? ` (${m.vendedor} a ${pesos(m.min)})` : m.min ? `, el más barato a ${pesos(m.min)}` : '';
   return `${n} ${n === 1 ? 'lo tiene' : 'lo tienen'} con entrega inmediata en Uruguay${quien}${m.margenAlMin != null ? `; a ese precio ganás ${pesos(m.margenAlMin)} por libro` : ''}${salieronTxt(m)}`;
 }
-const salieronTxt = m => (m?.salieron?.length ? `. Ojo: ${String(m.salieron[0]).replace(/\.$/, '')}` : '');
+const salieronTxt = m => `${m?.salieron?.length ? `. Ojo: ${String(m.salieron[0]).replace(/\.$/, '')}` : ''}${m?.fotoVieja ? ' (dato de ayer: la foto de hoy no llegó a completarse)' : ''}`;
 
 // Línea completa de un libro para el correo: cuándo se agotó (última venta),
 // cuánto vendió, a qué precio, cuánto pedir, estado de la compra y competencia.
@@ -324,7 +324,7 @@ export async function loadConstantesEnRiesgo(db, books, now, model = null) {
   let compras = { byIsbn: new Map(), faltan: [] }, comprasError = false;
   try { compras = await comprasDe(db, isbns, now); } catch { comprasError = true; }
   let comp = new Map();
-  try { comp = await competitionByIsbn(db, isbns); } catch { /* sin vigilancia */ }
+  try { comp = await competitionByIsbn(db, isbns, { tolerarFotoDeAyer: true }); } catch { /* sin vigilancia */ }
   let meses = new Map();
   try { meses = await ventasPorMes(db, isbns, now); } catch { /* sin ventas por mes */ }
   const enCaminoIsbns = [], lista = [];
@@ -371,7 +371,7 @@ export async function loadAgotadosHoy(db, catalog, now, model = null, books = []
   const isbns = agotados.filter(a => a.isbn).map(a => a.isbn);
   let compras = { byIsbn: new Map(), faltan: [] }, comprasError = false, comp = new Map(), meses = new Map();
   try { compras = await comprasDe(db, isbns, now); } catch { comprasError = true; }
-  try { comp = await competitionByIsbn(db, isbns); } catch { /* sin vigilancia */ }
+  try { comp = await competitionByIsbn(db, isbns, { tolerarFotoDeAyer: true }); } catch { /* sin vigilancia */ }
   try { meses = await ventasPorMes(db, isbns, now); } catch { /* sin ventas por mes */ }
   const lista = agotados.slice(0, limit).map(a => {
     const k = a.isbn ? byIsbn.get(a.isbn) : null, n = a.isbn ? null : porItem.get(a.item_id);
@@ -390,9 +390,9 @@ export async function loadAgotadosHoy(db, catalog, now, model = null, books = []
 export function mercadoDe(f) {
   if (!f) return { estado: 'sin_dato' };
   const salieron = salieronDe(f);
-  if (!(f.competidores_inmediatos > 0)) return { estado: 'solo', aPedido: f.competidores_a_pedido || 0, salieron };
+  if (!(f.competidores_inmediatos > 0)) return { estado: 'solo', aPedido: f.competidores_a_pedido || 0, salieron, fotoVieja: !!f.foto_vieja };
   const barato = (f.vendedores ?? []).filter(v => v.dias_preparacion === 0 && v.precio > 0).sort((a, b) => a.precio - b.precio)[0];
-  return { estado: 'con_stock', nacionales: f.competidores_inmediatos, min: barato?.precio ?? f.precio_minimo ?? null, vendedor: barato?.vendedor ?? null, salieron };
+  return { estado: 'con_stock', nacionales: f.competidores_inmediatos, min: barato?.precio ?? f.precio_minimo ?? null, vendedor: barato?.vendedor ?? null, salieron, fotoVieja: !!f.foto_vieja };
 }
 // Competidores que dejaron de ofrecer el libro desde la foto anterior (el texto
 // ya dice si probablemente lo vendieron).
@@ -584,7 +584,7 @@ export function marginSummary(books, model) {
 // y dónde lo compramos la última vez? Con eso se decide si conviene reponer.
 export async function loadSinStockMarket(db, aSinStock, model = null) {
   const isbns = aSinStock.map(b => b.isbn);
-  const facts = await competitionByIsbn(db, isbns);
+  const facts = await competitionByIsbn(db, isbns, { tolerarFotoDeAyer: true });
   const compra = new Map();
   try {
     for (const r of await rows(db, `SELECT i.isbn, o.supplier, MAX(o.purchase_date_ms) AS d FROM purchase_items i JOIN purchase_orders o ON o.purchase_id=i.purchase_id
@@ -609,7 +609,7 @@ export async function loadSinStockMarket(db, aSinStock, model = null) {
     resumen.masBarato++;
     return { estado: 'mas_barato', nacionales, min, texto: `${nacionales} lo tienen con entrega inmediata más barato que tu precio promedio: reponer sólo si el costo da.` };
   };
-  return { libros: aSinStock.map(b => { const c = model?.costs.get(b.isbn); return { isbn: b.isbn, mercado: { ...verdict(b), salieron: salieronDe(facts.get(b.isbn)) }, compra: compra.get(b.isbn) ?? null, costo: c?.cost ?? null, margen: c ? marginOf(b.avgPrice, c.cost, model.feeRate) : null }; }), resumen };
+  return { libros: aSinStock.map(b => { const c = model?.costs.get(b.isbn); return { isbn: b.isbn, mercado: { ...verdict(b), salieron: salieronDe(facts.get(b.isbn)), fotoVieja: !!facts.get(b.isbn)?.foto_vieja }, compra: compra.get(b.isbn) ?? null, costo: c?.cost ?? null, margen: c ? marginOf(b.avgPrice, c.cost, model.feeRate) : null }; }), resumen };
 }
 
 export async function loadBi(db, catalog, now = Date.now()) {
