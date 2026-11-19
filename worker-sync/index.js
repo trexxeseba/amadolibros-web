@@ -71,7 +71,7 @@ import { mlSales, handleSalesRoute } from './ml-sales.js';
 import { handleMoneyRoute } from './money-probe.js';
 import { handlePurchasesRoute } from './purchases.js';
 import { handleReposicionRead, REPOSICION_PATH } from './reposicion-read.js';
-import { mlCompetition, competitionStatus } from './ml-competition.js';
+import { mlCompetition, competitionStatus, competitionCoverage } from './ml-competition.js';
 import { fxRates } from './fx-rates.js';
 import {
   addCompressedIndexes,
@@ -262,6 +262,8 @@ export default {
     if (url.pathname.startsWith('/purchases/')) return handlePurchasesRoute(request, env);
     // Competencia: estado (capacidades de la API, avance del día) y corrida manual.
     if (request.method === 'GET' && url.pathname === '/competition/status') return json(await competitionStatus(env.ORDERS_DB) ?? { state: 'sin_datos' });
+    // Cobertura de la vigilancia: sólo conteos (por qué una línea dice "sin dato de competencia").
+    if (request.method === 'GET' && url.pathname === '/competition/coverage') return json(await competitionCoverage(env.ORDERS_DB));
     if (request.method === 'POST' && url.pathname === '/competition/sync') return json(await mlCompetition.sync(env, { calls: 120, deadlineMs: 25000 }));
     // Lectura de atributos de libros (solo lectura), detrás de SYNC_SECRET.
     if (url.pathname === '/attribute-audit') return handleAttributeAudit(request, env);

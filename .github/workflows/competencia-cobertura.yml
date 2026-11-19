@@ -1,0 +1,28 @@
+name: Cobertura de la vigilancia de competencia
+
+# Muestra cuántos productos vigila Mercado Libre y cuántos tienen dato utilizable (por qué una
+# línea del correo de reposición dice "sin dato de competencia"). Sólo conteos: el repo es público.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cobertura:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+    env:
+      WORKER: https://amadolibros-sync.undiaes.workers.dev
+      SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+    steps:
+      - name: Leer cobertura
+        run: |
+          set -euo pipefail
+          resp=$(curl -sS --max-time 120 -H "Authorization: Bearer $SYNC_SECRET" -w '\n%{http_code}' "$WORKER/competition/coverage")
+          code=$(printf '%s' "$resp" | tail -n1); json=$(printf '%s' "$resp" | sed '$d')
+          echo "HTTP $code"
+          printf '%s' "$json" | jq -c '{vigilados, dias, con_foto_vigente, foto_de_hoy, solo_foto_de_ayer, sin_foto, foto_no_vigente, con_dato, sin_evidencia, error}' | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$code" = 200 ]
