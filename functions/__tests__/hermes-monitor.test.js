@@ -189,3 +189,11 @@ test('los libros sin portada se anotan y se reintentan a la semana', async () =>
   assert.match(src, /marcar: \{sin_portada: true\}/);
   assert.match(src, /previo\?\.sin_portada && Date\.now\(\) - Date\.parse\(previo\.fecha \?\? 0\) < 7 \* 86400e3/);
 });
+
+test('control de tapas: también frena domicilios y datos fiscales; el payload acepta una foto por id', () => {
+  assert.equal(textoNoPermitido('Domicilio del importador: Humboldt 1550 CUIT 33-70816221-9'), 'domicilio_o_datos_fiscales');
+  const p = armarPayloadTradicional({ean: '9791388139604', titulo: 'Guia completa de mudras', autor: 'Muñoz, David', editorial: 'ROCA EDITORIAL', precio: 2550, plazoDias: 20, usaFamilyName: false, imagenes: [{id: '123456-MLU999'}], pesoGramos: 450});
+  assert.deepEqual(p.pictures, [{id: '123456-MLU999'}]);
+  const q = armarPayloadTradicional({ean: '1', titulo: 'x', precio: 1, usaFamilyName: false, imagenes: ['https://x/y.jpg']});
+  assert.deepEqual(q.pictures, [{source: 'https://x/y.jpg'}]);
+});

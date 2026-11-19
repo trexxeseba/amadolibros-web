@@ -77,8 +77,10 @@ jobs:
           python3 hermes-monitor/leer_excel.py hermes-monitor/data/hermes-top149-17-11.xlsx "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/publicadas-vintage.json"
       # 19/11/2026: la publicación normal vuelve con un control de tapas por lector de texto (tesseract): una tapa con dirección web, @,
       # redes, teléfono o etiquetas de Mercado Libre se salta (4 de las últimas 60 habían quedado en revisión de fotos).
-      - name: Instalar el lector de texto de tapas
-        run: sudo apt-get update -q && sudo apt-get install -y -q tesseract-ocr tesseract-ocr-spa
+      - name: Instalar el lector de texto y el borrador de tapas
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q tesseract-ocr tesseract-ocr-spa
+          pip install -q opencv-python-headless numpy
       - name: Validar o publicar
         env:
           TRADICIONAL_IN: ${{ inputs.tradicional || 'false' }}

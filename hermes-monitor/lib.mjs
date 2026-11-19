@@ -102,7 +102,7 @@ export function armarPayloadTradicional({ean, titulo, autor, editorial, precio, 
     site_id: 'MLU', category_id: 'MLU1196', price: precio, currency_id: 'UYU', available_quantity: 1,
     buying_mode: 'buy_it_now', listing_type_id: 'gold_special', condition: 'new', catalog_listing: false,
     seller_custom_field: `ARNOIA-${ean}`,
-    pictures: imagenes.map(source => ({source})),
+    pictures: imagenes.map(i => (typeof i === 'string' ? {source: i} : i)), // una URL o {id} de una foto ya subida
     attributes: [
       {id: 'GTIN', value_name: ean}, {id: 'BOOK_TITLE', value_name: t},
       ...(a ? [{id: 'AUTHOR', value_name: a}] : []),
