@@ -130,15 +130,15 @@ export function paqueteDeVendedor(pesoLibroGramos) {
 // mira cada tapa antes de usarla; si encuentra algo de esto, el libro se salta como publicación normal.
 export function textoNoPermitido(texto) {
   const t = String(texto ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  if (t.includes('@')) return 'arroba_o_correo';
+  if (/@\s?[a-z0-9_.]{3,}/.test(t)) return 'arroba_o_correo'; // una @ suelta suele ser ruido de la ilustración
   if (/\bwww\b|https?|\bwww\.|\.(com|net|org|es|uy|ar|mx|cl|co|io|me)\b/.test(t)) return 'direccion_web';
   if (/instagram|facebook|twitter|tiktok|youtube|whatsapp|telegram|pinterest/.test(t)) return 'red_social';
   if (/mercado ?libre|mercadolibre|mercado ?pago|mercado ?envios|envio gratis|\bfull\b/.test(t)) return 'etiqueta_mercado_libre';
   if (/\bdomicilio\b|\bimportador\b|\bcuit\b|\bcuil\b/.test(t)) return 'domicilio_o_datos_fiscales';
-  // teléfono: una racha de 8 o más dígitos que no sea un ISBN (978/979)
+  // teléfono: una racha de 9 o más dígitos que no sea un ISBN (978/979)
   for (const m of t.matchAll(/\+?\d[\d\s().-]{6,}\d/g)) {
     const digitos = m[0].replace(/\D/g, '');
-    if (digitos.length >= 8 && !/^97[89]/.test(digitos)) return 'telefono';
+    if (digitos.length >= 9 && !/^97[89]/.test(digitos)) return 'telefono';
   }
   return null;
 }
