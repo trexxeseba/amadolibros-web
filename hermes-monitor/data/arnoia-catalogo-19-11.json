@@ -46967,7 +46967,10 @@
 "unidades": 0,
 "fecha": "8 oct 2026",
 "piso": true
-},
+}
+],
+"nota": "Los libros que daban menos de $1.200 se publican a $1.200 (decisión de Seba, 19/11/2026). Solo libros con disponibilidad \"Disponible\" en Arnoia. 19/11: 15 libros liberados del filtro esperan el OK de Seba (campo esperan_aprobacion_de_seba); no se publican hasta que los apruebe.",
+"esperan_aprobacion_de_seba": [
 {
 "ean": "9791387948160",
 "titulo": "Bienvenido, bebé",
@@ -47133,6 +47136,5 @@
 "fecha": "14 oct 2026",
 "liberado_del_filtro": true
 }
-],
-"nota": "Los libros que daban menos de $1.200 se publican a $1.200 (decisión de Seba, 19/11/2026). Solo libros con disponibilidad \"Disponible\" en Arnoia. 19/11: se suman 16 libros liberados del filtro (falsos positivos de pirata, estilo, tipo, imitación)."
+]
 }
