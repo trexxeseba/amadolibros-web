@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dispararVintageNube, dispararVintageVigia, dispararArnoia, dispararHermes, CRON_VINTAGE_NUBE, CRON_VINTAGE_VIGIA, CRON_ARNOIA, CRON_HERMES } from '../vintage-nube-trigger.js';
+import { dispararVintageNube, dispararVintageVigia, dispararArnoia, dispararHermes, dispararGuardian, CRON_GUARDIAN, CRON_VINTAGE_NUBE, CRON_VINTAGE_VIGIA, CRON_ARNOIA, CRON_HERMES } from '../vintage-nube-trigger.js';
 const J = (b, status = 200) => new Response(JSON.stringify(b), { status, headers: { 'content-type': 'application/json' } });
 const env = { GITHUB_TOKEN: 'x' };
 
@@ -52,4 +52,14 @@ test('Arnoia cada hora al :17 y Hermes de 09:07 a 15:07, pidiendo hermes-publica
   assert.match(posts[0].url, /hermes-publicar\.yml\/dispatches$/);
   assert.deepEqual(posts[0].body, { ref: 'main', inputs: { modo: 'publicar', cantidad: '50', rama: 'main', fuente: 'arnoia', tradicional: 'false' } });
   assert.deepEqual(posts[1].body.inputs, { modo: 'publicar', cantidad: '25', rama: 'main', fuente: 'hermes', tradicional: 'false' });
+});
+
+test('el guardián se lanza cada 15 minutos pidiendo guardian.yml sin inputs', async () => {
+  assert.equal(CRON_GUARDIAN, '*/15 * * * *');
+  const posts = [];
+  const orig = globalThis.fetch;
+  globalThis.fetch = async (url, o) => { if (o?.method === 'POST') { posts.push({ url: String(url), body: JSON.parse(o.body) }); return new Response(null, { status: 204 }); } return J({ total_count: 0 }); };
+  try { assert.equal((await dispararGuardian(env)).state, 'disparado'); } finally { globalThis.fetch = orig; }
+  assert.match(posts[0].url, /guardian\.yml\/dispatches$/);
+  assert.deepEqual(posts[0].body, { ref: 'main', inputs: {} });
 });

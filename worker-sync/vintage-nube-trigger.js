@@ -51,3 +51,8 @@ export const CRON_HERMES = '7 12-18 * * *';
 const WORKFLOW_HERMES = 'hermes-publicar.yml';
 export const dispararArnoia = env => dispararVintageNube(env, { workflow: WORKFLOW_HERMES, inputs: { modo: 'publicar', cantidad: '50', rama: 'main', fuente: 'arnoia', tradicional: 'false' } });
 export const dispararHermes = env => dispararVintageNube(env, { workflow: WORKFLOW_HERMES, inputs: { modo: 'publicar', cantidad: '25', rama: 'main', fuente: 'hermes', tradicional: 'false' } });
+
+// Guardián de las publicaciones de Vintage (guardian.yml): cada 15 minutos. Vigila las tandas y arregla lo seguro; ver
+// scripts/guardian/guardian.mjs. Solo lee y reintenta; no publica por su cuenta ni toca Amado Libros.
+export const CRON_GUARDIAN = '*/15 * * * *';
+export const dispararGuardian = env => dispararVintageNube(env, { workflow: 'guardian.yml', inputs: {} });

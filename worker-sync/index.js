@@ -1,6 +1,6 @@
 import { dispararPrecioGanador, CRONS_PRECIO_GANADOR } from './precio-ganador-trigger.js';
 import { dispararPoda, CRONS_PODA } from './poda-trigger.js';
-import { dispararVintageNube, dispararVintageVigia, dispararArnoia, dispararHermes, CRON_VINTAGE_NUBE, CRON_VINTAGE_VIGIA, CRON_ARNOIA, CRON_HERMES } from './vintage-nube-trigger.js';
+import { dispararVintageNube, dispararVintageVigia, dispararArnoia, dispararHermes, dispararGuardian, CRON_VINTAGE_NUBE, CRON_VINTAGE_VIGIA, CRON_ARNOIA, CRON_HERMES, CRON_GUARDIAN } from './vintage-nube-trigger.js';
 import { IMAGE_SOURCE_POLICY_VERSION } from '../functions/_shared/image-source-policy.js';
 /**
  * worker-sync/index.js
@@ -187,6 +187,12 @@ export default {
     if (event?.cron === CRON_HERMES) {
       ctx.waitUntil(dispararHermes(env).then(result => {
         console.log('[hermes vintage]', JSON.stringify(result));
+      }));
+      return;
+    }
+    if (event?.cron === CRON_GUARDIAN) {
+      ctx.waitUntil(dispararGuardian(env).then(result => {
+        console.log('[guardian vintage]', JSON.stringify(result));
       }));
       return;
     }
