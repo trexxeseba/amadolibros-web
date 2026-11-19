@@ -124,3 +124,20 @@ export function paqueteDeVendedor(pesoLibroGramos) {
   const gramos = Math.ceil((Math.round(kg * 1000) + 150) / 100) * 100;
   return [{id: 'SELLER_PACKAGE_HEIGHT', value_name: `${alto} cm`}, {id: 'SELLER_PACKAGE_LENGTH', value_name: `${largo} cm`}, {id: 'SELLER_PACKAGE_WIDTH', value_name: `${ancho} cm`}, {id: 'SELLER_PACKAGE_WEIGHT', value_name: `${gramos} g`}];
 }
+
+// ---- Control de tapas antes de publicar (decisión de Seba, 19/11/2026) ----
+// Mercado Libre pausa las fotos con datos de contacto, direcciones web, redes sociales o etiquetas propias. Un lector de texto (OCR)
+// mira cada tapa antes de usarla; si encuentra algo de esto, el libro se salta como publicación normal.
+export function textoNoPermitido(texto) {
+  const t = String(texto ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (t.includes('@')) return 'arroba_o_correo';
+  if (/\bwww\b|https?|\bwww\.|\.(com|net|org|es|uy|ar|mx|cl|co|io|me)\b/.test(t)) return 'direccion_web';
+  if (/instagram|facebook|twitter|tiktok|youtube|whatsapp|telegram|pinterest/.test(t)) return 'red_social';
+  if (/mercado ?libre|mercadolibre|mercado ?pago|mercado ?envios|envio gratis|\bfull\b/.test(t)) return 'etiqueta_mercado_libre';
+  // teléfono: una racha de 8 o más dígitos que no sea un ISBN (978/979)
+  for (const m of t.matchAll(/\+?\d[\d\s().-]{6,}\d/g)) {
+    const digitos = m[0].replace(/\D/g, '');
+    if (digitos.length >= 8 && !/^97[89]/.test(digitos)) return 'telefono';
+  }
+  return null;
+}

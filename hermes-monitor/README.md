@@ -49,3 +49,6 @@ Cada 15 minutos (lo lanza el Worker; el cron de GitHub queda de respaldo) mira s
 - **Avisos:** no repite el mismo aviso (3 h; 1 h si es grave). Si hace falta que decidas, el mail trae 3 opciones.
 - **Probarlo sin riesgo:** Actions > "Guardián de las publicaciones de Vintage" > Run workflow con `seco` tildado.
 - **Apagarlo:** variable del repo `HERMES_APAGADO` = `true` (apaga también las tandas).
+
+## Control de tapas (publicación normal de Arnoia)
+Desde el 19/11/2026 cada tapa pasa por un lector de texto (tesseract) antes de usarse: si trae una dirección web, una @, una red social, un teléfono o una etiqueta de Mercado Libre, el libro se salta y queda anotado (`portada_rechazada`) para no reintentarlo cada hora. Si el lector no está disponible, la tapa no se usa (ante la duda, no se publica). Series vetadas por el control de fotos de Mercado Libre: `data/portadas-vetadas.json` (hoy, Arcolores). Las publicaciones de ficha de catálogo usan las fotos oficiales de Mercado Libre y no pasan por esto.
