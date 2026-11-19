@@ -131,3 +131,19 @@ test('publicación normal de Arnoia: sin catálogo, con portada, medidas del paq
   assert.equal(normalizarAutor('ALLENDE, ISABEL'), 'Isabel Allende');
   assert.equal(normalizarTitulo('MURDOKU: 80 ACERTIJOS'), 'Murdoku: 80 Acertijos');
 });
+
+test('la lista nueva de Arnoia (19/11): libros disponibles, sin riesgo de propiedad intelectual, sobre el mínimo, con ranking primero', async () => {
+  const fs = await import('node:fs');
+  const d = JSON.parse(fs.readFileSync('hermes-monitor/data/arnoia-catalogo-19-11.json', 'utf8'));
+  assert.ok(d.libros.length > 4000);
+  assert.equal(new Set(d.libros.map(l => l.ean)).size, d.libros.length);
+  assert.ok(d.libros.every(l => /^\d{13}$/.test(l.ean) && l.precio >= 1200 && l.peso_g > 0));
+  assert.ok(d.libros[0].unidades >= d.libros[100].unidades);
+  assert.equal(d.plazo_dias, 20);
+});
+
+test('la lista de Arnoia solo trae libros disponibles', async () => {
+  const fs = await import('node:fs');
+  const d = JSON.parse(fs.readFileSync('hermes-monitor/data/arnoia-catalogo-19-11.json', 'utf8'));
+  assert.match(d.nota, /Disponible/);
+});
