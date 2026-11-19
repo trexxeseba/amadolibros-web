@@ -190,10 +190,12 @@ export function constantesEnRiesgo(books, now = Date.now()) {
       reciente: (b.lastOwnMs ?? b.lastMs) ? now - (b.lastOwnMs ?? b.lastMs) <= AGOTADO_RECIENTE_DIAS * DAY : false });
   }
   // Primero los que todavía tienen un ejemplar (los que se pueden salvar), del que
-  // menos días de venta tiene al que más; después los agotados, los que se
-  // agotaron hace poco antes que los que llevan meses sin stock.
-  return out.sort((a, b) => (b.stock > 0) - (a.stock > 0)
-    || (a.stock > 0 ? a.cobertura - b.cobertura || b.u365p - a.u365p : (b.reciente - a.reciente) || b.u365p - a.u365p));
+  // menos días de venta tiene al que más; después los agotados, el que se agotó
+  // más recién primero. En los dos grupos, los que vendieron en los últimos
+  // 4 meses van antes que los que llevan meses sin movimiento.
+  return out.sort((a, b) => (b.stock > 0) - (a.stock > 0) || (b.reciente - a.reciente)
+    || (a.stock > 0 ? a.cobertura - b.cobertura || b.u365p - a.u365p
+      : (b.lastOwnMs ?? b.lastMs ?? 0) - (a.lastOwnMs ?? a.lastMs ?? 0) || b.u365p - a.u365p));
 }
 
 // Compras de cada ISBN en la forma que necesita el correo: qué se compró
@@ -249,7 +251,7 @@ export function comprasTexto(c, faltan = [], stock = 0) {
       if (u.cantidad != null && u.vendidasDesde >= u.cantidad) t += ': se vendió todo lo que entró';
       else if (u.cantidad != null && stock === 0 && u.dias <= 60) t += `: faltarían ${u.cantidad - u.vendidasDesde} por vender, revisá si llegaron`;
     }
-  } else t = faltan.length ? `Sin compras registradas, pero faltan cargar las de ${faltan.map(supplierLabel).join(', ')}: confirmá que no esté pedido` : 'Sin compras registradas en los últimos 12 meses';
+  } else t = faltan.length ? `Sin compras registradas (faltan cargar las de ${faltan.map(supplierLabel).join(', ')}: confirmá que no esté pedido)` : 'Sin compras registradas en los últimos 12 meses';
   if (c.sinIsbn > 0) t += `. Hay ${c.sinIsbn} ${c.sinIsbn === 1 ? 'compra sin ISBN que podría ser' : 'compras sin ISBN que podrían ser'} este libro`;
   return t;
 }
@@ -304,34 +306,34 @@ export async function ventasPorMes(db, isbns, now) {
 }
 
 // Lentos pero constantes en riesgo, ya con compras y competencia. Sólo se
-// consultan compras y competencia de los más urgentes (CANDIDATOS_MAX): son los
-// que el correo puede mostrar y evita cientos de consultas a D1. Los que tienen
-// una compra en camino no se listan (se cuentan aparte). Los totales cuentan a
-// todos los constantes en riesgo.
-const CANDIDATOS_MAX = 40;
+// consultan compras y competencia de los más urgentes de cada grupo (con un
+// ejemplar y agotados que vendieron en los últimos 4 meses): son los que el
+// correo puede mostrar y evita cientos de consultas a D1. Los que tienen una
+// compra en camino no se listan (se cuentan aparte). Los totales cuentan a todos
+// los constantes en riesgo.
+const CANDIDATOS_POR_GRUPO = 25;
 export async function loadConstantesEnRiesgo(db, books, now, model = null) {
   const base = constantesEnRiesgo(books, now);
-  const conStock = base.filter(b => b.stock > 0).length;
-  const agotadosRecientes = base.filter(b => !(b.stock > 0) && b.reciente).length;
-  const totales = { total: base.length, conStock, agotadosRecientes, agotadosViejos: base.length - conStock - agotadosRecientes };
-  if (!base.length) return { lista: [], enCamino: 0, faltan: [], ...totales };
-  const candidatos = base.slice(0, CANDIDATOS_MAX), isbns = candidatos.map(b => b.isbn);
+  const conStockR = base.filter(b => b.stock > 0 && b.reciente), agotadosR = base.filter(b => !(b.stock > 0) && b.reciente);
+  const totales = { total: base.length, conStock: conStockR.length, sinMovimiento: base.filter(b => b.stock > 0 && !b.reciente).length,
+    agotadosRecientes: agotadosR.length, agotadosViejos: base.filter(b => !(b.stock > 0) && !b.reciente).length };
+  if (!base.length) return { lista: [], enCamino: 0, enCaminoIsbns: [], faltan: [], ...totales };
+  const candidatos = [...conStockR.slice(0, CANDIDATOS_POR_GRUPO), ...agotadosR.slice(0, CANDIDATOS_POR_GRUPO)], isbns = candidatos.map(b => b.isbn);
   let compras = { byIsbn: new Map(), faltan: [] }, comprasError = false;
   try { compras = await comprasDe(db, isbns, now); } catch { comprasError = true; }
   let comp = new Map();
   try { comp = await competitionByIsbn(db, isbns); } catch { /* sin vigilancia */ }
   let meses = new Map();
   try { meses = await ventasPorMes(db, isbns, now); } catch { /* sin ventas por mes */ }
-  let enCamino = 0;
-  const lista = [];
+  const enCaminoIsbns = [], lista = [];
   for (const b of candidatos) {
     const c = compras.byIsbn.get(b.isbn) ?? { enCamino: 0, sinIsbn: 0, ultima: null };
-    if (!comprasError && c.enCamino > 0) { enCamino++; continue; }
+    if (!comprasError && c.enCamino > 0) { enCaminoIsbns.push(b.isbn); continue; }
     const costo = model?.costs.get(b.isbn);
     // Si no se pudieron leer las compras, la línea lo dice en vez de afirmar que no hay.
     lista.push({ ...b, compras: comprasError ? undefined : c, mercado: mercadoDe(comp.get(b.isbn)), ventasMes: meses.get(b.isbn), costo: costo?.cost ?? null, costoProveedor: costo?.supplier ?? null });
   }
-  return { lista, enCamino, faltan: compras.faltan, ...totales };
+  return { lista, enCamino: enCaminoIsbns.length, enCaminoIsbns, faltan: compras.faltan, ...totales };
 }
 
 // Competencia de un ISBN (hechos de competitionByIsbn) en la forma del correo.
@@ -662,7 +664,12 @@ export function brujulaDigest(bi) {
     .filter(b => !b.agotado)
     .slice(0, DIGEST_ROWS)
     .map(b => ({ isbn: b.isbn, title: b.title, detalle: `de $ ${b.actual.toLocaleString('es-UY')} a $ ${b.sugerido.toLocaleString('es-UY')} (+${b.subaPct}%; ${b.aPedido ? 'sos el único con entrega inmediata y a pedido lo venden desde' : 'el más barato con entrega inmediata está a'} $ ${b.min.toLocaleString('es-UY')})` }));
+  // "Se agotan pronto" sólo con lo que no tiene su línea completa en "Último
+  // ejemplar" ni está ya pedido (esos libros pasan por la misma regla de abajo).
+  const c = inv?.constantes;
+  const conLinea = new Set([...(c?.lista ?? []).map(b => b.isbn), ...(c?.enCaminoIsbns ?? [])]);
   const agotan = (inv?.coberturaBaja ?? [])
+    .filter(b => !conLinea.has(b.isbn))
     .slice(0, DIGEST_ROWS)
     .map(b => ({ isbn: b.isbn, title: b.title, detalle: `quedan ${b.stock}, alcanzan para unos ${b.dias} días` }));
   const perdida = (bi?.margen?.ok ? bi.margen.data.peores : [])
@@ -672,8 +679,7 @@ export function brujulaDigest(bi) {
   // Lentos pero constantes: los que todavía tienen un ejemplar ("último
   // ejemplar") y, aparte, los que se agotaron hace poco. Lo que ya salió arriba
   // no se repite. Los agotados hace más de 4 meses quedan en el panel.
-  const c = inv?.constantes;
-  const yaListados = new Set([...reponer, ...pedidos, ...agotan].map(r => r.isbn));
+  const yaListados = new Set([...reponer, ...pedidos].map(r => r.isbn));
   const libres = (c?.lista ?? []).filter(b => !yaListados.has(b.isbn));
   const conStockL = libres.filter(b => b.stock > 0), agotadosL = libres.filter(b => !(b.stock > 0) && b.reciente);
   const filaC = b => ({ isbn: b.isbn, title: b.title, detalle: detalleReposicion({ ...b, now: c.now ?? Date.now() }, c.faltan ?? faltanSin) });
