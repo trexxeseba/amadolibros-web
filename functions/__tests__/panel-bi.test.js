@@ -79,23 +79,24 @@ test('inteligencia: KPIs, tendencia, ABC, inventario, compras y editoriales con 
   // A está agotado y es constante: entra con cobertura 0 y la compra reciente
   // a Celesa (hace 40 días, 4 u.) como aviso. C vendió 1: no es constante.
   const cons = bi.inventario.data.constantes;
-  assert.deepEqual(cons.lista.map(b => b.isbn), [A, B]);
-  assert.equal(cons.lista[1].u365p, 5);
-  assert.equal(cons.lista[1].ritmo, 73);
-  assert.equal(cons.lista[1].cobertura, 73);
-  assert.equal(cons.lista[1].pedir, 1);
-  assert.equal(cons.lista[1].mercado.estado, 'sin_dato', 'sin tablas de competencia no se inventa stock inmediato');
-  assert.equal(cons.lista[0].stock, 0);
-  assert.equal(cons.lista[0].compras.ultima.dias, 40);
-  assert.equal(cons.lista[0].compras.ultima.cantidad, 4);
-  assert.equal(cons.lista[0].compras.ultima.proveedor, 'CELESA');
-  assert.equal(cons.lista[0].compras.ultima.vendidasDesde, 28, 'A: 14 ventas de 2 u. desde la compra de hace 40 días');
+  assert.deepEqual(cons.lista.map(b => b.isbn), [B, A], 'primero el que todavía tiene un ejemplar, después el agotado');
+  assert.deepEqual([cons.total, cons.conStock, cons.agotadosRecientes, cons.agotadosViejos], [2, 1, 1, 0]);
+  assert.equal(cons.lista[0].u365p, 5);
+  assert.equal(cons.lista[0].ritmo, 73);
+  assert.equal(cons.lista[0].cobertura, 73);
+  assert.equal(cons.lista[0].pedir, 1);
+  assert.equal(cons.lista[0].mercado.estado, 'sin_dato', 'sin tablas de competencia no se inventa stock inmediato');
+  assert.equal(cons.lista[1].stock, 0);
+  assert.equal(cons.lista[1].compras.ultima.dias, 40);
+  assert.equal(cons.lista[1].compras.ultima.cantidad, 4);
+  assert.equal(cons.lista[1].compras.ultima.proveedor, 'CELESA');
+  assert.equal(cons.lista[1].compras.ultima.vendidasDesde, 28, 'A: 14 ventas de 2 u. desde la compra de hace 40 días');
   assert.deepEqual(bi.inventario.data.faltanCompras, ['CELESA', 'ARNOIA', 'CASASSA_Y_LORENZO', 'AMAZON_COM'], 'sin cobertura cargada faltan todos los proveedores obligatorios');
   const sinStockA = bi.inventario.data.aSinStock[0];
   assert.equal(sinStockA.u30p, 20); assert.equal(sinStockA.pedir, 3, "ritmo 1 cada 8 días y 40 vendidas en 90: objetivo 3 con stock 0");
   assert.equal(sinStockA.compras.ultima.vendidasDesde, 28);
   assert.deepEqual(sinStockA.ventasMes, [0, 0, 0, 0, 20, 20], 'A: 10 ventas de 2 u. en cada uno de los 2 meses más recientes (de 30 días)');
-  assert.deepEqual(cons.lista[1].ventasMes, [0, 0, 0, 0, 2, 3], 'B: 3 ventas en el último mes y 2 en el anterior; el encargo SBS no cuenta');
+  assert.deepEqual(cons.lista[0].ventasMes, [0, 0, 0, 0, 2, 3], 'B: 3 ventas en el último mes y 2 en el anterior; el encargo SBS no cuenta');
   assert.deepEqual([...(await ventasPorMes(db, ['9780000000000'], NOW)).values()], [[0, 0, 0, 0, 0, 0]], 'sin ventas: seis ceros');
   const html = renderBi(bi);
   assert.match(html, /Lentos pero constantes/);
@@ -212,8 +213,10 @@ test('brujulaDigest: toma lo accionable de cada bloque y nada si no hay nada', a
   assert.equal(d.ultimo[0].detalle, 'Queda 1, alcanza unos 61 días; última venta el 12/11/26. Vendiste 0 en 30 días, 1 en 90 y 6 en 12 meses (1 cada 61 días), a $ 1.700. Pedí 1. Última compra: 2 u. el 29/10/26 (Celesa), hace 20 días; desde entonces vendiste 1. 2 lo tienen con entrega inmediata en Uruguay (Librería Pocho a $ 1.600).');
   assert.equal(d.ultimoTotal, 1);
   assert.equal(brujulaDigest({}), null);
-  const soloUltimo = brujulaDigest({ inventario: { ok: true, data: { aSinStock: [], coberturaBaja: [], constantes: { now: NOW, faltan: ['CELESA', 'AMAZON_COM'], lista: [sinStock('z', 'Z', { u30p: 0, u90p: 0, u90: 0, u365p: 6, ritmo: 61, pedir: 2, avgPrice: null, lastOwnMs: null, lastMs: null, mercado: { estado: 'sin_dato' }, compras: { enCamino: 0, sinIsbn: 1, ultima: null } })] } } } });
-  assert.equal(soloUltimo.ultimo[0].detalle, 'Sin stock. Vendiste 0 en 30 días, 0 en 90 y 6 en 12 meses (1 cada 61 días). Pedí 2. Sin compras registradas, pero faltan cargar las de Celesa, Amazon.com: confirmá que no esté pedido. Hay 1 compra sin ISBN que podría ser este libro. Sin dato de competencia en Mercado Libre.');
+  const soloUltimo = brujulaDigest({ inventario: { ok: true, data: { aSinStock: [], coberturaBaja: [], constantes: { now: NOW, faltan: ['CELESA', 'AMAZON_COM'], agotadosRecientes: 3, agotadosViejos: 5, lista: [sinStock('z', 'Z', { reciente: true, u30p: 0, u90p: 0, u90: 0, u365p: 6, ritmo: 61, pedir: 2, avgPrice: null, lastOwnMs: null, lastMs: null, mercado: { estado: 'sin_dato' }, compras: { enCamino: 0, sinIsbn: 1, ultima: null } })] } } } });
+  assert.deepEqual(soloUltimo.ultimo, [], 'un agotado no es un "último ejemplar"');
+  assert.equal(soloUltimo.agotadosTotal, 3); assert.equal(soloUltimo.agotadosViejos, 5);
+  assert.equal(soloUltimo.agotados[0].detalle, 'Sin stock. Vendiste 0 en 30 días, 0 en 90 y 6 en 12 meses (1 cada 61 días). Pedí 2. Sin compras registradas, pero faltan cargar las de Celesa, Amazon.com: confirmá que no esté pedido. Hay 1 compra sin ISBN que podría ser este libro. Sin dato de competencia en Mercado Libre.');
 });
 
 test('comprasTexto: no afirma "no hay compras" sin avisar qué proveedores faltan cargar, ni da por llegado lo que no se sabe', () => {
@@ -235,7 +238,7 @@ test('lentos pero constantes: 2+ ventas propias al año y stock para 75 días o 
     { isbn: 'dos', title: 'Dos ejemplares', u365p: 9, u90p: 2, stock: 2, avgPrice: 800 }, // 1 cada 41, quedan 2 → 82 días: con el aviso a 90 días ya sale
   ];
   const r = constantesEnRiesgo(books);
-  assert.deepEqual(r.map(b => b.isbn), ['agotado', 'rapido', 'bleichmar', 'dos']);
+  assert.deepEqual(r.map(b => b.isbn), ['rapido', 'bleichmar', 'dos', 'agotado'], 'primero los que aún tienen un ejemplar (menos días de venta primero), después los agotados');
   const dos = r.find(x => x.isbn === 'dos');
   assert.equal(dos.cobertura, 82); assert.equal(dos.pedir, 1);
   const b = r.find(x => x.isbn === 'bleichmar');
@@ -322,4 +325,31 @@ test('repuestos: libros agotados que volvieron a tener stock, con para cuántos 
   assert.equal(r[2].detalle, 'Ahora hay 1 ejemplar: no tuvo ventas propias en los últimos 12 meses.');
   db.sqlite.exec('DELETE FROM catalog_sync_log');
   assert.deepEqual(await loadRepuestos(db, NOW), []);
+});
+
+test('constantes: con cientos de libros no falla la lectura de compras (máximo 50 por consulta) y los agotados hace meses no tapan a los que se pueden salvar', async t => {
+  const db = await seed(t);
+  const books = [];
+  for (let i = 0; i < 120; i++) books.push({ isbn: String(9780000000000 + i), title: `Agotado viejo ${i}`, u365p: 6, u90p: 0, u30p: 0, u90: 0, stock: 0, avgPrice: 1000, lastOwnMs: NOW - 200 * 864e5, lastMs: NOW - 200 * 864e5 });
+  for (let i = 0; i < 5; i++) books.push({ isbn: String(9781000000000 + i), title: `Agotado reciente ${i}`, u365p: 4 + i, u90p: 1, u30p: 0, u90: 1, stock: 0, avgPrice: 900, lastOwnMs: NOW - 10 * 864e5, lastMs: NOW - 10 * 864e5 });
+  books.push({ isbn: A, title: 'Con el último ejemplar', u365p: 6, u90p: 1, u30p: 0, u90: 1, stock: 1, avgPrice: 2650, lastOwnMs: NOW - 20 * 864e5, lastMs: NOW - 20 * 864e5 });
+  const { loadConstantesEnRiesgo } = await import('../_shared/panel-bi.js');
+  const r = await loadConstantesEnRiesgo(db, books, NOW);
+  assert.equal(r.total, 126);
+  assert.deepEqual([r.conStock, r.agotadosRecientes, r.agotadosViejos], [1, 5, 120]);
+  assert.equal(r.lista.length, 40, 'se consultan sólo los 40 más urgentes');
+  assert.equal(r.lista[0].isbn, A, 'el que tiene un ejemplar va primero');
+  assert.deepEqual(r.lista.slice(1, 6).map(b => b.title), ['Agotado reciente 4', 'Agotado reciente 3', 'Agotado reciente 2', 'Agotado reciente 1', 'Agotado reciente 0'], 'después los agotados hace poco, el que más vendía primero');
+  assert.ok(r.lista.every(b => b.compras !== undefined), 'las compras se leyeron: con más de 50 libros antes fallaba en silencio');
+  assert.equal(r.lista[0].compras.ultima.cantidad, 4, 'A tiene la compra de Celesa de hace 40 días');
+  assert.match(comprasTexto(r.lista[1].compras, r.faltan, 0), /^Sin compras registradas, pero faltan cargar las de /);
+});
+
+test('si no se pueden leer las compras, la línea lo dice en vez de afirmar que no hay', async t => {
+  const db = await seed(t);
+  db.sqlite.exec('DROP TABLE purchase_items');
+  const { loadConstantesEnRiesgo } = await import('../_shared/panel-bi.js');
+  const r = await loadConstantesEnRiesgo(db, [{ isbn: A, title: 'A', u365p: 6, u90p: 1, u30p: 0, u90: 1, stock: 0, avgPrice: 1000, lastOwnMs: NOW - 5 * 864e5, lastMs: NOW - 5 * 864e5 }], NOW);
+  assert.equal(r.lista[0].compras, undefined);
+  assert.match(detalleReposicion({ ...r.lista[0], now: NOW }), /No pude consultar las compras: confirmá que no esté pedido/);
 });

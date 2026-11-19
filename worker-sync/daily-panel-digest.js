@@ -84,7 +84,7 @@ export async function loadDigestData(db, now = new Date(), { catalog = null } = 
   const repuestos = await loadRepuestos(db, now.getTime()).catch(() => []);
   const competidores = catalog && competencia?.eventos?.length ? competidoresSinStock(competencia.eventos, catalog) : [];
   if (repuestos.length || competidores.length) {
-    brujula = { reponer: [], pedidos: [], subir: [], agotan: [], perdida: [], ultimo: [], ultimoTotal: 0, subirTotal: 0, ...(brujula ?? {}), repuestos, competidores };
+    brujula = { reponer: [], pedidos: [], subir: [], agotan: [], perdida: [], ultimo: [], ultimoTotal: 0, agotados: [], agotadosTotal: 0, agotadosViejos: 0, subirTotal: 0, ...(brujula ?? {}), repuestos, competidores };
   }
   return {
     yesterday,
@@ -108,6 +108,7 @@ const BRUJULA_BLOCKS = [
   ['repuestos', 'Volvieron a tener stock'],
   ['pedidos', 'Ya pedidos: esperando que lleguen'],
   ['ultimo', 'Último ejemplar de un libro que se vende: pedilo'],
+  ['agotados', 'Se agotaron hace poco y vendían seguido: pedilos'],
   ['subir', 'Subile el precio'],
   ['agotan', 'Se agotan pronto: pedilos'],
   ['perdida', 'Se venden a pérdida'],
@@ -118,7 +119,9 @@ const bookLink = isbn => `${PANEL_URL}/reposicion?q=${encodeURIComponent(isbn)}`
 // mercado, el título dice cuántos son en total.
 const blockTitle = (b, key, title) => key === 'subir' && b.subirTotal > b.subir.length
   ? `${title} (${b.subir.length} de ${b.subirTotal} con stock muy por debajo del mercado; todos en el panel)`
-  : key === 'ultimo' && b.ultimoTotal > b.ultimo.length ? `${title} (${b.ultimo.length} de ${b.ultimoTotal}; todos en el panel)` : title;
+  : key === 'ultimo' && b.ultimoTotal > b.ultimo.length ? `${title} (${b.ultimo.length} de ${b.ultimoTotal}; todos en el panel)`
+  : key === 'agotados' && (b.agotadosTotal > b.agotados.length || b.agotadosViejos > 0)
+    ? `${title} (${b.agotados.length} de ${b.agotadosTotal}${b.agotadosViejos > 0 ? `; otros ${b.agotadosViejos} se agotaron hace más de 4 meses, en el panel` : '; todos en el panel'})` : title;
 
 function brujulaText(b) {
   if (!b) return [];
