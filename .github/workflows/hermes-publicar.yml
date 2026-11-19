@@ -75,6 +75,8 @@ jobs:
         run: |
           pip install -q openpyxl
           python3 hermes-monitor/leer_excel.py hermes-monitor/data/hermes-top149-17-11.xlsx "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/publicadas-vintage.json"
+      # 19/11/2026: la publicación normal (--ambos / --tradicional) está PAUSADA: 4 de las últimas 60 quedaron en revisión por el control
+      # automático de fotos (datos de contacto o etiquetas en la tapa). Mientras tanto solo se publican las de ficha de catálogo.
       - name: Validar o publicar
         env:
           TRADICIONAL_IN: ${{ inputs.tradicional || 'false' }}
@@ -83,7 +85,7 @@ jobs:
           REAL=""; [ "${{ inputs.modo || 'publicar' }}" = "publicar" ] && REAL="--real"
           TRADICIONAL=""; [ "$TRADICIONAL_IN" = "true" ] && TRADICIONAL="--tradicional"
           if [ "$FUENTE" = "arnoia" ]; then
-            node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-catalogo-19-11.json "$RUNNER_TEMP/datos/publicadas-vintage.json" --fuente=arnoia --ambos ${TRADICIONAL} $REAL --max=${{ inputs.cantidad || '50' }}
+            node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-catalogo-19-11.json "$RUNNER_TEMP/datos/publicadas-vintage.json" --fuente=arnoia ${TRADICIONAL} $REAL --max=${{ inputs.cantidad || '50' }}
           else
             node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/publicadas-vintage.json" $REAL --max=${{ inputs.cantidad || '25' }}
           fi
