@@ -120,14 +120,14 @@ const resolverArnoia = async f => {
     const portada = (!real && process.env.HERMES_PORTADA_PRUEBA) || await buscarPortada(f.ean); // la de prueba solo vale para validar, nunca para publicar
     if (!portada) return {etiqueta: f.ean, saltar: 'sin_portada'};
     const payload = armarPayloadTradicional({ean: f.ean, titulo: f.titulo, autor: f.autor, editorial: f.editorial, precio: f.precio, plazoDias: PLAZO_DIAS, usaFamilyName, imagenes: [portada], pesoGramos: f.peso_g});
-    return {etiqueta: f.ean, clave, producto: null, prod: {attributes: []}, isbn: f.ean, precio: f.precio, payload, registro: {ean: f.ean, tradicional: true}, nota: f.titulo.slice(0, 30), titulo: f.titulo, editorial: f.editorial, descripcion: descripcionDe(f)};
+    return {etiqueta: f.ean, clave, producto: null, prod: {attributes: []}, isbn: f.ean, precio: f.precio, payload, registro: {ean: f.ean, tradicional: true}, nota: f.titulo.slice(0, 30), titulo: f.titulo, editorial: f.editorial, descripcion: descripcionDe(f), aprobado: f.aprobado_por_seba === true};
   }
   if (tradicional) return {omitir: true};
   await pausa(500);
   const prod = await ml.get(`/products/${id}`).catch(() => null);
   if (!prod || prod.status !== 'active') return {etiqueta: f.ean, saltar: 'ficha_inactiva'};
   if ((prod.children_ids ?? []).length) return {etiqueta: f.ean, saltar: 'ficha_con_variantes'};
-  return {etiqueta: f.ean, clave, producto: id, prod, precio: f.precio, categoria: 'MLU1196', registro: {ean: f.ean}, nota: f.titulo.slice(0, 30), titulo: f.titulo, editorial: f.editorial};
+  return {etiqueta: f.ean, clave, producto: id, prod, precio: f.precio, categoria: 'MLU1196', registro: {ean: f.ean}, nota: f.titulo.slice(0, 30), titulo: f.titulo, editorial: f.editorial, aprobado: f.aprobado_por_seba === true};
 };
 
 for (const f of fichas) {
@@ -145,7 +145,8 @@ for (const f of fichas) {
   if (isbn && bloqueados.has(String(isbn))) { filas.push({n: ctx.etiqueta, resultado: 'isbn_bloqueado_por_denuncia'}); console.log(`${ctx.etiqueta}\tsalteada: ISBN bloqueado por denuncia`); continue; }
   const editorial = (prod.attributes ?? []).find(a => ['BOOK_PUBLISHER', 'PUBLISHER'].includes(a.id))?.value_name;
   const riesgo = ipRisk([prod.name, prod.family_name, ctx.titulo].filter(Boolean).join(' '), editorial || ctx.editorial);
-  if (riesgo) { filas.push({n: ctx.etiqueta, resultado: 'riesgo_pi_' + riesgo}); console.log(`${ctx.etiqueta}\tsalteada: riesgo de propiedad intelectual (${riesgo})`); continue; }
+  // Libros que Seba aprobó a mano: solo se exime del grupo "copia" (palabras sueltas como pirata, estilo, tipo); el resto de los grupos sigue frenando.
+  if (riesgo && !(ctx.aprobado && riesgo === 'copia')) { filas.push({n: ctx.etiqueta, resultado: 'riesgo_pi_' + riesgo}); console.log(`${ctx.etiqueta}\tsalteada: riesgo de propiedad intelectual (${riesgo})`); continue; }
   const precio = ctx.precio;
   const payload = ctx.payload ?? armarPayload({producto: ctx.producto, precio, categoria: ctx.categoria, nombre: prod.name, familyName: prod.family_name, usaFamilyName, isbn, plazoDias: PLAZO_DIAS});
   let valido = null, ultimo = null;

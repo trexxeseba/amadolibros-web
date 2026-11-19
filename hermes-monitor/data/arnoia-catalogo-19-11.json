@@ -46967,10 +46967,7 @@
 "unidades": 0,
 "fecha": "8 oct 2026",
 "piso": true
-}
-],
-"nota": "Los libros que daban menos de $1.200 se publican a $1.200 (decisión de Seba, 19/11/2026). Solo libros con disponibilidad \"Disponible\" en Arnoia. 19/11: 15 libros liberados del filtro esperan el OK de Seba (campo esperan_aprobacion_de_seba); no se publican hasta que los apruebe.",
-"esperan_aprobacion_de_seba": [
+},
 {
 "ean": "9791387948160",
 "titulo": "Bienvenido, bebé",
@@ -46980,7 +46977,7 @@
 "peso_g": 350,
 "unidades": 0,
 "fecha": "21 oct 2026",
-"liberado_del_filtro": true
+"aprobado_por_seba": true
 },
 {
 "ean": "9788410673410",
@@ -46991,7 +46988,7 @@
 "peso_g": 258,
 "unidades": 0,
 "fecha": "9 nov 2026",
-"liberado_del_filtro": true
+"aprobado_por_seba": true
 },
 {
 "ean": "9791387948221",
@@ -47002,7 +46999,7 @@
 "peso_g": 350,
 "unidades": 0,
 "fecha": "11 nov 2026",
-"liberado_del_filtro": true
+"aprobado_por_seba": true
 },
 {
 "ean": "9791370093365",
@@ -47013,7 +47010,7 @@
 "peso_g": 500,
 "unidades": 0,
 "fecha": "15 oct 2026",
-"liberado_del_filtro": true
+"aprobado_por_seba": true
 },
 {
 "ean": "9788427255913",
@@ -47024,7 +47021,7 @@
 "peso_g": 133,
 "unidades": 0,
 "fecha": "10 sept 2026",
-"liberado_del_filtro": true
+"aprobado_por_seba": true
 },
 {
 "ean": "9791387948214",
@@ -47035,7 +47032,7 @@
 "peso_g": 350,
 "unidades": 0,
 "fecha": "28 oct 2026",
-"liberado_del_filtro": true
+"aprobado_por_seba": true
 },
 {
 "ean": "9788428575935",
@@ -47046,7 +47043,7 @@
 "peso_g": 588,
 "unidades": 0,
 "fecha": "1 nov 2026",
-"liberado_del_filtro": true
+"aprobado_por_seba": true
 },
 {
 "ean": "9791387948313",
@@ -47057,7 +47054,7 @@
 "peso_g": 102,
 "unidades": 0,
 "fecha": "18 nov 2026",
-"liberado_del_filtro": true
+"aprobado_por_seba": true
 },
 {
 "ean": "9791387948337",
@@ -47068,7 +47065,7 @@
 "peso_g": 102,
 "unidades": 0,
 "fecha": "18 nov 2026",
-"liberado_del_filtro": true
+"aprobado_por_seba": true
 },
 {
 "ean": "9789464993097",
@@ -47079,7 +47076,7 @@
 "peso_g": 237,
 "unidades": 0,
 "fecha": "1 sept 2026",
-"liberado_del_filtro": true
+"aprobado_por_seba": true
 },
 {
 "ean": "9788419898616",
@@ -47090,7 +47087,7 @@
 "peso_g": 350,
 "unidades": 0,
 "fecha": "30 sept 2026",
-"liberado_del_filtro": true
+"aprobado_por_seba": true
 },
 {
 "ean": "9788419898739",
@@ -47101,7 +47098,7 @@
 "peso_g": 350,
 "unidades": 0,
 "fecha": "14 oct 2026",
-"liberado_del_filtro": true
+"aprobado_por_seba": true
 },
 {
 "ean": "9791387948191",
@@ -47112,7 +47109,7 @@
 "peso_g": 350,
 "unidades": 0,
 "fecha": "21 oct 2026",
-"liberado_del_filtro": true
+"aprobado_por_seba": true
 },
 {
 "ean": "9788441445314",
@@ -47123,7 +47120,7 @@
 "peso_g": 341,
 "unidades": 0,
 "fecha": "1 oct 2026",
-"liberado_del_filtro": true
+"aprobado_por_seba": true
 },
 {
 "ean": "9791387948207",
@@ -47134,7 +47131,8 @@
 "peso_g": 350,
 "unidades": 0,
 "fecha": "14 oct 2026",
-"liberado_del_filtro": true
+"aprobado_por_seba": true
 }
-]
+],
+"nota": "Los libros que daban menos de $1.200 se publican a $1.200 (decisión de Seba, 19/11/2026). Solo libros con disponibilidad \"Disponible\" en Arnoia. 19/11: 15 libros aprobados por Seba (aprobado_por_seba): se publican aunque el grupo \"copia\" los retenía por una palabra suelta (pirata, estilo, tipo, imitación). Solo vale para ese grupo y para esos EAN."
 }
