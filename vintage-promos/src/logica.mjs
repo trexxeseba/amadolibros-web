@@ -45,8 +45,10 @@ export function resumenMargen(libros) {
   for (const n of NIVELES_DESCUENTO) aguantan[`${n}%`] = medibles.filter(l => aguantaPct(l, n)).length;
   const aguantanMonto = {};
   for (const m of MONTOS_CUPON) aguantanMonto[`$${m}`] = medibles.filter(l => aguantaMonto(l, m)).length;
+  const sinCostoPorOrigen = {};
+  for (const l of libros) if (num(l.piso) === null) { const o = l.origen ?? 'otro'; sinCostoPorOrigen[o] = (sinCostoPorOrigen[o] ?? 0) + 1; }
   return {
-    total, medibles: medibles.length, sin_piso: sinPiso, ya_con_descuento: yaConDescuento,
+    total, medibles: medibles.length, sin_piso: sinPiso, sin_costo_por_origen: sinCostoPorOrigen, ya_con_descuento: yaConDescuento,
     tramos, aguantan_descuento: aguantan, aguantan_cupon: aguantanMonto,
     mediana_pct: redondeo((mediana(medibles.map(l => maniobra(l).pct)) ?? 0) * 100),
   };
@@ -96,7 +98,7 @@ export function armarResumen({ fecha, cuenta, pisos, margen, campanas, errores =
   L.push(`Cuenta verificada con Mercado Libre: ${cuenta}. Solo lectura: no se escribió nada.`, '');
   L.push(`Lista de SBS usada para el costo: ${pisos?.lista_sbs ?? 'sin dato'} (${pisos?.dias_lista ?? '?'} días, ${pisos?.lista_vigente ? 'vigente' : 'VENCIDA: sin piso, no se mide nada'}).`, '');
   L.push('## Cuánto descuento aguantan los libros activos', '');
-  L.push(`Publicaciones activas leídas: ${margen.total}. Medibles (con costo conocido y sin promo a la vista): ${margen.medibles}. Sin costo conocido: ${margen.sin_piso}. Ya con descuento a la vista: ${margen.ya_con_descuento}.`, '');
+  L.push(`Publicaciones activas leídas: ${margen.total}. Medibles (con costo conocido y sin promo a la vista): ${margen.medibles}. Sin costo conocido: ${margen.sin_piso}${Object.keys(margen.sin_costo_por_origen ?? {}).length ? ` (${Object.entries(margen.sin_costo_por_origen).map(([k, v]) => `${k} ${v}`).join(', ')})` : ''}. Ya con descuento a la vista: ${margen.ya_con_descuento}.`, '');
   L.push('Margen de maniobra sobre el precio publicado (hasta el piso de 18 % de margen):', '');
   for (const t of TRAMOS) L.push(`- ${t.etiqueta}: ${margen.tramos[t.clave]} libros (${pct(margen.tramos[t.clave], margen.medibles)})`);
   L.push(`- Mediana: ${margen.mediana_pct} %`, '');

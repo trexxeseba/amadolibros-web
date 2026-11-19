@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { crearPisoDe, origenDe } from '../src/costos.mjs';
+import { vintageCompetitivePolicy } from '../../worker-sync/vintage-pricing.js';
 import { maniobra, tramoDe, aguantaPct, aguantaMonto, resumenMargen, evaluarEntrada, resumenCampana, armarResumen } from '../src/logica.mjs';
 
 test('maniobra: lo que sobra entre el precio y el piso', () => {
@@ -80,6 +82,25 @@ test('el resumen de texto lleva agregados y ningún costo ni piso de un libro', 
   assert.match(t, /Solo lectura/);
   assert.match(t, /entran 1/);
   assert.ok(!t.includes('MLU123') && !t.includes('1634'));
+});
+
+const POLITICA = { supplierDiscount: 0.25, arsPerUyu: 40, usdPerUyu: 0.025, freightUsdKg: 20, laborUyu: 50, margin: 0.35, mlFee: 0.17, deliveryUyu: 100, minimumContributionUyu: 100, minimumSaleUyu: 1600, roundUyu: 10, availabilityDays: 18, additionalPricePct: 0, listingTypeId: 'gold_special', competitive: true, competitiveFloorMargin: 0.18, competitiveMinimumSaleUyu: 1200, competitiveBelowFloor: 'full' };
+
+test('crearPisoDe: piso de un libro de SBS, null si no tiene renglón o SKU de SBS', () => {
+  const filas = new Map([['9789500000001', { isbn: '9789500000001', title: 'X', listArs: 40000, weightKg: 0.4, stock: '5' }]]);
+  const pisoDe = crearPisoDe(filas, vintageCompetitivePolicy(POLITICA));
+  const piso = pisoDe({ seller_custom_field: 'AMADO-AR-9789500000001' });
+  assert.ok(piso >= 1200 && piso < 5000, `piso ${piso}`);
+  assert.equal(pisoDe({ seller_custom_field: 'AMADO-AR-9789500000002' }), null);
+  assert.equal(pisoDe({ seller_custom_field: 'ARNOIA-9789500000001' }), null);
+  assert.equal(pisoDe({}), null);
+});
+
+test('origenDe clasifica por SKU', () => {
+  assert.equal(origenDe({ seller_custom_field: 'AMADO-AR-9789500000001' }), 'sbs');
+  assert.equal(origenDe({ seller_custom_field: 'ARNOIA-978' }), 'arnoia');
+  assert.equal(origenDe({ seller_custom_field: 'HERMES-MLU1' }), 'hermes');
+  assert.equal(origenDe({}), 'otro');
 });
 
 test('el informe es de solo lectura y vive en Vintage', () => {
