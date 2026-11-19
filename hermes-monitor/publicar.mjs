@@ -111,7 +111,10 @@ const resolverHermes = async f => {
 };
 const resolverArnoia = async f => {
   const clave = 'arnoia:' + f.ean;
-  if (publicadas[clave]) return {omitir: true};
+  const previo = publicadas[clave];
+  if (previo?.item_id) return {omitir: true};
+  // Sin ficha de catálogo y en modo solo-catálogo: no se vuelve a buscar. En modo publicación normal sí se reintenta.
+  if (previo?.sin_catalogo && !tradicional && !ambos) return {omitir: true};
   await pausa(500);
   const busq = await ml.get('/products/search?' + new URLSearchParams({site_id: 'MLU', status: 'active', product_identifier: f.ean})).catch(() => null);
   const id = busq?.results?.[0]?.id;
@@ -137,7 +140,7 @@ for (const f of fichas) {
   if (ctx.saltar) {
     filas.push({n: ctx.etiqueta, resultado: ctx.saltar});
     console.log(`${ctx.etiqueta}\tsalteada: ${ctx.saltar}`);
-    if (ctx.marcar && real) { publicadas[ctx.clave] = {...ctx.marcar, fecha: new Date().toISOString().slice(0, 10)}; await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1)); }
+    if (ctx.marcar && real && !publicadas[ctx.clave]) { publicadas[ctx.clave] = {...ctx.marcar, fecha: new Date().toISOString().slice(0, 10)}; await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1)); }
     continue;
   }
   const {prod} = ctx;
