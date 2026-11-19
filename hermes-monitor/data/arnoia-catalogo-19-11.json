@@ -46692,6 +46692,282 @@
 "peso_g": 350,
 "unidades": 0,
 "fecha": "1 sept 2026"
+},
+{
+"ean": "9791370342661",
+"titulo": "Animales de la granja",
+"autor": "VV.AA.",
+"editorial": "SUSAETA EDICIONES",
+"precio": 1200,
+"peso_g": 133,
+"unidades": 0,
+"fecha": "1 oct 2026",
+"piso": true
+},
+{
+"ean": "8424455270436",
+"titulo": "Cal. 2027 Pared (16x16 cm)Mallorca-1 (Platja)",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270443",
+"titulo": "Cal. 2027 Pared (16x16 cm)Mallorca-2 (Interior)",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270467",
+"titulo": "Cal. 2027 Pared (16x16 cm)Menorca-B (Calesfonts)",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270474",
+"titulo": "Cal. 2027 Pared (16x16cm)Modernisme",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270498",
+"titulo": "Cal. 2027 Pared (16x16cm)S.Familia (Vitralls)",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270481",
+"titulo": "Cal. 2027 Pared (16x16cm)S.Familia-1 (Projecte)",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270450",
+"titulo": "Cal. 2027 Pared(16x16 cm)Menorca-A (Platja)",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270429",
+"titulo": "Cal. 2027 Pared(16x16 cm)Montserrat",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270320",
+"titulo": "Cal. 2027 Pared(16x16cm)Barcelona-1 (Barceloneta)",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270337",
+"titulo": "Cal. 2027 Pared(16x16cm)Barcelona-2 (Park Güell)",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270368",
+"titulo": "Cal. 2027 Pared(16x16cm)Casa Batló",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270344",
+"titulo": "Cal. 2027 Pared(16x16cm)Costa Blanca- A (Xàbia)",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270351",
+"titulo": "Cal. 2027 Pared(16x16cm)Costa Blanca-B (Moraira)",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270375",
+"titulo": "Cal. 2027 Pared(16x16cm)Gaudí-1A(Batlló)",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270399",
+"titulo": "Cal. 2027 Pared(16x16cm)Gaudí-2A (Drac)",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270405",
+"titulo": "Cal. 2027 Pared(16x16cm)Gaudí-2B (Pedrera)",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270795",
+"titulo": "Cal. 2027 ST mini(9x12cm)Barcelona",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270801",
+"titulo": "Cal. 2027 ST mini(9x12cm)Casa Batlló",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270818",
+"titulo": "Cal. 2027 ST mini(9x12cm)Dalí",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270825",
+"titulo": "Cal. 2027 ST mini(9x12cm)Gaudí (drac)",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270832",
+"titulo": "Cal. 2027 ST mini(9x12cm)Gaudí-2 (S.Familia)",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "8424455270856",
+"titulo": "Cal. 2027 ST mini(9x12cm)Modernisme",
+"autor": "AA.VV.",
+"editorial": "TRIANGLE POSTALS",
+"precio": 1200,
+"peso_g": 68,
+"unidades": 0,
+"fecha": "3 sept 2026",
+"piso": true
+},
+{
+"ean": "9791370342654",
+"titulo": "Dinosaurios",
+"autor": "VV.AA.",
+"editorial": "SUSAETA EDICIONES",
+"precio": 1200,
+"peso_g": 133,
+"unidades": 0,
+"fecha": "1 oct 2026",
+"piso": true
+},
+{
+"ean": "9788410849488",
+"titulo": "LA NAVIDAD",
+"autor": "SUSAETA EDICIONES",
+"editorial": "SUSAETA EDICIONES",
+"precio": 1200,
+"peso_g": 60,
+"unidades": 0,
+"fecha": "8 oct 2026",
+"piso": true
 }
-]
+],
+"nota": "Los libros que daban menos de $1.200 se publican a $1.200 (decisión de Seba, 19/11/2026)."
 }
