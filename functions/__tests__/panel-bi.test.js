@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { loadBi, abc, priceRaises, withUnsoldBooks, brujulaDigest, constantesEnRiesgo, stockObjetivo, detalleReposicion, comprasTexto, mercadoCorto, competidoresSinStock, loadRepuestos, ventasPorMes } from '../_shared/panel-bi.js';
+import { loadBi, abc, priceRaises, withUnsoldBooks, brujulaDigest, constantesEnRiesgo, stockObjetivo, detalleReposicion, comprasTexto, mercadoCorto, competidoresSinStock, loadRepuestos, ventasPorMes, loadAgotadosHoy } from '../_shared/panel-bi.js';
 import { renderBi, createBiPanel } from '../panel/inteligencia.js';
 import { SALES_SCHEMA } from '../../worker-sync/ml-sales.js';
 import { importPurchases } from '../../worker-sync/purchases.js';
@@ -361,4 +361,42 @@ test('una venta de hoy dice "hoy" y no "hace 0 días"', () => {
   const base = { now: Date.parse('2026-11-18T15:00:00Z'), stock: 0, u30p: 1, u90p: 1, u365p: 3, u90: 1, ritmo: 122, pedir: 1, avgPrice: 2518, compras: undefined, mercado: { estado: 'sin_dato' } };
   assert.match(detalleReposicion({ ...base, lastOwnMs: Date.parse('2026-11-18T12:00:00Z') }), /^Sin stock: última venta el 18\/11\/26 \(hoy\)\./);
   assert.match(detalleReposicion({ ...base, lastOwnMs: Date.parse('2026-11-17T12:00:00Z') }), /^Sin stock: última venta el 17\/11\/26 \(hace 1 día\)\./);
+});
+
+test('agotados de las últimas 48 horas: todo lo que Administrado avisa, aunque haya vendido una sola vez o la venta no tenga ISBN', async t => {
+  const db = database(t);
+  await db.batch(SALES_SCHEMA.map(sql => db.prepare(sql)));
+  const E = '9780131103627', F = '9780262033848', G = '9780201633610';
+  const cat = { updated_at: '2026-10-24T10:00:00Z', items: [
+    { id: 'MLUE', isbn: E, title: 'Libro E con una sola venta', status: 'active', available_quantity: 0 },
+    { id: 'MLUF', isbn: F, title: 'Libro F con stock', status: 'active', available_quantity: 2 },
+    { id: 'MLUG', isbn: G, title: 'Libro G viejo', status: 'active', available_quantity: 0 },
+    { id: 'MLUS', title: 'Libro S sin ISBN', status: 'active', available_quantity: 0 },
+  ] };
+  let n = 100;
+  const sale = (item, isbn, hoursAgo, sku = null) => {
+    n++;
+    db.sqlite.prepare('INSERT INTO ml_sales_orders(order_id,seller_id,status,date_created,date_created_ms,last_updated_ms,fetched_at) VALUES(?,?,?,?,?,?,0)').run(String(n), '440298103', 'paid', new Date(NOW - hoursAgo * 36e5).toISOString(), NOW - hoursAgo * 36e5, NOW);
+    db.sqlite.prepare('INSERT INTO ml_sales_items(order_id,line_key,item_id,title,quantity,unit_price,currency_id,isbn,seller_sku,updated_at) VALUES(?,?,?,?,?,?,?,?,?,0)').run(String(n), 'a', item, 'x', 1, 1500, 'UYU', isbn, sku);
+  };
+  sale('MLUE', E, 5);            // vendió una sola vez, hace 5 horas, sin stock: tiene que salir
+  sale('MLUF', F, 3);            // vendió pero le queda stock: no sale
+  sale('MLUG', G, 100);          // hace más de 48 horas: no sale
+  sale('MLUS', null, 8);         // sin ISBN: sale, avisando que no se puede cruzar
+  sale('MLUE2', E, 30, `AMADO-AR-${E}`); // encargo SBS: no consume ejemplares propios
+  const books = [{ isbn: E, u365p: 1, u90p: 1, u30p: 1, u90: 1, avgPrice: 1500 }];
+  const r = await loadAgotadosHoy(db, cat, NOW, null, books);
+  assert.deepEqual(r.lista.map(b => b.title), ['Libro E con una sola venta', 'Libro S sin ISBN'], 'ordenados por el más recién vendido');
+  assert.equal(r.total, 2);
+  const e = r.lista[0];
+  assert.equal(e.noConstante, true);
+  assert.equal(e.pedir, 1);
+  assert.match(detalleReposicion(e, r.faltan), /Con 1 venta en 12 meses no entra en el aviso automático: decidí vos si lo querés reponer\./);
+  const s = r.lista[1];
+  assert.equal(s.sinIdentidad, true);
+  assert.match(detalleReposicion(s), /La venta no tiene ISBN identificado: no puedo cruzar compras ni competencia/);
+  // En el correo: sale en su bloque, y lo que ya salió en otro bloque no se repite.
+  const digest = brujulaDigest({ inventario: { ok: true, data: { aSinStock: [], coberturaBaja: [], hoy: { ...r, lista: [...r.lista, { ...e, isbn: '9780000000000', title: 'Ya salió arriba' }] } } } });
+  assert.deepEqual(digest.hoy.map(x => x.title), ['Libro E con una sola venta', 'Libro S sin ISBN', 'Ya salió arriba']);
+  assert.equal(digest.hoyTotal, 3);
 });
