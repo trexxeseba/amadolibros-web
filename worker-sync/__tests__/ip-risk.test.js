@@ -55,3 +55,16 @@ test('los títulos editoriales verdaderos siguen pasando',()=>{
  assert.equal(ipRisk('Todas las noches, todas las ciudades','Destino'),null);
  assert.equal(ipRisk('El hombre en busca del sentido','Herder'),null);
 });
+
+test('"pirata", "estilo", "tipo" e "imitación" ya no frenan libros legítimos, pero las marcas y las ediciones pirata siguen frenadas',()=>{
+ assert.equal(ipRisk('Te quiero tanto tanto tantisimo','DEL PIRATA, EDICIONS'),null);
+ assert.equal(ipRisk('Daniela Pirata y el barco fantasma','Nubeocho'),null);
+ assert.equal(ipRisk('Supera la diabetes tipo 2','EDAF'),null);
+ assert.equal(ipRisk('Cerebro y estilo de vida','Catarata'),null);
+ assert.equal(ipRisk('La imitación de Cristo','San Pablo'),null);
+ assert.equal(ipRisk('Edición pirata del bestseller'),'copia');
+ assert.equal(ipRisk('Libro pirata'),'copia');
+ assert.equal(ipRisk('Referentes estilo. Chanel nº 5','Blume'),'marca');
+ assert.equal(ipRisk('Referentes estilo. Hermes Birkin','Blume'),'marca');
+ assert.equal(ipRisk('Imitación de un bolso de marca'),'copia');
+});
