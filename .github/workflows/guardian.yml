@@ -1,0 +1,45 @@
+name: Guardián de las publicaciones de Vintage
+
+# Cada 15 minutos mira si algo puede salir mal (tandas que no corren, corridas caídas, publicaciones pausadas por
+# Mercado Libre, fotos trabadas, freno puesto), arregla solo lo que es seguro (pedir de nuevo una tanda, reintentar una
+# corrida caída UNA vez) y avisa por mail en lenguaje simple. Nunca suelta el freno, reactiva, cambia precios ni toca
+# Amado Libros. Código: scripts/guardian/guardian.mjs. El Worker de Cloudflare lo lanza (el cron de GitHub se atrasa y queda de respaldo).
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      seco:
+        description: 'Solo mostrar qué haría, sin arreglar ni mandar mail'
+        type: boolean
+        default: false
+
+concurrency:
+  group: guardian
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  guardian:
+    if: github.ref == 'refs/heads/main' && vars.HERMES_APAGADO != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vigilar
+        run: node scripts/guardian/guardian.mjs ${{ inputs.seco && '--seco' || '' }}
