@@ -147,3 +147,13 @@ test('la lista de Arnoia solo trae libros disponibles', async () => {
   const d = JSON.parse(fs.readFileSync('hermes-monitor/data/arnoia-catalogo-19-11.json', 'utf8'));
   assert.match(d.nota, /Disponible/);
 });
+
+test('los 15 libros aprobados por Seba solo se eximen del grupo copia', async () => {
+  const fs = await import('node:fs');
+  const {ipRisk} = await import('../../worker-sync/ip-risk.js');
+  const d = JSON.parse(fs.readFileSync('hermes-monitor/data/arnoia-catalogo-19-11.json', 'utf8'));
+  const ap = d.libros.filter(l => l.aprobado_por_seba);
+  assert.equal(ap.length, 15);
+  for (const l of ap) assert.equal(ipRisk(`${l.titulo} ${l.autor ?? ''}`, l.editorial), 'copia', l.titulo);
+  assert.match(fs.readFileSync('hermes-monitor/publicar.mjs', 'utf8'), /riesgo && !\(ctx\.aprobado && riesgo === 'copia'\)/);
+});
