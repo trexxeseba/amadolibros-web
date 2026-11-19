@@ -71,6 +71,18 @@ for (const promo of promos.filter(p => p?.id && p?.type)) {
   campanas.push(resumenCampana(promo, evaluaciones));
 }
 
+// 3b) Cómo está armada cada promoción de volumen ("llevá N"): para poder renovarla igual o ajustarla.
+const volumen = [];
+for (const promo of promos.filter(p => p?.id && p?.type === 'VOLUME')) {
+  try {
+    const base = `/seller-promotions/promotions/${encodeURIComponent(promo.id)}`;
+    const cabecera = await ml.get(`${base}?promotion_type=VOLUME&${V2}`).catch(e => ({ error: e?.code ?? 'error' }));
+    const r = await ml.get(`${base}/items?promotion_type=VOLUME&${V2}&limit=5`);
+    const lista = Array.isArray(r?.results) ? r.results : Array.isArray(r) ? r : [];
+    volumen.push({ id: promo.id, nombre: promo.name ?? null, estado: promo.status, desde: promo.start_date ?? null, hasta: promo.finish_date ?? null, cabecera, total: r?.paging?.total ?? null, ejemplos: lista.slice(0, 5).map(e => ({ estado: e?.status ?? null, buy_quantity: e?.buy_quantity ?? null, discount_percentage: e?.discount_percentage ?? null, allow_combination: e?.allow_combination ?? null })) });
+  } catch (e) { anotar('detalle_volumen', e); }
+}
+
 // 4) Muestra de libros: qué promociones le ofrece hoy Mercado Libre a cada uno
 // (los de mayor margen de maniobra primero: son los que podrían entrar).
 const muestra = libros.filter(l => !l.conDescuento && maniobra(l)).sort((a, b) => maniobra(b).pct - maniobra(a).pct).slice(0, MUESTRA);
@@ -83,8 +95,9 @@ for (const l of muestra) {
 }
 
 const resumen = armarResumen({ fecha: fechaMontevideo(), cuenta: `${yo.id}`, pisos, margen, campanas, errores });
-const extra = Object.keys(ofertas).length ? `\n\n## Qué le ofrece Mercado Libre a ${muestra.length} libros con margen (tipo:estado)\n\n${Object.entries(ofertas).map(([k, v]) => `- ${k}: ${v}`).join('\n')}` : '';
+const extraVolumen = volumen.length ? `\n\n## Promociones de volumen (cómo están armadas)\n\n${volumen.map(v => `- "${v.nombre ?? v.id}" (${v.estado}, ${String(v.desde ?? '').slice(0, 10)} a ${String(v.hasta ?? '').slice(0, 10)}), libros en la promo: ${v.total ?? '?'}. Ejemplos: ${JSON.stringify(v.ejemplos)}. Ficha: ${JSON.stringify(v.cabecera).slice(0, 1200)}`).join('\n')}` : '';
+const extra = extraVolumen + (Object.keys(ofertas).length ? `\n\n## Qué le ofrece Mercado Libre a ${muestra.length} libros con margen (tipo:estado)\n\n${Object.entries(ofertas).map(([k, v]) => `- ${k}: ${v}`).join('\n')}` : '');
 console.log(resumen + extra);
 if (process.env.GITHUB_STEP_SUMMARY) await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, resumen + extra + '\n');
-await fs.writeFile(salida, JSON.stringify({ fecha: fechaMontevideo(), pisos, margen, campanas, ofertas_en_muestra: ofertas, detalleCampanas, libros }, null, 1));
+await fs.writeFile(salida, JSON.stringify({ fecha: fechaMontevideo(), pisos, margen, campanas, ofertas_en_muestra: ofertas, volumen, detalleCampanas, libros }, null, 1));
 console.log(`\nDetalle por libro guardado en ${salida} (no se imprime). Llamadas: ${JSON.stringify(ml.stats)}`);
