@@ -1,0 +1,35 @@
+name: Mandar un aviso por mail
+
+# Manda por mail un texto de scripts/avisos/ (solo manual). Sirve para pasarle una tarea a Lola y Gaby a la casilla de administración.
+on:
+  workflow_dispatch:
+    inputs:
+      archivo:
+        description: 'Archivo de scripts/avisos/ (por ejemplo lola-gaby-fotos-2026-11-19.txt)'
+        required: true
+      asunto:
+        description: 'Asunto del mail'
+        required: true
+      destino:
+        description: 'Casilla de destino'
+        default: 'adm@amadolibros.com'
+
+permissions:
+  contents: read
+
+jobs:
+  avisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      PRECIO_GANADOR_EMAIL_TO: ${{ inputs.destino }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Mandar
+        run: node scripts/avisos/enviar.mjs "${{ inputs.archivo }}" "${{ inputs.asunto }}"
