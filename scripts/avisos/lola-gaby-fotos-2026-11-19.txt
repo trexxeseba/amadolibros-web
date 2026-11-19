@@ -1,0 +1,30 @@
+Hola Lola y Gaby,
+
+Seba nos pide que resuelvan por el chat de ayuda de Mercado Libre 4 publicaciones de Amado Vintage (cuenta Global Emporium) que quedaron "en revisión". Les dejo todo lo que hace falta.
+
+QUÉ PASÓ
+Mercado Libre revisó las fotos de estas publicaciones con un control automático y las dejó pausadas, esperando una corrección. No es una denuncia ni un problema de la cuenta: es el lector de texto de las fotos. En dos de ellas ya sabemos el motivo exacto:
+
+- Guía completa de mudras (MLU1541303152, Roca Editorial, $2.550): dice que la foto "incluye datos no permitidos" (contacto o sitios externos). Lo más probable es que la tapa traiga impresa una dirección web de la editorial.
+- Dinosaurios "Arcolores" (MLU1541276786, Gato de Hojalata, $1.510): dice que la foto "tiene etiquetas de Mercado Libre". Es un falso positivo: la tapa es solo la portada del libro.
+
+Las otras dos son del mismo grupo de Gato de Hojalata y seguramente tienen el mismo motivo:
+- Gatitos Kawaii "Arcolores" (MLU1541290150, $1.510)
+- Capibaras "Arcolores" (MLU1541303092, $1.510)
+
+QUÉ HAY QUE HACER
+1. Entrar al chat de ayuda de Mercado Libre con la cuenta de Amado Vintage (Global Emporium).
+2. Consultar por estas 4 publicaciones, con sus números (MLU...).
+3. Pedir que las revisen manualmente y las reactiven, explicando que la foto es la tapa original del libro, sin datos de contacto ni etiquetas de Mercado Libre.
+4. Si el chat les pide cambiar la foto, avisarle a Seba antes de subir otra: él decide con qué foto seguimos.
+
+QUÉ DECIR (si les sirve)
+"Buenas tardes. Tengo 4 publicaciones en revisión por el control automático de fotos. La imagen es la portada original del libro y no incluye datos de contacto ni etiquetas de Mercado Libre. Les pido que las revisen manualmente y las reactiven. Los números son: MLU1541303152, MLU1541276786, MLU1541290150 y MLU1541303092. Muchas gracias."
+
+AVISOS
+- No hace falta que borren ni modifiquen nada de las publicaciones.
+- Si el chat les pide algo más (documentos, autorizaciones de la editorial), pásenselo a Seba.
+- Cuando estén reactivadas o si les responden algo distinto, avísenle a Seba.
+
+Gracias, equipo.
+Amado Vintage
