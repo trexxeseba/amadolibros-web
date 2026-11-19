@@ -8,7 +8,8 @@
 //
 // Lo que puede hacer solo (nada más):
 //   - pedir de nuevo una tanda de Hermes/Arnoia o de SBS que no corrió;
-//   - reintentar UNA vez una corrida fallida de la tanda o del despliegue del Worker.
+//   - reintentar UNA vez una corrida fallida de la tanda o del despliegue del Worker;
+//   - cancelar una tanda colgada (más de 40 minutos en curso), para que no frene a las siguientes.
 // Lo que NUNCA hace: soltar el freno del vigía, reactivar publicaciones, cambiar precios, borrar, ni tocar
 // Amado Libros. Todo lo demás lo avisa.
 //
@@ -27,7 +28,9 @@ export const UMBRALES = {arnoiaMin: 100, sbsMin: 130, fallosSbsSeguidos: 3, foto
 export const THROTTLE = {aviso: 3 * 3600e3, grave: 3600e3};
 const WF_PUBLICAR = 'hermes-publicar.yml', WF_SBS = 'vintage-nube.yml', WF_DEPLOY = 'deploy-worker-sync.yml';
 const minutos = (a, b) => Math.round((a - b) / 60000);
-const activa = (runs, w) => (runs?.[w] ?? []).some(r => r.status === 'in_progress' || r.status === 'queued');
+export const COLGADA_MIN = 40;
+// "En curso" cuenta solo si es reciente: una corrida de más de 40 minutos está colgada y no debe tapar los demás avisos.
+const activa = (runs, w, ahora = Date.now()) => (runs?.[w] ?? []).some(r => (r.status === 'in_progress' || r.status === 'queued') && minutos(ahora, Date.parse(r.created_at)) <= COLGADA_MIN);
 
 // ---- Detectar (puro: recibe los datos, no toca la red) ----
 // datos: {runs:{wf:[{id,status,conclusion,created_at,run_attempt,html_url}]}, publicadas, freno, cupo,
@@ -46,11 +49,17 @@ export function evaluar(d, ahora = Date.now()) {
   const arn = Object.values(d.publicadas ?? {}).filter(p => p.fuente === 'arnoia' && p.item_id && p.ts);
   const ultimaArn = arn.length ? Math.max(...arn.map(p => Number(p.ts))) : 0;
   const sinArn = minutos(ahora, ultimaArn);
-  if (!d.freno && d.restantesArnoia > 0 && d.cupo >= UMBRALES.cupoMin && !activa(runs, WF_PUBLICAR) && sinArn > UMBRALES.arnoiaMin) h.push({
+  if (!d.freno && d.restantesArnoia > 0 && d.cupo >= UMBRALES.cupoMin && !activa(runs, WF_PUBLICAR, ahora) && sinArn > UMBRALES.arnoiaMin) h.push({
     clave: 'arnoia_atrasada', nivel: 'aviso',
     texto: `Arnoia no creó ninguna publicación hace ${sinArn >= 100000 ? 'mucho' : sinArn + ' minutos'}, y hay cupo (${d.cupo}) y ${d.restantesArnoia} libros pendientes.`,
     accion: {tipo: 'dispatch', workflow: WF_PUBLICAR, inputs: {modo: 'publicar', cantidad: '50', rama: 'main', fuente: 'arnoia', tradicional: 'false'}, resumen: 'pedí una tanda de Arnoia ahora mismo'},
   });
+
+  // Tanda colgada: lleva más de 40 minutos en curso (una normal tarda unos 5). Se cancela, para que no frene a las siguientes.
+  for (const w of [WF_PUBLICAR, WF_SBS]) for (const r of runs[w] ?? []) {
+    if (r.status !== 'in_progress' || minutos(ahora, Date.parse(r.created_at)) <= COLGADA_MIN) continue;
+    h.push({clave: `colgada_${r.id}`, nivel: 'aviso', texto: `Una corrida lleva ${minutos(ahora, Date.parse(r.created_at))} minutos en curso (normalmente tarda unos 5): ${r.html_url ?? r.id}.`, accion: {tipo: 'cancel', runId: r.id, resumen: 'la cancelé para que no frene a las siguientes'}});
+  }
 
   // Corridas caídas de la tanda y del despliegue del Worker: se reintenta UNA vez; si falla de nuevo, es grave
   for (const w of [WF_PUBLICAR, WF_DEPLOY]) for (const r of runs[w] ?? []) {
@@ -67,7 +76,7 @@ export function evaluar(d, ahora = Date.now()) {
   const sbs = runs[WF_SBS] ?? [];
   const ultimaBuena = sbs.find(r => r.conclusion === 'success');
   const sinSbs = ultimaBuena ? minutos(ahora, Date.parse(ultimaBuena.created_at)) : Infinity;
-  if (sbs.length && sinSbs > UMBRALES.sbsMin && !activa(runs, WF_SBS) && !d.freno) h.push({
+  if (sbs.length && sinSbs > UMBRALES.sbsMin && !activa(runs, WF_SBS, ahora) && !d.freno) h.push({
     clave: 'sbs_atrasado', nivel: 'aviso', texto: `La subida de SBS no corre bien hace ${Number.isFinite(sinSbs) ? sinSbs + ' minutos' : 'mucho tiempo'}.`,
     accion: {tipo: 'dispatch', workflow: WF_SBS, inputs: {accion: 'auto'}, resumen: 'pedí una corrida de SBS ahora mismo'},
   });
@@ -117,7 +126,7 @@ export function armarMail(hechos, ahora = Date.now()) {
 }
 
 // ---- Arreglar (solo la lista cerrada) ----
-export async function ejecutar(hallazgos, {dispatch, rerun, seco = false}) {
+export async function ejecutar(hallazgos, {dispatch, rerun, cancel = async () => {}, seco = false}) {
   const hechos = [];
   for (const h of hallazgos) {
     const x = {...h};
@@ -125,6 +134,7 @@ export async function ejecutar(hallazgos, {dispatch, rerun, seco = false}) {
       try {
         if (h.accion.tipo === 'dispatch') await dispatch(h.accion.workflow, h.accion.inputs);
         else if (h.accion.tipo === 'rerun') await rerun(h.accion.runId);
+        else if (h.accion.tipo === 'cancel') await cancel(h.accion.runId);
         x.resultado = h.accion.resumen;
       } catch (e) {
         x.resultado = `intenté arreglarlo y no pude (${e.message}); queda para que lo veas`;
@@ -187,6 +197,7 @@ async function main() {
   const hechos = await ejecutar(nuevos, {seco,
     dispatch: (workflow, inputs) => gh(`/actions/workflows/${workflow}/dispatches`, {method: 'POST', body: {ref: 'main', inputs}}),
     rerun: runId => gh(`/actions/runs/${runId}/rerun-failed-jobs`, {method: 'POST'}),
+    cancel: runId => gh(`/actions/runs/${runId}/cancel`, {method: 'POST'}),
   });
   console.log(armarMail(hechos));
   if (seco) return;
