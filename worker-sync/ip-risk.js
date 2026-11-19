@@ -25,7 +25,7 @@ export const IP_RISK_PATTERNS=[
  ['interactivo','\\binteractiv[oae]s?\\b|\\binterattiv[oaei]\\b|\\binteractive\\b|\\bapp\\b|\\bapps\\b'],
  ['audio','\\baudio ?libro\\b|\\baudio ?book\\b|\\baudiolibro\\b'],
  // Copia, réplica, imitación
- ['copia','\\bcopias?\\b|\\bfotocopia(s|do|da)?\\b|\\bcopy\\b|\\bphotocop(y|ied)\\b|\\breplicas?\\b|\\breplica\\b|\\bfacsimil(ar|es)?\\b|\\bfacsimile\\b|\\bimitacion\\b(?! de cristo)|\\b(edicion|copia|version|libro|pdf)s? pirata\\b|\\bpiratead[oa]s?\\b|\\bgenerico\\b|\\bsimil\\b|\\bidentico\\b|\\bigual a\\b'],
+ ['copia','\\bcopias?\\b|\\bfotocopia(s|do|da)?\\b|\\bcopy\\b|\\bphotocop(y|ied)\\b|\\breplicas?\\b|\\breplica\\b|\\bfacsimil(ar|es)?\\b|\\bfacsimile\\b|\\bimitacion\\b|\\bpirata\\b|\\bgenerico\\b|\\bsimil\\b|\\bidentico\\b|\\bigual a\\b|\\bestilo\\b|\\btipo\\b'],
  // Encuadernación casera / impresión bajo demanda
  ['encuadernacion','\\banillad[oa]s?\\b|\\bespiralad[oa]s?\\b|\\bencuadernad[oa]s?\\b|\\bespiral\\b|\\bspiral\\b|\\bimpreso\\b|\\bimpresion\\b|\\breimpres[oa]\\b|\\bprint on demand\\b|\\bbajo demanda\\b'],
  // Kits y paquetes con componentes no físicos
