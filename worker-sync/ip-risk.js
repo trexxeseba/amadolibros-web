@@ -39,6 +39,14 @@ export const IP_RISK_PATTERNS=[
  // Editoriales de texto escolar e idiomas: las cinco infracciones de libros de la campaña fueron de
  // Hodder Education, Alma Edizioni y Eli Edizioni (Arriviamo! 3 no tenía ninguna palabra de riesgo).
  ['editorial_educativa','\\bhodder\\b|\\balma edizioni\\b|\\beli edizioni\\b|\\bloescher\\b|\\bzanichelli\\b|\\bedilingua\\b|\\bedelsa\\b|\\bsgel\\b|\\bdifusion\\b|\\bedinumen\\b|\\banaya ele\\b|\\bhueber\\b|\\bklett\\b|\\bcornelsen\\b|\\bhachette fle\\b|\\bcle international\\b|\\bmaison des langues\\b|\\bcambridge university press\\b|\\bcambridge english\\b|\\boxford university press\\b|\\bmacmillan education\\b|\\bnational geographic learning\\b|\\bcengage\\b|\\bmcgraw\\b|\\bexpress publishing\\b|\\bhelbling\\b|\\bsantillana\\b|\\bedebe\\b|\\bsm ediciones\\b|\\bkapelusz\\b|\\bpuerto de palos\\b|\\btinta fresca\\b|\\bmaipue\\b|\\bwiley\\b|\\belsevier\\b|\\bpanamericana\\b|\\bmarban\\b|\\bharcourt\\b|\\bsavvas\\b|\\bhoughton\\b'],
+ // Alertas de la investigación del 19/11/2026 (planilla de Seba): palabras del filtro público de un integrador de
+ // librerías (Fierro: sexo, kama sutra, prozac, clonazepam) y datos de contacto o desvío de la venta fuera de Mercado Libre
+ // (WhatsApp, Telegram, correos y enlaces), que Mercado Libre prohíbe en título, descripción, fotos y preguntas.
+ // Para la publicación automática son retención para revisión, no una sentencia: un libro puede tratar el tema.
+ ['contacto','\\bwhats ?app\\b|\\bwsp\\b|\\bwa me\\b|\\btelegram\\b|\\bt me\\b|\\bgmail\\b|\\bhotmail\\b|\\bhttps?\\b|\\bwww\\b|\\bcodigo qr\\b|\\bllamanos\\b|\\bpaga por fuera\\b|\\bsin comision\\b'],
+ ['adulto','\\bsexo\\b|\\bkama ?sutra\\b|\\bkamasutra\\b'],
+ ['medicamento','\\bprozac\\b|\\bclonazepam\\b'],
+ ['imitacion','\\bcounterfeit\\b|\\bknockoff\\b|\\bescanead[oa]s?\\b|\\bscanned\\b|\\bidentico a\\b|\\bigual a\\b'],
 ];
 const COMPILED=IP_RISK_PATTERNS.map(([name,re])=>[name,new RegExp(re)]);
 // Nombres cortos de editoriales educativas que también son palabras comunes ("alma", "eli"): sólo se

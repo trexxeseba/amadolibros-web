@@ -37,3 +37,21 @@ test('school and language textbook publishers are blocked even with a clean titl
  assert.ok(ipRisk('Dieci A1','Alma Edizioni'));
  assert.equal(ipRisk('Cien años de soledad','Penguin Random House'),null);
 });
+
+test('alertas de la investigación del 19/11/2026: contacto externo, sexo/kama sutra, medicamentos e imitación se retienen',()=>{
+ assert.equal(ipRisk('Kama Sutra ilustrado'),'adulto');
+ assert.equal(ipRisk('Amor y sexo en España contado para escépticos'),'adulto');
+ assert.equal(ipRisk('Prozac Nation','Anagrama'),'medicamento');
+ assert.equal(ipRisk('Clonazepam: guía'),'medicamento');
+ assert.equal(ipRisk('Escribime por WhatsApp para pagar por fuera'),'contacto');
+ assert.equal(ipRisk('Libro nuevo, contacto vendedor@gmail.com'),'contacto');
+ assert.equal(ipRisk('Escribime por t.me/vendedor'),'contacto');
+ assert.equal(ipRisk('Counterfeit edition'),'imitacion');
+ assert.equal(ipRisk('Libro escaneado'),'imitacion');
+});
+
+test('los títulos editoriales verdaderos siguen pasando',()=>{
+ assert.equal(ipRisk('La hora antes del alba','Planeta'),null);
+ assert.equal(ipRisk('Todas las noches, todas las ciudades','Destino'),null);
+ assert.equal(ipRisk('El hombre en busca del sentido','Herder'),null);
+});
