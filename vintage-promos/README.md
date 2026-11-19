@@ -16,7 +16,10 @@ No escribe nada: solo `GET` a Mercado Libre y `SELECT` a D1. Antes de leer verif
 - "Aguantan X %": libros cuyo precio con ese descuento sigue siendo mayor o igual al piso.
 - "Entran": candidatas de una campaña cuyo precio final no pisa el piso. Conservador: no
   cuenta lo que pone Mercado Libre en las campañas compartidas.
-- El piso usa el mínimo de Precio Ganador (`costos-vintage.mjs`, $1.500), mayor que el de
-  la política ($1.200): el informe subestima la maniobra, nunca la sobrestima.
+- El costo sale de la lista nueva de SBS (`sbs_supplier_feeds` / `sbs_supplier_stock`), con
+  la política aprobada (piso de margen 18 %, venta mínima de la política). Solo los libros de
+  SBS (SKU `AMADO-AR-`) tienen costo; los de Arnoia y Hermes figuran "sin costo conocido".
+- `precio-ganador/src/costos-vintage.mjs` todavía lee las tablas viejas (`ml_pub_feeds`):
+  por eso este informe tiene su propio lector (`src/costos.mjs`).
 - Una publicación con promoción a la vista (`original_price`) queda fuera de Precio
   Ganador: mientras dure la promo no compite por precio.

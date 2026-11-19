@@ -10,7 +10,7 @@ import { CUENTAS, fechaMontevideo } from '../../precio-ganador/src/config.mjs';
 import { fuenteTokenD1 } from '../../precio-ganador/src/token.mjs';
 import { crearCliente } from '../../precio-ganador/src/ml.mjs';
 import { idsActivos, detalle } from '../../precio-ganador/src/publicaciones.mjs';
-import { cargarPisosVintage } from '../../precio-ganador/src/costos-vintage.mjs';
+import { cargarPisos, origenDe } from './costos.mjs';
 import { exigirVintage } from '../../hermes-monitor/guardia.mjs';
 import { resumenMargen, evaluarEntrada, resumenCampana, armarResumen, maniobra } from './logica.mjs';
 
@@ -27,8 +27,8 @@ const ml = crearCliente(fuenteTokenD1(CUENTA), { concurrencia: 2 });
 const yo = await exigirVintage(ml);
 console.log(`Cuenta verificada: ${yo.id} ${yo.nickname ?? ''}`.trim());
 
-// 1) Costo y piso por publicación (misma fuente que Precio Ganador).
-const { pisoDe, info: pisos } = await cargarPisosVintage();
+// 1) Costo y piso por publicación (lista nueva de SBS; ver costos.mjs).
+const { pisoDe, info: pisos } = await cargarPisos();
 
 // 2) Publicaciones activas.
 const ids = await idsActivos(ml, CUENTA.sellerId, { limite: LIMITE_ITEMS });
@@ -36,7 +36,7 @@ const items = await detalle(ml, ids);
 const libros = [];
 for (const it of items.values()) {
   if (it.status !== 'active' || it.currency_id !== 'UYU' || !(it.price > 0)) continue;
-  libros.push({ id: it.id, precio: it.price, piso: pisoDe(it), conDescuento: it.original_price !== null && it.original_price !== undefined });
+  libros.push({ id: it.id, origen: origenDe(it), precio: it.price, piso: pisoDe(it), conDescuento: it.original_price !== null && it.original_price !== undefined });
 }
 const margen = resumenMargen(libros);
 const porId = new Map(libros.map(l => [l.id, l]));
