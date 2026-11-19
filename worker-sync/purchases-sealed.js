@@ -49,12 +49,34 @@ export async function openSealed(privateJwk, sealed) {
 
 const digits = value => String(value ?? '').replace(/\D/g, '');
 
-// ¿Ya está cargado? Mismo proveedor, mismo año y mismos dígitos de número.
+// ¿Ya está cargado? Dos pruebas, porque la misma factura pudo cargarse antes con otro
+// formato de número (por ejemplo el del nombre del archivo):
+//  1. mismo proveedor, año y dígitos del número;
+//  2. mismo proveedor y fecha, con los mismos libros y cantidades (al menos 80%).
 async function alreadyLoaded(db, doc) {
   const wanted = digits(doc.document_number ?? doc.supplier_order_id);
-  if (!wanted) return false;
-  const { results } = await db.prepare('SELECT document_number,supplier_order_id FROM purchase_orders WHERE supplier=? AND substr(purchase_date,1,4)=?').bind(doc.supplier, doc.purchase_date.slice(0, 4)).all();
-  return results.some(r => digits(r.document_number) === wanted || digits(r.supplier_order_id) === wanted);
+  if (wanted) {
+    const { results } = await db.prepare('SELECT document_number,supplier_order_id FROM purchase_orders WHERE supplier=? AND substr(purchase_date,1,4)=?').bind(doc.supplier, doc.purchase_date.slice(0, 4)).all();
+    if (results.some(r => digits(r.document_number) === wanted || digits(r.supplier_order_id) === wanted)) return true;
+  }
+  const mine = new Set(doc.items.filter(i => i.identity && i.quantity > 0).map(i => `${i.identity.isbn}:${i.quantity}`));
+  if (!mine.size) return false;
+  const { results: rows } = await db.prepare('SELECT i.isbn,i.quantity FROM purchase_items i JOIN purchase_orders o ON o.purchase_id=i.purchase_id WHERE o.supplier=? AND o.purchase_date=? AND o.superseded_by IS NULL').bind(doc.supplier, doc.purchase_date).all();
+  const have = new Set(rows.map(r => `${r.isbn}:${r.quantity}`));
+  return [...mine].filter(k => have.has(k)).length >= Math.ceil(mine.size * 0.8);
+}
+
+// Quita compras que cargó este mismo circuito (PDF de un mail): para deshacer un
+// duplicado. Nunca toca lo cargado a mano ni por otro camino.
+async function removeLoaded(db, ids) {
+  let removed = 0;
+  for (const id of ids) {
+    const row = await db.prepare("SELECT purchase_id FROM purchase_orders WHERE purchase_id=? AND source_type='pdf' AND source_reference LIKE 'gmail:%'").bind(id).first();
+    if (!row) continue;
+    await db.batch([db.prepare('DELETE FROM purchase_items WHERE purchase_id=?').bind(id), db.prepare('DELETE FROM purchase_orders WHERE purchase_id=?').bind(id)]);
+    removed++;
+  }
+  return removed;
 }
 
 // Descifra e importa los documentos nuevos. Devuelve sólo conteos y códigos de
@@ -66,8 +88,10 @@ export async function importSealed(db, sealed, now = Date.now()) {
   try { payload = await openSealed(privateJwk, sealed); } catch { throw new PurchaseError('decrypt_failed'); }
   const docs = Array.isArray(payload) ? payload : Array.isArray(payload?.documents) ? payload.documents : payload?.items ? [payload] : [];
   const coverage = Array.isArray(payload?.coverage) ? payload.coverage : [];
-  if (!docs.length && !coverage.length) throw new PurchaseError('documents_1_to_50');
+  const remove = Array.isArray(payload?.remove) ? payload.remove.filter(x => typeof x === 'string').slice(0, 20) : [];
+  if (!docs.length && !coverage.length && !remove.length) throw new PurchaseError('documents_1_to_50');
   await ensurePurchases(db);
+  const removed = remove.length ? await removeLoaded(db, remove) : 0;
   const fresh = [], errors = [];
   let skipped = 0;
   for (const [index, raw] of docs.entries()) {
@@ -78,5 +102,5 @@ export async function importSealed(db, sealed, now = Date.now()) {
   }
   const result = fresh.length || coverage.length ? await importPurchases(db, { documents: fresh, coverage }, now) : { imported: 0, results: [], errors: 0 };
   for (const r of result.results) if (r.status === 'error') errors.push({ index: r.index, error: r.error });
-  return { imported: result.imported, skipped_existing: skipped, errors, review: result.results.reduce((n, r) => n + (r.review?.length ?? 0), 0) };
+  return { imported: result.imported, skipped_existing: skipped, removed, errors, review: result.results.reduce((n, r) => n + (r.review?.length ?? 0), 0) };
 }

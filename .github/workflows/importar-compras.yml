@@ -56,6 +56,6 @@ jobs:
           code=$(printf '%s' "$resp" | tail -n1)
           json=$(printf '%s' "$resp" | sed '$d')
           echo "HTTP $code"
-          printf '%s' "$json" | jq -c '{imported, skipped_existing, review, errors: ((.errors // []) | map(.error)), error}' | tee -a "$GITHUB_STEP_SUMMARY"
+          printf '%s' "$json" | jq -c '{imported, skipped_existing, removed, review, errors: ((.errors // []) | map(.error)), error}' | tee -a "$GITHUB_STEP_SUMMARY"
           [ "$code" = 200 ] || exit 1
           [ "$(printf '%s' "$json" | jq '(.errors // []) | length')" = 0 ] || exit 1

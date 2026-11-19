@@ -5,6 +5,7 @@
 //
 //   node scripts/purchases/preparar.mjs --proveedor celesa|sbs --salida sellado.txt a.pdf b.pdf
 //   node scripts/purchases/preparar.mjs --json compras.json --salida sellado.txt
+//   ... --quitar CELESA:invoice:2026:CF-10256   (antes de importar, quita una compra que cargó este circuito)
 // Con --enviar dispara la acción "Importar compras" con `gh api` REST (en las sesiones de Claude
 // no hay GraphQL; el texto sellado no pasa por la conversación: va del archivo a GitHub). Sin --enviar sólo deja el archivo.
 // Clave pública: scripts/purchases/clave-publica.json (la entrega la acción con accion=clave).
@@ -16,6 +17,7 @@ import { seal, validateDocuments } from './sellar.mjs';
 const args = process.argv.slice(2);
 const flag = name => { const i = args.indexOf(`--${name}`); return i >= 0 ? args.splice(i, 2)[1] : null; };
 const enviar = (i => i >= 0 && args.splice(i, 1).length > 0)(args.indexOf('--enviar'));
+const quitar = []; for (let q = flag('quitar'); q; q = flag('quitar')) quitar.push(q);
 const proveedor = flag('proveedor'), json = flag('json'), salida = flag('salida'), clave = flag('clave') ?? new URL('./clave-publica.json', import.meta.url).pathname;
 
 async function main() {
@@ -30,7 +32,7 @@ async function main() {
   }
   for (const d of validateDocuments(docs)) console.error(`${d.supplier} ${d.document_number ?? d.supplier_order_id} ${d.purchase_date}: ${d.items.length} líneas, ${d.items.reduce((n, i) => n + i.quantity, 0)} unidades`);
   const publicJwk = JSON.parse(await readFile(clave, 'utf8'));
-  const sealed = await seal(publicJwk, { documents: docs });
+  const sealed = await seal(publicJwk, { documents: docs, ...(quitar.length ? { remove: quitar } : {}) });
   await writeFile(salida, sealed);
   console.error(`Sellado en ${salida} (${sealed.length} caracteres)`);
   if (enviar) await dispatch(sealed);
