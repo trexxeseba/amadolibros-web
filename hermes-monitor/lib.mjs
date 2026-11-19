@@ -134,6 +134,7 @@ export function textoNoPermitido(texto) {
   if (/\bwww\b|https?|\bwww\.|\.(com|net|org|es|uy|ar|mx|cl|co|io|me)\b/.test(t)) return 'direccion_web';
   if (/instagram|facebook|twitter|tiktok|youtube|whatsapp|telegram|pinterest/.test(t)) return 'red_social';
   if (/mercado ?libre|mercadolibre|mercado ?pago|mercado ?envios|envio gratis|\bfull\b/.test(t)) return 'etiqueta_mercado_libre';
+  if (/\bdomicilio\b|\bimportador\b|\bcuit\b|\bcuil\b/.test(t)) return 'domicilio_o_datos_fiscales';
   // teléfono: una racha de 8 o más dígitos que no sea un ISBN (978/979)
   for (const m of t.matchAll(/\+?\d[\d\s().-]{6,}\d/g)) {
     const digitos = m[0].replace(/\D/g, '');
