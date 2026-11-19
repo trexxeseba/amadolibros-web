@@ -17,7 +17,11 @@ import {leerFicha} from './chequeo.mjs';
 import {d1Client} from '../scripts/vintage-cloud/d1.mjs';
 import {brakeOn, blockedIsbns} from '../scripts/vintage-cloud/vigia-pi.mjs';
 import {ipRisk} from '../worker-sync/ip-risk.js';
-import {normalizarTitulo, normalizarAutor, titulo1} from './lib.mjs';
+import {normalizarTitulo, normalizarAutor, titulo1, textoNoPermitido} from './lib.mjs';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import os from 'node:os';
+import path from 'node:path';
 import {exigirVintage, exigirItemDeVintage} from './guardia.mjs';
 import {precioMio, armarPayload, armarPayloadTradicional, CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, inicioDiaUy} from './lib.mjs';
 
@@ -88,13 +92,27 @@ const filas = [];
 // como respaldo. Solo se acepta una imagen real: JPEG, de al menos 40 KB (una imagen genérica o de error pesa mucho menos),
 // y con las tapas revisadas a mano en la primera tanda. Sin portada no se publica.
 const MIN_BYTES_PORTADA = 40000;
+const vetadas = JSON.parse(await fs.readFile(new URL('./data/portadas-vetadas.json', import.meta.url), 'utf8').catch(() => '{"titulo_regex":[]}')).titulo_regex.map(r => new RegExp(r, 'i'));
+const execFileP = promisify(execFile);
+// Lector de texto (tesseract). Si no está instalado o falla, la tapa NO se usa: ante la duda no se publica una publicación normal.
+async function leerTextoDeTapa(bytes) {
+  const f = path.join(os.tmpdir(), `tapa-${process.pid}-${Date.now()}.jpg`);
+  await fs.writeFile(f, Buffer.from(bytes));
+  try { return (await execFileP('tesseract', [f, 'stdout', '-l', 'spa+eng', '--psm', '11'], {timeout: 90000, maxBuffer: 4e6})).stdout; }
+  finally { await fs.rm(f, {force: true}); }
+}
 const buscarPortada = async ean => {
   const candidatas = [`https://imagessl3.casadellibro.com/a/l/t0/${ean.slice(-2)}/${ean}.jpg`, `https://covers.openlibrary.org/b/isbn/${ean}-L.jpg`];
   for (const url of candidatas) {
     const r = await fetch(url + (url.includes('openlibrary') ? '?default=false' : ''), {method: 'GET', redirect: 'follow', signal: AbortSignal.timeout(20000)}).catch(() => null);
     if (!r?.ok || !/image\/jpeg/.test(r.headers.get('content-type') ?? '')) continue;
-    const bytes = (await r.arrayBuffer().catch(() => new ArrayBuffer(0))).byteLength;
-    if (bytes >= MIN_BYTES_PORTADA) return url;
+    const bytes = await r.arrayBuffer().catch(() => new ArrayBuffer(0));
+    if (bytes.byteLength < MIN_BYTES_PORTADA) continue;
+    if (!real && process.env.HERMES_PORTADA_PRUEBA) return {url};
+    let texto;
+    try { texto = await leerTextoDeTapa(bytes); } catch { return {rechazada: 'lector_de_texto_no_disponible', sinMarca: true}; }
+    const motivo = textoNoPermitido(texto);
+    return motivo ? {rechazada: motivo} : {url};
   }
   return null;
 };
@@ -120,8 +138,12 @@ const resolverArnoia = async f => {
   const id = busq?.results?.[0]?.id;
   if (!/^MLU\d+$/.test(id ?? '')) {
     if (!tradicional && !ambos) return {etiqueta: f.ean, clave, saltar: 'sin_catalogo', marcar: {sin_catalogo: true}};
-    const portada = (!real && process.env.HERMES_PORTADA_PRUEBA) || await buscarPortada(f.ean); // la de prueba solo vale para validar, nunca para publicar
-    if (!portada) return {etiqueta: f.ean, saltar: 'sin_portada'};
+    if (vetadas.some(r => r.test(f.titulo))) return {etiqueta: f.ean, saltar: 'serie_vetada_por_fotos'};
+    if (previo?.portada_rechazada) return {omitir: true};
+    const por = await buscarPortada(f.ean); // la portada de prueba solo vale para validar, nunca para publicar
+    if (!por) return {etiqueta: f.ean, saltar: 'sin_portada'};
+    if (por.rechazada) return {etiqueta: f.ean, clave, saltar: 'portada_con_' + por.rechazada, ...(por.sinMarca ? {} : {marcar: {portada_rechazada: por.rechazada}})};
+    const portada = por.url;
     const payload = armarPayloadTradicional({ean: f.ean, titulo: f.titulo, autor: f.autor, editorial: f.editorial, precio: f.precio, plazoDias: PLAZO_DIAS, usaFamilyName, imagenes: [portada], pesoGramos: f.peso_g});
     return {etiqueta: f.ean, clave, producto: null, prod: {attributes: []}, isbn: f.ean, precio: f.precio, payload, registro: {ean: f.ean, tradicional: true}, nota: f.titulo.slice(0, 30), titulo: f.titulo, editorial: f.editorial, descripcion: descripcionDe(f), aprobado: f.aprobado_por_seba === true};
   }

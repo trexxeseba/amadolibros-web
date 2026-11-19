@@ -157,3 +157,20 @@ test('los 15 libros aprobados por Seba solo se eximen del grupo copia', async ()
   for (const l of ap) assert.equal(ipRisk(`${l.titulo} ${l.autor ?? ''}`, l.editorial), 'copia', l.titulo);
   assert.match(fs.readFileSync('hermes-monitor/publicar.mjs', 'utf8'), /riesgo && !\(ctx\.aprobado && riesgo === 'copia'\)/);
 });
+
+import {textoNoPermitido} from '../../hermes-monitor/lib.mjs';
+test('control de tapas: frena direcciones web, @, redes, teléfonos y etiquetas de Mercado Libre; deja pasar una tapa común', () => {
+  assert.equal(textoNoPermitido('SACAPUNTAS DINOSAURIOS WWW. EDITORIALGUADAL.COM.AR Guadal'), 'direccion_web');
+  assert.equal(textoNoPermitido('@Lusatnam Lourdes Muñoz Guía completa de MUDRAS'), 'arroba_o_correo');
+  assert.equal(textoNoPermitido('Seguinos en Instagram'), 'red_social');
+  assert.equal(textoNoPermitido('Llamanos al 099 841 325'), 'telefono');
+  assert.equal(textoNoPermitido('ENVÍO GRATIS en Mercado Libre'), 'etiqueta_mercado_libre');
+  assert.equal(textoNoPermitido('ISBN 978-84-08-32883-4 La hora antes del alba PREMIO PLANETA 2026'), null);
+  assert.equal(textoNoPermitido('Isabel Allende La hora antes del alba'), null);
+  assert.equal(textoNoPermitido(''), null);
+});
+test('la serie Arcolores queda vetada para publicación normal', async () => {
+  const fs = await import('node:fs');
+  const v = JSON.parse(fs.readFileSync('hermes-monitor/data/portadas-vetadas.json', 'utf8'));
+  assert.ok(v.titulo_regex.some(r => new RegExp(r, 'i').test('Dinosaurios ("Arcolores")')));
+});
