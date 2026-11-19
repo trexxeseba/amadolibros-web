@@ -182,3 +182,10 @@ test('el publicador tiene topes: libros revisados por tanda y tiempo', async () 
   assert.match(src, /Date\.now\(\) - INICIO > MAX_MS/);
   assert.match(fs.readFileSync('.github/workflows/hermes-publicar.yml', 'utf8'), /timeout-minutes: 40/);
 });
+
+test('los libros sin portada se anotan y se reintentan a la semana', async () => {
+  const fs = await import('node:fs');
+  const src = fs.readFileSync('hermes-monitor/publicar.mjs', 'utf8');
+  assert.match(src, /marcar: \{sin_portada: true\}/);
+  assert.match(src, /previo\?\.sin_portada && Date\.now\(\) - Date\.parse\(previo\.fecha \?\? 0\) < 7 \* 86400e3/);
+});

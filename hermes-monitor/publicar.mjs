@@ -144,8 +144,10 @@ const resolverArnoia = async f => {
     if (!tradicional && !ambos) return {etiqueta: f.ean, clave, saltar: 'sin_catalogo', marcar: {sin_catalogo: true}};
     if (vetadas.some(r => r.test(f.titulo))) return {etiqueta: f.ean, saltar: 'serie_vetada_por_fotos'};
     if (previo?.portada_rechazada) return {omitir: true};
+    // Sin portada disponible: se anota y se vuelve a probar a la semana (no se re-mira en cada tanda, que gasta el tope de libros revisados).
+    if (previo?.sin_portada && Date.now() - Date.parse(previo.fecha ?? 0) < 7 * 86400e3) return {omitir: true};
     const por = await buscarPortada(f.ean); // la portada de prueba solo vale para validar, nunca para publicar
-    if (!por) return {etiqueta: f.ean, saltar: 'sin_portada'};
+    if (!por) return {etiqueta: f.ean, clave, saltar: 'sin_portada', marcar: {sin_portada: true}};
     if (por.rechazada) return {etiqueta: f.ean, clave, saltar: 'portada_con_' + por.rechazada, ...(por.sinMarca ? {} : {marcar: {portada_rechazada: por.rechazada}})};
     const portada = por.url;
     const payload = armarPayloadTradicional({ean: f.ean, titulo: f.titulo, autor: f.autor, editorial: f.editorial, precio: f.precio, plazoDias: PLAZO_DIAS, usaFamilyName, imagenes: [portada], pesoGramos: f.peso_g});
@@ -169,7 +171,7 @@ for (const f of fichas) {
   if (ctx.saltar) {
     filas.push({n: ctx.etiqueta, resultado: ctx.saltar});
     console.log(`${ctx.etiqueta}\tsalteada: ${ctx.saltar}`);
-    if (ctx.marcar && real && !publicadas[ctx.clave]) { publicadas[ctx.clave] = {...ctx.marcar, fecha: new Date().toISOString().slice(0, 10)}; await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1)); }
+    if (ctx.marcar && real && (!publicadas[ctx.clave] || publicadas[ctx.clave].sin_portada)) { publicadas[ctx.clave] = {...ctx.marcar, fecha: new Date().toISOString().slice(0, 10)}; await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1)); }
     continue;
   }
   const {prod} = ctx;
