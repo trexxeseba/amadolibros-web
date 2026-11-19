@@ -109,6 +109,7 @@ const BRUJULA_BLOCKS = [
   ['pedidos', 'Ya pedidos: esperando que lleguen'],
   ['ultimo', 'Último ejemplar de un libro que se vende: pedilo'],
   ['agotados', 'Se agotaron hace poco y vendían seguido: pedilos'],
+  ['hoy', 'Se agotaron en las últimas 48 horas'],
   ['subir', 'Subile el precio'],
   ['agotan', 'Se agotan pronto: pedilos'],
   ['perdida', 'Se venden a pérdida'],
@@ -120,6 +121,7 @@ const bookLink = isbn => `${PANEL_URL}/reposicion?q=${encodeURIComponent(isbn)}`
 const blockTitle = (b, key, title) => key === 'subir' && b.subirTotal > b.subir.length
   ? `${title} (${b.subir.length} de ${b.subirTotal} con stock muy por debajo del mercado; todos en el panel)`
   : key === 'ultimo' && b.ultimoTotal > b.ultimo.length ? `${title} (${b.ultimo.length} de ${b.ultimoTotal}; todos en el panel)`
+  : key === 'hoy' && b.hoyTotal > b.hoy.length ? `${title} (${b.hoy.length} de ${b.hoyTotal}; todos en el panel)`
   : key === 'agotados' && (b.agotadosTotal > b.agotados.length || b.agotadosViejos > 0)
     ? `${title} (${b.agotados.length} de ${b.agotadosTotal}${b.agotadosViejos > 0 ? `; otros ${b.agotadosViejos} se agotaron hace más de 4 meses, en el panel` : '; todos en el panel'})` : title;
 
