@@ -41,6 +41,7 @@ async function validar(payload) {
 const [, , fichasPath, pubPath, ...flags] = process.argv;
 const real = flags.includes('--real');
 const arnoia = flags.includes('--fuente=arnoia');
+const ambos = flags.includes('--ambos'); // catálogo si la ficha existe; si no, publicación normal con portada
 const tradicional = flags.includes('--tradicional'); // solo libros SIN ficha de catálogo (publicación normal con portada)
 const maxPedido = Number(flags.find(f => f.startsWith('--max='))?.slice(6) || 1e9);
 let max = maxPedido;
@@ -115,7 +116,7 @@ const resolverArnoia = async f => {
   const busq = await ml.get('/products/search?' + new URLSearchParams({site_id: 'MLU', status: 'active', product_identifier: f.ean})).catch(() => null);
   const id = busq?.results?.[0]?.id;
   if (!/^MLU\d+$/.test(id ?? '')) {
-    if (!tradicional) return {etiqueta: f.ean, clave, saltar: 'sin_catalogo', marcar: {sin_catalogo: true}};
+    if (!tradicional && !ambos) return {etiqueta: f.ean, clave, saltar: 'sin_catalogo', marcar: {sin_catalogo: true}};
     const portada = (!real && process.env.HERMES_PORTADA_PRUEBA) || await buscarPortada(f.ean); // la de prueba solo vale para validar, nunca para publicar
     if (!portada) return {etiqueta: f.ean, saltar: 'sin_portada'};
     const payload = armarPayloadTradicional({ean: f.ean, titulo: f.titulo, autor: f.autor, editorial: f.editorial, precio: f.precio, plazoDias: PLAZO_DIAS, usaFamilyName, imagenes: [portada], pesoGramos: f.peso_g});
