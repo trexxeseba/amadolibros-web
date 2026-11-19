@@ -90,3 +90,18 @@ test('seguridad: el guardián nunca suelta el freno, reactiva, cambia precios ni
   assert.ok(!/\.put\(|\.post\(/.test(src), 'solo lee de Mercado Libre');
   assert.ok(!/CUENTAS\s*(\.\s*libros|\[\s*['"]libros)/.test(src) && !src.includes('440298103'), 'no debe nombrar Amado Libros');
 });
+
+test('una tanda colgada (más de 40 minutos) se cancela y no tapa el aviso de Arnoia atrasada', () => {
+  const colgada = {'hermes-publicar.yml': [{id: 99, status: 'in_progress', conclusion: null, created_at: hace(70), html_url: 'u'}]};
+  const h = evaluar(base({runs: colgada, publicadas: {'arnoia:1': {item_id: 'MLU1', fuente: 'arnoia', ts: AHORA - 150 * 60000}}}), AHORA);
+  const c = h.find(y => y.clave === 'colgada_99');
+  assert.ok(c); assert.equal(c.accion.tipo, 'cancel'); assert.equal(c.accion.runId, 99);
+  assert.ok(h.some(y => y.clave === 'arnoia_atrasada'), 'la colgada no debe tapar el aviso de Arnoia');
+  const normal = {'hermes-publicar.yml': [{id: 98, status: 'in_progress', created_at: hace(5)}]};
+  assert.ok(!claves(evaluar(base({runs: normal}), AHORA)).some(k => k.startsWith('colgada_')));
+});
+test('ejecutar sabe cancelar una corrida', async () => {
+  const llamadas = [];
+  const h = await ejecutar([{clave: 'c', nivel: 'aviso', texto: 't', accion: {tipo: 'cancel', runId: 7, resumen: 'cancelé'}}], {dispatch: async () => {}, rerun: async () => {}, cancel: async id => llamadas.push(id)});
+  assert.deepEqual(llamadas, [7]); assert.equal(h[0].resultado, 'cancelé');
+});

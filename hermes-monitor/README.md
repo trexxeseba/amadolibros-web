@@ -44,7 +44,7 @@ Reparto: SBS hasta 1.000 por día (45 por hora), Arnoia hasta 1.200 (50 por hora
 ## Guardián (`scripts/guardian/guardian.mjs`)
 Cada 15 minutos (lo lanza el Worker; el cron de GitHub queda de respaldo) mira si algo puede salir mal y avisa por mail en lenguaje simple.
 - **Detecta:** tanda de Arnoia que no corre a su hora (con cupo y libros pendientes), SBS sin corridas buenas o con 3 fallas seguidas, corridas caídas de la tanda o del despliegue del Worker, publicaciones recientes que Mercado Libre pausó o cerró (posible denuncia), fotos que no terminan de cargar en 3 horas y el freno del vigía puesto.
-- **Arregla solo, y nada más que esto:** pedir de nuevo una tanda de Hermes/Arnoia o de SBS que no corrió, y reintentar UNA vez una corrida caída.
+- **Arregla solo, y nada más que esto:** pedir de nuevo una tanda de Hermes/Arnoia o de SBS que no corrió, reintentar UNA vez una corrida caída y cancelar una tanda colgada (más de 40 minutos en curso).
 - **Nunca:** suelta el freno, reactiva publicaciones, cambia precios, borra ni toca Amado Libros (un test lo exige).
 - **Avisos:** no repite el mismo aviso (3 h; 1 h si es grave). Si hace falta que decidas, el mail trae 3 opciones.
 - **Probarlo sin riesgo:** Actions > "Guardián de las publicaciones de Vintage" > Run workflow con `seco` tildado.
@@ -52,3 +52,5 @@ Cada 15 minutos (lo lanza el Worker; el cron de GitHub queda de respaldo) mira s
 
 ## Control de tapas (publicación normal de Arnoia)
 Desde el 19/11/2026 cada tapa pasa por un lector de texto (tesseract) antes de usarse: si trae una dirección web, una @, una red social, un teléfono o una etiqueta de Mercado Libre, el libro se salta y queda anotado (`portada_rechazada`) para no reintentarlo cada hora. Si el lector no está disponible, la tapa no se usa (ante la duda, no se publica). Series vetadas por el control de fotos de Mercado Libre: `data/portadas-vetadas.json` (hoy, Arcolores). Las publicaciones de ficha de catálogo usan las fotos oficiales de Mercado Libre y no pasan por esto.
+
+**Topes de la tanda:** el publicador mira como mucho 4 veces el máximo pedido de libros y corta a los 25 minutos; el workflow tiene un tope de 40 minutos. (El 19/11/2026 una tanda en modo solo catálogo recorrió la lista entera durante casi una hora.)

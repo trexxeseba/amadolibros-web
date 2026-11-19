@@ -86,7 +86,11 @@ const base = {mode: 'me2', local_pick_up: false, free_shipping: true, free_metho
 const variantes = [base, ...(logistica ? [{...base, logistic_type: logistica}, {...base, logistic_type: logistica, local_pick_up: true}] : [{...base, local_pick_up: true}])];
 console.log(`modo ${real ? 'REAL' : 'solo validar'} | family_name ${usaFamilyName} | logística ${logistica}`);
 
-let hechas = 0, erroresSeguidos = 0;
+let hechas = 0, erroresSeguidos = 0, examinadas = 0;
+// Topes de seguridad: el máximo cuenta solo lo publicado, así que en una tanda donde casi nada califica (por ejemplo solo catálogo)
+// el recorrido podía durar horas (19/11/2026: una tanda de casi una hora). Se mira como mucho 4 veces el máximo y hasta 25 minutos.
+const MAX_EXAMINADAS = Math.max(80, Math.min(maxPedido, 1000) * 4);
+const INICIO = Date.now(), MAX_MS = 25 * 60e3;
 const filas = [];
 // Portada por ISBN (decisión de Seba, 18/11/2026: tapas de una librería española). Casa del Libro primero, Open Library
 // como respaldo. Solo se acepta una imagen real: JPEG, de al menos 40 KB (una imagen genérica o de error pesa mucho menos),
@@ -157,8 +161,11 @@ const resolverArnoia = async f => {
 
 for (const f of fichas) {
   if (hechas >= max || erroresSeguidos >= 5) break;
+  if (examinadas >= MAX_EXAMINADAS) { console.log(`Tope de libros revisados (${MAX_EXAMINADAS}): se corta la tanda.`); break; }
+  if (Date.now() - INICIO > MAX_MS) { console.log('Tope de tiempo (25 minutos): se corta la tanda.'); break; }
   const ctx = await (arnoia ? resolverArnoia(f) : resolverHermes(f));
   if (ctx.omitir) continue;
+  examinadas++;
   if (ctx.saltar) {
     filas.push({n: ctx.etiqueta, resultado: ctx.saltar});
     console.log(`${ctx.etiqueta}\tsalteada: ${ctx.saltar}`);

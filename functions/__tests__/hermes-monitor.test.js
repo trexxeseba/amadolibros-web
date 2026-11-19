@@ -174,3 +174,11 @@ test('la serie Arcolores queda vetada para publicación normal', async () => {
   const v = JSON.parse(fs.readFileSync('hermes-monitor/data/portadas-vetadas.json', 'utf8'));
   assert.ok(v.titulo_regex.some(r => new RegExp(r, 'i').test('Dinosaurios ("Arcolores")')));
 });
+
+test('el publicador tiene topes: libros revisados por tanda y tiempo', async () => {
+  const fs = await import('node:fs');
+  const src = fs.readFileSync('hermes-monitor/publicar.mjs', 'utf8');
+  assert.match(src, /examinadas >= MAX_EXAMINADAS/);
+  assert.match(src, /Date\.now\(\) - INICIO > MAX_MS/);
+  assert.match(fs.readFileSync('.github/workflows/hermes-publicar.yml', 'utf8'), /timeout-minutes: 40/);
+});
