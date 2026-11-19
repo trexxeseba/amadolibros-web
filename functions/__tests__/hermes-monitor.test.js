@@ -197,3 +197,13 @@ test('control de tapas: también frena domicilios y datos fiscales; el payload a
   const q = armarPayloadTradicional({ean: '1', titulo: 'x', precio: 1, usaFamilyName: false, imagenes: ['https://x/y.jpg']});
   assert.deepEqual(q.pictures, [{source: 'https://x/y.jpg'}]);
 });
+
+test('control de tapas: una @ suelta del dibujo no cuenta; un usuario o un correo sí', () => {
+  assert.equal(textoNoPermitido('@ (@ @ue Ñ @ \\ > @)'), null);
+  assert.equal(textoNoPermitido('@javihoy'), 'arroba_o_correo');
+  assert.equal(textoNoPermitido('Seguime en @paufeel'), 'arroba_o_correo');
+  assert.equal(textoNoPermitido('@Lusatnam Lourdes Muñoz'), 'arroba_o_correo');
+  assert.equal(textoNoPermitido('escribí a hola@editorial.com'), 'arroba_o_correo');
+  assert.equal(textoNoPermitido('1+1.700.0001'), null);
+  assert.equal(textoNoPermitido('Llamanos al 099 841 325'), 'telefono');
+});
