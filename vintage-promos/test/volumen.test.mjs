@@ -16,7 +16,7 @@ test('encuentra la promo de volumen vigente por nombre', () => {
 
 test('el plan renueva igual: mismo N, porcentaje y largo, desde que termina la actual', () => {
   const p = planRenovacion({ actual: LIKI, ficha: LIKI, porcentajeEsperado: 30, ahora: AHORA });
-  assert.deepEqual(p.body, { promotion_type: 'VOLUME', sub_type: 'SPONTH', name: 'LIKI', start_date: '2026-11-20T03:00:00Z', finish_date: '2026-12-21T02:59:59Z', buy_quantity: 2, discount_percentage: 30, allow_combination: true });
+  assert.deepEqual(p.body, { promotion_type: 'VOLUME', sub_type: 'SPONTH', name: 'LIKI', start_date: '2026-11-20T00:00:00', finish_date: '2026-12-20T23:59:59', buy_quantity: 2, discount_percentage: 30, allow_combination: true });
   assert.equal(p.dias, 31);
 });
 

@@ -21,7 +21,10 @@ export function buscarRenovada(promos, actual) {
     && ['pending', 'started'].includes(String(p.status).toLowerCase()) && Date.parse(p.start_date) >= fin) ?? null;
 }
 
-const iso = ms => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
+// Mercado Libre pide las fechas de creación en formato local (Uruguay, UTC-3, sin horario de verano)
+// y sin 'Z': 2026-11-20T00:00:00 (error real del 19/11/2026: "Start and finish dates must be in local format").
+const UY_MS = 3 * 3600e3;
+const local = ms => new Date(ms - UY_MS).toISOString().replace(/\.\d{3}Z$/, '');
 
 // Cuerpo del POST para renovar "igual": mismos N, mismo porcentaje, misma combinación, mismo
 // largo, empezando justo cuando termina la actual. `porcentajeEsperado` frena si la promo
@@ -40,7 +43,7 @@ export function planRenovacion({ actual, ficha, porcentajeEsperado, ahora = Date
   return {
     body: {
       promotion_type: 'VOLUME', sub_type: f.sub_type ?? 'SPONTH', name: f.name,
-      start_date: iso(nuevoIni), finish_date: iso(nuevoIni + largo - 1000),
+      start_date: local(nuevoIni), finish_date: local(nuevoIni + largo - 1000),
       buy_quantity: buy, discount_percentage: pct, allow_combination: f.allow_combination !== false,
     },
     dias: Math.round(largo / 86400e3),
