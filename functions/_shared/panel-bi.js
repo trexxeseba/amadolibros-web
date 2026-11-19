@@ -176,7 +176,8 @@ export function stockObjetivo(ritmoDias, u90p = 0) {
 // Lentos pero constantes en riesgo: 2 o más ventas propias en 12 meses y lo que
 // queda alcanza para 75 días o menos (los agotados entran con cobertura 0).
 // Sólo la regla, sin base de datos: compras y competencia se agregan después.
-export function constantesEnRiesgo(books) {
+export const AGOTADO_RECIENTE_DIAS = 120;
+export function constantesEnRiesgo(books, now = Date.now()) {
   const out = [];
   for (const b of books) {
     if (!(b.u365p >= CONSTANTE_MIN_VENTAS_365)) continue;
@@ -185,9 +186,14 @@ export function constantesEnRiesgo(books) {
     if (cobertura > COBERTURA_AVISO_DIAS) continue;
     const objetivo = stockObjetivo(ritmo, b.u90p);
     out.push({ isbn: b.isbn, title: b.title, clase: b.clase ?? null, u365p: b.u365p, u90p: b.u90p, u30p: b.u30p ?? 0, u90: b.u90 ?? b.u90p, ritmo, stock: b.stock, cobertura, objetivo,
-      pedir: Math.max(1, objetivo - b.stock), avgPrice: b.avgPrice ?? null, lastMs: b.lastMs ?? null, lastOwnMs: b.lastOwnMs ?? null });
+      pedir: Math.max(1, objetivo - b.stock), avgPrice: b.avgPrice ?? null, lastMs: b.lastMs ?? null, lastOwnMs: b.lastOwnMs ?? null,
+      reciente: (b.lastOwnMs ?? b.lastMs) ? now - (b.lastOwnMs ?? b.lastMs) <= AGOTADO_RECIENTE_DIAS * DAY : false });
   }
-  return out.sort((a, b) => a.cobertura - b.cobertura || b.u365p - a.u365p);
+  // Primero los que todavía tienen un ejemplar (los que se pueden salvar), del que
+  // menos días de venta tiene al que más; después los agotados, los que se
+  // agotaron hace poco antes que los que llevan meses sin stock.
+  return out.sort((a, b) => (b.stock > 0) - (a.stock > 0)
+    || (a.stock > 0 ? a.cobertura - b.cobertura || b.u365p - a.u365p : (b.reciente - a.reciente) || b.u365p - a.u365p));
 }
 
 // Compras de cada ISBN en la forma que necesita el correo: qué se compró
@@ -200,7 +206,9 @@ const supplierLabel = v => String(v ?? '').split(',').map(x => SUPPLIER_LABEL[x.
 export async function comprasDe(db, isbns, now) {
   const out = { byIsbn: new Map(), faltan: [] };
   if (!isbns.length) return out;
-  const sums = await purchaseSummary(db, isbns, now);
+  // purchaseSummary acepta hasta 50 ISBN por vez: en tandas, para no fallar con listas largas.
+  const sums = [];
+  for (let i = 0; i < isbns.length; i += 50) sums.push(...await purchaseSummary(db, isbns.slice(i, i + 50), now));
   for (const p of sums) {
     if (!p.isbn) continue;
     const f = p.ultima_compra_fecha;
@@ -295,27 +303,35 @@ export async function ventasPorMes(db, isbns, now) {
   return out;
 }
 
-// Lentos pero constantes en riesgo, ya con compras y competencia. Los que
-// tienen una compra en camino no se listan (se cuentan aparte).
+// Lentos pero constantes en riesgo, ya con compras y competencia. Sólo se
+// consultan compras y competencia de los más urgentes (CANDIDATOS_MAX): son los
+// que el correo puede mostrar y evita cientos de consultas a D1. Los que tienen
+// una compra en camino no se listan (se cuentan aparte). Los totales cuentan a
+// todos los constantes en riesgo.
+const CANDIDATOS_MAX = 40;
 export async function loadConstantesEnRiesgo(db, books, now, model = null) {
-  const base = constantesEnRiesgo(books);
-  if (!base.length) return { lista: [], total: 0, enCamino: 0, faltan: [] };
-  const isbns = base.map(b => b.isbn);
-  let compras = { byIsbn: new Map(), faltan: [] };
-  try { compras = await comprasDe(db, isbns, now); } catch { /* sin compras cargadas */ }
+  const base = constantesEnRiesgo(books, now);
+  const conStock = base.filter(b => b.stock > 0).length;
+  const agotadosRecientes = base.filter(b => !(b.stock > 0) && b.reciente).length;
+  const totales = { total: base.length, conStock, agotadosRecientes, agotadosViejos: base.length - conStock - agotadosRecientes };
+  if (!base.length) return { lista: [], enCamino: 0, faltan: [], ...totales };
+  const candidatos = base.slice(0, CANDIDATOS_MAX), isbns = candidatos.map(b => b.isbn);
+  let compras = { byIsbn: new Map(), faltan: [] }, comprasError = false;
+  try { compras = await comprasDe(db, isbns, now); } catch { comprasError = true; }
   let comp = new Map();
   try { comp = await competitionByIsbn(db, isbns); } catch { /* sin vigilancia */ }
   let meses = new Map();
   try { meses = await ventasPorMes(db, isbns, now); } catch { /* sin ventas por mes */ }
   let enCamino = 0;
   const lista = [];
-  for (const b of base) {
+  for (const b of candidatos) {
     const c = compras.byIsbn.get(b.isbn) ?? { enCamino: 0, sinIsbn: 0, ultima: null };
-    if (c.enCamino > 0) { enCamino++; continue; }
+    if (!comprasError && c.enCamino > 0) { enCamino++; continue; }
     const costo = model?.costs.get(b.isbn);
-    lista.push({ ...b, compras: c, mercado: mercadoDe(comp.get(b.isbn)), ventasMes: meses.get(b.isbn), costo: costo?.cost ?? null, costoProveedor: costo?.supplier ?? null });
+    // Si no se pudieron leer las compras, la línea lo dice en vez de afirmar que no hay.
+    lista.push({ ...b, compras: comprasError ? undefined : c, mercado: mercadoDe(comp.get(b.isbn)), ventasMes: meses.get(b.isbn), costo: costo?.cost ?? null, costoProveedor: costo?.supplier ?? null });
   }
-  return { lista, total: lista.length, enCamino, faltan: compras.faltan };
+  return { lista, enCamino, faltan: compras.faltan, ...totales };
 }
 
 // Competencia de un ISBN (hechos de competitionByIsbn) en la forma del correo.
@@ -653,15 +669,19 @@ export function brujulaDigest(bi) {
     .filter(b => b.margin < 0)
     .slice(0, DIGEST_ROWS)
     .map(b => ({ isbn: b.isbn, title: b.title, detalle: `lo vendés a $ ${b.price.toLocaleString('es-UY')} y reponerlo cuesta $ ${b.cost.toLocaleString('es-UY')}` }));
-  // Lentos pero constantes con el último ejemplar (o ya agotados): ritmo, precio,
-  // cuántos vendiste, cuánto pedir y si alguien lo tiene inmediato en Uruguay.
-  // Los que ya salieron en "Conviene reponer" no se repiten.
-  const yaListados = new Set([...reponer, ...pedidos].map(r => r.isbn));
-  const ultimoLista = (inv?.constantes?.lista ?? []).filter(b => !yaListados.has(b.isbn));
-  const ultimo = ultimoLista.slice(0, ULTIMO_ROWS).map(b => ({ isbn: b.isbn, title: b.title, detalle: detalleReposicion({ ...b, now: inv.constantes.now ?? Date.now() }, inv.constantes.faltan ?? faltanSin) }));
-  if (!reponer.length && !pedidos.length && !subir.length && !agotan.length && !perdida.length && !ultimo.length) return null;
+  // Lentos pero constantes: los que todavía tienen un ejemplar ("último
+  // ejemplar") y, aparte, los que se agotaron hace poco. Lo que ya salió arriba
+  // no se repite. Los agotados hace más de 4 meses quedan en el panel.
+  const c = inv?.constantes;
+  const yaListados = new Set([...reponer, ...pedidos, ...agotan].map(r => r.isbn));
+  const libres = (c?.lista ?? []).filter(b => !yaListados.has(b.isbn));
+  const conStockL = libres.filter(b => b.stock > 0), agotadosL = libres.filter(b => !(b.stock > 0) && b.reciente);
+  const filaC = b => ({ isbn: b.isbn, title: b.title, detalle: detalleReposicion({ ...b, now: c.now ?? Date.now() }, c.faltan ?? faltanSin) });
+  const ultimo = conStockL.slice(0, ULTIMO_ROWS).map(filaC), agotados = agotadosL.slice(0, ULTIMO_ROWS).map(filaC);
+  if (!reponer.length && !pedidos.length && !subir.length && !agotan.length && !perdida.length && !ultimo.length && !agotados.length) return null;
   // Cuántos libros con stock están muy por debajo del mercado en total: el correo
   // lista pocos y avisa que hay más en el panel.
   const subirTotal = bi?.precios?.ok && bi.precios.data ? bi.precios.data.conStock : 0;
-  return { reponer, pedidos, subir, agotan, perdida, subirTotal, ultimo, ultimoTotal: ultimoLista.length };
+  return { reponer, pedidos, subir, agotan, perdida, subirTotal, ultimo, ultimoTotal: c?.conStock ?? conStockL.length,
+    agotados, agotadosTotal: c?.agotadosRecientes ?? agotadosL.length, agotadosViejos: c?.agotadosViejos ?? 0 };
 }
