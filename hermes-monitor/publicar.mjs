@@ -143,7 +143,7 @@ const buscarPortada = async ean => {
     if (bytes.byteLength < MIN_BYTES_PORTADA) continue;
     if (!real && process.env.HERMES_PORTADA_PRUEBA) return {url};
     let rev;
-    try { rev = await revisarTapa(bytes); } catch { return {rechazada: 'lector_de_texto_no_disponible', sinMarca: true}; }
+    try { rev = await revisarTapa(bytes); } catch (e) { console.log(`${ean}\tlector de tapas falló: ${String(e?.stderr ?? e?.message ?? e).split('\n').filter(Boolean).slice(-2).join(' | ').slice(0, 300)}`); return {rechazada: 'lector_de_texto_no_disponible', sinMarca: true}; }
     if (rev.estado === 'limpia') {
       const nueva = await recodificarTapa(bytes);
       const idNueva = nueva ? await subirFoto(nueva).catch(() => null) : null;
