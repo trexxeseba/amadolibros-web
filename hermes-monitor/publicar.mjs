@@ -24,7 +24,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {exigirVintage, exigirItemDeVintage} from './guardia.mjs';
-import {precioMio, precioDesdeLista, GLIC_SELLER_ID, PRECIO_MINIMO, armarPayload, armarPayloadTradicional, CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, inicioDiaUy} from './lib.mjs';
+import {precioMio, precioDesdeLista, GLIC_SELLER_ID, PRECIO_MINIMO, paqueteDeVendedor, armarPayload, armarPayloadTradicional, CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, inicioDiaUy} from './lib.mjs';
 
 const pausa = ms => new Promise(r => setTimeout(r, ms));
 
@@ -229,11 +229,17 @@ for (const f of fichas) {
   // Libros que Seba aprobó a mano: solo se exime del grupo "copia" (palabras sueltas como pirata, estilo, tipo); el resto de los grupos sigue frenando.
   if (riesgo && !(ctx.aprobado && riesgo === 'copia')) { filas.push({n: ctx.etiqueta, resultado: 'riesgo_pi_' + riesgo}); console.log(`${ctx.etiqueta}\tsalteada: riesgo de propiedad intelectual (${riesgo})`); continue; }
   const precio = ctx.precio;
-  const payload = ctx.payload ?? armarPayload({producto: ctx.producto, precio, categoria: ctx.categoria, nombre: prod.name, familyName: prod.family_name, usaFamilyName, isbn, plazoDias: PLAZO_DIAS});
+  let payload = ctx.payload ?? armarPayload({producto: ctx.producto, precio, categoria: ctx.categoria, nombre: prod.name, familyName: prod.family_name, usaFamilyName, isbn, plazoDias: PLAZO_DIAS});
   let valido = null, ultimo = null;
   for (const shipping of variantes) {
     await pausa(500);
-    const v = await validar({...payload, shipping});
+    let v = await validar({...payload, shipping});
+    // Fichas de catálogo sin medidas de paquete (pasa con muchos libros importados): se agregan las de la banda de un libro de 500 g y se valida de nuevo.
+    if (!v.ok && v.causas.some(c => /package\.dimensions/.test(String(c.code))) && !payload.attributes?.some(a => /SELLER_PACKAGE/.test(a.id))) {
+      payload = {...payload, attributes: [...(payload.attributes ?? []), ...paqueteDeVendedor(500)]};
+      await pausa(500);
+      v = await validar({...payload, shipping});
+    }
     if (v.ok) { valido = shipping; ultimo = v; break; }
     ultimo = v;
     if (!v.causas.some(c => /shipping/.test(String(c.code)))) break;
