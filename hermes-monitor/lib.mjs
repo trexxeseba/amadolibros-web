@@ -1,6 +1,16 @@
 // Lógica pura del chequeo de Hermes (sin red), para poder probarla.
 export const HERMES_SELLER_ID = 471589392; // HERMES_PROMOSML (verificado el 18/11/2026)
 export const UMBRAL_CAMBIO_PRECIO = 0.05;
+// GLIC (tienda oficial; trae los libros de Amazon.com). Seba, 20/11/2026: republicar sus mismos libros a 3 % menos, calculado sobre el
+// PRECIO DE LISTA (el de antes del descuento: GLIC tenía descuentos de hasta 24 %), con un mínimo de $1.200.
+export const GLIC_SELLER_ID = 345281879;
+export const DESCUENTO_SOBRE_GLIC = 0.03;
+export const PRECIO_MINIMO = 1200;
+export function precioDesdeLista(oferta, descuento = DESCUENTO_SOBRE_GLIC) {
+  const actual = Number(oferta?.price), lista = Number(oferta?.original_price);
+  const base = Number.isFinite(lista) && lista > actual ? lista : actual;
+  return Number.isFinite(base) && base > 0 ? Math.round(base * (1 - descuento)) : null;
+}
 
 // De la lista de ofertas de una ficha, la de Hermes (o null si ya no ofrece).
 export function ofertaDeHermes(ofertas, sellerId = HERMES_SELLER_ID) {

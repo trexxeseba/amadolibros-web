@@ -24,7 +24,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {exigirVintage, exigirItemDeVintage} from './guardia.mjs';
-import {precioMio, armarPayload, armarPayloadTradicional, CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, inicioDiaUy} from './lib.mjs';
+import {precioMio, precioDesdeLista, GLIC_SELLER_ID, PRECIO_MINIMO, armarPayload, armarPayloadTradicional, CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, inicioDiaUy} from './lib.mjs';
 
 const pausa = ms => new Promise(r => setTimeout(r, ms));
 
@@ -46,6 +46,7 @@ async function validar(payload) {
 const [, , fichasPath, pubPath, ...flags] = process.argv;
 const real = flags.includes('--real');
 const arnoia = flags.includes('--fuente=arnoia');
+const glic = flags.includes('--fuente=glic'); // mismas fichas de catálogo que Hermes, pero la oferta de referencia es la de GLIC
 const ambos = flags.includes('--ambos'); // catálogo si la ficha existe; si no, publicación normal con portada
 const tradicional = flags.includes('--tradicional'); // solo libros SIN ficha de catálogo (publicación normal con portada)
 const maxPedido = Number(flags.find(f => f.startsWith('--max='))?.slice(6) || 1e9);
@@ -163,12 +164,14 @@ const descripcionDe = f => `${normalizarTitulo(f.titulo)}${f.autor ? ', de ' + n
 const resolverHermes = async f => {
   if (conArroba(f)) return {etiqueta: f.n, saltar: 'arroba_en_datos'};
   if (publicadas[f.producto] || f.mi_mlu || descartadas.has(f.producto)) return {omitir: true};
-  const lec = await leerFicha(ml, f.producto);
-  if (!lec.oferta) return {etiqueta: f.n, saltar: 'hermes_no_ofrece'};
+  const lec = await leerFicha(ml, f.producto, undefined, glic ? GLIC_SELLER_ID : undefined);
+  if (!lec.oferta) return {etiqueta: f.n, saltar: glic ? 'glic_no_ofrece' : 'hermes_no_ofrece'};
+  const precioFicha = glic ? precioDesdeLista(lec.oferta) : precioMio(lec.oferta.price);
+  if (glic && (!precioFicha || precioFicha < PRECIO_MINIMO)) return {etiqueta: f.n, saltar: 'precio_bajo_minimo'};
   await pausa(500);
   const prod = await ml.get(`/products/${f.producto}`).catch(() => null);
   if (!prod || prod.status !== 'active') return {etiqueta: f.n, saltar: 'ficha_inactiva'};
-  return {etiqueta: f.n, clave: f.producto, producto: f.producto, prod, precio: precioMio(lec.oferta.price), categoria: lec.oferta.category_id, registro: {precio_hermes: lec.oferta.price}, nota: `Hermes ${lec.oferta.price}`, titulo: f.titulo};
+  return {etiqueta: f.n, clave: f.producto, producto: f.producto, prod, precio: precioFicha, categoria: lec.oferta.category_id, registro: glic ? {precio_glic: lec.oferta.price, precio_lista_glic: lec.oferta.original_price ?? null, fuente_glic: true} : {precio_hermes: lec.oferta.price}, nota: `${glic ? 'GLIC' : 'Hermes'} ${lec.oferta.price}`, titulo: f.titulo};
 };
 // Regla de Seba (20/11/2026): una @ en el título, el autor o la editorial deja el libro fuera. Va antes de todo: no se busca, no se limpia, no se sube, no se guarda.
 const conArroba = f => /@/.test([f.titulo, f.autor, f.editorial].filter(Boolean).join(' '));
@@ -245,7 +248,7 @@ for (const f of fichas) {
     try { exigirItemDeVintage(await ml.get(`/items/${r?.id}`)); }
     catch (e) { await ml.put(`/items/${r?.id}`, {status: 'paused'}).catch(() => {}); console.log(`${ctx.etiqueta}\tCORTE: ${e.code} (${r?.id}), se pausó y se frena todo`); process.exit(1); }
     if (ctx.descripcion && r?.id) await ml.post(`/items/${r.id}/description`, {plain_text: ctx.descripcion}).catch(e => console.log(`${ctx.etiqueta}\tdescripción no cargada (${e.code})`));
-    publicadas[ctx.clave] = {item_id: r?.id, precio, ...ctx.registro, fuente: arnoia ? 'arnoia' : 'hermes', fecha: new Date().toISOString().slice(0, 10), ts: Date.now(), cuenta: CUENTA_HERMES};
+    publicadas[ctx.clave] = {item_id: r?.id, precio, ...ctx.registro, fuente: arnoia ? 'arnoia' : glic ? 'glic' : 'hermes', fecha: new Date().toISOString().slice(0, 10), ts: Date.now(), cuenta: CUENTA_HERMES};
     await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1));
     erroresSeguidos = 0; hechas++;
     console.log(`${ctx.etiqueta}\tPUBLICADA ${r?.id} precio ${precio}`);

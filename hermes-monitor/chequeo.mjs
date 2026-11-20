@@ -18,7 +18,7 @@ const PAUSA_MS = 500; // entre una consulta y otra, a propósito: en paralelo ML
 const MAX_PAUSAS = 30;
 const pausa = ms => new Promise(r => setTimeout(r, ms));
 
-export async function leerFicha(ml, producto, pausaMs = PAUSA_MS) {
+export async function leerFicha(ml, producto, pausaMs = PAUSA_MS, sellerId = undefined) {
   const ofertas = [];
   for (let offset = 0; offset < 200; offset += 50) {
     await pausa(pausaMs);
@@ -26,9 +26,9 @@ export async function leerFicha(ml, producto, pausaMs = PAUSA_MS) {
     try { r = await ml.get(`/products/${producto}/items?limit=50&offset=${offset}`); }
     catch (e) { return {error: e.code ?? String(e)}; }
     ofertas.push(...(r?.results ?? []));
-    if (ofertaDeHermes(ofertas) || ofertas.length >= (r?.paging?.total ?? 0)) break;
+    if (ofertaDeHermes(ofertas, sellerId) || ofertas.length >= (r?.paging?.total ?? 0)) break;
   }
-  return {oferta: ofertaDeHermes(ofertas), total: ofertas.length, ofertas};
+  return {oferta: ofertaDeHermes(ofertas, sellerId), total: ofertas.length, ofertas};
 }
 
 async function pausarMia(ml, ficha, real) {
