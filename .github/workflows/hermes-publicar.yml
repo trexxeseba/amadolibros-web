@@ -93,7 +93,7 @@ jobs:
           if [ "$FUENTE" = "arnoia" ]; then
             node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-catalogo-19-11.json "$RUNNER_TEMP/datos/publicadas-vintage.json" --fuente=arnoia --ambos ${TRADICIONAL} $REAL --max=${{ inputs.cantidad || '70' }}
           elif [ "$FUENTE" = "glic" ]; then
-            node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas-glic.json" "$RUNNER_TEMP/datos/publicadas-vintage.json" --fuente=glic $REAL --max=${{ inputs.cantidad || '25' }}
+            node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas-glic.json" "$RUNNER_TEMP/datos/publicadas-vintage.json" --fuente=glic $REAL --max=${{ inputs.cantidad || '60' }}
           else
             node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/publicadas-vintage.json" $REAL --max=${{ inputs.cantidad || '25' }}
           fi
