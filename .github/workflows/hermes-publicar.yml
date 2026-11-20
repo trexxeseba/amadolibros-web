@@ -9,6 +9,7 @@ name: Hermes y Arnoia publicar (Amado Vintage)
 on:
   schedule:
     - cron: '7 12-18 * * *'    # Hermes: 09:07 a 15:07 de Montevideo; cuando no queda nada por publicar no hace nada
+    - cron: '47 * * * *'       # GLIC: todas las horas al :47 (60 por tanda), mismo techo diario compartido
     - cron: '17 * * * *'       # Arnoia: todas las horas al :17 (50 por tanda), catálogo o publicación normal; techo diario compartido
   workflow_dispatch:
     inputs:
@@ -85,7 +86,7 @@ jobs:
       - name: Validar o publicar
         env:
           TRADICIONAL_IN: ${{ inputs.tradicional || 'false' }}
-          FUENTE: ${{ inputs.fuente || ((github.event.schedule == '17 * * * *') && 'arnoia' || 'hermes') }}
+          FUENTE: ${{ inputs.fuente || ((github.event.schedule == '17 * * * *') && 'arnoia' || (github.event.schedule == '47 * * * *') && 'glic' || 'hermes') }}
         run: |
           REAL=""; [ "${{ inputs.modo || 'publicar' }}" = "publicar" ] && REAL="--real"
           TRADICIONAL=""; [ "$TRADICIONAL_IN" = "true" ] && TRADICIONAL="--tradicional"
