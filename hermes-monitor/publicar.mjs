@@ -185,7 +185,9 @@ const resolverArnoia = async f => {
   if (!/^MLU\d+$/.test(id ?? '')) {
     if (!tradicional && !ambos) return {etiqueta: f.ean, clave, saltar: 'sin_catalogo', marcar: {sin_catalogo: true}};
     if (vetadas.some(r => r.test(f.titulo))) return {etiqueta: f.ean, saltar: 'serie_vetada_por_fotos'};
-    if (previo?.portada_rechazada) return {omitir: true};
+    if (previo?.portada_rechazada || previo?.sin_autor) return {omitir: true};
+    // Mercado Libre exige el autor en la publicación normal: sin autor no se valida (20/11/2026: 5 seguidos sin autor frenaron la tanda con solo 7 altas).
+    if (!String(f.autor ?? '').trim()) return {etiqueta: f.ean, clave, saltar: 'sin_autor', marcar: {sin_autor: true}};
     // Sin portada disponible: se anota y se vuelve a probar a la semana (no se re-mira en cada tanda, que gasta el tope de libros revisados).
     if (previo?.sin_portada && Date.now() - Date.parse(previo.fecha ?? 0) < 7 * 86400e3) return {omitir: true};
     const por = await buscarPortada(f.ean); // la portada de prueba solo vale para validar, nunca para publicar
