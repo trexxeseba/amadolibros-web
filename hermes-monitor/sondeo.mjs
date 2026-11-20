@@ -1,38 +1,17 @@
-// Sondeo de LECTURA (no escribe nada en Mercado Libre): muestra qué datos entrega la API oficial
-// para unas pocas fichas de catálogo, para saber de dónde sacar precio y stock de Hermes.
-// Una consulta por vez, con 500 ms de pausa. Sólo imprime datos públicos de las fichas.
-import fs from 'node:fs/promises';
+// Prueba temporal de lectura (no se mergea): motivo de una publicación en revisión y estado de las últimas 150.
 import {CUENTAS} from '../precio-ganador/src/config.mjs';
 import {fuenteTokenD1} from '../precio-ganador/src/token.mjs';
 import {crearCliente} from '../precio-ganador/src/ml.mjs';
 import {CUENTA_HERMES} from './lib.mjs';
-
-const pausa=ms=>new Promise(r=>setTimeout(r,ms));
 const ml=crearCliente(fuenteTokenD1(CUENTAS[CUENTA_HERMES]),{concurrencia:1});
-const fichas=JSON.parse(await fs.readFile(process.argv[2],'utf8')).slice(0,Number(process.argv[3]||3));
-const get=async(path)=>{await pausa(500);try{return await ml.get(path);}catch(e){console.log('ERR',path,e.code,JSON.stringify(e.detalle));return null;}};
-const campos=(o,ks)=>Object.fromEntries(ks.map(k=>[k,o?.[k]]));
-
-const vendedores=new Map(); // seller_id -> {nickname, fichas}
-for(const f of fichas){
- console.log('\n=== ficha',f.n,f.producto);
- const lista=await get(`/products/${f.producto}/items?limit=50`);
- const ofertas=lista?.results??[];
- console.log('ofertas',ofertas.length,'de',lista?.paging?.total);
- for(const o of ofertas){
-  if(!vendedores.has(o.seller_id)){
-   const u=await get(`/users/${o.seller_id}`);
-   vendedores.set(o.seller_id,{nickname:u?.nickname??null});
-  }
- }
- const hermes=ofertas.filter(o=>/hermes/i.test(vendedores.get(o.seller_id)?.nickname??''));
- console.log('ofertas de Hermes:',JSON.stringify(hermes.map(o=>({item:o.item_id,seller:o.seller_id,precio:o.price}))));
- // Para ver qué stock/estado expone un item ajeno: el de Hermes si hay, si no el primero.
- const muestra=hermes[0]??ofertas[0];
- if(muestra){
-  const it=await get(`/items/${muestra.item_id}`);
-  console.log('item',muestra.item_id,JSON.stringify(campos(it,['status','sub_status','price','available_quantity','sold_quantity','seller_id','catalog_listing','condition'])));
- }
-}
-console.log('\nvendedores vistos:',JSON.stringify([...vendedores].map(([id,v])=>[id,v.nickname])));
-console.log('llamadas',JSON.stringify(ml.stats));
+const pausa=ms=>new Promise(r=>setTimeout(r,ms));
+const get=async p=>{await pausa(350);try{return await ml.get(p);}catch(e){return {error:e.code,detalle:e.detalle};}};
+const id='MLU1542039880';
+const it=await get('/items/'+id);
+console.log('=== ITEM',id,JSON.stringify({status:it.status,sub_status:it.sub_status,title:it.title??it.family_name,price:it.price,date_created:it.date_created,last_updated:it.last_updated,fotos:(it.pictures||[]).map(p=>p.size+' '+p.max_size),tags:it.tags}));
+console.log('MODERACION',JSON.stringify(await get('/moderations/last_moderation/'+id+'-ITM')).slice(0,1800));
+const ult=[["arnoia:9788466685139", "MLU1542053556"], ["arnoia:9791388277023", "MLU1542053548"], ["arnoia:9788414359907", "MLU1542040868"], ["arnoia:9791387775544", "MLU1542028338"], ["arnoia:9788466390514", "MLU1542090426"], ["arnoia:9788425373152", "MLU1542040856"], ["arnoia:9791387598440", "MLU1542053520"], ["arnoia:9788411082471", "MLU1542090414"], ["arnoia:9791388074363", "MLU1542090412"], ["arnoia:9788448873639", "MLU1542028290"], ["arnoia:9788448874292", "MLU1542053494"], ["arnoia:9791388387302", "MLU1542028286"], ["arnoia:9788425373602", "MLU1542028284"], ["arnoia:9791388334979", "MLU1542090402"], ["arnoia:9791399142365", "MLU1542040828"], ["arnoia:9791388334825", "MLU1542028280"], ["arnoia:9788429333299", "MLU1542040826"], ["arnoia:9788410650916", "MLU1542040824"], ["arnoia:9788432175671", "MLU1542028272"], ["arnoia:9788425236921", "MLU1542090392"], ["arnoia:9791388003400", "MLU1542090390"], ["arnoia:9791388078606", "MLU1542028268"], ["arnoia:9791399242522", "MLU1542090382"], ["arnoia:9791388415265", "MLU1542040814"], ["arnoia:9791388182471", "MLU1542040812"], ["arnoia:9788441444997", "MLU1542028250"], ["arnoia:9788412944051", "MLU1542090374"], ["arnoia:9788410046986", "MLU1542040808"], ["arnoia:9788413204451", "MLU1542028246"], ["arnoia:9788418875830", "MLU1542053462"], ["arnoia:9788410318564", "MLU1542040804"], ["arnoia:9791388234620", "MLU1542090362"], ["arnoia:9791370610241", "MLU1542040802"], ["arnoia:9788498297478", "MLU1542040800"], ["arnoia:9788432175527", "MLU1542090356"], ["arnoia:9791388154492", "MLU1542028240"], ["arnoia:9788428575911", "MLU1542040792"], ["arnoia:9788432175619", "MLU1542028232"], ["arnoia:9791388328121", "MLU1542028230"], ["arnoia:9788413434766", "MLU1542090346"], ["arnoia:9788430123193", "MLU1542053442"], ["arnoia:9788432175329", "MLU1542053440"], ["arnoia:9788413686561", "MLU1542040786"], ["arnoia:9788410295186", "MLU1542090328"], ["arnoia:9791039583510", "MLU1542028212"], ["arnoia:9788429333282", "MLU1542053428"], ["arnoia:9788413686523", "MLU1542053424"], ["arnoia:9788432175237", "MLU1542053418"], ["arnoia:9788441445550", "MLU1542028204"], ["arnoia:9786075842752", "MLU1542040782"], ["arnoia:9791388003240", "MLU1542028188"], ["arnoia:9791370330705", "MLU1542040770"], ["arnoia:9791388299391", "MLU1542028184"], ["arnoia:9791370610326", "MLU1542090310"], ["arnoia:9791388390036", "MLU1542090308"], ["arnoia:9791370610500", "MLU1542040768"], ["arnoia:9788419619983", "MLU1542040766"], ["arnoia:9788410296312", "MLU1542028178"], ["arnoia:9791370331733", "MLU1542090302"], ["arnoia:9791388415234", "MLU1542040764"], ["arnoia:9788427152014", "MLU1542040762"], ["arnoia:9788417951740", "MLU1542040760"], ["arnoia:9788499502779", "MLU1542090294"], ["arnoia:9788432175497", "MLU1542040756"], ["arnoia:9788430123186", "MLU1542040742"], ["arnoia:9791388155413", "MLU1542028168"], ["arnoia:9789403247878", "MLU1542040740"], ["arnoia:9791387936594", "MLU1542090286"], ["arnoia:9791399157451", "MLU1542028164"], ["arnoia:9791388334603", "MLU1542040736"], ["arnoia:9791388328107", "MLU1542053392"], ["arnoia:9791387906375", "MLU1542028160"], ["arnoia:9791039584241", "MLU1542040734"], ["arnoia:9788412752090", "MLU1542040732"], ["arnoia:9791388328084", "MLU1542040728"], ["arnoia:9791387748845", "MLU1542040716"], ["arnoia:9791370610425", "MLU1542040700"], ["arnoia:9788427152137", "MLU1542053368"], ["arnoia:9788413393001", "MLU1542090252"], ["arnoia:9798384604839", "MLU1542090250"], ["arnoia:9791370331849", "MLU1542053358"], ["arnoia:9791370610364", "MLU1542028116"], ["arnoia:9788411628280", "MLU1542090244"], ["arnoia:9788410858640", "MLU1542028110"], ["arnoia:9791370331757", "MLU1542090242"], ["arnoia:9789992083314", "MLU1542053352"], ["arnoia:9791399254419", "MLU1542028086"], ["arnoia:9788488540676", "MLU1542040680"], ["arnoia:9788432175800", "MLU1542090232"], ["arnoia:9788432175770", "MLU1542040676"], ["arnoia:9791387936570", "MLU1542090230"], ["arnoia:9788430123162", "MLU1542028084"], ["arnoia:9788413393032", "MLU1542053342"], ["arnoia:9788413393056", "MLU1542040674"], ["arnoia:9789403247854", "MLU1542090226"], ["arnoia:9788428575959", "MLU1542040672"], ["arnoia:9788413392899", "MLU1542040670"], ["arnoia:9788419868800", "MLU1542028074"], ["arnoia:9788429333275", "MLU1542053332"], ["arnoia:9788441445086", "MLU1542053330"], ["arnoia:9788413686332", "MLU1542039886"], ["arnoia:9788410650534", "MLU1542052610"], ["arnoia:9791370331726", "MLU1542039882"], ["arnoia:9791388042720", "MLU1542039880"], ["arnoia:9791388441271", "MLU1542027262"], ["arnoia:9788413434711", "MLU1542089412"], ["arnoia:9788432175169", "MLU1542052600"], ["arnoia:9788428575966", "MLU1542027260"], ["arnoia:9791387596859", "MLU1542027258"], ["arnoia:9788428575942", "MLU1542039872"], ["arnoia:9791370331689", "MLU1542089404"], ["arnoia:9791399254617", "MLU1542039864"], ["arnoia:9791370313456", "MLU1542039858"], ["arnoia:9788429333343", "MLU1542039856"], ["arnoia:9781836066385", "MLU1542027246"], ["arnoia:9791388408014", "MLU1542089394"], ["arnoia:9788410677364", "MLU1542027244"], ["arnoia:9791388287145", "MLU1542027242"], ["arnoia:9791388471025", "MLU1542027228"], ["arnoia:9791387604783", "MLU1542027222"], ["arnoia:9788419684592", "MLU1542027212"], ["arnoia:9789505187102", "MLU1542027210"], ["arnoia:9791399252514", "MLU1542027204"], ["arnoia:9788413643687", "MLU1542027202"], ["arnoia:9791388042669", "MLU1542052556"], ["arnoia:9788410424609", "MLU1542039820"], ["arnoia:9788418431432", "MLU1542027200"], ["arnoia:9791388015779", "MLU1542089358"], ["arnoia:9788410677463", "MLU1542052554"], ["arnoia:9791399220698", "MLU1542039818"], ["arnoia:9791387597450", "MLU1542089354"], ["arnoia:9791399109085", "MLU1542052548"], ["arnoia:9791387592660", "MLU1542039816"], ["arnoia:9791388324222", "MLU1542052546"], ["arnoia:9791388324246", "MLU1542052544"], ["arnoia:9791039585378", "MLU1542039812"], ["arnoia:9788419026354", "MLU1542027186"], ["arnoia:9788410002616", "MLU1542089350"], ["arnoia:9788418309878", "MLU1542027182"], ["arnoia:9791399187786", "MLU1542027180"], ["arnoia:9791388381379", "MLU1542052538"], ["arnoia:9788425452710", "MLU1542089348"], ["arnoia:9788418128592", "MLU1542089346"], ["arnoia:9791399185898", "MLU1542089344"], ["arnoia:9791388030208", "MLU1542039810"], ["arnoia:9788413618005", "MLU1542039808"], ["arnoia:9791388051135", "MLU1542027174"], ["arnoia:9788410344433", "MLU1542039802"], ["arnoia:9791399236729", "MLU1542052532"], ["arnoia:9788419877895", "MLU1542089342"]];
+const cuenta={};const malos=[];
+for(const [k,iid] of ult){const x=await get('/items/'+iid);const e=(x.status||'err')+'/'+((x.sub_status||[]).join(',')||'-');cuenta[e]=(cuenta[e]||0)+1;if(x.status!=='active'&&!String(x.sub_status).includes('picture_download_pending'))malos.push(k+' '+iid+' '+e);}
+console.log('ESTADO de las últimas 150:',JSON.stringify(cuenta));
+console.log('NO ACTIVAS:',malos.join(' | ')||'ninguna');
