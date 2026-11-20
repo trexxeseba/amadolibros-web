@@ -116,7 +116,7 @@ export function evaluar(d, ahora = Date.now()) {
   });
 
   // Publicaciones que Mercado Libre pausó o cerró: el informe cuenta de cada una qué libro es, el motivo exacto y qué se hizo.
-  const pausadas = (d.items ?? []).filter(i => i.status !== 'active' && !(i.status === 'paused' && String(i.sub_status).includes('picture_download_pending')));
+  const pausadas = (d.items ?? []).filter(i => i.status !== 'active' && !String(i.sub_status).includes('deleted') && !(i.status === 'paused' && String(i.sub_status).includes('picture_download_pending')));
   if (pausadas.length) {
     const deFotos = pausadas.every(i => String(i.moderacion?.filtro ?? '').startsWith('OCR_'));
     const unico = pausadas.length === 1 ? pausadas[0] : null;

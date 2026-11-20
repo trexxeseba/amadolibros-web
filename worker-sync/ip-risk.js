@@ -62,6 +62,8 @@ export function normalizeText(text){
 // ipRisk(título, editorial): el título y la editorial se revisan juntos; los nombres cortos de
 // editoriales educativas, sólo en la editorial.
 export function ipRisk(title,publisher){
+ // Regla de Seba (20/11/2026): una @ en el título, el autor o la editorial deja el libro fuera, sin limpiar nada.
+ if(/@/.test([title,publisher].filter(Boolean).join(' ')))return 'arroba';
  const text=normalizeText([title,publisher].filter(Boolean).join(' '));
  if(!text)return null;
  for(const [name,re] of COMPILED)if(re.test(text))return name;

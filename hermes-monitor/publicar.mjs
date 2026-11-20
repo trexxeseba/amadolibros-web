@@ -102,22 +102,16 @@ const filas = [];
 const MIN_BYTES_PORTADA = 40000;
 const vetadas = JSON.parse(await fs.readFile(new URL('./data/portadas-vetadas.json', import.meta.url), 'utf8').catch(() => '{"titulo_regex":[]}')).titulo_regex.map(r => new RegExp(r, 'i'));
 const execFileP = promisify(execFile);
-// Lector de texto (tesseract). Si no está instalado o falla, la tapa NO se usa: ante la duda no se publica una publicación normal.
-async function leerTextoDeTapa(bytes) {
-  const f = path.join(os.tmpdir(), `tapa-${process.pid}-${Date.now()}.jpg`);
-  await fs.writeFile(f, Buffer.from(bytes));
-  try { return (await execFileP('tesseract', [f, 'stdout', '-l', 'spa+eng', '--psm', '11'], {timeout: 90000, maxBuffer: 4e6})).stdout; }
-  finally { await fs.rm(f, {force: true}); }
-}
-// Borra de la tapa lo no permitido (hermes-monitor/limpiar_tapa.py: OCR con posiciones + inpaint) y vuelve a comprobar. Devuelve los bytes o null.
-async function limpiarTapa(bytes) {
+// Revisa la tapa con hermes-monitor/limpiar_tapa.py (lector de texto con la tapa agrandada). Devuelve:
+// {estado:'limpia'} | {estado:'borrada', bytes} | {estado:'no_se_pudo', motivo}. Si el lector falla, la tapa NO se usa.
+async function revisarTapa(bytes) {
   const base = path.join(os.tmpdir(), `tapa-${process.pid}-${Date.now()}`);
   const entrada = base + '-in.jpg', salida = base + '-out.jpg';
   await fs.writeFile(entrada, Buffer.from(bytes));
   try {
     const {stdout} = await execFileP('python3', [fileURLToPath(new URL('./limpiar_tapa.py', import.meta.url)), entrada, salida], {timeout: 240000, maxBuffer: 4e6});
     const r = JSON.parse(stdout.trim().split('\n').pop());
-    return r.estado === 'borrada' ? await fs.readFile(salida) : null;
+    return r.estado === 'borrada' ? {estado: 'borrada', motivo: (r.borradas ?? []).join(','), bytes: await fs.readFile(salida)} : r;
   } finally { await fs.rm(entrada, {force: true}); await fs.rm(salida, {force: true}); }
 }
 // Sube una foto a Mercado Libre (pictures/items/upload) y devuelve su id. Con ella se publica {id} en vez de una URL externa.
@@ -137,23 +131,22 @@ const buscarPortada = async ean => {
     const bytes = await r.arrayBuffer().catch(() => new ArrayBuffer(0));
     if (bytes.byteLength < MIN_BYTES_PORTADA) continue;
     if (!real && process.env.HERMES_PORTADA_PRUEBA) return {url};
-    let texto;
-    try { texto = await leerTextoDeTapa(bytes); } catch { return {rechazada: 'lector_de_texto_no_disponible', sinMarca: true}; }
-    const motivo = textoNoPermitido(texto);
-    if (!motivo) return {url};
-    // Mercado Libre pide sacar de las fotos los datos de contacto y las referencias externas: se borran de la tapa y se sube la limpia.
-    // Si no se puede limpiar del todo (por ejemplo, un desplegable de caja con QR y domicilios), el libro se salta.
-    const limpia = await limpiarTapa(bytes).catch(() => null);
-    if (!limpia) return {rechazada: motivo};
-    const id = await subirFoto(limpia).catch(() => null);
-    if (id) console.log(`${ean}\ttapa limpiada (se borró: ${motivo}) y subida a Mercado Libre`);
-    return id ? {pictureId: id, limpiada: motivo} : {rechazada: 'no_se_pudo_subir_la_tapa_limpia'};
+    let rev;
+    try { rev = await revisarTapa(bytes); } catch { return {rechazada: 'lector_de_texto_no_disponible', sinMarca: true}; }
+    if (rev.estado === 'limpia') return {url};
+    // Una @ en la tapa: el libro se salta, sin limpiar ni subir nada (regla de Seba, 20/11/2026).
+    // Otros datos de contacto o referencias externas se borran de la tapa y se sube la limpia; si no se puede, el libro se salta.
+    if (rev.estado !== 'borrada') return {rechazada: rev.motivo ?? 'tapa_no_apta'};
+    const id = await subirFoto(rev.bytes).catch(() => null);
+    if (id) console.log(`${ean}\ttapa limpiada (se borró: ${rev.motivo}) y subida a Mercado Libre`);
+    return id ? {pictureId: id, limpiada: rev.motivo} : {rechazada: 'no_se_pudo_subir_la_tapa_limpia'};
   }
   return null;
 };
 const descripcionDe = f => `${normalizarTitulo(f.titulo)}${f.autor ? ', de ' + normalizarAutor(f.autor) : ''}.${f.editorial ? ' Editorial ' + titulo1(f.editorial) + '.' : ''}\n\nLibro nuevo, importado de España. Lo traemos especialmente para vos: la entrega se coordina en un plazo de ${PLAZO_DIAS} días. Envío a domicilio incluido.`;
 
 const resolverHermes = async f => {
+  if (conArroba(f)) return {etiqueta: f.n, saltar: 'arroba_en_datos'};
   if (publicadas[f.producto] || f.mi_mlu || descartadas.has(f.producto)) return {omitir: true};
   const lec = await leerFicha(ml, f.producto);
   if (!lec.oferta) return {etiqueta: f.n, saltar: 'hermes_no_ofrece'};
@@ -162,7 +155,10 @@ const resolverHermes = async f => {
   if (!prod || prod.status !== 'active') return {etiqueta: f.n, saltar: 'ficha_inactiva'};
   return {etiqueta: f.n, clave: f.producto, producto: f.producto, prod, precio: precioMio(lec.oferta.price), categoria: lec.oferta.category_id, registro: {precio_hermes: lec.oferta.price}, nota: `Hermes ${lec.oferta.price}`, titulo: f.titulo};
 };
+// Regla de Seba (20/11/2026): una @ en el título, el autor o la editorial deja el libro fuera. Va antes de todo: no se busca, no se limpia, no se sube, no se guarda.
+const conArroba = f => /@/.test([f.titulo, f.autor, f.editorial].filter(Boolean).join(' '));
 const resolverArnoia = async f => {
+  if (conArroba(f)) return {etiqueta: f.ean, saltar: 'arroba_en_datos'};
   const clave = 'arnoia:' + f.ean;
   const previo = publicadas[clave];
   if (previo?.item_id) return {omitir: true};
@@ -189,7 +185,7 @@ const resolverArnoia = async f => {
   const prod = await ml.get(`/products/${id}`).catch(() => null);
   if (!prod || prod.status !== 'active') return {etiqueta: f.ean, saltar: 'ficha_inactiva'};
   if ((prod.children_ids ?? []).length) return {etiqueta: f.ean, saltar: 'ficha_con_variantes'};
-  return {etiqueta: f.ean, clave, producto: id, prod, precio: f.precio, categoria: 'MLU1196', registro: {ean: f.ean}, nota: f.titulo.slice(0, 30), titulo: f.titulo, editorial: f.editorial, aprobado: f.aprobado_por_seba === true};
+  return {etiqueta: f.ean, clave, producto: id, prod, precio: f.precio, categoria: 'MLU1196', registro: {ean: f.ean}, nota: f.titulo.slice(0, 30), titulo: f.titulo, autor: f.autor, editorial: f.editorial, aprobado: f.aprobado_por_seba === true};
 };
 
 for (const f of fichas) {
@@ -209,7 +205,7 @@ for (const f of fichas) {
   const isbn = ctx.isbn ?? (prod.attributes ?? []).find(a => a.id === 'GTIN' || a.id === 'ISBN')?.value_name ?? null;
   if (isbn && bloqueados.has(String(isbn))) { filas.push({n: ctx.etiqueta, resultado: 'isbn_bloqueado_por_denuncia'}); console.log(`${ctx.etiqueta}\tsalteada: ISBN bloqueado por denuncia`); continue; }
   const editorial = (prod.attributes ?? []).find(a => ['BOOK_PUBLISHER', 'PUBLISHER'].includes(a.id))?.value_name;
-  const riesgo = ipRisk([prod.name, prod.family_name, ctx.titulo].filter(Boolean).join(' '), editorial || ctx.editorial);
+  const riesgo = ipRisk([prod.name, prod.family_name, ctx.titulo, ctx.autor].filter(Boolean).join(' '), editorial || ctx.editorial);
   // Libros que Seba aprobó a mano: solo se exime del grupo "copia" (palabras sueltas como pirata, estilo, tipo); el resto de los grupos sigue frenando.
   if (riesgo && !(ctx.aprobado && riesgo === 'copia')) { filas.push({n: ctx.etiqueta, resultado: 'riesgo_pi_' + riesgo}); console.log(`${ctx.etiqueta}\tsalteada: riesgo de propiedad intelectual (${riesgo})`); continue; }
   const precio = ctx.precio;

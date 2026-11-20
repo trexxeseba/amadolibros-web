@@ -44,7 +44,7 @@ test('alertas de la investigación del 19/11/2026: contacto externo, sexo/kama s
  assert.equal(ipRisk('Prozac Nation','Anagrama'),'medicamento');
  assert.equal(ipRisk('Clonazepam: guía'),'medicamento');
  assert.equal(ipRisk('Escribime por WhatsApp para pagar por fuera'),'contacto');
- assert.equal(ipRisk('Libro nuevo, contacto vendedor@gmail.com'),'contacto');
+ assert.equal(ipRisk('Libro nuevo, contacto vendedor@gmail.com'),'arroba');
  assert.equal(ipRisk('Escribime por t.me/vendedor'),'contacto');
  assert.equal(ipRisk('Counterfeit edition'),'imitacion');
  assert.equal(ipRisk('Libro escaneado'),'imitacion');
@@ -62,4 +62,10 @@ test('pirata, estilo, tipo e imitación siguen retenidas hasta que Seba apruebe 
  assert.equal(ipRisk('La imitación de Cristo','San Pablo'),'copia');
  assert.equal(ipRisk('Referentes estilo. Chanel nº 5','Blume'),'copia');
  assert.equal(ipRisk('Un libro con Birkin y Rolex'),'marca');
+});
+
+test('una arroba en el título, el autor o la editorial deja el libro fuera',()=>{
+ assert.equal(ipRisk('Los dones de los niños altamente sensibles URSULA PERONA @URSULAPERONAPSICOLOGA','ZENITH'),'arroba');
+ assert.equal(ipRisk('Psicología Zombi','VERGARA @algo'),'arroba');
+ assert.equal(ipRisk('Psicología Zombi','Vergara'),null);
 });
