@@ -76,7 +76,7 @@ test('detecta cambio de precio contra el historial', async () => {
   assert.match(r.resumen, /de \$800 a \$1000/);
 });
 
-import {precioMio, armarPayload} from '../../hermes-monitor/lib.mjs';
+import {precioMio, precioDesdeLista, armarPayload} from '../../hermes-monitor/lib.mjs';
 test('precioMio es 1 % menos que Hermes, en pesos enteros', () => {
   assert.equal(precioMio(1810), 1792);
   assert.equal(precioMio(1000), 990);
@@ -215,4 +215,11 @@ test('Hermes sale con plazo a demanda de 18 días, igual que SBS', async () => {
   assert.match(src, /: PLAZO_HERMES_DIAS;/);
   const p = armarPayload({producto: 'MLU1', precio: 100, categoria: 'MLU1196', nombre: 'x', familyName: 'x', usaFamilyName: false, plazoDias: 18});
   assert.deepEqual(p.sale_terms, [{id: 'MANUFACTURING_TIME', value_name: '18 días'}]);
+});
+
+test('precioDesdeLista: 3 % menos que el precio de lista de GLIC (antes del descuento), o del precio si no hay lista', () => {
+  assert.equal(precioDesdeLista({price: 1520, original_price: 2000}), 1940);
+  assert.equal(precioDesdeLista({price: 2000, original_price: null}), 1940);
+  assert.equal(precioDesdeLista({price: 2000, original_price: 1500}), 1940);
+  assert.equal(precioDesdeLista({}), null);
 });
