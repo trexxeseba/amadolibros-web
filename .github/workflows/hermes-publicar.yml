@@ -9,6 +9,7 @@ name: Hermes y Arnoia publicar (Amado Vintage)
 on:
   schedule:
     - cron: '7 12-18 * * *'    # Hermes: 09:07 a 15:07 de Montevideo; cuando no queda nada por publicar no hace nada
+    - cron: '47 * * * *'       # GLIC: todas las horas al :47 (60 por tanda), mismo techo diario compartido
     - cron: '17 * * * *'       # Arnoia: todas las horas al :17 (50 por tanda), catálogo o publicación normal; techo diario compartido
   workflow_dispatch:
     inputs:
@@ -85,14 +86,14 @@ jobs:
       - name: Validar o publicar
         env:
           TRADICIONAL_IN: ${{ inputs.tradicional || 'false' }}
-          FUENTE: ${{ inputs.fuente || ((github.event.schedule == '17 * * * *') && 'arnoia' || 'hermes') }}
+          FUENTE: ${{ inputs.fuente || ((github.event.schedule == '17 * * * *') && 'arnoia' || (github.event.schedule == '47 * * * *') && 'glic' || 'hermes') }}
         run: |
           REAL=""; [ "${{ inputs.modo || 'publicar' }}" = "publicar" ] && REAL="--real"
           TRADICIONAL=""; [ "$TRADICIONAL_IN" = "true" ] && TRADICIONAL="--tradicional"
           if [ "$FUENTE" = "arnoia" ]; then
             node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-catalogo-19-11.json "$RUNNER_TEMP/datos/publicadas-vintage.json" --fuente=arnoia --ambos ${TRADICIONAL} $REAL --max=${{ inputs.cantidad || '70' }}
           elif [ "$FUENTE" = "glic" ]; then
-            node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas-glic.json" "$RUNNER_TEMP/datos/publicadas-vintage.json" --fuente=glic $REAL --max=${{ inputs.cantidad || '25' }}
+            node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas-glic.json" "$RUNNER_TEMP/datos/publicadas-vintage.json" --fuente=glic $REAL --max=${{ inputs.cantidad || '60' }}
           else
             node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/publicadas-vintage.json" $REAL --max=${{ inputs.cantidad || '25' }}
           fi
