@@ -166,7 +166,7 @@ const resolverHermes = async f => {
   if (publicadas[f.producto] || f.mi_mlu || descartadas.has(f.producto)) return {omitir: true};
   const lec = await leerFicha(ml, f.producto, undefined, glic ? GLIC_SELLER_ID : undefined);
   if (!lec.oferta) return {etiqueta: f.n, saltar: glic ? 'glic_no_ofrece' : 'hermes_no_ofrece'};
-  const precioFicha = glic ? precioDesdeLista(lec.oferta) : precioMio(lec.oferta.price);
+  const precioFicha = glic ? precioDesdeLista({...lec.oferta, original_price: lec.oferta.original_price ?? f.precio_lista}) : precioMio(lec.oferta.price);
   if (glic && (!precioFicha || precioFicha < PRECIO_MINIMO)) return {etiqueta: f.n, saltar: 'precio_bajo_minimo'};
   await pausa(500);
   const prod = await ml.get(`/products/${f.producto}`).catch(() => null);
