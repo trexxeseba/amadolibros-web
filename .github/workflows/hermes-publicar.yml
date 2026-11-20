@@ -89,7 +89,7 @@ jobs:
           REAL=""; [ "${{ inputs.modo || 'publicar' }}" = "publicar" ] && REAL="--real"
           TRADICIONAL=""; [ "$TRADICIONAL_IN" = "true" ] && TRADICIONAL="--tradicional"
           if [ "$FUENTE" = "arnoia" ]; then
-            node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-catalogo-19-11.json "$RUNNER_TEMP/datos/publicadas-vintage.json" --fuente=arnoia --ambos ${TRADICIONAL} $REAL --max=${{ inputs.cantidad || '50' }}
+            node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-catalogo-19-11.json "$RUNNER_TEMP/datos/publicadas-vintage.json" --fuente=arnoia --ambos ${TRADICIONAL} $REAL --max=${{ inputs.cantidad || '85' }}
           else
             node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/publicadas-vintage.json" $REAL --max=${{ inputs.cantidad || '25' }}
           fi

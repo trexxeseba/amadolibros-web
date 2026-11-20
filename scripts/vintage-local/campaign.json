@@ -4,8 +4,8 @@
   "ejecutor": "nube",
   "nube": {
     "modo": "real",
-    "tanda": 45,
-    "tope_diario": 1000,
+    "tanda": 65,
+    "tope_diario": 1500,
     "minutos": 50,
     "intervalo_ms": 500,
     "clasificadores": 1,
