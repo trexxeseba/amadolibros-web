@@ -13,14 +13,15 @@ for (const id of ids) {
   if (!it) { console.log(id, 'no se pudo leer'); continue; }
   exigirItemDeVintage(it);
   let estado = it.status;
+  console.log(id, 'antes', it.status, JSON.stringify(it.sub_status));
   if (estado !== 'closed') {
-    try { await ml.put(`/items/${id}`, {status: 'closed'}); } catch (e) { console.log(id, 'fallo cerrar', e.code); }
+    try { const r = await ml.put(`/items/${id}`, {status: 'closed'}); console.log(id, 'respuesta', r?.status, r?.sub_status); } catch (e) { console.log(id, 'fallo cerrar', e.code); }
     await pausa(400);
-    estado = (await ml.get(`/items/${id}`).catch(() => null))?.status;
+    const d = await ml.get(`/items/${id}`).catch(() => null); estado = d?.status; console.log(id, 'luego', d?.status, JSON.stringify(d?.sub_status));
   }
   let borrada = 'no';
-  if (estado === 'closed') {
-    try { await ml.put(`/items/${id}`, {deleted: 'true'}); borrada = 'pedido'; } catch (e) { borrada = 'fallo ' + e.code; }
+  if (estado === 'closed' || true) {
+    try { await ml.put(`/items/${id}`, {deleted: true}); borrada = 'pedido'; } catch (e) { borrada = 'fallo ' + e.code; }
   }
   console.log(id, 'estado', estado, 'borrado', borrada);
   await pausa(400);
