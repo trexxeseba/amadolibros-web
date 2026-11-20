@@ -114,6 +114,17 @@ async function revisarTapa(bytes) {
     return r.estado === 'borrada' ? {estado: 'borrada', motivo: (r.borradas ?? []).join(','), bytes: await fs.readFile(salida)} : r;
   } finally { await fs.rm(entrada, {force: true}); await fs.rm(salida, {force: true}); }
 }
+// Rehace la imagen (JPEG nuevo, sin datos ocultos): Mercado Libre dejó en revisión tapas limpias a la vista con "etiquetas de Mercado Libre"
+// (20/11/2026) y al subir la misma tapa rehecha se reactivaron. Devuelve los bytes nuevos o null.
+async function recodificarTapa(bytes) {
+  const base = path.join(os.tmpdir(), `tapa-${process.pid}-${Date.now()}`);
+  const entrada = base + '-r-in.jpg', salida = base + '-r-out.jpg';
+  await fs.writeFile(entrada, Buffer.from(bytes));
+  try {
+    await execFileP('python3', ['-c', 'import sys\nfrom PIL import Image\nIm=Image.open(sys.argv[1]).convert("RGB")\nIm.save(sys.argv[2],"JPEG",quality=92,optimize=True)', entrada, salida], {timeout: 60000});
+    return await fs.readFile(salida);
+  } catch { return null; } finally { await fs.rm(entrada, {force: true}); await fs.rm(salida, {force: true}); }
+}
 // Sube una foto a Mercado Libre (pictures/items/upload) y devuelve su id. Con ella se publica {id} en vez de una URL externa.
 async function subirFoto(buf) {
   const form = new FormData();
@@ -133,7 +144,11 @@ const buscarPortada = async ean => {
     if (!real && process.env.HERMES_PORTADA_PRUEBA) return {url};
     let rev;
     try { rev = await revisarTapa(bytes); } catch { return {rechazada: 'lector_de_texto_no_disponible', sinMarca: true}; }
-    if (rev.estado === 'limpia') return {url};
+    if (rev.estado === 'limpia') {
+      const nueva = await recodificarTapa(bytes);
+      const idNueva = nueva ? await subirFoto(nueva).catch(() => null) : null;
+      return idNueva ? {pictureId: idNueva} : {url};
+    }
     // Una @ en la tapa: el libro se salta, sin limpiar ni subir nada (regla de Seba, 20/11/2026).
     // Otros datos de contacto o referencias externas se borran de la tapa y se sube la limpia; si no se puede, el libro se salta.
     if (rev.estado !== 'borrada') return {rechazada: rev.motivo ?? 'tapa_no_apta'};
