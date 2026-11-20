@@ -80,7 +80,7 @@ jobs:
       - name: Instalar el lector de texto y el borrador de tapas
         run: |
           sudo apt-get update -q && sudo apt-get install -y -q tesseract-ocr tesseract-ocr-spa
-          pip install -q opencv-python-headless numpy
+          pip install -q opencv-python-headless numpy pillow
       - name: Validar o publicar
         env:
           TRADICIONAL_IN: ${{ inputs.tradicional || 'false' }}
