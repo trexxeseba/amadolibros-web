@@ -36,13 +36,29 @@ def motivo(texto):
     return None
 
 def leer(ruta):
-    out = subprocess.run(['tesseract', ruta, 'stdout', '-l', 'spa+eng', '--psm', '11', 'tsv'], capture_output=True, text=True, timeout=120).stdout
+    """Lee la tapa con tesseract. Las tapas chicas (menos de 2000 px) se agrandan al doble y se les sube el contraste: a tamaño original
+    el lector no veía textos finos (20/11/2026: '@autoenfoque' en una tapa de 650 px pasó sin verse). Las posiciones se devuelven en
+    la escala de la imagen original."""
+    from PIL import Image, ImageOps
+    import os, tempfile
+    im = Image.open(ruta).convert('RGB')
+    w, h = im.size
+    escala = 2 if max(w, h) < 2000 else 1
+    g = ImageOps.autocontrast(im.convert('L'))
+    if escala != 1:
+        g = g.resize((w * escala, h * escala), Image.LANCZOS)
+    fd, tmp = tempfile.mkstemp(suffix='.png'); os.close(fd)
+    try:
+        g.save(tmp)
+        out = subprocess.run(['tesseract', tmp, 'stdout', '-l', 'spa+eng', '--psm', '11', 'tsv'], capture_output=True, text=True, timeout=180).stdout
+    finally:
+        os.remove(tmp)
     filas = list(csv.DictReader(io.StringIO(out), delimiter='\t', quoting=csv.QUOTE_NONE))
     palabras = []
     for f in filas:
         try:
             if f['text'] and f['text'].strip() and float(f['conf']) >= 0:
-                palabras.append({'t': f['text'], 'x': int(f['left']), 'y': int(f['top']), 'w': int(f['width']), 'h': int(f['height']), 'linea': (f['block_num'], f['par_num'], f['line_num'])})
+                palabras.append({'t': f['text'], 'x': int(int(f['left']) / escala), 'y': int(int(f['top']) / escala), 'w': int(int(f['width']) / escala), 'h': int(int(f['height']) / escala), 'linea': (f['block_num'], f['par_num'], f['line_num'])})
         except (ValueError, KeyError, TypeError):
             pass
     return palabras
@@ -121,6 +137,9 @@ def main(entrada, salida):
         print(json.dumps({'estado': 'no_se_pudo', 'motivo': 'codigo_qr'})); return
     palabras = leer(entrada)
     texto = ' '.join(p['t'] for p in palabras)
+    # Regla de Seba (20/11/2026): con una @ de usuario en la tapa el libro no se publica. No se limpia ni se sube nada.
+    if motivo(texto) == 'arroba_o_correo' or any(motivo(p['t']) == 'arroba_o_correo' for p in palabras):
+        print(json.dumps({'estado': 'no_se_pudo', 'motivo': 'arroba_en_tapa'})); return
     if not motivo(texto) and not cajas_a_borrar(palabras):
         print(json.dumps({'estado': 'limpia'})); return
     h, w = img.shape[:2]
