@@ -26,3 +26,18 @@ test('una palabra exacta se prioriza sobre una coincidencia parcial', () => {
   ], 'gay');
   assert.equal(suggestions[0].value, 'Edipo Gay');
 });
+
+test('seguir escribiendo no hace desaparecer las sugerencias: «el per» y «el perro» traen libros', () => {
+  const books = [
+    { title: 'Los Perros del Paraíso', author: 'Abel Posse' },
+    { title: 'El Perdidos En Los Biomas' },
+    { title: 'El gran perro azul', author: 'Autor Uno' },
+    { title: 'Perro azul, el', author: 'Autor Dos' },
+  ];
+  assert.ok(buildSuggestions(books, 'el per').length > 0);
+  const perro = buildSuggestions(books, 'el perro').map(s => s.value);
+  assert.ok(perro.includes('El gran perro azul'));
+  assert.ok(perro.includes('Perro azul, el'));
+  // Palabras en otro orden: no hace falta que la frase aparezca seguida.
+  assert.ok(buildSuggestions(books, 'azul perro').length > 0);
+});
