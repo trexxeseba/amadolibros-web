@@ -53,7 +53,10 @@ let max = maxPedido;
 const require_text = await fs.readFile(pubPath, 'utf8').catch(() => '');
 const datos = JSON.parse(await fs.readFile(fichasPath, 'utf8'));
 const fichas = arnoia ? datos.libros : datos;
-const PLAZO_DIAS = arnoia ? Number(datos.plazo_dias) || 20 : null;
+// Plazo "a demanda" (disponibilidad): Arnoia 20 días (en la lista); Hermes 18 días, igual que SBS (Seba, 20/11/2026: antes Hermes salía sin plazo y
+// prometía despacho rápido de libros que no están en mano).
+const PLAZO_HERMES_DIAS = 18;
+const PLAZO_DIAS = arnoia ? Number(datos.plazo_dias) || 20 : PLAZO_HERMES_DIAS;
 const descartadas = new Set(JSON.parse(await fs.readFile(new URL('./descartadas.json', import.meta.url), 'utf8').catch(() => '{"descartadas":[]}')).descartadas.map(d => d.producto));
 const publicadas = (() => { try { return JSON.parse(require_text) ?? {}; } catch { return {}; } })();
 const cuenta = CUENTAS[CUENTA_HERMES];

@@ -207,3 +207,12 @@ test('control de tapas: una @ suelta del dibujo no cuenta; un usuario o un corre
   assert.equal(textoNoPermitido('1+1.700.0001'), null);
   assert.equal(textoNoPermitido('Llamanos al 099 841 325'), 'telefono');
 });
+
+test('Hermes sale con plazo a demanda de 18 días, igual que SBS', async () => {
+  const fs = await import('node:fs');
+  const src = fs.readFileSync('hermes-monitor/publicar.mjs', 'utf8');
+  assert.match(src, /const PLAZO_HERMES_DIAS = 18;/);
+  assert.match(src, /: PLAZO_HERMES_DIAS;/);
+  const p = armarPayload({producto: 'MLU1', precio: 100, categoria: 'MLU1196', nombre: 'x', familyName: 'x', usaFamilyName: false, plazoDias: 18});
+  assert.deepEqual(p.sale_terms, [{id: 'MANUFACTURING_TIME', value_name: '18 días'}]);
+});

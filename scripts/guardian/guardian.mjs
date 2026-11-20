@@ -32,9 +32,38 @@ export const COLGADA_MIN = 40;
 // "En curso" cuenta solo si es reciente: una corrida de más de 40 minutos está colgada y no debe tapar los demás avisos.
 const activa = (runs, w, ahora = Date.now()) => (runs?.[w] ?? []).some(r => (r.status === 'in_progress' || r.status === 'queued') && minutos(ahora, Date.parse(r.created_at)) <= COLGADA_MIN);
 
+// ---- Cómo se cuenta cada publicación en el informe ----
+export function describirFiltro(nombre) {
+  const n = String(nombre ?? '');
+  if (/MELI_LABEL/.test(n)) return 'etiquetas de Mercado Libre en una foto';
+  if (/DATOS_PERSONALES/.test(n)) return 'datos de contacto o identificación en una foto';
+  if (/^OCR_/.test(n)) return 'texto no permitido en una foto';
+  return n || 'sin dato';
+}
+export function describirEstado(status, sub) {
+  const s = String(sub ?? '');
+  if (status === 'under_review') return 'en revisión: Mercado Libre espera que se corrija algo para activarla';
+  if (status === 'paused') return 'pausada';
+  if (status === 'closed') return 'cerrada';
+  if (status === 'inactive') return 'inactiva';
+  return `${status}${s ? ' / ' + s : ''}`;
+}
+export function bloqueDeItem(i) {
+  const quien = [i.autor, i.editorial].filter(Boolean).join(' · ');
+  const origen = i.fuente === 'arnoia' ? `de Arnoia, ${i.tradicional ? 'como publicación normal' : 'en ficha de catálogo'}` : i.fuente === 'hermes' ? 'de Hermes' : '';
+  const L = [`• «${i.titulo ?? i.id}»${quien ? ` (${quien})` : ''}`, `  Publicación ${i.id}${origen ? ', ' + origen : ''}.`, `  Estado: ${describirEstado(i.status, i.sub_status)}; no la ve ningún comprador.`];
+  if (i.moderacion) {
+    L.push(`  Motivo que da Mercado Libre: ${i.moderacion.motivo ?? 'sin texto'} (filtro: ${describirFiltro(i.moderacion.filtro)}).`);
+    if (i.moderacion.remedio) L.push(`  Qué pide Mercado Libre: ${i.moderacion.remedio}`);
+  }
+  if (i.tapa) L.push(`  Qué se hizo con la foto: ${i.tapa}.`);
+  L.push('  Qué hice yo: nada todavía; solo te aviso. No afecta la cuenta mientras esté así.');
+  return L;
+}
+
 // ---- Detectar (puro: recibe los datos, no toca la red) ----
 // datos: {runs:{wf:[{id,status,conclusion,created_at,run_attempt,html_url}]}, publicadas, freno, cupo,
-//         restantesArnoia, items:[{id,status,sub_status,edadMin}]}
+//         restantesArnoia, items:[{id,status,sub_status,edadMin,titulo,autor,editorial,fuente,tradicional,tapa,moderacion}], muestra}
 export function evaluar(d, ahora = Date.now()) {
   const h = [];
   const runs = d.runs ?? {};
@@ -86,13 +115,22 @@ export function evaluar(d, ahora = Date.now()) {
     opciones: ['Esperar: el portal suele volver solo y se reintenta cada hora.', 'Pedirme que revise el detalle de la falla.', 'Escribirle a SBS por el corte del portal.'],
   });
 
-  // Publicaciones que Mercado Libre pausó o cerró (posible denuncia) y fotos que no terminan de cargar
+  // Publicaciones que Mercado Libre pausó o cerró: el informe cuenta de cada una qué libro es, el motivo exacto y qué se hizo.
   const pausadas = (d.items ?? []).filter(i => i.status !== 'active' && !(i.status === 'paused' && String(i.sub_status).includes('picture_download_pending')));
-  if (pausadas.length) h.push({
-    clave: 'publicaciones_pausadas_por_ml', nivel: 'grave',
-    texto: `Mercado Libre dejó ${pausadas.length} publicaciones recientes sin estar activas (${pausadas.slice(0, 5).map(i => `${i.id}: ${i.status}${i.sub_status && i.sub_status.length ? ' / ' + i.sub_status : ''}`).join('; ')}).`,
-    opciones: ['Mirarlas una por una en el panel de Mercado Libre para ver el motivo.', 'Pedirme que busque en el panel el motivo de cada una y te lo resuma.', 'Frenar las tandas hasta entender si es una denuncia.'],
-  });
+  if (pausadas.length) {
+    const deFotos = pausadas.every(i => String(i.moderacion?.filtro ?? '').startsWith('OCR_'));
+    const unico = pausadas.length === 1 ? pausadas[0] : null;
+    h.push({
+      clave: 'pausadas_ml_' + pausadas.map(i => i.id).sort().join('-').slice(0, 120), nivel: 'grave',
+      asunto: unico ? `«${unico.titulo ?? unico.id}» quedó en revisión en Mercado Libre` : `${pausadas.length} publicaciones quedaron en revisión en Mercado Libre`,
+      texto: [`Mercado Libre dejó ${pausadas.length} de las últimas ${d.muestra ?? (d.items ?? []).length} publicaciones sin estar activas.`,
+        deFotos ? 'Es el control automático de fotos: no es una denuncia ni un tema de propiedad intelectual.' : 'Hay que mirar el motivo de cada una: algunas pueden ser una denuncia.', '',
+        ...pausadas.flatMap(i => bloqueDeItem(i)), ''].join('\n').trimEnd(),
+      opciones: deFotos
+        ? ['Pasarle estas publicaciones a Lola y Gaby para que pidan la revisión por el chat de Mercado Libre (el texto ya está armado).', 'Eliminarlas, que es lo que Seba autorizó cuando se complica, y volver a publicarlas más adelante.', 'Pedirme que revise si otros libros de la misma editorial o serie van a tener el mismo problema, para saltarlos.']
+        : ['Mirarlas una por una en el panel de Mercado Libre para ver el motivo.', 'Pedirme que busque el motivo de cada una y te lo resuma.', 'Frenar las tandas hasta entender si es una denuncia.'],
+    });
+  }
   const fotos = (d.items ?? []).filter(i => i.status === 'paused' && String(i.sub_status).includes('picture_download_pending') && i.edadMin > UMBRALES.fotosMin);
   if (fotos.length) h.push({
     clave: 'fotos_trabadas', nivel: 'aviso',
@@ -116,7 +154,7 @@ export function armarMail(hechos, ahora = Date.now()) {
   const L = [];
   L.push(graves.length ? 'Hay algo que necesito que mires.' : 'Encontré algo y ya me ocupé. No tenés que hacer nada.', '');
   for (const h of hechos) {
-    L.push(`- ${h.texto}`);
+    L.push(h.texto.includes('\n') ? h.texto : `- ${h.texto}`);
     if (h.resultado) L.push(`  Qué hice: ${h.resultado}`);
     if (h.opciones) { L.push('  Qué podemos hacer:'); h.opciones.forEach((o, i) => L.push(`    ${i + 1}. ${o}`)); L.push('  Mi recomendación es la 1.'); }
     L.push('');
@@ -173,16 +211,28 @@ export async function reunir() {
   const sbs = Number((await query("SELECT COUNT(*) n FROM ml_vintage_pub_receipts WHERE seller_id=? AND state='published' AND created_at>=?", [CUENTAS[CUENTA_HERMES].sellerId, inicio]).catch(() => [{n: 0}]))[0]?.n ?? 0);
   const hoyHA = Object.values(publicadas).filter(p => p.item_id && Number(p.ts) >= inicio).length;
   const cupo = Math.max(0, TOPE_DIARIO_COMPARTIDO - sbs - hoyHA);
-  // Muestra de las últimas 15 publicaciones creadas, leídas de Mercado Libre (solo lectura)
+  // Muestra de las últimas 40 publicaciones creadas, leídas de Mercado Libre (solo lectura). De las que no están activas se lee también el motivo.
   const ml = crearCliente(fuenteTokenD1(CUENTAS[CUENTA_HERMES]), {concurrencia: 1});
-  const recientes = Object.values(publicadas).filter(p => p.item_id && p.ts).sort((a, b) => b.ts - a.ts).slice(0, 15);
+  const recientes = Object.entries(publicadas).filter(([, p]) => p.item_id && p.ts).sort((a, b) => b[1].ts - a[1].ts).slice(0, 40);
   const items = [];
-  for (const p of recientes) {
+  for (const [clave, p] of recientes) {
     const it = await ml.get(`/items/${p.item_id}`).catch(() => null);
-    if (it) items.push({id: it.id, status: it.status, sub_status: (it.sub_status ?? []).join(','), edadMin: minutos(Date.now(), Number(p.ts))});
+    if (it) {
+      const atr = id => (it.attributes ?? []).find(a => a.id === id)?.value_name;
+      const sub = (it.sub_status ?? []).join(',');
+      const item = {id: it.id, status: it.status, sub_status: sub, edadMin: minutos(Date.now(), Number(p.ts)), titulo: atr('BOOK_TITLE') ?? it.title ?? it.family_name, autor: atr('AUTHOR'), editorial: atr('BOOK_PUBLISHER'), fuente: p.fuente, tradicional: Boolean(p.tradicional),
+        tapa: p.fuente === 'hermes' || !p.tradicional ? 'ficha de catálogo: usa las fotos oficiales de Mercado Libre' : p.portada_limpiada ? `se usó la tapa de la librería, con un borrado previo (${p.portada_limpiada})` : 'se usó la tapa de la librería original, sin borrar nada'};
+      if (it.status !== 'active' && !(it.status === 'paused' && sub.includes('picture_download_pending'))) {
+        await new Promise(r => setTimeout(r, 400));
+        const m = (await ml.get(`/moderations/last_moderation/${it.id}-ITM`).catch(() => null));
+        const u = Array.isArray(m) ? m[0] : null;
+        if (u) item.moderacion = {filtro: u.name, motivo: (u.wordings ?? []).find(w => w.type === 'REASON')?.value, remedio: (u.wordings ?? []).find(w => w.type === 'REMEDY')?.value};
+      }
+      items.push(item);
+    }
     await new Promise(r => setTimeout(r, 400));
   }
-  return {runs, publicadas, freno, cupo, restantesArnoia, items, query};
+  return {runs, publicadas, freno, cupo, restantesArnoia, items, muestra: recientes.length, query};
 }
 
 async function main() {
@@ -204,6 +254,6 @@ async function main() {
   const ahora = Date.now();
   for (const h of hechos) await query('INSERT OR REPLACE INTO hermes_guardian_alertas (clave, at) VALUES (?, ?)', [h.clave, ahora]);
   const hayGrave = hechos.some(h => h.nivel === 'grave');
-  await sendMail({asunto: hayGrave ? 'necesito que mires algo' : 'encontré algo y ya lo arreglé', texto: armarMail(hechos), prefijo: 'Guardián'});
+  await sendMail({asunto: hechos.find(h => h.asunto)?.asunto ?? (hayGrave ? 'necesito que mires algo' : 'encontré algo y ya lo arreglé'), texto: armarMail(hechos), prefijo: 'Guardián'});
 }
 if (import.meta.url === `file://${process.argv[1]}`) main().catch(e => { console.error('fallo del guardián', e.message); process.exit(1); });

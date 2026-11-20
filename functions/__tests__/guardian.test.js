@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {evaluar, pendientes, armarMail, ejecutar, UMBRALES} from '../../scripts/guardian/guardian.mjs';
+import {evaluar, pendientes, armarMail, ejecutar, describirFiltro, UMBRALES} from '../../scripts/guardian/guardian.mjs';
 
 const AHORA = Date.parse('2026-11-19T12:00:00Z');
 const hace = min => new Date(AHORA - min * 60000).toISOString();
@@ -52,7 +52,7 @@ test('publicaciones: pausadas por Mercado Libre es grave; fotos cargando es norm
   const norm = evaluar(base({items: [{id: 'MLU1', status: 'paused', sub_status: 'picture_download_pending', edadMin: 10}, {id: 'MLU2', status: 'active', sub_status: '', edadMin: 5}]}), AHORA);
   assert.deepEqual(claves(norm), []);
   const mal = evaluar(base({items: [{id: 'MLU3', status: 'paused', sub_status: 'forbidden', edadMin: 30}]}), AHORA);
-  assert.equal(mal[0].clave, 'publicaciones_pausadas_por_ml'); assert.equal(mal[0].nivel, 'grave');
+  assert.ok(mal[0].clave.startsWith('pausadas_ml_')); assert.equal(mal[0].nivel, 'grave');
   const fotos = evaluar(base({items: [{id: 'MLU4', status: 'paused', sub_status: 'picture_download_pending', edadMin: UMBRALES.fotosMin + 20}]}), AHORA);
   assert.equal(fotos[0].clave, 'fotos_trabadas');
 });
@@ -104,4 +104,15 @@ test('ejecutar sabe cancelar una corrida', async () => {
   const llamadas = [];
   const h = await ejecutar([{clave: 'c', nivel: 'aviso', texto: 't', accion: {tipo: 'cancel', runId: 7, resumen: 'cancelé'}}], {dispatch: async () => {}, rerun: async () => {}, cancel: async id => llamadas.push(id)});
   assert.deepEqual(llamadas, [7]); assert.equal(h[0].resultado, 'cancelé');
+});
+
+test('el informe de una publicación en revisión dice qué libro es, el motivo exacto, qué se hizo con la foto y qué hizo el guardián', () => {
+  const item = {id: 'MLU1542039880', status: 'under_review', sub_status: 'waiting_for_patch', edadMin: 90, titulo: 'Centella', autor: 'Matt Tavares', editorial: 'Duomo', fuente: 'arnoia', tradicional: true,
+    tapa: 'se usó la tapa de la librería original, sin borrar nada', moderacion: {filtro: 'OCR_GOO_MELI_LABEL_OCR', motivo: 'Algunas fotos tienen etiquetas de Mercado Libre.', remedio: 'Modifica tu publicación y elimina las etiquetas propias de Mercado Libre de tus fotos para reactivarla.'}};
+  const h = evaluar(base({items: [item], muestra: 40}), AHORA).find(x => x.clave.startsWith('pausadas_ml_'));
+  assert.match(h.asunto, /«Centella» quedó en revisión/);
+  const m = armarMail([h]);
+  for (const trozo of ['«Centella» (Matt Tavares · Duomo)', 'MLU1542039880', 'de Arnoia, como publicación normal', 'en revisión: Mercado Libre espera', 'no la ve ningún comprador', 'Algunas fotos tienen etiquetas de Mercado Libre', 'etiquetas de Mercado Libre en una foto', 'sin borrar nada', 'Qué hice yo: nada todavía', 'no es una denuncia', '1 de las últimas 40', 'Lola y Gaby', 'Mi recomendación es la 1'])
+    assert.ok(m.includes(trozo), 'falta: ' + trozo);
+  assert.equal(describirFiltro('OCR_GOO_FI_DATOS_PERSONALES_FOTOS_AUTO'), 'datos de contacto o identificación en una foto');
 });
