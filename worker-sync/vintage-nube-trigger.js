@@ -44,7 +44,7 @@ export const dispararVintageVigia = env => dispararVintageNube(env, { workflow: 
 
 // Arnoia y Hermes en Amado Vintage (hermes-publicar.yml): el cron de GitHub se atrasa y esa noche no lanzó casi ninguna tanda
 // (19/11/2026), así que el Worker las pide igual que la del publicador de SBS. Arnoia: todas las horas al :17 (70 por tanda);
-// Hermes: de 09:07 a 15:07 de Montevideo (25 por tanda). Cada corrida respeta el techo diario compartido (3.000), el freno del
+// Hermes: de 09:07 a 15:07 de Montevideo (25 por tanda). Cada corrida respeta el techo diario compartido (3.500), el freno del
 // vigía y los candados de cuenta; si hay una en curso o en cola no se apila.
 export const CRON_ARNOIA = '17 * * * *';
 export const CRON_HERMES = '7 12-18 * * *';
