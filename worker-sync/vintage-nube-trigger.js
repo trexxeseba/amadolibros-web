@@ -49,8 +49,8 @@ export const dispararVintageVigia = env => dispararVintageNube(env, { workflow: 
 export const CRON_ARNOIA = '17 * * * *';
 export const CRON_HERMES = '7 12-18 * * *';
 const WORKFLOW_HERMES = 'hermes-publicar.yml';
-export const dispararArnoia = env => dispararVintageNube(env, { workflow: WORKFLOW_HERMES, inputs: { modo: 'publicar', cantidad: '70', rama: 'main', fuente: 'arnoia', tradicional: 'false' } });
-export const dispararHermes = env => dispararVintageNube(env, { workflow: WORKFLOW_HERMES, inputs: { modo: 'publicar', cantidad: '25', rama: 'main', fuente: 'hermes', tradicional: 'false' } });
+export const dispararArnoia = env => dispararVintageNube(env, { workflow: WORKFLOW_HERMES, inputs: { modo: 'publicar', cantidad: '70', rama: 'main', fuente: 'todo', tradicional: 'false' } });
+export const dispararHermes = env => dispararVintageNube(env, { workflow: WORKFLOW_HERMES, inputs: { modo: 'publicar', cantidad: '70', rama: 'main', fuente: 'todo', tradicional: 'false' } }); // Hermes ya se publicó entero: este horario suma otra corrida de GLIC y Arnoia
 
 // Guardián de las publicaciones de Vintage (guardian.yml): cada 15 minutos. Vigila las tandas y arregla lo seguro; ver
 // scripts/guardian/guardian.mjs. Solo lee y reintenta; no publica por su cuenta ni toca Amado Libros.

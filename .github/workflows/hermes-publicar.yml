@@ -8,16 +8,16 @@ name: Hermes y Arnoia publicar (Amado Vintage)
 # Hermes deja de ofrecer la ficha. Código: hermes-monitor/publicar.mjs.
 on:
   schedule:
-    - cron: '7 12-18 * * *'    # Hermes: 09:07 a 15:07 de Montevideo; cuando no queda nada por publicar no hace nada
-    - cron: '47 * * * *'       # GLIC: todas las horas al :47 (60 por tanda), mismo techo diario compartido
-    - cron: '17 * * * *'       # Arnoia: todas las horas al :17 (50 por tanda), catálogo o publicación normal; techo diario compartido
+    # Un solo carril (21/11/2026): cada corrida hace GLIC y después Arnoia. Antes había tres disparos distintos compitiendo por la misma
+    # fila y GitHub descartaba las corridas que esperaban. El Worker pide una al :17 (y al :07 de 09 a 15); esta es el respaldo.
+    - cron: '47 * * * *'
   workflow_dispatch:
     inputs:
       fuente:
-        description: 'hermes, arnoia o glic'
+        description: 'todo (GLIC y después Arnoia), o una sola: hermes, arnoia o glic'
         type: choice
-        options: [hermes, arnoia, glic]
-        default: hermes
+        options: [todo, hermes, arnoia, glic]
+        default: todo
       modo:
         description: 'validar (no crea nada) o publicar (crea publicaciones)'
         type: choice
@@ -45,7 +45,7 @@ jobs:
   publicar:
     if: vars.HERMES_APAGADO != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 55
     env:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
@@ -86,17 +86,20 @@ jobs:
       - name: Validar o publicar
         env:
           TRADICIONAL_IN: ${{ inputs.tradicional || 'false' }}
-          FUENTE: ${{ inputs.fuente || ((github.event.schedule == '17 * * * *') && 'arnoia' || (github.event.schedule == '47 * * * *') && 'glic' || 'hermes') }}
+          FUENTE: ${{ inputs.fuente || 'todo' }}
+          CANTIDAD: ${{ inputs.cantidad }}
         run: |
           REAL=""; [ "${{ inputs.modo || 'publicar' }}" = "publicar" ] && REAL="--real"
           TRADICIONAL=""; [ "$TRADICIONAL_IN" = "true" ] && TRADICIONAL="--tradicional"
-          if [ "$FUENTE" = "arnoia" ]; then
-            node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-catalogo-19-11.json "$RUNNER_TEMP/datos/publicadas-vintage.json" --fuente=arnoia --ambos ${TRADICIONAL} $REAL --max=${{ inputs.cantidad || '70' }}
-          elif [ "$FUENTE" = "glic" ]; then
-            node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas-glic.json" "$RUNNER_TEMP/datos/publicadas-vintage.json" --fuente=glic $REAL --max=${{ inputs.cantidad || '60' }}
-          else
-            node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/publicadas-vintage.json" $REAL --max=${{ inputs.cantidad || '25' }}
-          fi
+          DATOS="$RUNNER_TEMP/datos/publicadas-vintage.json"
+          glic() { node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas-glic.json" "$DATOS" --fuente=glic $REAL --max="$1"; }
+          arnoia() { node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-catalogo-19-11.json "$DATOS" --fuente=arnoia --ambos ${TRADICIONAL} $REAL --max="$1"; }
+          case "$FUENTE" in
+            todo) glic 60 || echo "::warning::la parte de GLIC terminó con error; sigue Arnoia"; arnoia 70 ;;
+            glic) glic "${CANTIDAD:-60}" ;;
+            arnoia) arnoia "${CANTIDAD:-70}" ;;
+            *) node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas.json" "$DATOS" $REAL --max="${CANTIDAD:-25}" ;;
+          esac
       - name: Guardar lo publicado
         if: always() && (inputs.modo || 'publicar') == 'publicar'
         run: |

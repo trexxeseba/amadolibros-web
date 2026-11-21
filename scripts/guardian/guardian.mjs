@@ -9,7 +9,7 @@
 // Lo que puede hacer solo (nada más):
 //   - pedir de nuevo una tanda de Hermes/Arnoia o de SBS que no corrió;
 //   - reintentar UNA vez una corrida fallida de la tanda o del despliegue del Worker;
-//   - cancelar una tanda colgada (más de 40 minutos en curso), para que no frene a las siguientes;
+//   - cancelar una tanda colgada (más de 90 minutos desde que se creó), para que no frene a las siguientes;
 //   - ELIMINAR publicaciones de Vintage que Mercado Libre dejó en revisión solo por "etiquetas de Mercado Libre en una foto"
 //     (falsa alarma habitual con tapas limpias; Seba lo autorizó el 21/11/2026). Máximo 10 por corrida (si hay más, es un problema
 //     general y se avisa en vez de borrar). Ver scripts/guardian/eliminar.mjs.
@@ -32,10 +32,10 @@ export const UMBRALES = {arnoiaMin: 100, sbsMin: 130, fallosSbsSeguidos: 3, foto
 export const THROTTLE = {aviso: 3 * 3600e3, grave: 3600e3};
 const WF_PUBLICAR = 'hermes-publicar.yml', WF_SBS = 'vintage-nube.yml', WF_DEPLOY = 'deploy-worker-sync.yml';
 const minutos = (a, b) => Math.round((a - b) / 60000);
-export const COLGADA_MIN = 40;
+export const COLGADA_MIN = 90; // desde que se creó (incluye la espera en la fila); el workflow corta solo a los 55 minutos de trabajo
 export const MAX_ELIMINAR_POR_CORRIDA = 10;
 export const esEtiquetaML = i => i.status !== 'active' && /MELI_LABEL/.test(String(i.moderacion?.filtro ?? ''));
-// "En curso" cuenta solo si es reciente: una corrida de más de 40 minutos está colgada y no debe tapar los demás avisos.
+// "En curso" cuenta solo si es reciente: una corrida de más de 90 minutos está colgada y no debe tapar los demás avisos.
 const activa = (runs, w, ahora = Date.now()) => (runs?.[w] ?? []).some(r => (r.status === 'in_progress' || r.status === 'queued') && minutos(ahora, Date.parse(r.created_at)) <= COLGADA_MIN);
 
 // ---- Cómo se cuenta cada publicación en el informe ----
@@ -87,13 +87,13 @@ export function evaluar(d, ahora = Date.now()) {
   if (!d.freno && d.restantesArnoia > 0 && d.cupo >= UMBRALES.cupoMin && !activa(runs, WF_PUBLICAR, ahora) && sinArn > UMBRALES.arnoiaMin) h.push({
     clave: 'arnoia_atrasada', nivel: 'aviso',
     texto: `Arnoia no creó ninguna publicación hace ${sinArn >= 100000 ? 'mucho' : sinArn + ' minutos'}, y hay cupo (${d.cupo}) y ${d.restantesArnoia} libros pendientes.`,
-    accion: {tipo: 'dispatch', workflow: WF_PUBLICAR, inputs: {modo: 'publicar', cantidad: '50', rama: 'main', fuente: 'arnoia', tradicional: 'false'}, resumen: 'pedí una tanda de Arnoia ahora mismo'},
+    accion: {tipo: 'dispatch', workflow: WF_PUBLICAR, inputs: {modo: 'publicar', cantidad: '70', rama: 'main', fuente: 'todo', tradicional: 'false'}, resumen: 'pedí una tanda de Arnoia ahora mismo'},
   });
 
-  // Tanda colgada: lleva más de 40 minutos en curso (una normal tarda unos 5). Se cancela, para que no frene a las siguientes.
+  // Tanda colgada: lleva más de 90 minutos desde que se creó (una normal tarda entre 10 y 40). Se cancela, para que no frene a las siguientes.
   for (const w of [WF_PUBLICAR, WF_SBS]) for (const r of runs[w] ?? []) {
     if (r.status !== 'in_progress' || minutos(ahora, Date.parse(r.created_at)) <= COLGADA_MIN) continue;
-    h.push({clave: `colgada_${r.id}`, nivel: 'aviso', texto: `Una corrida lleva ${minutos(ahora, Date.parse(r.created_at))} minutos en curso (normalmente tarda unos 5): ${r.html_url ?? r.id}.`, accion: {tipo: 'cancel', runId: r.id, resumen: 'la cancelé para que no frene a las siguientes'}});
+    h.push({clave: `colgada_${r.id}`, nivel: 'aviso', texto: `Una corrida lleva ${minutos(ahora, Date.parse(r.created_at))} minutos sin terminar (normalmente tarda entre 10 y 40): ${r.html_url ?? r.id}.`, accion: {tipo: 'cancel', runId: r.id, resumen: 'la cancelé para que no frene a las siguientes'}});
   }
 
   // Corridas caídas de la tanda y del despliegue del Worker: se reintenta UNA vez; si falla de nuevo, es grave
