@@ -132,7 +132,7 @@ test('"etiquetas de Mercado Libre" en una foto: el guardián elimina solo y avis
   const borradas = [];
   const hechos = await ejecutar([e], {dispatch: async () => {}, rerun: async () => {}, eliminar: async ids => borradas.push(...ids)});
   assert.deepEqual(borradas, ['MLU1']);
-  assert.match(armarMail(hechos), /Qué hice yo: las eliminé/);
+  assert.match(armarMail(hechos), /Qué hice yo: la eliminé/); assert.match(armarMail(hechos), /Qué hice: las eliminé/);
 });
 
 test('solo elimina por ese motivo: denuncias, datos de contacto y otros siguen pidiendo decisión', () => {
