@@ -132,6 +132,9 @@ def main(entrada, salida):
     img = cv2.imread(entrada)
     if img is None:
         print(json.dumps({'estado': 'no_se_pudo', 'motivo': 'imagen_ilegible'})); return
+    # Una tapa de menos de 200 px de lado no sirve ni agrandada (21/11/2026: el piso de peso de 40 KB descartaba tapas chicas reales; ahora se mira el tamaño).
+    if min(img.shape[:2]) < 200:
+        print(json.dumps({'estado': 'no_se_pudo', 'motivo': 'tapa_chica'})); return
     # Un código QR no se puede borrar sin dejar rastros (y suele venir con más datos): esa imagen no sirve.
     if cv2.QRCodeDetector().detect(img)[0]:
         print(json.dumps({'estado': 'no_se_pudo', 'motivo': 'codigo_qr'})); return

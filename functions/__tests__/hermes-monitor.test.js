@@ -186,8 +186,8 @@ test('el publicador tiene topes: libros revisados por tanda y tiempo', async () 
 test('los libros sin portada se anotan y se reintentan a la semana', async () => {
   const fs = await import('node:fs');
   const src = fs.readFileSync('hermes-monitor/publicar.mjs', 'utf8');
-  assert.match(src, /marcar: \{sin_portada: true\}/);
-  assert.match(src, /previo\?\.sin_portada && Date\.now\(\) - Date\.parse\(previo\.fecha \?\? 0\) < 7 \* 86400e3/);
+  assert.match(src, /marcar: \{sin_portada: true, v: VERSION_REGLA_PORTADA\}/);
+  assert.match(src, /previo\?\.sin_portada && previo\.v === VERSION_REGLA_PORTADA && Date\.now\(\) - Date\.parse\(previo\.fecha \?\? 0\) < 7 \* 86400e3/);
 });
 
 test('control de tapas: también frena domicilios y datos fiscales; el payload acepta una foto por id', () => {
@@ -228,6 +228,16 @@ test('una marca vieja (sin_catalogo) no impide anotar sin_portada, y los ya anot
   const fs = await import('node:fs');
   const src = fs.readFileSync('hermes-monitor/publicar.mjs', 'utf8');
   assert.match(src, /ctx\.marcar && real && !publicadas\[ctx\.clave\]\?\.item_id/);
-  assert.match(src, /\(tradicional \|\| ambos\) && previo\?\.sin_portada && Date\.now\(\)/);
+  assert.match(src, /\(tradicional \|\| ambos\) && previo\?\.sin_portada && previo\.v === VERSION_REGLA_PORTADA && Date\.now\(\)/);
   assert.ok(src.indexOf("(tradicional || ambos) && previo?.sin_portada") < src.indexOf("/products/search?"), 'el salto va antes de la búsqueda en Mercado Libre');
+});
+
+test('tapas chicas reales: el piso de peso es de 8 KB, el lector exige 200 px y la tapa se agranda; las marcas viejas de sin_portada se vuelven a probar', async () => {
+  const fs = await import('node:fs');
+  const src = fs.readFileSync('hermes-monitor/publicar.mjs', 'utf8');
+  assert.match(src, /MIN_BYTES_PORTADA = 8000/);
+  assert.match(src, /800\/m/);
+  assert.match(src, /previo\.v === VERSION_REGLA_PORTADA/);
+  assert.match(src, /marcar: \{sin_portada: true, v: VERSION_REGLA_PORTADA\}/);
+  assert.match(fs.readFileSync('hermes-monitor/limpiar_tapa.py', 'utf8'), /tapa_chica/);
 });
