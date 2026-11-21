@@ -223,3 +223,11 @@ test('precioDesdeLista: 3 % menos que el precio de lista de GLIC (antes del desc
   assert.equal(precioDesdeLista({price: 2000, original_price: 1500}), 1940);
   assert.equal(precioDesdeLista({}), null);
 });
+
+test('una marca vieja (sin_catalogo) no impide anotar sin_portada, y los ya anotados se saltan sin consultar (21/11/2026: 139 libros se revisaban en cada tanda)', async () => {
+  const fs = await import('node:fs');
+  const src = fs.readFileSync('hermes-monitor/publicar.mjs', 'utf8');
+  assert.match(src, /ctx\.marcar && real && !publicadas\[ctx\.clave\]\?\.item_id/);
+  assert.match(src, /\(tradicional \|\| ambos\) && previo\?\.sin_portada && Date\.now\(\)/);
+  assert.ok(src.indexOf("(tradicional || ambos) && previo?.sin_portada") < src.indexOf("/products/search?"), 'el salto va antes de la búsqueda en Mercado Libre');
+});
