@@ -17,6 +17,7 @@ import { fuenteTokenD1 } from './token.mjs';
 import { crearCliente } from './ml.mjs';
 import { idsActivos, detalle } from './publicaciones.mjs';
 import { cargarCotizadorVintage } from './costos-vintage.mjs';
+import { todas } from './cotizar-todas.mjs';
 import { entregaDe, ofertasCatalogo, vendedorDelGanador, nuevoCacheVendedores } from './competencia.mjs';
 
 // Parte pura (con tests): qué decir de una publicación.
@@ -72,6 +73,7 @@ async function main() {
     if (f.estado === 'competing' && f.ganador_item) {
       const v = await vendedorDelGanador(ml, item.catalog_product_id, f.ganador_item, cacheV).catch(() => null);
       f.ganador_vendedor = v?.nickname ?? null;
+      f.ganador_vendedor_id = v?.id ?? null;
       f.ganador_entrega = await entregaDe(ml, f.ganador_item, cacheEntrega);
     }
     if (item.catalog_product_id) {
@@ -92,6 +94,11 @@ async function main() {
     }
     f.veredicto = veredicto(f, { piso: cuenta.minimo ?? 1200, margenPiso: info.margen_piso ?? 0.18, excluidos });
     return f;
+  }
+
+  if (opt('todas', null) !== null) {
+    await todas({ ml, cuenta, items, cotizar, armar, info, estado, filasPath: opt('filas', 'estado/ultima/vintage-filas.json'), salida, cacheV });
+    return;
   }
 
   const A = [], B = [], C = [];
