@@ -11,6 +11,7 @@ export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
     compiten: filas.filter(f => f.comp?.compite).length,
     marcadas: filas.filter(f => f.comp?.marcada).length,
     precio_dinamico: c('saltear_precio_dinamico'),
+    vendedor_excluido: c('saltear_vendedor_excluido'),
     ganador_inmediato: c('saltear_ganador_inmediato'),
     ganador_sin_dato: c('saltear_ganador_sin_dato'),
     bajadas: aplicada('bajar'),
@@ -45,7 +46,15 @@ export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
   // Por qué pierden las que compiten (precio, envío gratis, reputación o entrega).
   const contraDemanda = filas.filter(f => f.perdida?.contra_demanda).length;
   const causasPerdida = filas.filter(f => f.perdida).reduce((a, f) => (a[f.perdida.causa] = (a[f.perdida.causa] ?? 0) + 1, a), {});
-  return { cuenta: cuenta.clave, umbral, causas_perdida: causasPerdida, pierden_contra_demanda: contraDemanda, ejemplos_error: ejemplosError, duracion_s: Math.round((Date.now() - inicio) / 1000), contadores, catalogo: { estados, publicaciones_con_alguna_sugerencia: filas.filter(f => f.comp?.oportunidades?.length).length, sugerencias, motivos, por_tipo: porTipo, errores_por_tipo: filas.filter(f => f.comp?.error).reduce((a, f) => (a[f.comp.error] = (a[f.comp.error] ?? 0) + 1, a), {}) }, errores, llamadas: stats.llamadas, por_status: stats.porStatus };
+  // Quién gana las fichas en las que perdemos (sólo si la cuenta resuelve vendedores).
+  const porVendedor = {};
+  for (const f of filas) if (f.comp?.compite && f.comp.ganadorVendedor) {
+    const k = f.comp.ganadorVendedor, dif = Number(f.item.price) - Number(f.comp.ganador);
+    (porVendedor[k] ??= []).push(dif);
+  }
+  const mediana = a => { const o = [...a].sort((x, y) => x - y); return o.length ? o[Math.floor(o.length / 2)] : null; };
+  const vendedoresGanadores = Object.entries(porVendedor).map(([vendedor, d]) => ({ vendedor, publicaciones: d.length, mediana_diferencia: mediana(d) })).sort((a, b) => b.publicaciones - a.publicaciones).slice(0, 15);
+  return { cuenta: cuenta.clave, umbral, vendedores_ganadores: vendedoresGanadores, causas_perdida: causasPerdida, pierden_contra_demanda: contraDemanda, ejemplos_error: ejemplosError, duracion_s: Math.round((Date.now() - inicio) / 1000), contadores, catalogo: { estados, publicaciones_con_alguna_sugerencia: filas.filter(f => f.comp?.oportunidades?.length).length, sugerencias, motivos, por_tipo: porTipo, errores_por_tipo: filas.filter(f => f.comp?.error).reduce((a, f) => (a[f.comp.error] = (a[f.comp.error] ?? 0) + 1, a), {}) }, errores, llamadas: stats.llamadas, por_status: stats.porStatus };
 }
 
 const ACCION = {
@@ -53,7 +62,7 @@ const ACCION = {
   sin_tocar_umbral: 'No tocar: diferencia por encima del tope', sin_tocar_pct: 'No tocar: bajaría más del 30 %', saltear_promo: 'Saltear: promoción activa',
   saltear_promo_desconocida: 'Saltear: no se pudo confirmar promoción', saltear_piso: 'Saltear: queda bajo el piso',
   saltear_variaciones: 'Saltear: tiene variaciones', saltear_moneda: 'Saltear: no está en pesos', saltear_sin_precio: 'Saltear: sin precio ganador',
-  saltear_ganador_inmediato: 'No tocar: el ganador entrega de inmediato', saltear_ganador_sin_dato: 'No tocar: sin dato del plazo del ganador',
+  saltear_vendedor_excluido: 'No tocar: el ganador es un vendedor con el que no se compite', saltear_ganador_inmediato: 'No tocar: el ganador entrega de inmediato', saltear_ganador_sin_dato: 'No tocar: sin dato del plazo del ganador',
   saltear_precio_dinamico: 'No tocar: precio administrado por Mercado Libre', mantener: 'Mantener', mantener_promo: 'Mantener: promoción en curso', saltear_cambio_reciente: 'Saltear: el precio cambió durante la corrida', mantener_umbral: 'Mantener: el ganador bajó más de 360 desde el original', mantener_piso: 'Mantener: piso',
   liberar_editada: 'Liberar: editada a mano', error_consulta: 'Error de consulta', error_aplicar: 'Error al aplicar', inactiva: 'Inactiva',
 };
