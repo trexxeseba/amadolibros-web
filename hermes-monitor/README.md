@@ -38,8 +38,8 @@ y el chequeo diario lo toma solo para las pausas. No toca las que ya existen.
 ## Libros de Arnoia (semana 45/2026)
 `data/arnoia-semana-45.json`: 395 libros con el precio ya calculado (costo con IVA y descuento de Arnoia, cotización de venta del BROU, flete USD 16 por kilo, envío $230, comisión 17 % y escalones de ganancia de $500 a $2.000). Se publican por EAN en Vintage con 1 unidad y plazo "a demanda" de 20 días, de a 25 por hora (minuto :17), con los mismos candados y el mismo techo diario compartido con SBS y con Hermes (total 1.000 por día). Los que no tienen ficha de catálogo se saltan y quedan anotados como `sin_catalogo` para verlos después.
 
-## Techo diario: 3.000 (20/11/2026; antes 2.500; meta 4.000 si en 48 horas no hay denuncias)
-Reparto: SBS hasta 1.000 por día (45 por hora), Arnoia hasta 1.700 (70 por hora, las 24 horas, al minuto :17) y Hermes hasta 300 (25 por hora de 09:07 a 15:07); la suma nunca pasa de 3.000 y cada publicador mira lo ya publicado ese día antes de crear. Arnoia usa el catálogo nuevo (`data/arnoia-catalogo-19-11.json`, costo neto real): ficha de catálogo si existe y, si no, publicación normal con portada (`--ambos`). Primero los de más ventas del mercado, después las ediciones más nuevas.
+## Techo diario: 3.500 (21/11/2026; el 20/11 eran 3.000 y antes 2.500; meta 4.000 si no hay denuncias)
+Reparto: SBS hasta 1.000 por día (45 por hora), Arnoia hasta 1.700 (70 por hora, las 24 horas, al minuto :17) y Hermes hasta 300 (25 por hora de 09:07 a 15:07); la suma nunca pasa de 3.500 y cada publicador mira lo ya publicado ese día antes de crear. Arnoia usa el catálogo nuevo (`data/arnoia-catalogo-19-11.json`, costo neto real): ficha de catálogo si existe y, si no, publicación normal con portada (`--ambos`). Primero los de más ventas del mercado, después las ediciones más nuevas.
 
 ## Guardián (`scripts/guardian/guardian.mjs`)
 Cada 15 minutos (lo lanza el Worker; el cron de GitHub queda de respaldo) mira si algo puede salir mal y avisa por mail en lenguaje simple.
