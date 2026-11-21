@@ -9,9 +9,12 @@
 // Lo que puede hacer solo (nada más):
 //   - pedir de nuevo una tanda de Hermes/Arnoia o de SBS que no corrió;
 //   - reintentar UNA vez una corrida fallida de la tanda o del despliegue del Worker;
-//   - cancelar una tanda colgada (más de 40 minutos en curso), para que no frene a las siguientes.
-// Lo que NUNCA hace: soltar el freno del vigía, reactivar publicaciones, cambiar precios, borrar, ni tocar
-// Amado Libros. Todo lo demás lo avisa.
+//   - cancelar una tanda colgada (más de 40 minutos en curso), para que no frene a las siguientes;
+//   - ELIMINAR publicaciones de Vintage que Mercado Libre dejó en revisión solo por "etiquetas de Mercado Libre en una foto"
+//     (falsa alarma habitual con tapas limpias; Seba lo autorizó el 21/11/2026). Máximo 10 por corrida (si hay más, es un problema
+//     general y se avisa en vez de borrar). Ver scripts/guardian/eliminar.mjs.
+// Lo que NUNCA hace: soltar el freno del vigía, reactivar publicaciones, cambiar precios, borrar por cualquier otro motivo
+// (denuncias, propiedad intelectual, fotos con texto), ni tocar Amado Libros. Todo lo demás lo avisa.
 //
 //   node scripts/guardian/guardian.mjs [--seco]     (--seco: solo muestra qué haría, no toca ni manda nada)
 import fs from 'node:fs/promises';
@@ -22,6 +25,7 @@ import {CUENTAS} from '../../precio-ganador/src/config.mjs';
 import {fuenteTokenD1} from '../../precio-ganador/src/token.mjs';
 import {crearCliente} from '../../precio-ganador/src/ml.mjs';
 import {CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, inicioDiaUy} from '../../hermes-monitor/lib.mjs';
+import {eliminarPublicacion} from './eliminar.mjs';
 
 export const REPO = process.env.GITHUB_REPOSITORY || 'trexxeseba/amadolibros-web';
 export const UMBRALES = {arnoiaMin: 100, sbsMin: 130, fallosSbsSeguidos: 3, fotosMin: 180, cupoMin: 50, ventanaFallosMin: 120};
@@ -29,6 +33,8 @@ export const THROTTLE = {aviso: 3 * 3600e3, grave: 3600e3};
 const WF_PUBLICAR = 'hermes-publicar.yml', WF_SBS = 'vintage-nube.yml', WF_DEPLOY = 'deploy-worker-sync.yml';
 const minutos = (a, b) => Math.round((a - b) / 60000);
 export const COLGADA_MIN = 40;
+export const MAX_ELIMINAR_POR_CORRIDA = 10;
+export const esEtiquetaML = i => i.status !== 'active' && /MELI_LABEL/.test(String(i.moderacion?.filtro ?? ''));
 // "En curso" cuenta solo si es reciente: una corrida de más de 40 minutos está colgada y no debe tapar los demás avisos.
 const activa = (runs, w, ahora = Date.now()) => (runs?.[w] ?? []).some(r => (r.status === 'in_progress' || r.status === 'queued') && minutos(ahora, Date.parse(r.created_at)) <= COLGADA_MIN);
 
@@ -48,7 +54,7 @@ export function describirEstado(status, sub) {
   if (status === 'inactive') return 'inactiva';
   return `${status}${s ? ' / ' + s : ''}`;
 }
-export function bloqueDeItem(i) {
+export function bloqueDeItem(i, queHice = 'nada todavía; solo te aviso. No afecta la cuenta mientras esté así.') {
   const quien = [i.autor, i.editorial].filter(Boolean).join(' · ');
   const origen = i.fuente === 'arnoia' ? `de Arnoia, ${i.tradicional ? 'como publicación normal' : 'en ficha de catálogo'}` : i.fuente === 'hermes' ? 'de Hermes' : '';
   const L = [`• «${i.titulo ?? i.id}»${quien ? ` (${quien})` : ''}`, `  Publicación ${i.id}${origen ? ', ' + origen : ''}.`, `  Estado: ${describirEstado(i.status, i.sub_status)}; no la ve ningún comprador.`];
@@ -57,7 +63,7 @@ export function bloqueDeItem(i) {
     if (i.moderacion.remedio) L.push(`  Qué pide Mercado Libre: ${i.moderacion.remedio}`);
   }
   if (i.tapa) L.push(`  Qué se hizo con la foto: ${i.tapa}.`);
-  L.push('  Qué hice yo: nada todavía; solo te aviso. No afecta la cuenta mientras esté así.');
+  L.push(`  Qué hice yo: ${queHice}`);
   return L;
 }
 
@@ -116,7 +122,21 @@ export function evaluar(d, ahora = Date.now()) {
   });
 
   // Publicaciones que Mercado Libre pausó o cerró: el informe cuenta de cada una qué libro es, el motivo exacto y qué se hizo.
-  const pausadas = (d.items ?? []).filter(i => i.status !== 'active' && !String(i.sub_status).includes('deleted') && !(i.status === 'paused' && String(i.sub_status).includes('picture_download_pending')));
+  const sinActivas = (d.items ?? []).filter(i => i.status !== 'active' && !String(i.sub_status).includes('deleted') && !(i.status === 'paused' && String(i.sub_status).includes('picture_download_pending')));
+  // Las de "etiquetas de Mercado Libre" se eliminan solas (autorizado por Seba), salvo que sean demasiadas de golpe.
+  const porEtiqueta = sinActivas.filter(esEtiquetaML);
+  const autoEliminar = porEtiqueta.length > 0 && porEtiqueta.length <= MAX_ELIMINAR_POR_CORRIDA ? porEtiqueta : [];
+  if (autoEliminar.length) {
+    const unica = autoEliminar.length === 1 ? autoEliminar[0] : null;
+    h.push({
+      clave: 'eliminadas_etiquetas_' + autoEliminar.map(i => i.id).sort().join('-').slice(0, 120), nivel: 'aviso',
+      asunto: unica ? `eliminé «${unica.titulo ?? unica.id}» (falsa alarma de fotos)` : `eliminé ${autoEliminar.length} publicaciones (falsa alarma de fotos)`,
+      texto: [`Mercado Libre dejó ${autoEliminar.length} de las últimas ${d.muestra ?? (d.items ?? []).length} publicaciones en revisión por "etiquetas de Mercado Libre" en la foto, un aviso que aparece aunque la tapa se vea limpia.`,
+        'Como Seba autorizó para este motivo, las eliminé. Los libros no se vuelven a subir solos.', '', ...autoEliminar.flatMap(i => bloqueDeItem(i, 'la eliminé (Seba lo autorizó para este motivo).')), ''].join('\n').trimEnd(),
+      accion: {tipo: 'eliminar', ids: autoEliminar.map(i => i.id), resumen: 'las eliminé (Seba lo autorizó para este motivo)'},
+    });
+  }
+  const pausadas = sinActivas.filter(i => !autoEliminar.includes(i));
   if (pausadas.length) {
     const deFotos = pausadas.every(i => String(i.moderacion?.filtro ?? '').startsWith('OCR_'));
     const unico = pausadas.length === 1 ? pausadas[0] : null;
@@ -164,7 +184,7 @@ export function armarMail(hechos, ahora = Date.now()) {
 }
 
 // ---- Arreglar (solo la lista cerrada) ----
-export async function ejecutar(hallazgos, {dispatch, rerun, cancel = async () => {}, seco = false}) {
+export async function ejecutar(hallazgos, {dispatch, rerun, cancel = async () => {}, eliminar = async () => {}, seco = false}) {
   const hechos = [];
   for (const h of hallazgos) {
     const x = {...h};
@@ -173,6 +193,7 @@ export async function ejecutar(hallazgos, {dispatch, rerun, cancel = async () =>
         if (h.accion.tipo === 'dispatch') await dispatch(h.accion.workflow, h.accion.inputs);
         else if (h.accion.tipo === 'rerun') await rerun(h.accion.runId);
         else if (h.accion.tipo === 'cancel') await cancel(h.accion.runId);
+        else if (h.accion.tipo === 'eliminar') await eliminar(h.accion.ids);
         x.resultado = h.accion.resumen;
       } catch (e) {
         x.resultado = `intenté arreglarlo y no pude (${e.message}); queda para que lo veas`;
@@ -232,7 +253,7 @@ export async function reunir() {
     }
     await new Promise(r => setTimeout(r, 400));
   }
-  return {runs, publicadas, freno, cupo, restantesArnoia, items, muestra: recientes.length, query};
+  return {runs, publicadas, freno, cupo, restantesArnoia, items, muestra: recientes.length, query, ml};
 }
 
 async function main() {
@@ -248,6 +269,14 @@ async function main() {
     dispatch: (workflow, inputs) => gh(`/actions/workflows/${workflow}/dispatches`, {method: 'POST', body: {ref: 'main', inputs}}),
     rerun: runId => gh(`/actions/runs/${runId}/rerun-failed-jobs`, {method: 'POST'}),
     cancel: runId => gh(`/actions/runs/${runId}/cancel`, {method: 'POST'}),
+    eliminar: async ids => {
+      for (const id of ids) {
+        const r = await eliminarPublicacion(d.ml, id);
+        console.log(`eliminar ${id}: ${r.resultado}`);
+        if (r.resultado === 'no_se_pudo') throw new Error(`no se pudo eliminar ${id}`);
+        await new Promise(res => setTimeout(res, 400));
+      }
+    },
   });
   console.log(armarMail(hechos));
   if (seco) return;

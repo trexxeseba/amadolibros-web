@@ -87,7 +87,10 @@ test('seguridad: el guardián nunca suelta el freno, reactiva, cambia precios ni
   const src = fs.readFileSync('scripts/guardian/guardian.mjs', 'utf8').split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
   assert.ok(!/releaseBrake/.test(src), 'no debe soltar el freno');
   assert.ok(!/status:\s*['"]active['"]/.test(src), 'no debe reactivar');
-  assert.ok(!/\.put\(|\.post\(/.test(src), 'solo lee de Mercado Libre');
+  assert.ok(!/\.put\(|\.post\(/.test(src), 'solo lee de Mercado Libre (la única escritura vive en eliminar.mjs)');
+  const el = fs.readFileSync('scripts/guardian/eliminar.mjs', 'utf8').split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  assert.ok(/exigirItemDeVintage/.test(el) && /'active'/.test(el), 'eliminar solo toca Vintage y nunca una activa');
+  assert.ok(!/active['"]\s*\}/.test(el) && !/price/.test(el), 'eliminar no reactiva ni cambia precios');
   assert.ok(!/CUENTAS\s*(\.\s*libros|\[\s*['"]libros)/.test(src) && !src.includes('440298103'), 'no debe nombrar Amado Libros');
 });
 
@@ -108,11 +111,45 @@ test('ejecutar sabe cancelar una corrida', async () => {
 
 test('el informe de una publicación en revisión dice qué libro es, el motivo exacto, qué se hizo con la foto y qué hizo el guardián', () => {
   const item = {id: 'MLU1542039880', status: 'under_review', sub_status: 'waiting_for_patch', edadMin: 90, titulo: 'Centella', autor: 'Matt Tavares', editorial: 'Duomo', fuente: 'arnoia', tradicional: true,
-    tapa: 'se usó la tapa de la librería original, sin borrar nada', moderacion: {filtro: 'OCR_GOO_MELI_LABEL_OCR', motivo: 'Algunas fotos tienen etiquetas de Mercado Libre.', remedio: 'Modifica tu publicación y elimina las etiquetas propias de Mercado Libre de tus fotos para reactivarla.'}};
+    tapa: 'se usó la tapa de la librería original, sin borrar nada', moderacion: {filtro: 'OCR_GOO_FI_DATOS_PERSONALES_FOTOS_AUTO', motivo: 'Algunas fotos tienen datos de contacto.', remedio: 'Modifica tu publicación y elimina los datos de contacto de tus fotos para reactivarla.'}};
   const h = evaluar(base({items: [item], muestra: 40}), AHORA).find(x => x.clave.startsWith('pausadas_ml_'));
   assert.match(h.asunto, /«Centella» quedó en revisión/);
   const m = armarMail([h]);
-  for (const trozo of ['«Centella» (Matt Tavares · Duomo)', 'MLU1542039880', 'de Arnoia, como publicación normal', 'en revisión: Mercado Libre espera', 'no la ve ningún comprador', 'Algunas fotos tienen etiquetas de Mercado Libre', 'etiquetas de Mercado Libre en una foto', 'sin borrar nada', 'Qué hice yo: nada todavía', 'no es una denuncia', '1 de las últimas 40', 'Lola y Gaby', 'Mi recomendación es la 1'])
+  for (const trozo of ['«Centella» (Matt Tavares · Duomo)', 'MLU1542039880', 'de Arnoia, como publicación normal', 'en revisión: Mercado Libre espera', 'no la ve ningún comprador', 'Algunas fotos tienen datos de contacto', 'datos de contacto o identificación en una foto', 'sin borrar nada', 'Qué hice yo: nada todavía', 'no es una denuncia', '1 de las últimas 40', 'Lola y Gaby', 'Mi recomendación es la 1'])
     assert.ok(m.includes(trozo), 'falta: ' + trozo);
   assert.equal(describirFiltro('OCR_GOO_FI_DATOS_PERSONALES_FOTOS_AUTO'), 'datos de contacto o identificación en una foto');
+});
+
+const conEtiqueta = (id, o = {}) => ({id, status: 'under_review', sub_status: 'waiting_for_patch', edadMin: 30, titulo: 'Wildwood ' + id, autor: 'Carson Ellis', editorial: 'Duomo', fuente: 'arnoia', tradicional: true,
+  tapa: 'se usó la tapa de la librería original, sin borrar nada', moderacion: {filtro: 'OCR_GOO_MELI_LABEL_OCR', motivo: 'Algunas fotos tienen etiquetas de Mercado Libre.'}, ...o});
+
+test('"etiquetas de Mercado Libre" en una foto: el guardián elimina solo y avisa que lo hizo (autorizado por Seba)', async () => {
+  const h = evaluar(base({items: [conEtiqueta('MLU1')], muestra: 40}), AHORA);
+  const e = h.find(x => x.clave.startsWith('eliminadas_etiquetas_'));
+  assert.ok(e, 'debe eliminar');
+  assert.deepEqual(e.accion, {tipo: 'eliminar', ids: ['MLU1'], resumen: 'las eliminé (Seba lo autorizó para este motivo)'});
+  assert.ok(!h.some(x => x.clave.startsWith('pausadas_ml_')), 'no pide decidir lo que ya resolvió');
+  const borradas = [];
+  const hechos = await ejecutar([e], {dispatch: async () => {}, rerun: async () => {}, eliminar: async ids => borradas.push(...ids)});
+  assert.deepEqual(borradas, ['MLU1']);
+  assert.match(armarMail(hechos), /Qué hice yo: las eliminé/);
+});
+
+test('solo elimina por ese motivo: denuncias, datos de contacto y otros siguen pidiendo decisión', () => {
+  const otra = conEtiqueta('MLU2', {moderacion: {filtro: 'ML_DP_ATRIBUTOS', motivo: 'La ficha técnica incluye datos de contacto.'}});
+  const h = evaluar(base({items: [otra, conEtiqueta('MLU3', {status: 'active', sub_status: ''})], muestra: 40}), AHORA);
+  assert.ok(!h.some(x => x.accion?.tipo === 'eliminar'));
+  assert.ok(h.some(x => x.clave.startsWith('pausadas_ml_')));
+});
+
+test('si son demasiadas de golpe (más de 10) no borra: avisa grave para que se mire', () => {
+  const muchas = Array.from({length: 11}, (_, i) => conEtiqueta('MLU' + (100 + i)));
+  const h = evaluar(base({items: muchas, muestra: 40}), AHORA);
+  assert.ok(!h.some(x => x.accion?.tipo === 'eliminar'));
+  assert.equal(h.find(x => x.clave.startsWith('pausadas_ml_')).nivel, 'grave');
+});
+
+test('las ya eliminadas no vuelven a avisarse', () => {
+  const ya = conEtiqueta('MLU4', {status: 'inactive', sub_status: 'waiting_for_patch,deleted'});
+  assert.deepEqual(claves(evaluar(base({items: [ya], muestra: 40}), AHORA)).filter(c => /eliminadas_|pausadas_/.test(c)), []);
 });
