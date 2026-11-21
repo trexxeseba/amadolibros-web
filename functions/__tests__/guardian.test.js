@@ -12,7 +12,7 @@ const claves = h => h.map(x => x.clave);
 test('Arnoia atrasada con cupo y libros pendientes: pide una tanda sola', () => {
   const h = evaluar(base({publicadas: {'arnoia:1': {item_id: 'MLU1', fuente: 'arnoia', ts: AHORA - 150 * 60000}}}), AHORA);
   const x = h.find(y => y.clave === 'arnoia_atrasada');
-  assert.ok(x); assert.equal(x.accion.tipo, 'dispatch'); assert.equal(x.accion.inputs.fuente, 'arnoia');
+  assert.ok(x); assert.equal(x.accion.tipo, 'dispatch'); assert.equal(x.accion.inputs.fuente, 'todo');
 });
 
 test('Arnoia al día, sin cupo, sin pendientes o con tanda en curso: no molesta', () => {
@@ -94,8 +94,8 @@ test('seguridad: el guardián nunca suelta el freno, reactiva, cambia precios ni
   assert.ok(!/CUENTAS\s*(\.\s*libros|\[\s*['"]libros)/.test(src) && !src.includes('440298103'), 'no debe nombrar Amado Libros');
 });
 
-test('una tanda colgada (más de 40 minutos) se cancela y no tapa el aviso de Arnoia atrasada', () => {
-  const colgada = {'hermes-publicar.yml': [{id: 99, status: 'in_progress', conclusion: null, created_at: hace(70), html_url: 'u'}]};
+test('una tanda colgada (más de 90 minutos) se cancela y no tapa el aviso de Arnoia atrasada', () => {
+  const colgada = {'hermes-publicar.yml': [{id: 99, status: 'in_progress', conclusion: null, created_at: hace(120), html_url: 'u'}]};
   const h = evaluar(base({runs: colgada, publicadas: {'arnoia:1': {item_id: 'MLU1', fuente: 'arnoia', ts: AHORA - 150 * 60000}}}), AHORA);
   const c = h.find(y => y.clave === 'colgada_99');
   assert.ok(c); assert.equal(c.accion.tipo, 'cancel'); assert.equal(c.accion.runId, 99);

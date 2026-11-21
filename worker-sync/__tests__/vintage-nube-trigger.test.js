@@ -50,8 +50,8 @@ test('Arnoia cada hora al :17 y Hermes de 09:07 a 15:07, pidiendo hermes-publica
     assert.equal((await dispararHermes(env)).state, 'disparado');
   } finally { globalThis.fetch = orig; }
   assert.match(posts[0].url, /hermes-publicar\.yml\/dispatches$/);
-  assert.deepEqual(posts[0].body, { ref: 'main', inputs: { modo: 'publicar', cantidad: '70', rama: 'main', fuente: 'arnoia', tradicional: 'false' } });
-  assert.deepEqual(posts[1].body.inputs, { modo: 'publicar', cantidad: '25', rama: 'main', fuente: 'hermes', tradicional: 'false' });
+  assert.deepEqual(posts[0].body, { ref: 'main', inputs: { modo: 'publicar', cantidad: '70', rama: 'main', fuente: 'todo', tradicional: 'false' } });
+  assert.deepEqual(posts[1].body.inputs, { modo: 'publicar', cantidad: '70', rama: 'main', fuente: 'todo', tradicional: 'false' });
 });
 
 test('el guardián se lanza cada 15 minutos pidiendo guardian.yml sin inputs', async () => {
