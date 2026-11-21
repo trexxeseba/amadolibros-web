@@ -100,7 +100,10 @@ const filas = [];
 // Portada por ISBN (decisión de Seba, 18/11/2026: tapas de una librería española). Casa del Libro primero, Open Library
 // como respaldo. Solo se acepta una imagen real: JPEG, de al menos 40 KB (una imagen genérica o de error pesa mucho menos),
 // y con las tapas revisadas a mano en la primera tanda. Sin portada no se publica.
-const MIN_BYTES_PORTADA = 40000;
+// 21/11/2026: el piso era de 40 KB y descartaba tapas reales chicas (Casa del Libro devuelve 404 cuando no tiene la tapa, así que un 200 es una tapa de verdad):
+// 653 libros quedaron "sin portada" por eso. Ahora el piso es de 8 KB, el lector exige al menos 200 px de lado y la tapa chica se agranda antes de subirla.
+const MIN_BYTES_PORTADA = 8000;
+const VERSION_REGLA_PORTADA = 2; // las marcas "sin_portada" anteriores a esta regla se vuelven a probar
 const vetadas = JSON.parse(await fs.readFile(new URL('./data/portadas-vetadas.json', import.meta.url), 'utf8').catch(() => '{"titulo_regex":[]}')).titulo_regex.map(r => new RegExp(r, 'i'));
 const execFileP = promisify(execFile);
 // Revisa la tapa con hermes-monitor/limpiar_tapa.py (lector de texto con la tapa agrandada). Devuelve:
@@ -122,7 +125,7 @@ async function recodificarTapa(bytes) {
   const entrada = base + '-r-in.jpg', salida = base + '-r-out.jpg';
   await fs.writeFile(entrada, Buffer.from(bytes));
   try {
-    await execFileP('python3', ['-c', 'import sys\nfrom PIL import Image\nIm=Image.open(sys.argv[1]).convert("RGB")\nIm.save(sys.argv[2],"JPEG",quality=92,optimize=True)', entrada, salida], {timeout: 60000});
+    await execFileP('python3', ['-c', 'import sys\nfrom PIL import Image\nIm=Image.open(sys.argv[1]).convert("RGB")\nm=max(Im.size)\nIm=Im.resize((round(Im.size[0]*800/m),round(Im.size[1]*800/m)),Image.LANCZOS) if m<800 else Im\nIm.save(sys.argv[2],"JPEG",quality=92,optimize=True)', entrada, salida], {timeout: 60000});
     return await fs.readFile(salida);
   } catch { return null; } finally { await fs.rm(entrada, {force: true}); await fs.rm(salida, {force: true}); }
 }
@@ -183,7 +186,7 @@ const resolverArnoia = async f => {
   // Anotados en una tanda anterior (21/11/2026): se saltan sin gastar ni una consulta. Antes el 'sin_catalogo' viejo impedía anotar 'sin_portada' y 139 libros
   // se revisaban de nuevo en cada tanda, gastando los 25 minutos sin publicar ninguno.
   if ((tradicional || ambos) && (previo?.portada_rechazada || previo?.sin_autor)) return {omitir: true};
-  if ((tradicional || ambos) && previo?.sin_portada && Date.now() - Date.parse(previo.fecha ?? 0) < 7 * 86400e3) return {omitir: true};
+  if ((tradicional || ambos) && previo?.sin_portada && previo.v === VERSION_REGLA_PORTADA && Date.now() - Date.parse(previo.fecha ?? 0) < 7 * 86400e3) return {omitir: true};
   // Sin ficha de catálogo y en modo solo-catálogo: no se vuelve a buscar. En modo publicación normal sí se reintenta.
   if (previo?.sin_catalogo && !tradicional && !ambos) return {omitir: true};
   await pausa(500);
@@ -196,9 +199,9 @@ const resolverArnoia = async f => {
     // Mercado Libre exige el autor en la publicación normal: sin autor no se valida (20/11/2026: 5 seguidos sin autor frenaron la tanda con solo 7 altas).
     if (!String(f.autor ?? '').trim()) return {etiqueta: f.ean, clave, saltar: 'sin_autor', marcar: {sin_autor: true}};
     // Sin portada disponible: se anota y se vuelve a probar a la semana (no se re-mira en cada tanda, que gasta el tope de libros revisados).
-    if (previo?.sin_portada && Date.now() - Date.parse(previo.fecha ?? 0) < 7 * 86400e3) return {omitir: true};
+    if (previo?.sin_portada && previo.v === VERSION_REGLA_PORTADA && Date.now() - Date.parse(previo.fecha ?? 0) < 7 * 86400e3) return {omitir: true};
     const por = await buscarPortada(f.ean); // la portada de prueba solo vale para validar, nunca para publicar
-    if (!por) return {etiqueta: f.ean, clave, saltar: 'sin_portada', marcar: {sin_portada: true}};
+    if (!por) return {etiqueta: f.ean, clave, saltar: 'sin_portada', marcar: {sin_portada: true, v: VERSION_REGLA_PORTADA}};
     if (por.rechazada) return {etiqueta: f.ean, clave, saltar: 'portada_con_' + por.rechazada, ...(por.sinMarca ? {} : {marcar: {portada_rechazada: por.rechazada}})};
     const portada = por.pictureId ? {id: por.pictureId} : por.url;
     const payload = armarPayloadTradicional({ean: f.ean, titulo: f.titulo, autor: f.autor, editorial: f.editorial, precio: f.precio, plazoDias: PLAZO_DIAS, usaFamilyName, imagenes: [portada], pesoGramos: f.peso_g});
