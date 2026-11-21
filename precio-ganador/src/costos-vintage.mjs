@@ -78,9 +78,12 @@ export async function cargarCotizadorVintage() {
   const politica = vintageCompetitivePolicy(JSON.parse(run.policy_json));
   const feeds = await d1('SELECT id, source_date, expected_rows FROM ml_pub_feeds ORDER BY created_at DESC LIMIT 10');
   let feed = null;
+  const diagnostico = [];
   for (const f of feeds) {
     const [c] = await d1('SELECT COUNT(*) AS n FROM ml_pub_stock WHERE feed_id = ?', [f.id]);
-    if (Number(c?.n) >= Math.max(1000, Number(f.expected_rows || 0) * 0.9)) { feed = { ...f, renglones: Number(c.n) }; break; }
+    diagnostico.push({ id: f.id, lista_sbs: f.source_date, esperadas: Number(f.expected_rows || 0), renglones: Number(c?.n) });
+    if (feed) continue;
+    if (Number(c?.n) >= Math.max(1000, Number(f.expected_rows || 0) * 0.9)) { feed = { ...f, renglones: Number(c.n) }; }
   }
   if (!feed) throw Object.assign(new Error('vintage_sin_lista_sbs'), { fatal: true });
   const filas = new Map();
@@ -107,5 +110,5 @@ export async function cargarCotizadorVintage() {
       };
     } catch { return null; }
   };
-  return { cotizar, info: { lista_sbs: feed.source_date, dias_lista: Math.round(dias * 10) / 10, renglones: filas.size, comision: politica.mlFee, margen_publicado: politica.margin, margen_piso: politica.competitiveFloorMargin, entrega_dias: politica.availabilityDays } };
+  return { cotizar, info: { feeds: diagnostico, lista_sbs: feed.source_date, dias_lista: Math.round(dias * 10) / 10, renglones: filas.size, comision: politica.mlFee, margen_publicado: politica.margin, margen_piso: politica.competitiveFloorMargin, entrega_dias: politica.availabilityDays } };
 }

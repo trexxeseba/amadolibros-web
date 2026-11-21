@@ -49,6 +49,7 @@ async function main() {
   if (String(yo?.id) !== cuenta.sellerId) throw new Error('token_de_otra_cuenta');
   const { cotizar, info } = await cargarCotizadorVintage();
   console.log('Cotizador listo:', JSON.stringify({ renglones: info.renglones, dias_lista: info.dias_lista }));
+  console.log('Listas en D1:', JSON.stringify(info.feeds));
 
   const ids = await idsActivos(ml, cuenta.sellerId);
   const items = await detalle(ml, ids);
