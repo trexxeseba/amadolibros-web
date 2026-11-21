@@ -45,7 +45,8 @@ Reparto: SBS hasta 1.000 por día (45 por hora), Arnoia hasta 1.700 (70 por hora
 Cada 15 minutos (lo lanza el Worker; el cron de GitHub queda de respaldo) mira si algo puede salir mal y avisa por mail en lenguaje simple.
 - **Detecta:** tanda de Arnoia que no corre a su hora (con cupo y libros pendientes), SBS sin corridas buenas o con 3 fallas seguidas, corridas caídas de la tanda o del despliegue del Worker, publicaciones recientes que Mercado Libre pausó o cerró (posible denuncia), fotos que no terminan de cargar en 3 horas y el freno del vigía puesto.
 - **Arregla solo, y nada más que esto:** pedir de nuevo una tanda de Hermes/Arnoia o de SBS que no corrió, reintentar UNA vez una corrida caída y cancelar una tanda colgada (más de 40 minutos en curso).
-- **Nunca:** suelta el freno, reactiva publicaciones, cambia precios, borra ni toca Amado Libros (un test lo exige).
+- **Elimina solo, y únicamente esto (autorizado por Seba el 21/11/2026):** publicaciones de Vintage que Mercado Libre dejó en revisión por "etiquetas de Mercado Libre" en una foto (falsa alarma habitual con tapas limpias). Máximo 10 por corrida; si hay más, no borra y avisa. Solo cierra o elimina, nunca una activa (`scripts/guardian/eliminar.mjs`). Lo cuenta en el mail.
+- **Nunca:** suelta el freno, reactiva publicaciones, cambia precios, borra por otro motivo (denuncias, propiedad intelectual, fotos con texto) ni toca Amado Libros (un test lo exige).
 - **Avisos:** no repite el mismo aviso (3 h; 1 h si es grave). Si hace falta que decidas, el mail trae 3 opciones.
 - **Probarlo sin riesgo:** Actions > "Guardián de las publicaciones de Vintage" > Run workflow con `seco` tildado.
 - **Apagarlo:** variable del repo `HERMES_APAGADO` = `true` (apaga también las tandas).
