@@ -67,3 +67,45 @@ export async function cargarPisosVintage() {
   };
   return { pisoDe, info: { feed_id: feed.id, lista_sbs: feed.source_date, dias_lista: Math.round(dias * 10) / 10, lista_vigente: vigente, renglones: filas.size, margen_piso: politica.competitiveFloorMargin, minimo: MINIMO_VINTAGE_UYU } };
 }
+
+// Cotizador por publicación (sólo lectura): el mismo cálculo que usa el publicador
+// (quoteMercadoLibre con la política aprobada) para decir cuánto nos cuesta el libro puesto
+// en Uruguay y qué nos queda a un precio dado. Sin renglón en la lista de SBS (libros de
+// otras fuentes) no hay costo conocido: devuelve null.
+export async function cargarCotizadorVintage() {
+  const [run] = await d1("SELECT id, policy_json FROM ml_vintage_pub_runs WHERE seller_id='2341378249' ORDER BY updated_at DESC LIMIT 1");
+  if (!run) throw Object.assign(new Error('vintage_sin_politica'), { fatal: true });
+  const politica = vintageCompetitivePolicy(JSON.parse(run.policy_json));
+  const feeds = await d1('SELECT id, source_date, expected_rows FROM ml_pub_feeds ORDER BY created_at DESC LIMIT 10');
+  let feed = null;
+  for (const f of feeds) {
+    const [c] = await d1('SELECT COUNT(*) AS n FROM ml_pub_stock WHERE feed_id = ?', [f.id]);
+    if (Number(c?.n) >= Math.max(1000, Number(f.expected_rows || 0) * 0.9)) { feed = { ...f, renglones: Number(c.n) }; break; }
+  }
+  if (!feed) throw Object.assign(new Error('vintage_sin_lista_sbs'), { fatal: true });
+  const filas = new Map();
+  for (let offset = 0; ; offset += 5000) {
+    const parte = await d1('SELECT isbn, data_json FROM ml_pub_stock WHERE feed_id = ? ORDER BY isbn LIMIT 5000 OFFSET ?', [feed.id, offset]);
+    for (const r of parte) filas.set(String(r.isbn), JSON.parse(r.data_json));
+    if (parte.length < 5000) break;
+  }
+  const dias = (Date.now() - Date.parse(feed.source_date)) / 86400e3;
+  const cotizar = item => {
+    const isbn = /^AMADO-AR-(\d{10,13})$/.exec(item.seller_custom_field ?? '')?.[1];
+    const fila = isbn ? filas.get(isbn) : null;
+    if (!fila) return null;
+    try {
+      const completo = quoteMercadoLibre({ ...fila }, politica);                // precio de lista completo y costo
+      const piso = quoteMercadoLibre({ ...fila, competitor: { price: 1, at: Date.now(), days: politica.availabilityDays ?? null } }, politica);
+      const costo = Number(completo.cost), comision = Number(politica.mlFee);
+      return {
+        isbn, costo, libro: Number(completo.book), flete: Number(completo.freight), comision,
+        precio_lista: Number(completo.price), piso_18: Number(piso?.competitive?.floor),
+        // Lo que nos queda por unidad vendida a un precio dado, y sobre el costo.
+        queda: precio => Math.round(precio * (1 - comision) - costo),
+        sobre_costo: precio => Math.round(((precio * (1 - comision) - costo) / costo) * 1000) / 10,
+      };
+    } catch { return null; }
+  };
+  return { cotizar, info: { lista_sbs: feed.source_date, dias_lista: Math.round(dias * 10) / 10, renglones: filas.size, comision: politica.mlFee, margen_publicado: politica.margin, margen_piso: politica.competitiveFloorMargin, entrega_dias: politica.availabilityDays } };
+}

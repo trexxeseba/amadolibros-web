@@ -25,9 +25,9 @@ on:
   workflow_dispatch:
     inputs:
       accion:
-        description: 'correr = corrida normal (con auditoría) · auditar = sólo la auditoría, no cambia nada · restaurar = volver al precio original (todo, o sólo los IDs de abajo) · ventas = cruce de ventas, sólo lee · baratos = libros que ganamos muy por debajo del competidor, sólo lee · subir = aplica la lista de subidas aprobada por Seba (con prueba=true sólo lista) · inmediatos = libros más caros que un vendedor con entrega inmediata, sólo lee'
+        description: 'correr = corrida normal (con auditoría) · auditar = sólo la auditoría, no cambia nada · restaurar = volver al precio original (todo, o sólo los IDs de abajo) · ventas = cruce de ventas, sólo lee · baratos = libros que ganamos muy por debajo del competidor, sólo lee · subir = aplica la lista de subidas aprobada por Seba (con prueba=true sólo lista) · inmediatos = libros más caros que un vendedor con entrega inmediata, sólo lee · cotizar = cotiza una muestra de Vintage con el cotizador (costo y margen), sólo lee'
         type: choice
-        options: [correr, auditar, restaurar, diagnosticar, ventas, baratos, subir, inmediatos]
+        options: [correr, auditar, restaurar, diagnosticar, ventas, baratos, subir, inmediatos, cotizar]
         default: correr
       max_marcadas:
         description: 'Cortar al encontrar N marcadas (vacío = todas)'
@@ -182,6 +182,10 @@ jobs:
             node precio-ganador/src/baratos.mjs --cuenta "$CUENTA" --salida estado/ultima
             exit $?
           fi
+          if [ "$IN_ACCION" = "cotizar" ]; then
+            node precio-ganador/src/cotizar.mjs --cuenta "$CUENTA" --estado estado/state --salida "estado/pruebas/$GITHUB_RUN_ID" --muestra 10
+            exit $?
+          fi
           if [ "$IN_ACCION" = "inmediatos" ]; then
             node precio-ganador/src/inmediatos.mjs --cuenta "$CUENTA" --salida "estado/pruebas/$GITHUB_RUN_ID"
             exit $?
@@ -198,7 +202,7 @@ jobs:
       # todas las que el sistema bajó y la regla recalculada sobre las marcadas.
       # Si encuentra una discrepancia, el workflow falla y GitHub manda el mail.
       - name: Auditoría
-        if: success() && inputs.accion != 'restaurar' && inputs.accion != 'diagnosticar' && inputs.accion != 'ventas' && inputs.accion != 'baratos' && inputs.accion != 'subir' && inputs.accion != 'inmediatos'
+        if: success() && inputs.accion != 'restaurar' && inputs.accion != 'diagnosticar' && inputs.accion != 'ventas' && inputs.accion != 'baratos' && inputs.accion != 'subir' && inputs.accion != 'inmediatos' && inputs.accion != 'cotizar'
         shell: bash
         env:
           CUENTA: ${{ matrix.cuenta }}
