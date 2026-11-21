@@ -55,6 +55,10 @@ export const CUENTAS = {
     umbralInclusivo: true,
     descuento: 0.01,
     soloContraDemanda: true,
+    // Vendedores con los que no se compite (por apodo, sin distinguir mayúsculas).
+    // POCHOLIB: precios muy bajos (Seba, 21/11/2026). Si el ganador de la ficha es uno
+    // de ellos no se baja el precio; las ya bajadas contra él vuelven hacia el original.
+    vendedoresExcluidos: ['pocholib'],
     topePct: null,
     minimo: 1200,
     pisoPorCosto: false,
