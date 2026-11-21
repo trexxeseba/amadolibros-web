@@ -180,6 +180,10 @@ const resolverArnoia = async f => {
   const clave = 'arnoia:' + f.ean;
   const previo = publicadas[clave];
   if (previo?.item_id || previo?.no_valida) return {omitir: true};
+  // Anotados en una tanda anterior (21/11/2026): se saltan sin gastar ni una consulta. Antes el 'sin_catalogo' viejo impedía anotar 'sin_portada' y 139 libros
+  // se revisaban de nuevo en cada tanda, gastando los 25 minutos sin publicar ninguno.
+  if ((tradicional || ambos) && (previo?.portada_rechazada || previo?.sin_autor)) return {omitir: true};
+  if ((tradicional || ambos) && previo?.sin_portada && Date.now() - Date.parse(previo.fecha ?? 0) < 7 * 86400e3) return {omitir: true};
   // Sin ficha de catálogo y en modo solo-catálogo: no se vuelve a buscar. En modo publicación normal sí se reintenta.
   if (previo?.sin_catalogo && !tradicional && !ambos) return {omitir: true};
   await pausa(500);
@@ -218,7 +222,7 @@ for (const f of fichas) {
   if (ctx.saltar) {
     filas.push({n: ctx.etiqueta, resultado: ctx.saltar});
     console.log(`${ctx.etiqueta}\tsalteada: ${ctx.saltar}`);
-    if (ctx.marcar && real && (!publicadas[ctx.clave] || publicadas[ctx.clave].sin_portada)) { publicadas[ctx.clave] = {...ctx.marcar, fecha: new Date().toISOString().slice(0, 10)}; await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1)); }
+    if (ctx.marcar && real && !publicadas[ctx.clave]?.item_id) { publicadas[ctx.clave] = {...(publicadas[ctx.clave] ?? {}), ...ctx.marcar, fecha: new Date().toISOString().slice(0, 10)}; await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1)); }
     continue;
   }
   const {prod} = ctx;
