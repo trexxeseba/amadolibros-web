@@ -76,19 +76,19 @@ export async function cargarCotizadorVintage() {
   const [run] = await d1("SELECT id, policy_json FROM ml_vintage_pub_runs WHERE seller_id='2341378249' ORDER BY updated_at DESC LIMIT 1");
   if (!run) throw Object.assign(new Error('vintage_sin_politica'), { fatal: true });
   const politica = vintageCompetitivePolicy(JSON.parse(run.policy_json));
-  const feeds = await d1('SELECT id, source_date, expected_rows FROM ml_pub_feeds ORDER BY created_at DESC LIMIT 10');
-  let feed = null;
+  // La lista diaria completa que baja la nube (sbs_supplier_*); las ml_pub_* son muestras viejas.
+  let feed = null, tabla = 'sbs_supplier_stock';
   const diagnostico = [];
+  const feeds = await d1("SELECT id, source_date, expected_rows FROM sbs_supplier_feeds WHERE state='ready' ORDER BY created_at DESC LIMIT 5");
   for (const f of feeds) {
-    const [c] = await d1('SELECT COUNT(*) AS n FROM ml_pub_stock WHERE feed_id = ?', [f.id]);
+    const [c] = await d1('SELECT COUNT(*) AS n FROM sbs_supplier_stock WHERE feed_id = ?', [f.id]);
     diagnostico.push({ id: f.id, lista_sbs: f.source_date, esperadas: Number(f.expected_rows || 0), renglones: Number(c?.n) });
-    if (feed) continue;
-    if (Number(c?.n) >= Math.max(1000, Number(f.expected_rows || 0) * 0.9)) { feed = { ...f, renglones: Number(c.n) }; }
+    if (!feed && Number(c?.n) >= Math.max(1000, Number(f.expected_rows || 0) * 0.9)) feed = { ...f, renglones: Number(c.n) };
   }
   if (!feed) throw Object.assign(new Error('vintage_sin_lista_sbs'), { fatal: true });
   const filas = new Map();
   for (let offset = 0; ; offset += 5000) {
-    const parte = await d1('SELECT isbn, data_json FROM ml_pub_stock WHERE feed_id = ? ORDER BY isbn LIMIT 5000 OFFSET ?', [feed.id, offset]);
+    const parte = await d1(`SELECT isbn, data_json FROM ${tabla} WHERE feed_id = ? ORDER BY isbn LIMIT 5000 OFFSET ?`, [feed.id, offset]);
     for (const r of parte) filas.set(String(r.isbn), JSON.parse(r.data_json));
     if (parte.length < 5000) break;
   }
