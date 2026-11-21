@@ -179,7 +179,7 @@ const resolverArnoia = async f => {
   if (conArroba(f)) return {etiqueta: f.ean, saltar: 'arroba_en_datos'};
   const clave = 'arnoia:' + f.ean;
   const previo = publicadas[clave];
-  if (previo?.item_id) return {omitir: true};
+  if (previo?.item_id || previo?.no_valida) return {omitir: true};
   // Sin ficha de catálogo y en modo solo-catálogo: no se vuelve a buscar. En modo publicación normal sí se reintenta.
   if (previo?.sin_catalogo && !tradicional && !ambos) return {omitir: true};
   await pausa(500);
@@ -244,7 +244,17 @@ for (const f of fichas) {
     ultimo = v;
     if (!v.causas.some(c => /shipping/.test(String(c.code)))) break;
   }
-  if (!valido) { erroresSeguidos++; filas.push({n: ctx.etiqueta, resultado: 'no_valida', causas: ultimo?.causas}); console.log(`${ctx.etiqueta}\tNO VALIDA ${JSON.stringify(ultimo?.causas)}`); continue; }
+  if (!valido) {
+    // 21/11/2026: las fichas que Mercado Libre rechaza por algo propio de ESA ficha (sin fotos, atributo obligatorio que falta, medidas) se anotan y se
+    // saltan en las próximas tandas, y no cuentan como "errores seguidos". Antes cada tanda de GLIC se frenaba en los mismos 5 libros del principio y
+    // nunca llegaba a los nuevos (0 altas en todo el día).
+    const especifico = (ultimo?.causas ?? []).some(c => c.type === 'error' && /missing_required|requiresPictures|package\.dimensions|invalid/.test(String(c.code)));
+    if (especifico && real && ctx.clave) {
+      publicadas[ctx.clave] = {no_valida: true, causa: String((ultimo.causas.find(c => c.type === 'error') ?? {}).code ?? ''), fecha: new Date().toISOString().slice(0, 10)};
+      await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1));
+    } else erroresSeguidos++;
+    filas.push({n: ctx.etiqueta, resultado: 'no_valida', causas: ultimo?.causas}); console.log(`${ctx.etiqueta}\tNO VALIDA ${JSON.stringify(ultimo?.causas)}`); continue;
+  }
   if (ultimo?.causas?.length) console.log(`${ctx.etiqueta}\tadvertencias ${JSON.stringify(ultimo.causas)}`);
   if (!real) { erroresSeguidos = 0; hechas++; filas.push({n: ctx.etiqueta, resultado: 'valida', precio}); console.log(`${ctx.etiqueta}\tvalida\tprecio ${precio} (${ctx.nota})`); continue; }
   await pausa(1000);
