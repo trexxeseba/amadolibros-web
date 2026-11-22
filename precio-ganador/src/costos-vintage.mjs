@@ -10,6 +10,7 @@
 import { quoteMercadoLibre } from '../../worker-sync/publication-policy.js';
 import { vintageCompetitivePolicy } from '../../worker-sync/vintage-pricing.js';
 import { D1_DATABASE_ID } from './config.mjs';
+import { leerCostos, cotizarDesdeCostos, eanDeSku } from './costos-proveedores.mjs';
 
 export const MINIMO_VINTAGE_UYU = 1500;
 export const MAX_DIAS_LISTA = 7;
@@ -71,8 +72,11 @@ export async function cargarPisosVintage() {
 // Cotizador por publicación (sólo lectura): el mismo cálculo que usa el publicador
 // (quoteMercadoLibre con la política aprobada) para decir cuánto nos cuesta el libro puesto
 // en Uruguay y qué nos queda a un precio dado. Sin renglón en la lista de SBS (libros de
-// otras fuentes) no hay costo conocido: devuelve null.
-export async function cargarCotizadorVintage() {
+// otras fuentes) no hay costo conocido: devuelve null. Con costosDir (la carpeta costos/ del
+// repo privado) también cotiza los libros de Arnoia (SKU ARNOIA-<ean>, o HERMES-<producto> con
+// el EAN en la lista de Arnoia: un libro de Hermes o GLIC que Arnoia también tiene se cotiza
+// con el costo de Arnoia, porque se puede comprar ahí).
+export async function cargarCotizadorVintage({ costosDir = null } = {}) {
   const [run] = await d1("SELECT id, policy_json FROM ml_vintage_pub_runs WHERE seller_id='2341378249' ORDER BY updated_at DESC LIMIT 1");
   if (!run) throw Object.assign(new Error('vintage_sin_politica'), { fatal: true });
   const politica = vintageCompetitivePolicy(JSON.parse(run.policy_json));
@@ -93,22 +97,32 @@ export async function cargarCotizadorVintage() {
     if (parte.length < 5000) break;
   }
   const dias = (Date.now() - Date.parse(feed.source_date)) / 86400e3;
+  const arnoia = leerCostos(costosDir, 'arnoia');
+  const comision = Number(politica.mlFee);
+  const armar = (isbn, fuente, completo, piso18) => {
+    const costo = Number(completo.cost);
+    return {
+      isbn, fuente, costo, libro: Number(completo.book), flete: Number(completo.freight), comision,
+      precio_lista: Number(completo.price), piso_18: piso18,
+      queda: precio => Math.round(precio * (1 - comision) - costo),
+      sobre_costo: precio => Math.round(((precio * (1 - comision) - costo) / costo) * 1000) / 10,
+    };
+  };
   const cotizar = item => {
+    // Arnoia: publicación normal (SKU ARNOIA-<ean>) o ficha de catálogo (SKU HERMES-<producto>, EAN en el GTIN).
+    const sku = String(item.seller_custom_field ?? '');
+    const ean = eanDeSku(sku, 'ARNOIA') ?? (/^HERMES-/.test(sku) && item.gtin && arnoia?.libros?.[item.gtin] ? item.gtin : null);
+    if (ean) {
+      try { const c = cotizarDesdeCostos(arnoia, ean, politica); return c ? armar(ean, 'arnoia', c.completo, c.piso_18) : null; } catch { return null; }
+    }
     const isbn = /^AMADO-AR-(\d{10,13})$/.exec(item.seller_custom_field ?? '')?.[1];
     const fila = isbn ? filas.get(isbn) : null;
     if (!fila) return null;
     try {
       const completo = quoteMercadoLibre({ ...fila }, politica);                // precio de lista completo y costo
       const piso = quoteMercadoLibre({ ...fila, competitor: { price: 1, at: Date.now(), days: politica.availabilityDays ?? null } }, politica);
-      const costo = Number(completo.cost), comision = Number(politica.mlFee);
-      return {
-        isbn, costo, libro: Number(completo.book), flete: Number(completo.freight), comision,
-        precio_lista: Number(completo.price), piso_18: Number(piso?.competitive?.floor),
-        // Lo que nos queda por unidad vendida a un precio dado, y sobre el costo.
-        queda: precio => Math.round(precio * (1 - comision) - costo),
-        sobre_costo: precio => Math.round(((precio * (1 - comision) - costo) / costo) * 1000) / 10,
-      };
+      return armar(isbn, 'sbs', completo, Number(piso?.competitive?.floor));
     } catch { return null; }
   };
-  return { cotizar, info: { feeds: diagnostico, lista_sbs: feed.source_date, dias_lista: Math.round(dias * 10) / 10, renglones: filas.size, comision: politica.mlFee, margen_publicado: politica.margin, margen_piso: politica.competitiveFloorMargin, entrega_dias: politica.availabilityDays } };
+  return { cotizar, info: { costos_arnoia: arnoia ? { fecha: arnoia.fecha, libros: Object.keys(arnoia.libros).length, eur_uyu: arnoia.cotizacion.eur_uyu } : null, feeds: diagnostico, lista_sbs: feed.source_date, dias_lista: Math.round(dias * 10) / 10, renglones: filas.size, comision: politica.mlFee, margen_publicado: politica.margin, margen_piso: politica.competitiveFloorMargin, entrega_dias: politica.availabilityDays } };
 }

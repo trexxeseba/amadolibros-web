@@ -183,11 +183,11 @@ jobs:
             exit $?
           fi
           if [ "$IN_ACCION" = "cotizar_todas" ]; then
-            node precio-ganador/src/cotizar.mjs --cuenta "$CUENTA" --estado estado/state --salida "estado/pruebas/$GITHUB_RUN_ID" --todas --filas estado/ultima/vintage-filas.json
+            node precio-ganador/src/cotizar.mjs --cuenta "$CUENTA" --estado estado/state --salida "estado/pruebas/$GITHUB_RUN_ID" --todas --filas estado/ultima/vintage-filas.json --costos estado/costos
             exit $?
           fi
           if [ "$IN_ACCION" = "cotizar" ]; then
-            node precio-ganador/src/cotizar.mjs --cuenta "$CUENTA" --estado estado/state --salida "estado/pruebas/$GITHUB_RUN_ID" --muestra 10
+            node precio-ganador/src/cotizar.mjs --cuenta "$CUENTA" --estado estado/state --salida "estado/pruebas/$GITHUB_RUN_ID" --muestra 10 --costos estado/costos
             exit $?
           fi
           if [ "$IN_ACCION" = "inmediatos" ]; then
