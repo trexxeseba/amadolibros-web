@@ -28,7 +28,7 @@ import {CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, inicioDiaUy} from '../../hermes-m
 import {eliminarPublicacion} from './eliminar.mjs';
 
 export const REPO = process.env.GITHUB_REPOSITORY || 'trexxeseba/amadolibros-web';
-export const UMBRALES = {arnoiaMin: 100, sbsMin: 130, fallosSbsSeguidos: 3, fotosMin: 180, cupoMin: 50, ventanaFallosMin: 120};
+export const UMBRALES = {arnoiaMin: 100, arnoiaPendientesMin: 100, sbsMin: 130, fallosSbsSeguidos: 3, fotosMin: 180, cupoMin: 50, ventanaFallosMin: 120};
 export const THROTTLE = {aviso: 3 * 3600e3, grave: 3600e3};
 const WF_PUBLICAR = 'hermes-publicar.yml', WF_SBS = 'vintage-nube.yml', WF_DEPLOY = 'deploy-worker-sync.yml';
 const minutos = (a, b) => Math.round((a - b) / 60000);
@@ -80,11 +80,12 @@ export function evaluar(d, ahora = Date.now()) {
     opciones: ['Revisar la denuncia que lo disparó y, si es seguro, pedirme que suelte el freno.', 'Dejarlo puesto un día más y mirar de nuevo mañana.', 'Pedirme que pause las publicaciones parecidas a la denunciada.'],
   });
 
-  // Arnoia: hay cupo, hay libros pendientes y no se creó nada hace mucho
+  // Arnoia: hay cupo, quedan muchos libros pendientes y no se creó nada hace mucho. Con pocos pendientes (menos de 100) no se avisa: la lista ya se agotó
+  // y los que quedan son libros que se saltan (sin tapa, sin autor, marca), no una tanda atrasada (22/11/2026: aviso falso con 17 pendientes).
   const arn = Object.values(d.publicadas ?? {}).filter(p => p.fuente === 'arnoia' && p.item_id && p.ts);
   const ultimaArn = arn.length ? Math.max(...arn.map(p => Number(p.ts))) : 0;
   const sinArn = minutos(ahora, ultimaArn);
-  if (!d.freno && d.restantesArnoia > 0 && d.cupo >= UMBRALES.cupoMin && !activa(runs, WF_PUBLICAR, ahora) && sinArn > UMBRALES.arnoiaMin) h.push({
+  if (!d.freno && d.restantesArnoia >= UMBRALES.arnoiaPendientesMin && d.cupo >= UMBRALES.cupoMin && !activa(runs, WF_PUBLICAR, ahora) && sinArn > UMBRALES.arnoiaMin) h.push({
     clave: 'arnoia_atrasada', nivel: 'aviso',
     texto: `Arnoia no creó ninguna publicación hace ${sinArn >= 100000 ? 'mucho' : sinArn + ' minutos'}, y hay cupo (${d.cupo}) y ${d.restantesArnoia} libros pendientes.`,
     accion: {tipo: 'dispatch', workflow: WF_PUBLICAR, inputs: {modo: 'publicar', cantidad: '70', rama: 'main', fuente: 'todo', tradicional: 'false'}, resumen: 'pedí una tanda de Arnoia ahora mismo'},

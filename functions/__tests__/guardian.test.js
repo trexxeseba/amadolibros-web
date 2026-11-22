@@ -21,6 +21,7 @@ test('Arnoia al día, sin cupo, sin pendientes o con tanda en curso: no molesta'
   const viejo = {'arnoia:1': {item_id: 'MLU1', fuente: 'arnoia', ts: AHORA - 300 * 60000}};
   assert.ok(!claves(evaluar(base({publicadas: viejo, cupo: 10}), AHORA)).includes('arnoia_atrasada'));
   assert.ok(!claves(evaluar(base({publicadas: viejo, restantesArnoia: 0}), AHORA)).includes('arnoia_atrasada'));
+  assert.ok(!claves(evaluar(base({publicadas: viejo, restantesArnoia: 17}), AHORA)).includes('arnoia_atrasada'), 'con la lista casi agotada no se avisa');
   assert.ok(!claves(evaluar(base({publicadas: viejo, runs: {'hermes-publicar.yml': [{status: 'in_progress', created_at: hace(1)}]}}), AHORA)).includes('arnoia_atrasada'));
 });
 
