@@ -24,7 +24,7 @@ import {sendMail, uyDayStart} from '../vintage-cloud/aviso.mjs';
 import {CUENTAS} from '../../precio-ganador/src/config.mjs';
 import {fuenteTokenD1} from '../../precio-ganador/src/token.mjs';
 import {crearCliente} from '../../precio-ganador/src/ml.mjs';
-import {CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, inicioDiaUy} from '../../hermes-monitor/lib.mjs';
+import {CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, cupoParaOtros, inicioDiaUy} from '../../hermes-monitor/lib.mjs';
 import {eliminarPublicacion} from './eliminar.mjs';
 
 export const REPO = process.env.GITHUB_REPOSITORY || 'trexxeseba/amadolibros-web';
@@ -232,7 +232,7 @@ export async function reunir() {
   const inicio = inicioDiaUy();
   const sbs = Number((await query("SELECT COUNT(*) n FROM ml_vintage_pub_receipts WHERE seller_id=? AND state='published' AND created_at>=?", [CUENTAS[CUENTA_HERMES].sellerId, inicio]).catch(() => [{n: 0}]))[0]?.n ?? 0);
   const hoyHA = Object.values(publicadas).filter(p => p.item_id && Number(p.ts) >= inicio).length;
-  const cupo = Math.max(0, TOPE_DIARIO_COMPARTIDO - sbs - hoyHA);
+  const cupo = cupoParaOtros(sbs, hoyHA);
   // Muestra de las últimas 40 publicaciones creadas, leídas de Mercado Libre (solo lectura). De las que no están activas se lee también el motivo.
   const ml = crearCliente(fuenteTokenD1(CUENTAS[CUENTA_HERMES]), {concurrencia: 1});
   const recientes = Object.entries(publicadas).filter(([, p]) => p.item_id && p.ts).sort((a, b) => b[1].ts - a[1].ts).slice(0, 40);

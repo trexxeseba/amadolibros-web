@@ -76,7 +76,7 @@ test('detecta cambio de precio contra el historial', async () => {
   assert.match(r.resumen, /de \$800 a \$1000/);
 });
 
-import {precioMio, precioDesdeLista, armarPayload} from '../../hermes-monitor/lib.mjs';
+import {precioMio, precioDesdeLista, armarPayload, cupoParaOtros, SBS_RESERVA_DIARIA, TOPE_DIARIO_COMPARTIDO} from '../../hermes-monitor/lib.mjs';
 test('precioMio es 1 % menos que Hermes, en pesos enteros', () => {
   assert.equal(precioMio(1810), 1792);
   assert.equal(precioMio(1000), 990);
@@ -250,4 +250,15 @@ test('lo saltado por propiedad intelectual, fuente que no ofrece o precio bajo e
   assert.match(src, /if \(conArroba\(f\)\) return \{omitir: true\};/);
   assert.ok(!/saltar: 'arroba_en_datos'/.test(src), 'la arroba no se registra como salto');
   assert.match(src, /anotadoVigente\(publicadas\[f\.producto\]\)/);
+});
+
+test('SBS tiene prioridad: su reserva diaria no se la quitan Arnoia ni GLIC (22/11/2026)', () => {
+  assert.equal(SBS_RESERVA_DIARIA, 2000);
+  // con SBS en 626 se le sigue guardando su reserva de 2.000: los demás tienen 4.000 - 2.000 - lo ya publicado
+  assert.equal(cupoParaOtros(626, 0), TOPE_DIARIO_COMPARTIDO - 2000);
+  assert.equal(cupoParaOtros(626, 1500), 500);
+  assert.equal(cupoParaOtros(626, 2000), 0);
+  // si SBS ya pasó su reserva, cuenta lo real
+  assert.equal(cupoParaOtros(2300, 500), TOPE_DIARIO_COMPARTIDO - 2300 - 500);
+  assert.equal(cupoParaOtros(0, 9999), 0);
 });
