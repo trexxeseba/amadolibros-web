@@ -130,6 +130,21 @@ export function armarPayloadTradicional({ean, titulo, autor, editorial, precio, 
   return p;
 }
 
+// ---- Precio de los libros de Celesa (Seba, 22/11/2026: "estimale un descuento promedio de 15 % y una ganancia de 25 % sobre el precio del libro") ----
+// Hasta tener el costo real de Celesa se estima: costo del libro = precio en euros menos 15 %, al euro de venta del BROU; flete de USD 15 por kilo (Seba, 22/11/2026; peso estimado,
+// el archivo no lo trae) con 100 g de embalaje; envío local de $230; ganancia de 25 % sobre el libro con un piso de $500 (la regla de Seba para Arnoia);
+// la comisión de Mercado Libre (17 %) se calcula sobre el precio final; mínimo $1.200 y redondeo a 10.
+export const CELESA = {descuento: 0.15, ganancia: 0.25, gananciaMinima: 500, eurUyu: 46.99, usdUyu: 41.8, fleteUsdKg: 15, embalajeG: 100, envioLocal: 230, comision: 0.17, minimo: 1200};
+export const pesoEstimadoCelesa = eur => eur < 12 ? 300 : eur < 20 ? 450 : eur < 30 ? 650 : 900;
+export function precioCelesa(eur, pesoG, c = CELESA) {
+  const libro = Number(eur) * (1 - c.descuento) * c.eurUyu;
+  const peso = Number(pesoG) > 0 ? Number(pesoG) : pesoEstimadoCelesa(Number(eur));
+  const flete = (peso + c.embalajeG) / 1000 * c.fleteUsdKg * c.usdUyu;
+  const ganancia = Math.max(libro * c.ganancia, c.gananciaMinima);
+  const precio = (libro + flete + c.envioLocal + ganancia) / (1 - c.comision);
+  return Math.max(c.minimo, Math.round(precio / 10) * 10);
+}
+
 // Medidas y peso del paquete que exige Mercado Libre (misma regla que el publicador de la cola: bandas por peso).
 const PACKAGE_BANDS = [[.4, 25, 18, 4], [.8, 30, 22, 6], [1.5, 35, 25, 10], [Infinity, 40, 30, 15]];
 export function paqueteDeVendedor(pesoLibroGramos) {

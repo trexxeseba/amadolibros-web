@@ -14,9 +14,9 @@ on:
   workflow_dispatch:
     inputs:
       fuente:
-        description: 'todo (GLIC y después Arnoia), o una sola: hermes, arnoia o glic'
+        description: 'todo (GLIC, Arnoia y Celesa), o una sola: hermes, arnoia, glic o celesa'
         type: choice
-        options: [todo, hermes, arnoia, glic]
+        options: [todo, hermes, arnoia, glic, celesa]
         default: todo
       modo:
         description: 'validar (no crea nada) o publicar (crea publicaciones)'
@@ -94,8 +94,10 @@ jobs:
           DATOS="$RUNNER_TEMP/datos/publicadas-vintage.json"
           glic() { node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas-glic.json" "$DATOS" --fuente=glic $REAL --max="$1"; }
           arnoia() { node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-catalogo-19-11.json "$DATOS" --fuente=arnoia --ambos ${TRADICIONAL} $REAL --max="$1"; }
+          celesa() { node hermes-monitor/publicar.mjs hermes-monitor/data/celesa-catalogo-22-11.json "$DATOS" --fuente=celesa --ambos $REAL --max="$1"; }
           case "$FUENTE" in
-            todo) glic 60 || echo "::warning::la parte de GLIC terminó con error; sigue Arnoia"; arnoia 70 ;;
+            todo) glic 60 || echo "::warning::la parte de GLIC terminó con error; sigue Arnoia"; arnoia 70 || echo "::warning::la parte de Arnoia terminó con error; sigue Celesa"; celesa 80 ;;
+            celesa) celesa "${CANTIDAD:-80}" ;;
             glic) glic "${CANTIDAD:-60}" ;;
             arnoia) arnoia "${CANTIDAD:-70}" ;;
             *) node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas.json" "$DATOS" $REAL --max="${CANTIDAD:-25}" ;;

@@ -262,3 +262,21 @@ test('SBS tiene prioridad: su reserva diaria no se la quitan Arnoia ni GLIC (22/
   assert.equal(cupoParaOtros(2300, 500), TOPE_DIARIO_COMPARTIDO - 2300 - 500);
   assert.equal(cupoParaOtros(0, 9999), 0);
 });
+
+test('Celesa: precio estimado con 15 % de descuento, flete de USD 15 por kilo y ganancia de 25 % con piso de $500; sin duplicar ISBN con Arnoia (22/11/2026)', async () => {
+  const {precioCelesa, CELESA, pesoEstimadoCelesa} = await import('../../hermes-monitor/lib.mjs');
+  assert.equal(CELESA.descuento, 0.15); assert.equal(CELESA.ganancia, 0.25); assert.equal(CELESA.fleteUsdKg, 15);
+  // 17,79 EUR, 450 g: libro 710,6; flete (550 g) 344,8; envío 230; ganancia mín. 500 => (710,6+344,8+230+500)/0,83 = 2.151 => 2.150
+  assert.equal(precioCelesa(17.79, 450), 2150);
+  assert.ok(precioCelesa(8.17, 300) >= 1200, 'respeta el mínimo de $1.200');
+  assert.ok(precioCelesa(60, 900) > precioCelesa(20, 650));
+  assert.equal(pesoEstimadoCelesa(10), 300); assert.equal(pesoEstimadoCelesa(35), 900);
+  const fs = await import('node:fs');
+  const d = JSON.parse(fs.readFileSync('hermes-monitor/data/celesa-catalogo-22-11.json', 'utf8'));
+  const arnoia = JSON.parse(fs.readFileSync('hermes-monitor/data/arnoia-catalogo-19-11.json', 'utf8')).libros;
+  const eans = new Set(arnoia.map(l => l.ean));
+  assert.ok(d.libros.length > 3000 && d.libros.every(l => !eans.has(l.ean) && !/@/.test(l.titulo + l.autor + l.editorial) && l.url_portada && l.precio >= 1200));
+  const src = fs.readFileSync('hermes-monitor/publicar.mjs', 'utf8');
+  assert.match(src, /publicadas\[id\]\?\.item_id\) return \{omitir: true\}/);
+  assert.match(src, /fuente: celesa \? 'celesa'/);
+});
