@@ -28,5 +28,5 @@ for (const l of lineas) {
 }
 // Más caros primero (más ganancia en pesos por publicación)
 libros.sort((a, b) => b.precio - a.precio);
-fs.writeFileSync(salida, JSON.stringify({origen: 'Celesa, novedades de 3 meses (archivo del 22/11/2026)', cotizacion: 'BROU venta 18/11/2026: euro 46,99 y dólar 41,80', plazo_dias: 20, nota: 'Costo estimado: precio en euros menos 15 %, ganancia 25 % con piso de $500, peso estimado por precio. Cambiar cuando se tenga el costo real de Celesa.', libros}));
+fs.writeFileSync(salida, JSON.stringify({origen: 'Celesa, novedades de 3 meses (archivo del 22/11/2026)', cotizacion: 'BROU venta 18/11/2026: euro 46,99 y dólar 41,80', plazo_dias: 18, nota: 'Costo estimado: precio en euros menos 15 %, ganancia 25 % con piso de $500, peso estimado por precio. Cambiar cuando se tenga el costo real de Celesa.', libros}));
 console.log(JSON.stringify({...cuenta, para_publicar: libros.length}));
