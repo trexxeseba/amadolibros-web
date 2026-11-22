@@ -14,9 +14,9 @@ on:
   workflow_dispatch:
     inputs:
       fuente:
-        description: 'todo (GLIC, Arnoia y Celesa), o una sola: hermes, arnoia, glic o celesa'
+        description: 'todo (GLIC, Arnoia, Arnoia ampliado y Celesa), o una sola: hermes, arnoia, arnoia2, glic o celesa'
         type: choice
-        options: [todo, hermes, arnoia, glic, celesa]
+        options: [todo, hermes, arnoia, arnoia2, glic, celesa]
         default: todo
       modo:
         description: 'validar (no crea nada) o publicar (crea publicaciones)'
@@ -92,11 +92,15 @@ jobs:
           REAL=""; [ "${{ inputs.modo || 'publicar' }}" = "publicar" ] && REAL="--real"
           TRADICIONAL=""; [ "$TRADICIONAL_IN" = "true" ] && TRADICIONAL="--tradicional"
           DATOS="$RUNNER_TEMP/datos/publicadas-vintage.json"
-          glic() { node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas-glic.json" "$DATOS" --fuente=glic $REAL --max="$1"; }
-          arnoia() { node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-catalogo-19-11.json "$DATOS" --fuente=arnoia --ambos ${TRADICIONAL} $REAL --max="$1"; }
-          celesa() { node hermes-monitor/publicar.mjs hermes-monitor/data/celesa-catalogo-22-11.json "$DATOS" --fuente=celesa --ambos $REAL --max="$1"; }
+          # El segundo valor es el tope de minutos de cada fuente: entre todas tienen que entrar en los 55 de la tanda.
+          glic() { node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas-glic.json" "$DATOS" --fuente=glic $REAL --max="$1" --minutos="${2:-25}"; }
+          arnoia() { node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-catalogo-19-11.json "$DATOS" --fuente=arnoia --ambos ${TRADICIONAL} $REAL --max="$1" --minutos="${2:-25}"; }
+          # Catálogo ampliado de Arnoia (22/11/2026): 32.567 libros que no estaban en la lista anterior.
+          arnoia2() { node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-catalogo-22-11.json "$DATOS" --fuente=arnoia --ambos $REAL --max="$1" --minutos="${2:-25}"; }
+          celesa() { node hermes-monitor/publicar.mjs hermes-monitor/data/celesa-catalogo-22-11.json "$DATOS" --fuente=celesa --ambos $REAL --max="$1" --minutos="${2:-25}"; }
           case "$FUENTE" in
-            todo) glic 60 || echo "::warning::la parte de GLIC terminó con error; sigue Arnoia"; arnoia 70 || echo "::warning::la parte de Arnoia terminó con error; sigue Celesa"; celesa 80 ;;
+            todo) glic 40 7 || echo "::warning::la parte de GLIC terminó con error; sigue Arnoia"; arnoia 30 5 || echo "::warning::la parte de Arnoia terminó con error; sigue Arnoia ampliado"; arnoia2 90 20 || echo "::warning::la parte de Arnoia ampliado terminó con error; sigue Celesa"; celesa 60 14 ;;
+            arnoia2) arnoia2 "${CANTIDAD:-90}" ;;
             celesa) celesa "${CANTIDAD:-80}" ;;
             glic) glic "${CANTIDAD:-60}" ;;
             arnoia) arnoia "${CANTIDAD:-70}" ;;
