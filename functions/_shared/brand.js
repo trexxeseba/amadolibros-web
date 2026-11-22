@@ -81,6 +81,7 @@ export const CONTACT = {
 export const FOOTER_LINKS = [
     { href: '/quienes-somos/', label: 'Quiénes somos y cómo trabajamos' },
     { href: '/pedir-libro/', label: '¿No encontraste el libro?' },
+    { href: '/regalos', label: 'Regalos: libros en stock para regalar' },
     { href: '/liquidacion', label: 'Liquidación de libros en stock' },
     { href: '/libros/biblias', label: 'Biblias en Uruguay' },
     { href: '/libros/biblias/reina-valera', label: 'Biblias Reina-Valera' },

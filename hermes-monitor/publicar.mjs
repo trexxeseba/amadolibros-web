@@ -164,25 +164,29 @@ const buscarPortada = async ean => {
 };
 const descripcionDe = f => `${normalizarTitulo(f.titulo)}${f.autor ? ', de ' + normalizarAutor(f.autor) : ''}.${f.editorial ? ' Editorial ' + titulo1(f.editorial) + '.' : ''}\n\nLibro nuevo, importado de España. Lo traemos especialmente para vos: la entrega se coordina en un plazo de ${PLAZO_DIAS} días. Envío a domicilio incluido.`;
 
+// 22/11/2026: lo que se salta por un motivo que no cambia solo (propiedad intelectual) o que puede cambiar en unos días (la fuente dejó de ofrecerlo, precio bajo
+// el mínimo) se ANOTA, y las tandas siguientes lo saltan sin gastar consultas. Antes se volvía a revisar en cada tanda: 240 libros revisados por tanda, 1 publicado.
+const diasDesdeHoy = n => new Date(Date.now() + n * 86400e3).toISOString().slice(0, 10);
+const anotadoVigente = p => Boolean(p) && !(p.reintentar_desde && new Date().toISOString().slice(0, 10) >= p.reintentar_desde);
 const resolverHermes = async f => {
-  if (conArroba(f)) return {etiqueta: f.n, saltar: 'arroba_en_datos'};
-  if (publicadas[f.producto] || f.mi_mlu || descartadas.has(f.producto)) return {omitir: true};
+  if (conArroba(f)) return {omitir: true}; // arroba en los datos: ni se busca, ni se anota, ni gasta cupo de revisión (regla de Seba)
+  if (publicadas[f.producto]?.item_id || f.mi_mlu || descartadas.has(f.producto) || anotadoVigente(publicadas[f.producto])) return {omitir: true};
   const lec = await leerFicha(ml, f.producto, undefined, glic ? GLIC_SELLER_ID : undefined);
-  if (!lec.oferta) return {etiqueta: f.n, saltar: glic ? 'glic_no_ofrece' : 'hermes_no_ofrece'};
+  if (!lec.oferta) return {etiqueta: f.n, clave: f.producto, saltar: glic ? 'glic_no_ofrece' : 'hermes_no_ofrece', marcar: {omitido: glic ? 'glic_no_ofrece' : 'hermes_no_ofrece', reintentar_desde: diasDesdeHoy(3)}};
   const precioFicha = glic ? precioDesdeLista({...lec.oferta, original_price: lec.oferta.original_price ?? f.precio_lista}) : precioMio(lec.oferta.price);
-  if (glic && (!precioFicha || precioFicha < PRECIO_MINIMO)) return {etiqueta: f.n, saltar: 'precio_bajo_minimo'};
+  if (glic && (!precioFicha || precioFicha < PRECIO_MINIMO)) return {etiqueta: f.n, clave: f.producto, saltar: 'precio_bajo_minimo', marcar: {omitido: 'precio_bajo_minimo', reintentar_desde: diasDesdeHoy(3)}};
   await pausa(500);
   const prod = await ml.get(`/products/${f.producto}`).catch(() => null);
-  if (!prod || prod.status !== 'active') return {etiqueta: f.n, saltar: 'ficha_inactiva'};
+  if (!prod || prod.status !== 'active') return {etiqueta: f.n, clave: f.producto, saltar: 'ficha_inactiva', marcar: {omitido: 'ficha_inactiva', reintentar_desde: diasDesdeHoy(3)}};
   return {etiqueta: f.n, clave: f.producto, producto: f.producto, prod, precio: precioFicha, categoria: lec.oferta.category_id, registro: glic ? {precio_glic: lec.oferta.price, precio_lista_glic: lec.oferta.original_price ?? null, fuente_glic: true} : {precio_hermes: lec.oferta.price}, nota: `${glic ? 'GLIC' : 'Hermes'} ${lec.oferta.price}`, titulo: f.titulo};
 };
 // Regla de Seba (20/11/2026): una @ en el título, el autor o la editorial deja el libro fuera. Va antes de todo: no se busca, no se limpia, no se sube, no se guarda.
 const conArroba = f => /@/.test([f.titulo, f.autor, f.editorial].filter(Boolean).join(' '));
 const resolverArnoia = async f => {
-  if (conArroba(f)) return {etiqueta: f.ean, saltar: 'arroba_en_datos'};
+  if (conArroba(f)) return {omitir: true};
   const clave = 'arnoia:' + f.ean;
   const previo = publicadas[clave];
-  if (previo?.item_id || previo?.no_valida) return {omitir: true};
+  if (previo?.item_id || previo?.no_valida || (previo?.omitido && anotadoVigente(previo))) return {omitir: true};
   // Anotados en una tanda anterior (21/11/2026): se saltan sin gastar ni una consulta. Antes el 'sin_catalogo' viejo impedía anotar 'sin_portada' y 139 libros
   // se revisaban de nuevo en cada tanda, gastando los 25 minutos sin publicar ninguno.
   if ((tradicional || ambos) && (previo?.portada_rechazada || previo?.sin_autor)) return {omitir: true};
@@ -234,7 +238,11 @@ for (const f of fichas) {
   const editorial = (prod.attributes ?? []).find(a => ['BOOK_PUBLISHER', 'PUBLISHER'].includes(a.id))?.value_name;
   const riesgo = ipRisk([prod.name, prod.family_name, ctx.titulo, ctx.autor].filter(Boolean).join(' '), editorial || ctx.editorial);
   // Libros que Seba aprobó a mano: solo se exime del grupo "copia" (palabras sueltas como pirata, estilo, tipo); el resto de los grupos sigue frenando.
-  if (riesgo && !(ctx.aprobado && riesgo === 'copia')) { filas.push({n: ctx.etiqueta, resultado: 'riesgo_pi_' + riesgo}); console.log(`${ctx.etiqueta}\tsalteada: riesgo de propiedad intelectual (${riesgo})`); continue; }
+  if (riesgo && !(ctx.aprobado && riesgo === 'copia')) {
+    filas.push({n: ctx.etiqueta, resultado: 'riesgo_pi_' + riesgo}); console.log(`${ctx.etiqueta}\tsalteada: riesgo de propiedad intelectual (${riesgo})`);
+    if (real && ctx.clave && !publicadas[ctx.clave]?.item_id) { publicadas[ctx.clave] = {...(publicadas[ctx.clave] ?? {}), omitido: 'riesgo_pi_' + riesgo, fecha: new Date().toISOString().slice(0, 10)}; await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1)); }
+    continue;
+  }
   const precio = ctx.precio;
   let payload = ctx.payload ?? armarPayload({producto: ctx.producto, precio, categoria: ctx.categoria, nombre: prod.name, familyName: prod.family_name, usaFamilyName, isbn, plazoDias: PLAZO_DIAS});
   let valido = null, ultimo = null;

@@ -66,6 +66,10 @@ export const CUENTAS = {
     maxCambios: 5000,
     // Subir sólo si el salto es de 10 pesos o más: no mover precios por 1 peso.
     pasoMinimoSubida: 10,
+    // Modo sombra (Seba, 21/11/2026): una semana calculando, sin escribir precios, qué haría
+    // la regla "queda >= 18 % sobre costo" frente a la actual, con los frenos de edición,
+    // 2 corridas seguidas y una bajada por día. Ver src/sombra.mjs. No cambia la regla real.
+    sombra: { dias: 7, margen: 18, corridasSeguidas: 2, revisar: 100 },
     habilitada: true,
   },
 };

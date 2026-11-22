@@ -241,3 +241,13 @@ test('tapas chicas reales: el piso de peso es de 8 KB, el lector exige 200 px y 
   assert.match(src, /marcar: \{sin_portada: true, v: VERSION_REGLA_PORTADA\}/);
   assert.match(fs.readFileSync('hermes-monitor/limpiar_tapa.py', 'utf8'), /tapa_chica/);
 });
+
+test('lo saltado por propiedad intelectual, fuente que no ofrece o precio bajo el mínimo se anota y no se vuelve a revisar en cada tanda; la arroba en los datos ni se anota ni gasta cupo (22/11/2026)', async () => {
+  const fs = await import('node:fs');
+  const src = fs.readFileSync('hermes-monitor/publicar.mjs', 'utf8');
+  assert.match(src, /omitido: 'riesgo_pi_' \+ riesgo/);
+  assert.match(src, /reintentar_desde: diasDesdeHoy\(3\)/);
+  assert.match(src, /if \(conArroba\(f\)\) return \{omitir: true\};/);
+  assert.ok(!/saltar: 'arroba_en_datos'/.test(src), 'la arroba no se registra como salto');
+  assert.match(src, /anotadoVigente\(publicadas\[f\.producto\]\)/);
+});
