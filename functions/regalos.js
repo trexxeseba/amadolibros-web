@@ -64,7 +64,7 @@ export function firstCategory(categoryData, id) {
 
 export function regaloWhatsAppMessage(book, href) {
     return buildWhatsAppMessage({
-        greeting: 'Hola, vi este libro en Regalos de Amado Libros y lo quiero para regalar.',
+        greeting: 'Hola, vi este libro en Regalos de Amado Libros y lo quiero para regalar, con envoltorio y tarjeta.',
         motive: 'Regalo',
         book: book.title,
         author: book.author,
@@ -92,6 +92,14 @@ export function navidadHtml(now = Date.now()) {
     <h2>Para que llegue antes de Navidad</h2>
     <ul>${lines.join('')}</ul>
     <p>También podés retirarlo en Ciudad Vieja, coordinando por WhatsApp.</p>
+  </section>`;
+}
+
+/** Envoltorio y tarjeta sin cargo: se piden al confirmar el pedido por WhatsApp. */
+export function envoltorioHtml() {
+    return `<section class="rg-wrap" aria-label="Envoltorio de regalo">
+    <h2>Lo envolvemos para regalar, sin cargo</h2>
+    <p>Papel de regalo y tarjeta con tu dedicatoria, escrita a mano. Al confirmar el pedido contanos para quién es y qué querés que diga, y llega listo para entregar.</p>
   </section>`;
 }
 
@@ -160,7 +168,7 @@ export async function onRequest(ctx) {
     const title = navideno
         ? 'Regalos de Navidad: libros en stock con entrega antes del 24 | Amado Libros'
         : 'Regalos que se recuerdan: libros en stock para regalar | Amado Libros';
-    const description = `${selected.length} libros para regalar, en stock y con envío gratis a todo Uruguay: ediciones ilustradas, estuches, clásicos en tapa dura, cómics y mazos de tarot, elegidos por Amado Libros.`;
+    const description = `${selected.length} libros para regalar, en stock, con envoltorio y tarjeta sin cargo y envío gratis a todo Uruguay: ediciones ilustradas, estuches, clásicos en tapa dura, cómics y mazos de tarot, elegidos por Amado Libros.`;
     const canonical = `${BASE}${REGALOS.path}`;
     const generalWa = whatsappHref(buildWhatsAppMessage({
         greeting: 'Hola, estoy buscando un libro para regalar y vi la vitrina de Regalos de Amado Libros.',
@@ -169,8 +177,8 @@ export async function onRequest(ctx) {
         closing: 'Les cuento para quién es y me ayudan a elegir. Gracias.',
     }));
     const lead = navideno
-        ? 'Libros que ya están en nuestros estantes, elegidos uno por uno para regalar: ediciones ilustradas, estuches, clásicos en tapa dura, cómics y mazos. Envío gratis a todo el país y, pagando por transferencia, 12% menos.'
-        : 'Libros que ya están en nuestros estantes, elegidos uno por uno para regalar. Envío gratis a todo el país y, pagando por transferencia, 12% menos.';
+        ? 'Libros que ya están en nuestros estantes, elegidos uno por uno para regalar: ediciones ilustradas, estuches, clásicos en tapa dura, cómics y mazos. Envoltorio y tarjeta sin cargo, envío gratis a todo el país y, pagando por transferencia, 12% menos.'
+        : 'Libros que ya están en nuestros estantes, elegidos uno por uno para regalar. Envoltorio y tarjeta sin cargo, envío gratis a todo el país y, pagando por transferencia, 12% menos.';
 
     const html = `<!DOCTYPE html>
 <html lang="es">
@@ -214,6 +222,9 @@ export async function onRequest(ctx) {
     .rg-dates h2{font-family:"Playfair Display",Georgia,serif;font-size:1.15rem;color:#1f2a1f;margin-bottom:.4rem}
     .rg-dates ul{list-style:none;display:flex;flex-direction:column;gap:.3rem;font-size:.92rem}
     .rg-dates p{margin-top:.5rem;font-size:.85rem;color:#6b6157}
+    .rg-wrap{margin:0 0 1.25rem;padding:1rem 1.25rem;border-radius:.9rem;background:#fff;border:1px solid #e2dbd0;display:flex;flex-direction:column;gap:.3rem}
+    .rg-wrap h2{font-family:"Playfair Display",Georgia,serif;font-size:1.15rem;color:#1f2a1f}
+    .rg-wrap p{font-size:.92rem;color:#3f3a35;max-width:720px}
     .topic-chips{display:flex;gap:.45rem;overflow-x:auto;padding-bottom:.4rem;margin-bottom:.75rem;-webkit-overflow-scrolling:touch}
     @media(min-width:900px){.topic-chips{flex-wrap:wrap;overflow:visible}}
     .topic-chip{flex:0 0 auto;display:inline-flex;align-items:center;min-height:40px;padding:.45rem .85rem;border:1px solid #d1c8be;border-radius:999px;background:#fff;color:#18120e;font-size:.84rem;font-weight:700;text-decoration:none;white-space:nowrap}
@@ -250,12 +261,13 @@ export async function onRequest(ctx) {
 ${siteHeaderHtml({ current: 'regalos' })}
 <main class="wrap">
   <section class="rg-hero">
-    <p class="rg-eyebrow">${navideno ? 'Navidad 2026 · En stock · Envío gratis' : 'En stock · Envío gratis'}</p>
+    <p class="rg-eyebrow">${navideno ? 'Navidad 2026 · En stock · Envoltorio sin cargo' : 'En stock · Envoltorio sin cargo'}</p>
     <h1>${escapeHtml(REGALOS.name)}</h1>
     <p>${lead}</p>
     <a href="${escapeHtml(generalWa)}" target="_blank" rel="noopener noreferrer" data-cta-location="regalos_hero">Contanos para quién es y te ayudamos a elegir</a>
   </section>
   ${navidadHtml(now)}
+  ${envoltorioHtml()}
   ${groupsNavHtml(groups)}
   ${groups.length
         ? groups.map(g => `<section class="rg-group" id="${escapeHtml(g.id)}"><h2>${escapeHtml(g.name)}</h2><div class="grid">${g.items.map((b, i) => cardHtml(b, i, ctx.env, g.id)).join('\n')}</div></section>`).join('\n')

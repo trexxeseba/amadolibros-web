@@ -11,7 +11,7 @@ import {
   diasHasta,
 } from '../_shared/regalos.js';
 import REGALOS_DATA from '../_shared/regalos-data.js';
-import { onRequest, navidadHtml } from '../regalos.js';
+import { onRequest, navidadHtml, envoltorioHtml } from '../regalos.js';
 import { SITE_HEADER_NAV } from '../_shared/site-header.js';
 import { STATIC_SITEMAP_PAGES } from '../sitemap-pages.xml.js';
 
@@ -96,12 +96,21 @@ test('regalos: la página responde con los libros listados y enlaza a WhatsApp c
     assert.match(html, /data-cta-location="regalos_card"/);
     assert.match(html, /id="literatura"/);
     assert.match(html, /id="comics"/);
+    assert.match(html, /Lo envolvemos para regalar, sin cargo/);
+    assert.match(html, /con%20envoltorio%20y%20tarjeta|con\+envoltorio\+y\+tarjeta/);
     assert.ok(!/únicamente|sólo/i.test(html));
     assert.ok(!/aggregateRating/i.test(html));
   } finally {
     globalThis.fetch = originalFetch;
     globalThis.caches = originalCaches;
   }
+});
+
+test('regalos: el envoltorio se ofrece sin cargo y en positivo', () => {
+  const html = envoltorioHtml();
+  assert.match(html, /sin cargo/);
+  assert.match(html, /dedicatoria/);
+  assert.ok(!/únicamente|sólo|solo con/i.test(html));
 });
 
 test('regalos: está en la navegación y en el sitemap', () => {
