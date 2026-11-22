@@ -1,7 +1,7 @@
 // Publicaciones activas de la cuenta: scan completo + /items/bulk en lotes de 20
 // (/items?ids= quedó dado de baja: responde 403 ResourceDeprecated).
 import { bulkItemsPath, bulkEntryItem } from '../../worker-sync/meli-bulk.js';
-const ATRIBUTOS = 'id,title,seller_custom_field,tags,price,currency_id,catalog_listing,catalog_product_id,available_quantity,sale_terms,variations,status,original_price,deal_ids,permalink';
+const ATRIBUTOS = 'id,title,seller_custom_field,tags,price,currency_id,catalog_listing,catalog_product_id,available_quantity,sale_terms,variations,status,original_price,deal_ids,permalink,attributes';
 
 export async function idsActivos(ml, sellerId, { limite = Infinity } = {}) {
   const ids = []; let scroll = null;
@@ -34,10 +34,18 @@ export function diasDemanda(item) {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+export function gtinDe(b) {
+  const a = (Array.isArray(b?.attributes) ? b.attributes : []).find(x => x?.id === 'GTIN');
+  const v = String(a?.value_name ?? '').split(/[,;\s]+/).map(x => x.replace(/\D/g, '')).find(x => /^\d{13}$/.test(x) || /^\d{10}$/.test(x));
+  return v ?? null;
+}
+
 export function normalizar(b) {
   const dias = diasDemanda(b);
   return {
     id: b.id, title: b.title ?? '', seller_custom_field: b.seller_custom_field ?? null,
+    // EAN del libro (atributo GTIN): con él se busca el costo de Arnoia de las fichas HERMES-<producto>.
+    gtin: gtinDe(b),
     // Precio administrado por Mercado Libre (productos de usuario): el PUT de precio a /items/{id} lo rechaza con 400.
     precio_dinamico: Array.isArray(b.tags) && b.tags.includes('dynamic_standard_price'), price: Number(b.price), currency_id: b.currency_id, status: b.status,
     catalog_listing: b.catalog_listing === true, catalog_product_id: b.catalog_product_id ?? null,

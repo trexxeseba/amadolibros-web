@@ -108,6 +108,8 @@ jobs:
       ESTADO_RAMA: estado/precio-ganador
       ESTADO_REPO: trexxeseba/amadolibros-privado
       ESTADO_TOKEN: ${{ secrets.ESTADO_TOKEN }}
+      # Costos de proveedores fuera de SBS (Arnoia), bajados del portal: rama del repo privado.
+      COSTOS_RAMA: claude/project-thread-70ptmn
     steps:
       - uses: actions/checkout@v4
         with:
@@ -144,6 +146,14 @@ jobs:
             echo "No se pudo consultar la rama de estado"; exit 1
           fi
           mkdir -p estado/state
+          # Costos de Arnoia para el cotizador (sólo lectura), fuera de estado/ para no copiarlos a la
+          # rama de estado. Si no se pueden traer, se cotiza sin ellos.
+          mkdir -p costos-proveedores
+          if git fetch -q privado "$COSTOS_RAMA" 2>/dev/null; then
+            git show FETCH_HEAD:costos/arnoia.json > costos-proveedores/arnoia.json 2>/dev/null && echo "Costos de Arnoia: $(wc -c < costos-proveedores/arnoia.json) bytes" || rm -f costos-proveedores/arnoia.json
+          else echo "Sin rama de costos: se cotiza sin Arnoia"; fi
+          # Qué publicación de catálogo es de Arnoia (EAN por item_id): rama hermes-datos de este repo.
+          git fetch -q --depth=1 origin hermes-datos 2>/dev/null && git show FETCH_HEAD:publicadas-vintage.json > costos-proveedores/publicadas-vintage.json 2>/dev/null || rm -f costos-proveedores/publicadas-vintage.json
 
       - name: Correr
         id: correr
@@ -183,11 +193,11 @@ jobs:
             exit $?
           fi
           if [ "$IN_ACCION" = "cotizar_todas" ]; then
-            node precio-ganador/src/cotizar.mjs --cuenta "$CUENTA" --estado estado/state --salida "estado/pruebas/$GITHUB_RUN_ID" --todas --filas estado/ultima/vintage-filas.json
+            node precio-ganador/src/cotizar.mjs --cuenta "$CUENTA" --estado estado/state --salida "estado/pruebas/$GITHUB_RUN_ID" --todas --filas estado/ultima/vintage-filas.json --costos costos-proveedores
             exit $?
           fi
           if [ "$IN_ACCION" = "cotizar" ]; then
-            node precio-ganador/src/cotizar.mjs --cuenta "$CUENTA" --estado estado/state --salida "estado/pruebas/$GITHUB_RUN_ID" --muestra 10
+            node precio-ganador/src/cotizar.mjs --cuenta "$CUENTA" --estado estado/state --salida "estado/pruebas/$GITHUB_RUN_ID" --muestra 10 --costos costos-proveedores
             exit $?
           fi
           if [ "$IN_ACCION" = "sombra" ]; then
