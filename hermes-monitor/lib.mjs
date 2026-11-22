@@ -86,6 +86,10 @@ export const CUENTA_HERMES = 'vintage';
 // Techo diario TOTAL de altas en Vintage (Seba, 21/11/2026: 4.000 por día; antes 3.500, 3.000 y 2.500). Reparto: SBS 1.000 (campaign.json), Arnoia hasta 1.700
 // (70 por hora las 24 horas) y Hermes hasta 300; la suma nunca pasa de 4.000.
 export const TOPE_DIARIO_COMPARTIDO = 4000;
+// SBS tiene prioridad (Seba, 22/11/2026): sube hasta 2.000 por día (campaign.json) y esa parte queda RESERVADA: Arnoia y GLIC solo pueden usar lo que
+// sobra del techo después de la reserva de SBS, así nunca le quitan lugar.
+export const SBS_RESERVA_DIARIA = 2000;
+export const cupoParaOtros = (sbsHoy, otrosHoy) => Math.max(0, TOPE_DIARIO_COMPARTIDO - Math.max(Number(sbsHoy) || 0, SBS_RESERVA_DIARIA) - (Number(otrosHoy) || 0));
 export const POR_CORRIDA = 25;
 export const inicioDiaUy = (now = Date.now()) => { const d = new Date(now - 3 * 3600e3); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) + 3 * 3600e3; };
 
