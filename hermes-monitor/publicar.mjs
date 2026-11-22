@@ -45,7 +45,8 @@ async function validar(payload) {
 }
 const [, , fichasPath, pubPath, ...flags] = process.argv;
 const real = flags.includes('--real');
-const arnoia = flags.includes('--fuente=arnoia');
+const celesa = flags.includes('--fuente=celesa'); // mismo flujo que Arnoia (catálogo por EAN, tapa propia), con la tapa que trae el archivo de Celesa
+const arnoia = flags.includes('--fuente=arnoia') || celesa;
 const glic = flags.includes('--fuente=glic'); // mismas fichas de catálogo que Hermes, pero la oferta de referencia es la de GLIC
 const ambos = flags.includes('--ambos'); // catálogo si la ficha existe; si no, publicación normal con portada
 const tradicional = flags.includes('--tradicional'); // solo libros SIN ficha de catálogo (publicación normal con portada)
@@ -95,7 +96,9 @@ let hechas = 0, erroresSeguidos = 0, examinadas = 0;
 // Topes de seguridad: el máximo cuenta solo lo publicado, así que en una tanda donde casi nada califica (por ejemplo solo catálogo)
 // el recorrido podía durar horas (19/11/2026: una tanda de casi una hora). Se mira como mucho 4 veces el máximo y hasta 25 minutos.
 const MAX_EXAMINADAS = Math.max(80, Math.min(maxPedido, 1000) * 4);
-const INICIO = Date.now(), MAX_MS = 25 * 60e3;
+// --minutos=N acorta el tope cuando varias fuentes comparten la misma hora de tanda (22/11/2026).
+const minutosPedidos = Number(process.argv.find(a => a.startsWith('--minutos='))?.split('=')[1]);
+const INICIO = Date.now(), MAX_MS = (minutosPedidos > 0 && minutosPedidos <= 25 ? minutosPedidos : 25) * 60e3;
 const filas = [];
 // Portada por ISBN (decisión de Seba, 18/11/2026: tapas de una librería española). Casa del Libro primero, Open Library
 // como respaldo. Solo se acepta una imagen real: JPEG, de al menos 40 KB (una imagen genérica o de error pesa mucho menos),
@@ -138,8 +141,8 @@ async function subirFoto(buf) {
   const j = await res.json().catch(() => null);
   return typeof j?.id === 'string' ? j.id : null;
 }
-const buscarPortada = async ean => {
-  const candidatas = [`https://imagessl3.casadellibro.com/a/l/t0/${ean.slice(-2)}/${ean}.jpg`, `https://covers.openlibrary.org/b/isbn/${ean}-L.jpg`];
+const buscarPortada = async (ean, urlPropia) => {
+  const candidatas = [...(urlPropia ? [urlPropia] : []), `https://imagessl3.casadellibro.com/a/l/t0/${ean.slice(-2)}/${ean}.jpg`, `https://covers.openlibrary.org/b/isbn/${ean}-L.jpg`];
   for (const url of candidatas) {
     const r = await fetch(url + (url.includes('openlibrary') ? '?default=false' : ''), {method: 'GET', redirect: 'follow', signal: AbortSignal.timeout(20000)}).catch(() => null);
     if (!r?.ok || !/image\/jpeg/.test(r.headers.get('content-type') ?? '')) continue;
@@ -204,13 +207,14 @@ const resolverArnoia = async f => {
     if (!String(f.autor ?? '').trim()) return {etiqueta: f.ean, clave, saltar: 'sin_autor', marcar: {sin_autor: true}};
     // Sin portada disponible: se anota y se vuelve a probar a la semana (no se re-mira en cada tanda, que gasta el tope de libros revisados).
     if (previo?.sin_portada && previo.v === VERSION_REGLA_PORTADA && Date.now() - Date.parse(previo.fecha ?? 0) < 7 * 86400e3) return {omitir: true};
-    const por = await buscarPortada(f.ean); // la portada de prueba solo vale para validar, nunca para publicar
+    const por = await buscarPortada(f.ean, f.url_portada); // la portada de prueba solo vale para validar, nunca para publicar
     if (!por) return {etiqueta: f.ean, clave, saltar: 'sin_portada', marcar: {sin_portada: true, v: VERSION_REGLA_PORTADA}};
     if (por.rechazada) return {etiqueta: f.ean, clave, saltar: 'portada_con_' + por.rechazada, ...(por.sinMarca ? {} : {marcar: {portada_rechazada: por.rechazada}})};
     const portada = por.pictureId ? {id: por.pictureId} : por.url;
     const payload = armarPayloadTradicional({ean: f.ean, titulo: f.titulo, autor: f.autor, editorial: f.editorial, precio: f.precio, plazoDias: PLAZO_DIAS, usaFamilyName, imagenes: [portada], pesoGramos: f.peso_g});
     return {etiqueta: f.ean, clave, producto: null, prod: {attributes: []}, isbn: f.ean, precio: f.precio, payload, registro: {ean: f.ean, tradicional: true, ...(por.limpiada ? {portada_limpiada: por.limpiada} : {})}, nota: f.titulo.slice(0, 30), titulo: f.titulo, editorial: f.editorial, descripcion: descripcionDe(f), aprobado: f.aprobado_por_seba === true};
   }
+  if (publicadas[id]?.item_id) return {omitir: true}; // esa ficha de catálogo ya la publicó GLIC o Hermes: no se duplica
   if (tradicional) return {omitir: true};
   await pausa(500);
   const prod = await ml.get(`/products/${id}`).catch(() => null);
@@ -222,7 +226,7 @@ const resolverArnoia = async f => {
 for (const f of fichas) {
   if (hechas >= max || erroresSeguidos >= 5) break;
   if (examinadas >= MAX_EXAMINADAS) { console.log(`Tope de libros revisados (${MAX_EXAMINADAS}): se corta la tanda.`); break; }
-  if (Date.now() - INICIO > MAX_MS) { console.log('Tope de tiempo (25 minutos): se corta la tanda.'); break; }
+  if (Date.now() - INICIO > MAX_MS) { console.log(`Tope de tiempo (${MAX_MS / 60e3} minutos): se corta la tanda.`); break; }
   const ctx = await (arnoia ? resolverArnoia(f) : resolverHermes(f));
   if (ctx.omitir) continue;
   examinadas++;
@@ -279,7 +283,7 @@ for (const f of fichas) {
     try { exigirItemDeVintage(await ml.get(`/items/${r?.id}`)); }
     catch (e) { await ml.put(`/items/${r?.id}`, {status: 'paused'}).catch(() => {}); console.log(`${ctx.etiqueta}\tCORTE: ${e.code} (${r?.id}), se pausó y se frena todo`); process.exit(1); }
     if (ctx.descripcion && r?.id) await ml.post(`/items/${r.id}/description`, {plain_text: ctx.descripcion}).catch(e => console.log(`${ctx.etiqueta}\tdescripción no cargada (${e.code})`));
-    publicadas[ctx.clave] = {item_id: r?.id, precio, ...ctx.registro, fuente: arnoia ? 'arnoia' : glic ? 'glic' : 'hermes', fecha: new Date().toISOString().slice(0, 10), ts: Date.now(), cuenta: CUENTA_HERMES};
+    publicadas[ctx.clave] = {item_id: r?.id, precio, ...ctx.registro, fuente: celesa ? 'celesa' : arnoia ? 'arnoia' : glic ? 'glic' : 'hermes', fecha: new Date().toISOString().slice(0, 10), ts: Date.now(), cuenta: CUENTA_HERMES};
     await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1));
     erroresSeguidos = 0; hechas++;
     console.log(`${ctx.etiqueta}\tPUBLICADA ${r?.id} precio ${precio}`);
