@@ -24,7 +24,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {exigirVintage, exigirItemDeVintage} from './guardia.mjs';
-import {precioMio, precioDesdeLista, GLIC_SELLER_ID, PRECIO_MINIMO, paqueteDeVendedor, armarPayload, armarPayloadTradicional, CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, inicioDiaUy} from './lib.mjs';
+import {precioMio, precioDesdeLista, GLIC_SELLER_ID, PRECIO_MINIMO, paqueteDeVendedor, armarPayload, armarPayloadTradicional, CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, cupoParaOtros, inicioDiaUy} from './lib.mjs';
 
 const pausa = ms => new Promise(r => setTimeout(r, ms));
 
@@ -77,7 +77,7 @@ const bloqueados = await blockedIsbns(query);
 const inicio = inicioDiaUy();
 const hoyHermes = Object.values(publicadas).filter(p => p.item_id && Number(p.ts) >= inicio).length;
 const hoySbs = Number((await query("SELECT COUNT(*) n FROM ml_vintage_pub_receipts WHERE seller_id=? AND state='published' AND created_at>=?", [seller, inicio]))[0]?.n ?? 0);
-let cupo = Math.max(0, TOPE_DIARIO_COMPARTIDO - hoySbs - hoyHermes);
+let cupo = cupoParaOtros(hoySbs, hoyHermes);
 console.log(`hoy: SBS ${hoySbs}, Hermes+Arnoia ${hoyHermes}, tope compartido ${TOPE_DIARIO_COMPARTIDO}, cupo ${cupo}`);
 // El cupo solo limita publicar de verdad; validar no crea nada y se puede hacer sin cupo.
 if (real && cupo === 0) { console.log('Sin cupo diario: no se publica nada.'); process.exit(0); }
