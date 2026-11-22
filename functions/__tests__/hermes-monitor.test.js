@@ -212,7 +212,7 @@ test('Hermes sale con plazo a demanda de 18 días, igual que SBS', async () => {
   const fs = await import('node:fs');
   const src = fs.readFileSync('hermes-monitor/publicar.mjs', 'utf8');
   assert.match(src, /const PLAZO_HERMES_DIAS = 18;/);
-  assert.match(src, /: PLAZO_HERMES_DIAS;/);
+  assert.match(src, /const PLAZO_DIAS = PLAZO_HERMES_DIAS;/); // 22/11/2026: todas las fuentes a 18 días
   const p = armarPayload({producto: 'MLU1', precio: 100, categoria: 'MLU1196', nombre: 'x', familyName: 'x', usaFamilyName: false, plazoDias: 18});
   assert.deepEqual(p.sale_terms, [{id: 'MANUFACTURING_TIME', value_name: '18 días'}]);
 });
