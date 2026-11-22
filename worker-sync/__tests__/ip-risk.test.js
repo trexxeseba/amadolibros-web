@@ -69,3 +69,16 @@ test('una arroba en el título, el autor o la editorial deja el libro fuera',()=
  assert.equal(ipRisk('Psicología Zombi','VERGARA @algo'),'arroba');
  assert.equal(ipRisk('Psicología Zombi','Vergara'),null);
 });
+
+test('casos que Mercado Libre ya dio de baja en cuentas del dueño y marcas que reclamaron quedan afuera (correos 2023 a 2026)',()=>{
+ assert.equal(ipRisk('Los Secretos De La Mente Millonaria','Sirio'),'reclamado_antes');
+ assert.equal(ipRisk('Secrets Of The Millionaire Mind: Mastering','Harper'),'reclamado_antes');
+ assert.equal(ipRisk('Never Finished: Unshackle Your Mind','Lioncrest'),'reclamado_antes');
+ assert.equal(ipRisk('Why Men Love Bitches: From Doormat To Dreamgirl','Health Communications'),'reclamado_antes');
+ assert.equal(ipRisk('El Eternauta Edicion Economica','Planeta'),'reclamado_antes');
+ assert.equal(ipRisk('El Codice Neshama','Autor'),'reclamado_antes');
+ assert.equal(ipRisk('Pulsera Swarovski cristal','x'),'marca_reclamada');
+ assert.equal(ipRisk('Calcomanias Red Bull vinilo','x'),'marca_reclamada');
+ assert.equal(ipRisk('La hora antes del alba','Planeta'),null);
+ assert.equal(ipRisk('El poder del ahora','Gaia'),null);
+});
