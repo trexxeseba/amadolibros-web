@@ -10,7 +10,7 @@
 import { quoteMercadoLibre } from '../../worker-sync/publication-policy.js';
 import { vintageCompetitivePolicy } from '../../worker-sync/vintage-pricing.js';
 import { D1_DATABASE_ID } from './config.mjs';
-import { leerCostos, cotizarDesdeCostos, eanDeSku } from './costos-proveedores.mjs';
+import { leerCostos, cotizarDesdeCostos, eanDeSku, arnoiaPorPublicacion } from './costos-proveedores.mjs';
 
 export const MINIMO_VINTAGE_UYU = 1500;
 export const MAX_DIAS_LISTA = 7;
@@ -98,6 +98,7 @@ export async function cargarCotizadorVintage({ costosDir = null } = {}) {
   }
   const dias = (Date.now() - Date.parse(feed.source_date)) / 86400e3;
   const arnoia = leerCostos(costosDir, 'arnoia');
+  const arnoiaItems = arnoiaPorPublicacion(costosDir);
   const comision = Number(politica.mlFee);
   const armar = (isbn, fuente, completo, piso18) => {
     const costo = Number(completo.cost);
@@ -111,7 +112,7 @@ export async function cargarCotizadorVintage({ costosDir = null } = {}) {
   const cotizar = item => {
     // Arnoia: publicación normal (SKU ARNOIA-<ean>) o ficha de catálogo (SKU HERMES-<producto>, EAN en el GTIN).
     const sku = String(item.seller_custom_field ?? '');
-    const ean = eanDeSku(sku, 'ARNOIA') ?? (/^HERMES-/.test(sku) && item.gtin && arnoia?.libros?.[item.gtin] ? item.gtin : null);
+    const ean = eanDeSku(sku, 'ARNOIA') ?? arnoiaItems.get(String(item.id)) ?? (/^HERMES-/.test(sku) && item.gtin && arnoia?.libros?.[item.gtin] ? item.gtin : null);
     if (ean) {
       try { const c = cotizarDesdeCostos(arnoia, ean, politica); return c ? armar(ean, 'arnoia', c.completo, c.piso_18) : null; } catch { return null; }
     }
@@ -124,5 +125,5 @@ export async function cargarCotizadorVintage({ costosDir = null } = {}) {
       return armar(isbn, 'sbs', completo, Number(piso?.competitive?.floor));
     } catch { return null; }
   };
-  return { cotizar, info: { costos_arnoia: arnoia ? { fecha: arnoia.fecha, libros: Object.keys(arnoia.libros).length, eur_uyu: arnoia.cotizacion.eur_uyu } : null, feeds: diagnostico, lista_sbs: feed.source_date, dias_lista: Math.round(dias * 10) / 10, renglones: filas.size, comision: politica.mlFee, margen_publicado: politica.margin, margen_piso: politica.competitiveFloorMargin, entrega_dias: politica.availabilityDays } };
+  return { cotizar, info: { costos_arnoia: arnoia ? { fecha: arnoia.fecha, libros: Object.keys(arnoia.libros).length, eur_uyu: arnoia.cotizacion.eur_uyu, publicaciones_catalogo: arnoiaItems.size } : null, feeds: diagnostico, lista_sbs: feed.source_date, dias_lista: Math.round(dias * 10) / 10, renglones: filas.size, comision: politica.mlFee, margen_publicado: politica.margin, margen_piso: politica.competitiveFloorMargin, entrega_dias: politica.availabilityDays } };
 }

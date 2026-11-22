@@ -46,3 +46,17 @@ export function cotizarDesdeCostos(lista, ean, politica, ahora = Date.now()) {
 }
 
 export const eanDeSku = (sku, prefijo) => new RegExp(`^${prefijo}-(\\d{10,13})$`).exec(String(sku ?? ''))?.[1] ?? null;
+
+// Publicaciones de Arnoia en catálogo: el publicador las guarda en la rama hermes-datos
+// (publicadas-vintage.json, clave "arnoia:<ean>" con item_id). Su SKU es HERMES-<producto> y
+// muchas no tienen GTIN propio, así que el EAN sale de acá. Devuelve Map(item_id -> ean).
+export function arnoiaPorPublicacion(dir) {
+  const archivo = dir ? join(dir, 'publicadas-vintage.json') : null;
+  const out = new Map();
+  if (!archivo || !existsSync(archivo)) return out;
+  try {
+    for (const v of Object.values(JSON.parse(readFileSync(archivo, 'utf8')) ?? {}))
+      if (v?.fuente === 'arnoia' && v.item_id && /^\d{10,13}$/.test(String(v.ean ?? ''))) out.set(String(v.item_id), String(v.ean));
+  } catch { /* sin mapa */ }
+  return out;
+}

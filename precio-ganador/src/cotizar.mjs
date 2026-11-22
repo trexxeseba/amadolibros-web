@@ -15,7 +15,7 @@ import { join } from 'node:path';
 import { CUENTAS } from './config.mjs';
 import { fuenteTokenD1 } from './token.mjs';
 import { crearCliente } from './ml.mjs';
-import { idsActivos, detalle, gtinDe } from './publicaciones.mjs';
+import { idsActivos, detalle } from './publicaciones.mjs';
 import { cargarCotizadorVintage } from './costos-vintage.mjs';
 import { todas } from './cotizar-todas.mjs';
 import { entregaDe, ofertasCatalogo, vendedorDelGanador, nuevoCacheVendedores } from './competencia.mjs';
@@ -34,25 +34,10 @@ export function veredicto(f, { piso = 1200, margenPiso = 0.18, excluidos = new S
   return 'se puede competir';
 }
 
-// Las fichas de Arnoia (SKU HERMES-<producto>) pueden venir sin GTIN propio: se lee el del
-// producto de catálogo. Deja en el log cuántas hay por prefijo y cuántas quedaron con EAN.
-export async function completarGtin(ml, items) {
+// Cuántas publicaciones de Hermes/Arnoia hay por prefijo de SKU (sólo para el registro).
+export function contarPrefijos(items) {
   const otras = [...items.values()].filter(i => i.status === 'active' && /^(HERMES|ARNOIA)-/.test(String(i.seller_custom_field ?? '')));
-  const faltan = otras.filter(i => !i.gtin && i.catalog_product_id);
-  const cache = new Map(); let k = 0;
-  await Promise.all(Array.from({ length: 4 }, async () => {
-    for (;;) {
-      const it = faltan[k++]; if (!it) return;
-      if (!cache.has(it.catalog_product_id)) {
-        let g = null;
-        try { g = gtinDe(await ml.get(`/products/${it.catalog_product_id}`)); } catch { /* sin dato */ }
-        cache.set(it.catalog_product_id, g);
-      }
-      it.gtin = cache.get(it.catalog_product_id);
-    }
-  }));
-  const prefijos = otras.reduce((a, i) => { const p = String(i.seller_custom_field).split('-')[0]; a[p] = (a[p] ?? 0) + 1; return a; }, {});
-  console.log('Publicaciones de Hermes/Arnoia:', JSON.stringify({ ...prefijos, sin_gtin_propio: faltan.length, con_ean: otras.filter(i => i.gtin).length }));
+  return otras.reduce((a, i) => { const p = String(i.seller_custom_field).split('-')[0] + (i.catalog_listing ? '_catalogo' : '_normal'); a[p] = (a[p] ?? 0) + 1; return a; }, {});
 }
 
 export const mediana = a => { const o = a.filter(Number.isFinite).sort((x, y) => x - y); return o.length ? o[Math.floor(o.length / 2)] : null; };
@@ -75,7 +60,7 @@ async function main() {
 
   const ids = await idsActivos(ml, cuenta.sellerId);
   const items = await detalle(ml, ids);
-  await completarGtin(ml, items);
+  console.log('Publicaciones de Hermes/Arnoia:', JSON.stringify(contarPrefijos(items)));
   const sbs = [...items.values()].filter(i => i.status === 'active' && i.catalog_listing && cotizar(i));
   console.log(`Activas ${items.size}; con costo conocido y ficha de catálogo ${sbs.length} (Arnoia ${sbs.filter(i => cotizar(i)?.fuente === 'arnoia').length})`);
 

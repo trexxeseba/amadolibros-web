@@ -40,3 +40,20 @@ test('GTIN de la publicación', async () => {
   assert.equal(gtinDe({ attributes: [] }), null);
   assert.equal(gtinDe({}), null);
 });
+
+test('publicaciones de Arnoia en catálogo: EAN por item_id', async () => {
+  const { arnoiaPorPublicacion } = await import('../src/costos-proveedores.mjs');
+  const { mkdtempSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const dir = mkdtempSync(join(tmpdir(), 'pg-'));
+  writeFileSync(join(dir, 'publicadas-vintage.json'), JSON.stringify({
+    'arnoia:9788432251436': { item_id: 'MLU1', ean: '9788432251436', fuente: 'arnoia' },
+    MLU19988351: { item_id: 'MLU2', precio: 1792 },
+    'glic:x': { item_id: 'MLU3', ean: '9788400000000', fuente: 'glic' },
+  }));
+  const m = arnoiaPorPublicacion(dir);
+  assert.equal(m.size, 1);
+  assert.equal(m.get('MLU1'), '9788432251436');
+  assert.equal(arnoiaPorPublicacion(null).size, 0);
+});

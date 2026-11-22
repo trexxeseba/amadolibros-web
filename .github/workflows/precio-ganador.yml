@@ -152,6 +152,8 @@ jobs:
           if git fetch -q privado "$COSTOS_RAMA" 2>/dev/null; then
             git show FETCH_HEAD:costos/arnoia.json > costos-proveedores/arnoia.json 2>/dev/null && echo "Costos de Arnoia: $(wc -c < costos-proveedores/arnoia.json) bytes" || rm -f costos-proveedores/arnoia.json
           else echo "Sin rama de costos: se cotiza sin Arnoia"; fi
+          # Qué publicación de catálogo es de Arnoia (EAN por item_id): rama hermes-datos de este repo.
+          git fetch -q --depth=1 origin hermes-datos 2>/dev/null && git show FETCH_HEAD:publicadas-vintage.json > costos-proveedores/publicadas-vintage.json 2>/dev/null || rm -f costos-proveedores/publicadas-vintage.json
 
       - name: Correr
         id: correr
