@@ -1,6 +1,6 @@
 // Cotización de una muestra de Amado Vintage (sólo lee, no cambia nada).
 //
-//   node precio-ganador/src/cotizar.mjs --cuenta vintage --estado DIR --salida DIR [--muestra 10]
+//   node precio-ganador/src/cotizar.mjs --cuenta vintage --estado DIR --salida DIR [--muestra 10] [--costos DIR]
 //
 // Responde con datos: "¿de verdad podemos competir?". Toma tres grupos al azar:
 //   A. cualquier publicación activa (cómo estamos en general),
@@ -34,6 +34,12 @@ export function veredicto(f, { piso = 1200, margenPiso = 0.18, excluidos = new S
   return 'se puede competir';
 }
 
+// Cuántas publicaciones de Hermes/Arnoia hay por prefijo de SKU (sólo para el registro).
+export function contarPrefijos(items) {
+  const otras = [...items.values()].filter(i => i.status === 'active' && /^(HERMES|ARNOIA)-/.test(String(i.seller_custom_field ?? '')));
+  return otras.reduce((a, i) => { const p = String(i.seller_custom_field).split('-')[0] + (i.catalog_listing ? '_catalogo' : '_normal'); a[p] = (a[p] ?? 0) + 1; return a; }, {});
+}
+
 export const mediana = a => { const o = a.filter(Number.isFinite).sort((x, y) => x - y); return o.length ? o[Math.floor(o.length / 2)] : null; };
 export function mezclar(a) { const r = [...a]; for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; }
 
@@ -48,14 +54,15 @@ async function main() {
   const ml = crearCliente(fuenteTokenD1(cuenta), { concurrencia: 4 });
   const yo = await ml.get('/users/me');
   if (String(yo?.id) !== cuenta.sellerId) throw new Error('token_de_otra_cuenta');
-  const { cotizar, info } = await cargarCotizadorVintage();
-  console.log('Cotizador listo:', JSON.stringify({ renglones: info.renglones, dias_lista: info.dias_lista }));
+  const { cotizar, info } = await cargarCotizadorVintage({ costosDir: opt('costos', null) });
+  console.log('Cotizador listo:', JSON.stringify({ renglones: info.renglones, dias_lista: info.dias_lista, arnoia: info.costos_arnoia }));
   console.log('Listas en D1:', JSON.stringify(info.feeds));
 
   const ids = await idsActivos(ml, cuenta.sellerId);
   const items = await detalle(ml, ids);
+  console.log('Publicaciones de Hermes/Arnoia:', JSON.stringify(contarPrefijos(items)));
   const sbs = [...items.values()].filter(i => i.status === 'active' && i.catalog_listing && cotizar(i));
-  console.log(`Activas ${items.size}; con costo de SBS y ficha de catálogo ${sbs.length}`);
+  console.log(`Activas ${items.size}; con costo conocido y ficha de catálogo ${sbs.length} (Arnoia ${sbs.filter(i => cotizar(i)?.fuente === 'arnoia').length})`);
 
   let estado = { publicaciones: {} };
   try { estado = JSON.parse(readFileSync(join(dirEstado, 'vintage.json'), 'utf8')); } catch {}
@@ -84,7 +91,7 @@ async function main() {
       } catch { /* sin dato */ }
     }
     if (c) {
-      Object.assign(f, { costo: Math.round(c.costo), precio_lista: c.precio_lista, piso_18: c.piso_18, comision: c.comision,
+      Object.assign(f, { fuente: c.fuente, costo: Math.round(c.costo), precio_lista: c.precio_lista, piso_18: c.piso_18, comision: c.comision,
         queda_hoy: c.queda(item.price), sobre_costo_hoy: c.sobre_costo(item.price) });
       if (original) Object.assign(f, { queda_original: c.queda(original), sobre_costo_original: c.sobre_costo(original) });
       if (f.ganador_precio != null) {

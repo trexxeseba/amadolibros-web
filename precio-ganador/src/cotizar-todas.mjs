@@ -43,6 +43,7 @@ export function agregar(filas, { excluidos = new Set(), umbral = 400, minimo = 1
     pct_viables: pct(v.viables, v.n), venden_bajo_nuestro_costo: v.bajo_costo, entrega_inmediata: v.inmediato, entrega_a_demanda: v.a_demanda }));
   return {
     pierden: comp.length, con_costo: con.length, sin_costo: comp.length - con.length,
+    con_costo_por_fuente: con.reduce((a, f) => (a[f.fuente ?? 'sbs'] = (a[f.fuente ?? 'sbs'] ?? 0) + 1, a), {}),
     veredictos: comp.reduce((a, f) => (a[f.veredicto] = (a[f.veredicto] ?? 0) + 1, a), {}),
     regla_actual: { bajarian: actual.length, mediana_sobre_costo: mediana(actual.map(f => f.sobre_costo_objetivo)) },
     sensibilidad_margen: sens, vendedores,
@@ -92,7 +93,8 @@ export function markdownTodas(o) {
   const a = o.agregado, p = o.perfiles;
   const l = [`# Cotización completa de Vintage · ${o.fecha}`, '',
     `Lista de SBS del ${String(o.info.lista_sbs).slice(0, 10)} (${o.info.dias_lista} días), ${o.info.renglones} renglones. Comisión ${Math.round(o.info.comision * 100)} %, margen publicado ${Math.round(o.info.margen_publicado * 100)} %.`,
-    `Pierden la ficha: ${a.pierden} (con costo conocido ${a.con_costo}, sin costo ${a.sin_costo}).`, '',
+    `Pierden la ficha: ${a.pierden} (con costo conocido ${a.con_costo}, sin costo ${a.sin_costo}). Con costo por fuente: ${Object.entries(a.con_costo_por_fuente ?? {}).map(([k, v]) => `${k} ${v}`).join(', ') || 'sbs'}.`,
+    o.info.costos_arnoia ? `Costos de Arnoia del ${String(o.info.costos_arnoia.fecha).slice(0, 10)} (${o.info.costos_arnoia.libros} libros, euro a ${o.info.costos_arnoia.eur_uyu}).` : 'Sin lista de costos de Arnoia.', '',
     '## Qué decide cada regla', '', '| Regla | Bajarían | Sobre costo (mediana) |', '|---|---:|---:|',
     `| Actual (diferencia hasta 400 y piso 1.200) | ${a.regla_actual.bajarian} | ${a.regla_actual.mediana_sobre_costo ?? ''} % |`];
   for (const [m, s] of Object.entries(a.sensibilidad_margen)) l.push(`| Por margen: queda al menos ${m} % sobre costo | ${s.bajarian} | ${s.mediana_sobre_costo ?? ''} % |`);
