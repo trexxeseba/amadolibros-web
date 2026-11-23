@@ -43,4 +43,5 @@ jobs:
           REPORT_EMAIL_TO: undiaes@gmail.com
           REPORT_EMAIL_SUBJECT: Amado Libros — listado de lo que pidieron clientes reales
           REPORT_EMAIL_FILES: artifacts/busquedas/lo-que-pidieron-clientes.md
+          REPORT_EMAIL_PROCESO: busquedas
         run: node scripts/ops/send-report-email.mjs

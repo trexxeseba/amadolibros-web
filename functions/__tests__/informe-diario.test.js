@@ -151,8 +151,12 @@ test('el envío manda texto y HTML, y reporta el error de Resend sin tragárselo
     fetchFn: async (url, init) => { enviado = JSON.parse(init.body); return { ok: true }; },
   });
   assert.equal(okResult.ok, true);
-  assert.equal(enviado.text, '# Hola');
+  // Desde el 23/11/2026 todo mail automático lleva encabezado (APP, PROYECTO, COMETIDO) y pie (cómo desactivarlo).
+  assert.match(enviado.text, /^APP: .*\nPROYECTO: .*\nCOMETIDO: /);
+  assert.ok(enviado.text.includes('# Hola'));
+  assert.match(enviado.text, /CÓMO DESACTIVARLO O MODIFICARLO/);
   assert.match(enviado.html, /<h1>Hola<\/h1>/);
+  assert.match(enviado.html, /<b>COMETIDO: /);
   assert.deepEqual(enviado.to, ['d@e.f']);
 
   const falla = await sendReportEmail({

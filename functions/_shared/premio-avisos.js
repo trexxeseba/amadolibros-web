@@ -9,6 +9,8 @@
  * en el log. Del cliente no se manda ningún dato personal (el número de
  * WhatsApp no se guarda en ningún lado).
  */
+import { envolverMail } from '../../shared/email-encabezado.js';
+
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const TIMEOUT_MS = 7000;
 
@@ -63,7 +65,7 @@ export async function enviarAvisoPremio(env, email, idempotencyKey, { fetchFn = 
         const res = await fetchFn(RESEND_ENDPOINT, {
             method: 'POST',
             headers: { Authorization: `Bearer ${cfg.apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
-            body: JSON.stringify({ from: cfg.from, to: cfg.to, subject: email.subject, text: email.text, html: email.html }),
+            body: JSON.stringify({ from: cfg.from, to: cfg.to, subject: email.subject, ...envolverMail({ proceso: 'premio', texto: email.text, html: email.html }) }),
             signal: controller.signal,
         });
         if (!res.ok) console.error('[premio-aviso] Resend respondió', res.status);

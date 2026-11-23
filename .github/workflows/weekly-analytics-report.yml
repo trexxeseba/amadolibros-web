@@ -94,4 +94,5 @@ jobs:
           REPORT_EMAIL_TO: undiaes@gmail.com,adm@amadolibros.com
           REPORT_EMAIL_SUBJECT: Amado Libros — informe semanal
           REPORT_EMAIL_FILES: artifacts/weekly/informe-semanal.md
+          REPORT_EMAIL_PROCESO: informe-semanal
         run: node scripts/ops/send-report-email.mjs

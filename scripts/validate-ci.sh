@@ -86,6 +86,8 @@ node --test scripts/__tests__/partes.test.mjs
 # Agentes diarios de Mercado Libre en la nube (agentes-ml/): cliente, guardas y jobs.
 node --test agentes-ml/test/*.test.mjs
 node --test poda/test/*.test.mjs
+# Encabezado y pie comunes de los mails automáticos (shared/email-encabezado.js).
+node --test shared/__tests__/*.test.mjs
 # Lectores de PDF de Celesa/SBS y sellado de compras (scripts/purchases/).
 node --test scripts/purchases/__tests__/*.test.mjs
 # Node 22.12 (runner fijado en CI/deploy) todavía mantiene node:sqlite detrás

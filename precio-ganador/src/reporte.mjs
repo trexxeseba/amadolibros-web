@@ -1,6 +1,7 @@
 // Resumen, tabla de detalle y correo diario (Resend, el que ya usa el proyecto).
 import { CAMBIA } from './decision.mjs';
 import { fechaMontevideo } from './config.mjs';
+import { envolverMail } from '../../shared/email-encabezado.js';
 
 export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
   const c = a => filas.filter(f => f.d.accion === a).length;
@@ -179,7 +180,7 @@ export async function enviarResumen({ cuenta, acum, resumen, ayer = null, fetche
   try {
     const res = await fetcher('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `precio-ganador-${cuenta.clave}-${fechaMontevideo()}-${process.env.GITHUB_RUN_ID ?? Date.now()}` },
-      body: JSON.stringify({ from, to, subject: asunto, html, text: texto }),
+      body: JSON.stringify({ from, to, subject: asunto, ...envolverMail({ proceso: 'precio-ganador', texto, html }) }),
       signal: AbortSignal.timeout(30000),
     });
     return res.ok ? { status: 'enviado' } : { status: 'error', http: res.status };
@@ -240,7 +241,7 @@ export async function enviarListaDemanda({ cuenta, lista, franja = '', fetcher =
   try {
     const res = await fetcher('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `lista-demanda-${cuenta.clave}-${fechaMontevideo()}-${franja}` },
-      body: JSON.stringify({ from, to, subject: `Seba, ${lista.length} ${lista.length === 1 ? 'libro queda oculto' : 'libros quedan ocultos'} detrás de vendedores que demoran días`, html, text: texto }),
+      body: JSON.stringify({ from, to, subject: `Seba, ${lista.length} ${lista.length === 1 ? 'libro queda oculto' : 'libros quedan ocultos'} detrás de vendedores que demoran días`, ...envolverMail({ proceso: 'precio-ganador', texto, html }) }),
       signal: AbortSignal.timeout(30000),
     });
     return res.ok ? { status: 'enviado', casos: lista.length } : { status: 'error', http: res.status };

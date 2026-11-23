@@ -21,6 +21,7 @@
  *    lectura/escritura. Se carga con `wrangler secret put GITHUB_TOKEN`; nunca
  *    va en el código ni en wrangler.toml.
  */
+import { envolverMail } from '../shared/email-encabezado.js';
 export const CRONS_PRECIO_GANADOR = ['0 12 * * *', '0 14 * * *', '0 16 * * *', '0 18 * * *', '0 20 * * *', '0 22 * * *', '0 0 * * *'];
 // Qué cuentas corren en cada horario: Libros en todos; Vintage sólo a las 09:00 y a las 21:00 de Montevideo
 // (Seba, 11/11/2026). Mercado Libre marcó Vintage como vendedor no confiable en catálogo (no puede ganar):
@@ -74,7 +75,7 @@ async function alertar(env, fetcher, resultado) {
     const res = await fetcher('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(20000),
       body: JSON.stringify({ from: env?.REPORT_EMAIL_FROM || 'Amado Libros <web@notificaciones.amadolibros.com>', to, subject: `ALARMA Precio Ganador: el Worker no pudo lanzar la corrida (${resultado.state})`,
-        text: `El Worker de Cloudflare no pudo pedirle a GitHub que corra Precio Ganador.\nMotivo: ${resultado.detalle ?? resultado.state}.\nSi el cron de GitHub tampoco corre, lanzala a mano en Actions > Precio Ganador.` }),
+        ...envolverMail({ proceso: 'precio-ganador-lanzador', texto: `El Worker de Cloudflare no pudo pedirle a GitHub que corra Precio Ganador.\nMotivo: ${resultado.detalle ?? resultado.state}.\nSi el cron de GitHub tampoco corre, lanzala a mano en Actions > Precio Ganador.` }) }),
     });
     return { ...resultado, alerta: res.ok ? 'enviada' : `resend_http_${res.status}` };
   } catch { return { ...resultado, alerta: 'resend_transporte' }; }

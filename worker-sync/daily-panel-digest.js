@@ -15,6 +15,7 @@
  */
 
 import { readSalesHealth, evaluateSalesHealth } from './sales-health.js';
+import { envolverMail } from '../shared/email-encabezado.js';
 import { competitionEvents } from './ml-competition.js';
 import { COUNTED_STATUSES } from './ml-sales.js';
 import { ownStockIndex } from './reposicion-facts.js';
@@ -439,7 +440,7 @@ async function sendEmail({ apiKey, from, to, email, idempotencyKey }, fetchFn) {
     const response = await fetchFn(RESEND_ENDPOINT, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
-      body: JSON.stringify({ from, to, ...email }),
+      body: JSON.stringify({ from, to, subject: email.subject, ...envolverMail({ proceso: 'brujula', texto: email.text, html: email.html }) }),
       signal: controller.signal,
     });
     return { ok: response.ok, status: response.status };

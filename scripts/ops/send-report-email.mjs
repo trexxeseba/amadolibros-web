@@ -15,6 +15,7 @@
  * traerse un parser entero para esto costaría más de lo que resuelve.
  */
 
+import { envolverMail, PROCESOS } from '../../shared/email-encabezado.js';
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 
 function asText(value) {
@@ -118,7 +119,7 @@ export function resolveEmailConfig(env = process.env) {
   return { ok: true, apiKey, from, to: destinatarios };
 }
 
-export async function sendReportEmail({ subject, markdown, config, fetchFn = globalThis.fetch }) {
+export async function sendReportEmail({ subject, markdown, config, proceso = 'informe-web', fetchFn = globalThis.fetch }) {
   const response = await fetchFn(RESEND_ENDPOINT, {
     method: 'POST',
     headers: {
@@ -129,8 +130,7 @@ export async function sendReportEmail({ subject, markdown, config, fetchFn = glo
       from: config.from,
       to: config.to,
       subject,
-      text: markdown,
-      html: markdownToHtml(markdown),
+      ...envolverMail({ proceso, texto: markdown, html: markdownToHtml(markdown) }),
     }),
     signal: AbortSignal.timeout(30_000),
   });
@@ -176,7 +176,8 @@ export async function main() {
   }
 
   const subject = asText(process.env.REPORT_EMAIL_SUBJECT) || 'Amado Libros — informe diario';
-  const result = await sendReportEmail({ subject, markdown, config });
+  const proceso = PROCESOS[asText(process.env.REPORT_EMAIL_PROCESO)] ? asText(process.env.REPORT_EMAIL_PROCESO) : 'informe-web';
+  const result = await sendReportEmail({ subject, markdown, config, proceso });
   if (!result.ok) {
     console.error(`Resend rechazó el envío: ${result.code} ${result.detalle || ''}`);
     process.exitCode = 1;

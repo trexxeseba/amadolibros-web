@@ -1,6 +1,7 @@
 // Fila diaria de la poda en la mesa de decisiones (Airtable) y mail de respaldo.
 // El detalle con montos va SOLO acá y a D1: nunca a los logs de Actions (repo público).
 // Code nunca pone una fila en Aprobada ni en Rechazada.
+import { envolverMail } from '../../shared/email-encabezado.js';
 export const MESA = { base: 'appElRtjx65dmtTgO', tabla: 'tblAoTEnKA2eC85g6' };
 const F = { propuesta: 'fld7CSwhRc0P8GOm5', clave: 'fld0pPEWivLADcKOu', fecha: 'fld1qZXcIafkzAsF5', rama: 'fldyzCiuNdjm94MXj', tarea: 'fldaudDXzXw2BXnnV', tipo: 'fldrprG9mJLB3oBS8', prioridad: 'fldNBigULbTz2wuwI', publicacion: 'fld8TswPvRw2V2tkz', dato: 'fldwtSvMycZShRfJD', recomendada: 'fldDSqwG1qPTtteXZ', alternativa: 'fldUXvgYlcRlZAN0X', estado: 'fldsWM8HhUOOKlSSW' };
 export const ROTULO = 'revisar ficha: precio, foto, título, competencia';
@@ -50,12 +51,12 @@ export async function subirFila(fields, { env = process.env, fetcher = (...a) =>
 }
 
 // Mail de respaldo con el detalle (privado, a Seba). Sólo si no se pudo subir a la mesa.
-export async function enviarMail({ asunto, texto, env = process.env, fetcher = (...a) => globalThis.fetch(...a) }) {
+export async function enviarMail({ asunto, texto, proceso = 'poda', env = process.env, fetcher = (...a) => globalThis.fetch(...a) }) {
   const apiKey = env.RESEND_API_KEY, to = String(env.PODA_EMAIL_TO ?? '').split(',').map(s => s.trim()).filter(Boolean);
   if (!apiKey || !to.length) return { ok: false, motivo: 'sin_credenciales' };
   const res = await fetcher('https://api.resend.com/emails', {
     method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(30000),
-    body: JSON.stringify({ from: env.REPORT_EMAIL_FROM || 'Amado Libros <web@notificaciones.amadolibros.com>', to, subject: asunto, text: texto }),
+    body: JSON.stringify({ from: env.REPORT_EMAIL_FROM || 'Amado Libros <web@notificaciones.amadolibros.com>', to, subject: asunto, ...envolverMail({ proceso, texto }) }),
   }).catch(() => null);
   return res?.ok ? { ok: true } : { ok: false, motivo: `resend_http_${res?.status ?? 'transporte'}` };
 }
