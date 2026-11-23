@@ -82,3 +82,9 @@ test('casos que Mercado Libre ya dio de baja en cuentas del dueño y marcas que 
  assert.equal(ipRisk('La hora antes del alba','Planeta'),null);
  assert.equal(ipRisk('El poder del ahora','Gaia'),null);
 });
+
+test('editorial que ya denunció (Aranzadi y su grupo) queda fuera', () => {
+ assert.equal(ipRisk('Digitalizacion en las empresas Moreno Liso','ARANZADI'),'editorial_reclamada');
+ assert.equal(ipRisk('Tratado de derecho administrativo','Civitas'),'editorial_reclamada');
+ assert.equal(ipRisk('La ley de la atraccion','Urano'),null);
+});
