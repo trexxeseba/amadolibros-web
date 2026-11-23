@@ -17,7 +17,7 @@
 // Cada entrada es una expresión sobre el texto normalizado (minúsculas, sin acentos, sin signos).
 export const IP_RISK_PATTERNS=[
  // Digital, descargable, acceso online
- ['digital','\\bdigital(es)?\\b|\\bdigitale\\b|\\bnumerique\\b|\\bdigitalausgabe\\b'],
+ ['digital','\\bdigital(es)?\\b|\\bdigitaliz\\w*|\\bdigitalis\\w*|\\bdigitale\\b|\\bnumerique\\b|\\bdigitalausgabe\\b'],
  ['ebook','\\be ?books?\\b|\\be ?libro\\b|\\blibro electronico\\b|\\belectronic\\b|\\betext\\b|\\be text\\b'],
  ['formato_archivo','\\bpdf\\b|\\bepub\\b|\\bmobi\\b|\\bkindle\\b|\\bmp3\\b|\\bcd ?rom\\b|\\bdvd\\b|\\bmultirom\\b|\\bcd\\b|\\bdiscos?\\b'],
  ['descarga','\\bdescarga(s|ble|bles)?\\b|\\bdownload(able)?\\b|\\bonline\\b|\\bon line\\b|\\ben linea\\b'],
