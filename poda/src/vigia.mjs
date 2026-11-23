@@ -12,10 +12,10 @@ async function main() {
   const hoy = fechaMontevideo();
   if (horaMontevideo() < 13) { console.log('Todavía no son las 13:00: no se comprueba.'); return; }
   const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/poda-anuncios.yml/runs?branch=main&per_page=30`, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(20000) });
-  if (!res.ok) { await enviarMail({ asunto: 'Poda de anuncios: el latido no pudo consultar GitHub', texto: `HTTP ${res.status}` }); process.exit(1); }
+  if (!res.ok) { await enviarMail({ proceso: 'poda-vigia', asunto: 'Poda de anuncios: el latido no pudo consultar GitHub', texto: `HTTP ${res.status}` }); process.exit(1); }
   const runs = (await res.json()).workflow_runs ?? [];
   if (hayCorridaDeHoy(runs, hoy)) { console.log('La poda corrió bien hoy.'); return; }
-  const r = await enviarMail({ asunto: `ALARMA poda de anuncios: no hay corrida exitosa hoy (${hoy})`, texto: `Pasadas las 13:00 de Montevideo no hay una corrida exitosa de la poda de anuncios de hoy. Revisá Actions > Poda de anuncios y la fila poda|${hoy} de la mesa.` });
+  const r = await enviarMail({ proceso: 'poda-vigia', asunto: `ALARMA poda de anuncios: no hay corrida exitosa hoy (${hoy})`, texto: `Pasadas las 13:00 de Montevideo no hay una corrida exitosa de la poda de anuncios de hoy. Revisá Actions > Poda de anuncios y la fila poda|${hoy} de la mesa.` });
   console.log('Alarma:', JSON.stringify(r));
   process.exit(1);
 }

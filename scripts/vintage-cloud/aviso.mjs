@@ -8,6 +8,7 @@
 //   node scripts/vintage-cloud/aviso.mjs --reporte <reporte.json> --run-url <url> [--fallo]
 import fs from 'node:fs/promises';
 import {d1Client} from './d1.mjs';
+import {envolverMail} from '../../shared/email-encabezado.js';
 
 export const SELLER='2341378249';
 export const THROTTLE_MS=3*3600000;
@@ -30,11 +31,14 @@ export function decide({report,failed,now=Date.now()}){
  return out;
 }
 
-export async function sendMail({asunto,texto,prefijo='Vintage nube',fetcher=fetch,env=process.env}){
+// Cada prefijo de asunto corresponde a un proceso de shared/email-encabezado.js (encabezado y pie del mail).
+const PROCESO_POR_PREFIJO={'Vintage nube':'vintage-nube','Guardián':'guardian','Vintage parte':'vintage-parte','Competencia ML':'competencia-ml','Amado Vintage':'aviso-manual'};
+
+export async function sendMail({asunto,texto,prefijo='Vintage nube',proceso=PROCESO_POR_PREFIJO[prefijo]??'vintage-nube',fetcher=fetch,env=process.env}){
  const apiKey=env.RESEND_API_KEY,to=String(env.VINTAGE_EMAIL_TO||env.PRECIO_GANADOR_EMAIL_TO||'').split(',').map(s=>s.trim()).filter(Boolean);
  if(!apiKey||!to.length)return 'sin_credenciales';
  const res=await fetcher('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(30000),
-  body:JSON.stringify({from:env.REPORT_EMAIL_FROM||'Amado Libros <web@notificaciones.amadolibros.com>',to,subject:`${prefijo}: ${asunto}`,text:texto})}).catch(()=>null);
+  body:JSON.stringify({from:env.REPORT_EMAIL_FROM||'Amado Libros <web@notificaciones.amadolibros.com>',to,subject:`${prefijo}: ${asunto}`,...envolverMail({proceso,texto})})}).catch(()=>null);
  return res?.ok?'enviado':'error';
 }
 
