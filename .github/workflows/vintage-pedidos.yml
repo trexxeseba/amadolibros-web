@@ -47,6 +47,7 @@ jobs:
         shell: bash
         run: |
           if [ "$PAUSA" = "true" ]; then echo "Sincronización pausada"; exit 0; fi
+          node scripts/vintage-pedidos/run.mjs --probe-ml
           if [ "$REAL" = "true" ]; then
             node scripts/vintage-pedidos/run.mjs --real
           else

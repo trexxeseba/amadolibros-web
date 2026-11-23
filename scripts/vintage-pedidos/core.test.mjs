@@ -97,3 +97,8 @@ test('orders still tracked after leaving discovery are refreshed',async()=>{
 test('unsafe numerical order IDs are rejected',()=>{
  const o=order();o.id=10000000000000000;assert.throws(()=>validateOrder(o,o.id),/id_inseguro/);
 });
+
+test('uncertain PUT with desired content is reconciled',()=>{
+ const f={[F.id]:oid,[F.state]:'comprado',[F.noteId]:'noteOwned',[F.noteText]:'old', [F.follow]:'Actualizar'};
+ assert.equal(selectNote([{id:'noteOwned',note:buildSummary(f,oid)}],f,oid).id,'noteOwned');
+});

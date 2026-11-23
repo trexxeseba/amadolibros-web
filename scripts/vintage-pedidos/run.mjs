@@ -1,7 +1,7 @@
 import {pathToFileURL} from 'node:url';
 import {fuenteTokenD1} from '../../precio-ganador/src/token.mjs';
 import {CUENTAS} from '../../precio-ganador/src/config.mjs';
-import {BASE,TABLE,SELLER,F,START,fail,safeError,syncSales,id} from './core.mjs';
+import {BASE,TABLE,SELLER,F,START,fail,safeError,syncSales,id,validateOrder,unpackNotes,noteTarget} from './core.mjs';
 
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 export function clients({env=process.env,fetcher=fetch,tokenSource}={}) {
@@ -59,7 +59,7 @@ export function clients({env=process.env,fetcher=fetch,tokenSource}={}) {
    const isNew=(d.createdRecords||[]).includes(row.id);
    if(isNew || !row.fields?.[F.detail]){
     // If the process died between ID reservation and initialization, recover it.
-    // Importer-owned rows without channel are included in list() via recovery search.
+    // Discovery rescans from START, so the reserved ID is found by upsert on retry.
     return at.patch(row.id,fields);
    }
    return row;
@@ -85,7 +85,19 @@ export function clients({env=process.env,fetcher=fetch,tokenSource}={}) {
  };
  return {ml,at};
 }
+export async function probeML(){
+ const {ml}=clients({env:{...process.env,AIRTABLE_TOKEN:'unused-in-read-only-probe'}});
+ const me=await ml.get('/users/me');
+ if(String(me.id)!==SELLER||me.site_id!=='MLU')throw fail('token_no_es_vintage');
+ const ids=await ml.search(START);let notesReadable=0;
+ for(const orderId of ids.slice(0,3)){
+  const o=validateOrder(await ml.get('/orders/'+orderId),orderId);
+  unpackNotes(await ml.get(noteTarget(o)));notesReadable++;
+ }
+ console.log(JSON.stringify({probe:'ml',identity:'vintage_ok',orders:ids.length,notesReadable}));
+}
 export async function main(){
+ if(process.argv.includes('--probe-ml'))return probeML();
  const real=process.argv.includes('--real');
  if(real && process.env.GITHUB_REF!=='refs/heads/main')throw fail('escritura_solo_main');
  const {ml,at}=clients();

@@ -59,7 +59,7 @@ export function selectNote(notes,f,orderId) {
  if(owned.length>1)throw fail('notas_duplicadas_revisar');
  const saved=f[F.noteId];
  if(saved && (!owned.length || owned[0].id!==saved))throw fail('nota_borrada_o_identidad_cambiada');
- if(owned[0] && f[F.noteText] && owned[0].note!==f[F.noteText])throw fail('nota_editada_manualmente');
+ if(owned[0] && f[F.noteText] && owned[0].note!==f[F.noteText] && owned[0].note!==buildSummary(f,orderId))throw fail('nota_editada_manualmente');
  // After uncertain POST, adopt only an exact match; never adopt arbitrary marker text.
  if(owned[0] && !f[F.noteText] && owned[0].note!==buildSummary(f,orderId))throw fail('nota_sin_recibo_revisar');
  return owned[0]||null;
@@ -108,7 +108,8 @@ export async function syncSales({ml,at,real=false,start=START,now=()=>new Date()
     // Server upsert and workflow concurrency prevent duplicate creates/retries.
     row=await at.upsert(newFields(o,shipment));stats.created++;
    }else if(real){
-    await at.patch(row.id,{...incoming,[F.sync]:'Pendiente: comprobando nota'});
+    const titlePatch = !row.fields[F.title] || row.fields[F.title].includes('[título truncado en email]') ? {[F.title]:newFields(o,shipment)[F.title]} : {};
+    await at.patch(row.id,{...incoming,...titlePatch,[F.sync]:'Pendiente: comprobando nota'});
     stats.updated++;
    }
    // Reread immediately before composing: keep current human edits.
