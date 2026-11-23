@@ -17,6 +17,7 @@
 import { readSalesHealth, evaluateSalesHealth } from './sales-health.js';
 import { competitionEvents } from './ml-competition.js';
 import { COUNTED_STATUSES } from './ml-sales.js';
+import { ownStockIndex } from './reposicion-facts.js';
 import { loadBi, brujulaDigest, competidoresSinStock, loadRepuestos } from '../functions/_shared/panel-bi.js';
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
@@ -24,6 +25,7 @@ const EMAIL_TIMEOUT_MS = 7000;
 const PANEL_URL = 'https://www.amadolibros.com/panel';
 const UNPAID_WINDOW_DAYS = 7;
 const MAX_ROWS = 15;
+const MAX_PIERDE = 10;
 const URUGUAY_OFFSET_MS = 3 * 60 * 60 * 1000; // UTC-3 todo el año
 
 function cleanString(value) {
@@ -74,7 +76,7 @@ export async function loadDigestData(db, now = new Date(), { catalog = null } = 
     all(db, `SELECT whatsapp, product_title FROM stock_waitlist_whatsapp
               WHERE status = 'waiting' ORDER BY created_at DESC LIMIT 100`).catch(() => []),
     readSalesHealth(db).catch(() => null),
-    competitionEvents(db, { limit: 200 }).catch(() => null),
+    competitionEvents(db, { limit: 200, enteros: ['precio_arriba'] }).catch(() => null),
     // Ventas de ayer en Mercado Libre: sin esto "Ayer" decía 0 aunque se hubiera vendido.
     all(db, `SELECT COUNT(*) AS n, COALESCE(SUM(total_amount), 0) AS total FROM ml_sales_orders
               WHERE status IN (${COUNTED_STATUSES.map(s => `'${s}'`).join(',')}) AND date_created_ms >= ? AND date_created_ms < ?`,
@@ -82,10 +84,19 @@ export async function loadDigestData(db, now = new Date(), { catalog = null } = 
   ]);
   // Título de cada libro para los avisos de competencia (antes salía sólo el ISBN).
   const titulos = new Map();
+  // Mismo criterio de stock propio que el resto de la Brújula.
+  const propio = ownStockIndex(catalog), enStock = { get: k => propio.get(k)?.stock_propio ?? 0 };
   for (const it of Array.isArray(catalog?.items) ? catalog.items : []) {
     const k = String(it?.isbn ?? '').replace(/[^0-9Xx]/g, '');
-    if (k && it.title && !titulos.has(k)) titulos.set(k, it.title);
+    if (!k) continue;
+    if (it.title && !titulos.has(k)) titulos.set(k, it.title);
   }
+  // Ventas que se están yendo a otro: libros que tenés en stock y un competidor
+  // ofrece más barato con entrega inmediata y el mismo tipo de envío. Los de
+  // mayor diferencia primero.
+  const pierdeTodos = (competencia?.enteros?.precio_arriba ?? [])
+    .filter(e => e.tuPrecio > 0 && e.minPrecio > 0 && (enStock.get(String(e.isbn)) ?? 0) > 0)
+    .sort((a, b) => b.pct - a.pct);
   // Brújula: qué reponer, a qué subirle el precio, qué se agota y qué se vende
   // a pérdida. Si algo falla, el correo sale igual sin esta parte.
   let brujula = null;
@@ -109,6 +120,8 @@ export async function loadDigestData(db, now = new Date(), { catalog = null } = 
     systemProblems: salesHealth ? evaluateSalesHealth(salesHealth, now.getTime()).problemas : [],
     // Sólo si hubo novedades de competencia en la última foto.
     competition: competencia?.eventos?.length ? { ...competencia, eventos: competencia.eventos.slice(0, 5).map(e => ({ ...e, title: titulos.get(String(e.isbn)) ?? null })) } : null,
+    pierde: pierdeTodos.length ? { total: pierdeTodos.length, lista: pierdeTodos.slice(0, MAX_PIERDE).map(e => ({ isbn: e.isbn, title: titulos.get(String(e.isbn)) ?? e.isbn,
+      tuPrecio: e.tuPrecio, minPrecio: e.minPrecio, pct: e.pct, vendedor: e.vendedor ?? null, stock: enStock.get(String(e.isbn)) })) } : null,
     ml: mlAyer ? { count: Number(mlAyer[0]?.n || 0), total: Number(mlAyer[0]?.total || 0) } : null,
     brujula,
   };
@@ -284,6 +297,25 @@ function resumenBrujula(b) {
   ].filter(([, n]) => n > 0);
 }
 
+// "Estás perdiendo estas ventas": tu precio es superior al de un competidor
+// que también entrega ya. Dice cuánto hay que bajar para igualarlo; decidir si
+// el margen lo permite queda para el dueño (el costo se ve en el panel).
+const pierdeTitulo = p => `Seba, estás perdiendo estas ventas: tu precio es superior${p.total > p.lista.length ? ` (${p.lista.length} de ${p.total}; todos en el panel)` : ` (${p.total})`}`;
+const pierdeLinea = r => `Tu precio ${money(r.tuPrecio)} · ${r.vendedor ?? 'un competidor'} lo tiene con entrega inmediata a ${money(r.minPrecio)} · estás ${r.pct}% arriba · para igualarlo bajá ${money(r.tuPrecio - r.minPrecio)}${r.stock ? ` · tenés ${r.stock} en stock` : ''}`;
+function pierdeText(p) {
+  if (!p?.lista?.length) return [];
+  return [pierdeTitulo(p).toUpperCase(), ...p.lista.map(r => `- ${r.title}: ${pierdeLinea(r)}`), `  Antes de bajar, mirá el costo en ${PANEL_URL}/reposicion`, ''];
+}
+function pierdeHtml(p) {
+  if (!p?.lista?.length) return '';
+  return `<h2 style="${H2};color:#b91c1c">${escapeHtml(pierdeTitulo(p))}</h2>
+    <p style="font-size:13px;color:#666;margin:4px 0 8px">Libros que tenés en stock y otro vendedor ofrece más barato con entrega inmediata. Antes de bajar, mirá el costo en el panel.</p>
+    ${p.lista.map(r => `<div style="border:1px solid #e5e2dd;border-left:4px solid #b91c1c;border-radius:6px;padding:12px 14px;margin:12px 0">
+      <a href="${escapeHtml(bookLink(r.isbn))}" style="color:#222;font-weight:bold;font-size:15px;text-decoration:none">${escapeHtml(r.title)}</a>
+      <table role="presentation" style="border-collapse:separate;border-spacing:0;margin-top:8px"><tr>${[cell('Tu precio', money(r.tuPrecio)), cell(r.vendedor ?? 'Competidor', money(r.minPrecio)), cell('Estás arriba', `${r.pct}%`), cell('Para igualar', `bajá ${money(r.tuPrecio - r.minPrecio)}`)].join('<td style="width:6px"></td>')}</tr></table>
+    </div>`).join('')}`;
+}
+
 const DELIVERY = { pickup: 'retiro', shipping: 'envío' };
 const PROVIDER = { mercadopago: 'Mercado Pago', bank_transfer: 'transferencia' };
 
@@ -306,6 +338,7 @@ export function buildDigestEmail(data, { equipo = false } = {}) {
   const wa = data.whatsapps || [];
   const brujula = equipo ? null : data.brujula;
   const competition = equipo ? null : data.competition;
+  const pierde = equipo ? null : data.pierde;
   const ml = data.ml || null;
   const parts = [];
   if (ship.length) parts.push(`${ship.length} para despachar`);
@@ -314,7 +347,7 @@ export function buildDigestEmail(data, { equipo = false } = {}) {
   const subject = parts.length
     ? `Amado Libros — hoy: ${parts.join(' y ')}`
     : 'Amado Libros — hoy no hay nada pendiente';
-  const resumen = resumenBrujula(brujula);
+  const resumen = [...(pierde?.total ? [['Perdés por precio', pierde.total, '#b91c1c']] : []), ...resumenBrujula(brujula)];
   const mlText = ml ? `- Ventas en Mercado Libre: ${ml.count}${!equipo && ml.count ? ` (${money(ml.total)})` : ''}` : null;
   const compLabel = e => e.title ? `${e.title} (${e.isbn})` : e.isbn;
 
@@ -340,6 +373,7 @@ export function buildDigestEmail(data, { equipo = false } = {}) {
       '',
     ] : []),
     ...(data.systemProblems?.length ? ['SISTEMA — revisar', ...data.systemProblems.map(p => `- ${p}`), ''] : []),
+    ...pierdeText(pierde),
     ...brujulaText(brujula),
     ...(competition ? ['COMPETENCIA EN MERCADO LIBRE', ...competition.eventos.map(e => `- ${compLabel(e)}: ${e.texto}`), `  Todo en ${PANEL_URL}/reposicion`, ''] : []),
     'AYER',
@@ -376,6 +410,7 @@ export function buildDigestEmail(data, { equipo = false } = {}) {
     ${wa.length ? `<h2 style="${H2}">Dejaron su WhatsApp: escribiles <span style="color:#888;font-weight:normal">(${wa.length})</span></h2>
     <table style="border-collapse:collapse;width:100%;font-size:14px">${wa.slice(0, MAX_ROWS).map(r => `<tr><td style="${TD}"><a href="https://wa.me/${escapeHtml(r.whatsapp)}" style="color:#a94e3d;font-weight:bold;text-decoration:none">+${escapeHtml(r.whatsapp)}</a></td><td style="${TD}">${escapeHtml(r.product_title)}</td></tr>`).join('')}</table>` : ''}
     ${data.systemProblems?.length ? `<h2 style="${H2};color:#9a3412">Sistema: revisar</h2><ul>${data.systemProblems.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>` : ''}
+    ${pierdeHtml(pierde)}
     ${brujulaHtml(brujula)}
     ${competition ? `<h2 style="${H2}">Competencia en Mercado Libre</h2>${competition.eventos.map(e => cardHtml({ isbn: e.isbn, title: e.title || e.isbn, detalle: e.texto }, '#b45309')).join('')}` : ''}
     <h2 style="${H2}">Ayer</h2>
