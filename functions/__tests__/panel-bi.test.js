@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { loadBi, abc, priceRaises, withUnsoldBooks, brujulaDigest, constantesEnRiesgo, stockObjetivo, detalleReposicion, comprasTexto, mercadoCorto, competidoresSinStock, loadRepuestos, ventasPorMes, loadAgotadosHoy } from '../_shared/panel-bi.js';
+import { loadBi, abc, priceRaises, withUnsoldBooks, brujulaDigest, constantesEnRiesgo, ATRASADO_DIAS, stockObjetivo, detalleReposicion, comprasTexto, mercadoCorto, competidoresSinStock, loadRepuestos, ventasPorMes, loadAgotadosHoy } from '../_shared/panel-bi.js';
 import { renderBi, createBiPanel } from '../panel/inteligencia.js';
 import { SALES_SCHEMA } from '../../worker-sync/ml-sales.js';
 import { importPurchases } from '../../worker-sync/purchases.js';
@@ -250,6 +250,29 @@ test('lentos pero constantes: 2+ ventas propias al año y stock para 75 días o 
   assert.equal(ag.cobertura, 0); assert.equal(ag.ritmo, 91); assert.equal(ag.pedir, 1, 'ritmo 91: objetivo 1 y mínimo 1');
   assert.equal(stockObjetivo(10, 5), 3); assert.equal(stockObjetivo(10, 2), 2); assert.equal(stockObjetivo(60), 2); assert.equal(stockObjetivo(75), 2); assert.equal(stockObjetivo(76), 1);
   assert.match(detalleReposicion({ ...b, now: Date.parse('2026-11-18T15:00:00Z'), mercado: { estado: 'solo' }, compras: undefined }), /^Queda 1, alcanza unos 61 días\. Vendiste 0 en 30 días, 1 en 90 y 6 en 12 meses \(1 cada 61 días\), a \$ 2\.650\. Pedí 1\. No pude consultar las compras: confirmá que no esté pedido\. Nadie más/);
+});
+
+test('aviso atrasado: con stock bajo y sin pedido 3 días después de la última venta, sube al principio y el correo lo dice', () => {
+  const now = Date.parse('2026-11-22T15:00:00Z'), hace = d => now - d * 86400000;
+  const books = [
+    { isbn: 'fresco', title: 'Vendido hoy', u365p: 9, u90p: 2, stock: 2, lastOwnMs: hace(1) }, // 1 cada 41, quedan 2: avisa, todavía no está atrasado
+    { isbn: 'cofre', title: 'Cofre', u365p: 9, u90p: 2, stock: 1, lastOwnMs: hace(40) }, // quedó con 1 hace 40 días y nadie pidió
+    { isbn: 'tres', title: 'Hace tres días', u365p: 6, u90p: 1, stock: 1, lastOwnMs: hace(ATRASADO_DIAS) },
+    { isbn: 'sinfecha', title: 'Sin fecha', u365p: 6, u90p: 1, stock: 1 },
+  ];
+  const r = constantesEnRiesgo(books, now);
+  assert.deepEqual(r.map(b => b.isbn), ['cofre', 'tres', 'fresco', 'sinfecha'], 'atrasados primero (menos cobertura antes), después el resto');
+  const por = Object.fromEntries(r.map(b => [b.isbn, b]));
+  assert.equal(por.cofre.atrasado, true); assert.equal(por.cofre.diasSinPedir, 40);
+  assert.equal(por.tres.atrasado, true);
+  assert.equal(por.fresco.atrasado, false);
+  assert.equal(por.sinfecha.atrasado, false); assert.equal(por.sinfecha.diasSinPedir, null);
+  assert.ok(r.findIndex(b => b.isbn === 'cofre') < r.findIndex(b => b.isbn === 'fresco'), 'el atrasado va antes que el recién vendido');
+  assert.ok(r.findIndex(b => b.isbn === 'tres') < r.findIndex(b => b.isbn === 'fresco'));
+  const base = { ...por.cofre, now, mercado: { estado: 'solo' } };
+  assert.match(detalleReposicion({ ...base, compras: { enCamino: 0, sinIsbn: 0, ultima: null } }), /^Queda 1, alcanza unos 41 días; última venta el \d\d\/\d\d\/\d\d\. ATRASADO: hace 40 días que quedó así y no hay pedido registrado\. Vendiste/);
+  assert.match(detalleReposicion({ ...base, compras: undefined }), /ATRASADO: hace 40 días que quedó así: revisá si ya lo pediste\./, 'sin poder leer compras no afirma que no hay pedido');
+  assert.doesNotMatch(detalleReposicion({ ...por.fresco, now, mercado: { estado: 'solo' }, compras: undefined }), /ATRASADO/);
 });
 
 test('precios: si sos el único con entrega inmediata, el sugerido sale de los que venden a pedido', () => {
