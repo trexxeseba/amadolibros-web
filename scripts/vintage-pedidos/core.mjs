@@ -3,12 +3,12 @@
 export const SELLER = '2341378249';
 export const BASE = 'appA7zwO1Yo0FGTvz';
 export const TABLE = 'tblhcKFTWeTJwH5GJ';
-export const START = '2026-11-22T03:00:00.000Z';
+export const START = '2026-11-09T03:00:00.000Z';
 export const F = {
  id:'ML Venta ID', pack:'ML Pack ID', buyer:'Comprador ML', sale:'Estado venta ML',
  shipping:'Estado envío ML', follow:'Seguimiento para ML', sync:'Sincronización ML',
  noteId:'Nota ML ID', noteText:'Nota ML sincronizada', synced:'Última sincronización ML',
- title:'Título', date:'Fecha consulta', state:'Estado', channel:'Canal',
+ category:'Categoría', title:'Título', date:'Fecha consulta', state:'Estado', channel:'Canal',
  detail:'Detalle canal', price:'Precio de venta', payment:'Medio de pago',
  notes:'NOTAS', responsible:'Responsable', supplier:'Pedido en', bought:'Fecha compra',
  eta:'Entrega estimada', seen:'Visto'
@@ -72,17 +72,38 @@ export function importedFields(o,shipment) {
  };
  return f;
 }
+
+export async function classifyOrder(o,ml) {
+ const kinds=[];
+ for(const line of o.order_items){
+  const itemId=String(line.item?.id||'');
+  if(!/^MLU\d+$/.test(itemId))throw fail('publicacion_invalida');
+  const item=await ml.get('/items/'+itemId);
+  if(item.id!==itemId||String(item.seller_id)!==SELLER)throw fail('publicacion_cuenta_incorrecta');
+  if(!item.domain_id)throw fail('tipo_libro_no_verificable');
+  if(item.domain_id!=='MLU-BOOKS'){kinds.push('notBook');continue;}
+  const term=(item.sale_terms||[]).find(t=>t.id==='MANUFACTURING_TIME');
+  const days=Number(term?.value_struct?.number ?? String(term?.value_name||'').match(/^\s*(\d+)/)?.[1] ?? 0);
+  if(!Number.isFinite(days))throw fail('plazo_no_verificable');
+  kinds.push(days>0?'demand':'stock');
+ }
+ if(kinds.every(k=>k==='demand'))return 'demand';
+ if(kinds.includes('demand'))throw fail('orden_mixta_revisar');
+ return kinds.includes('notBook')?'notBook':'stock';
+}
+
 export function newFields(o,shipment) {
  return {...importedFields(o,shipment),
   [F.title]:o.order_items.map(i=>clean(i.item?.title)+' × '+i.quantity).join('\n'),
-  [F.date]:o.date_created,[F.state]:'pago_total',[F.channel]:'Otros',
+  [F.date]:o.date_created,[F.state]:shipment?.status==='delivered'?'entregado':'pago_total',[F.channel]:'Otros',
+  [F.category]:'Por encargo',[F.follow]:'Verificar si ya se compró al proveedor y completar seguimiento.',
   [F.detail]:'Mercado Libre | AMADO_VINTAGE | Venta '+id(o.id),
   [F.price]:o.total_amount,[F.payment]:'Mercado Pago',[F.seen]:false,
   [F.notes]:'Venta importada por API. Importe total de la orden en UYU; no es el neto liquidado. Pago del cliente confirmado; compra al proveedor NO confirmada.\nDetalle: https://www.mercadolibre.com.uy/ventas/'+id(o.id)+'/detalle\n'+o.order_items.map(i=>'Publicación '+clean(i.item?.id)+' | cantidad '+i.quantity+' | precio unitario '+i.unit_price).join('\n')
  };
 }
-export async function syncSales({ml,at,real=false,start=START,now=()=>new Date().toISOString()}) {
- const stats={read:0,created:0,updated:0,notesWritten:0,unchanged:0,aliases:0,errors:0};
+export async function syncSales({ml,at,real=false,start=START,now=()=>new Date().toISOString(),wait=ms=>new Promise(r=>setTimeout(r,ms))}) {
+ const stats={read:0,created:0,updated:0,notesWritten:0,unchanged:0,aliases:0,skippedStock:0,skippedNotBook:0,errors:0};
  const me=await ml.get('/users/me');
  if(String(me.id)!==SELLER||me.site_id!=='MLU')throw fail('token_no_es_vintage');
  const rows=await at.list();
@@ -119,6 +140,10 @@ export async function syncSales({ml,at,real=false,start=START,now=()=>new Date()
    const o=orderCache.get(orderId)||validateOrder(await ml.get('/orders/'+orderId),orderId);
    stats.read++;
    if(!row && (o.status!=='paid'||Date.parse(o.date_created)<Date.parse(start)))continue;
+   if(!row){
+    const kind=await classifyOrder(o,ml);
+    if(kind!=='demand'){stats[kind==='stock'?'skippedStock':'skippedNotBook']++;continue;}
+   }
    let shipment=null;
    if(o.shipping?.id)shipment=await ml.get('/shipments/'+id(o.shipping.id));
    const incoming=importedFields(o,shipment);
@@ -143,7 +168,14 @@ export async function syncSales({ml,at,real=false,start=START,now=()=>new Date()
     await ml.write(old?'PUT':'POST',old?target+'/'+encodeURIComponent(old.id):target,{note:desired});
     stats.notesWritten++;
    }else stats.unchanged++;
-   const confirmed=unpackNotes(await ml.get(target)).filter(n=>n.note.startsWith('[AMADO '+orderId+']'));
+   let confirmed;
+   // ML can acknowledge a note before its GET is consistent. Retry reads only.
+   for(const delay of [0,1000,2000,4000,8000]){
+    if(delay)await wait(delay);
+    confirmed=unpackNotes(await ml.get(target)).filter(n=>n.note.startsWith('[AMADO '+orderId+']'));
+    if(confirmed.length===1&&confirmed[0].note===desired)break;
+    if(confirmed.length>1)throw fail('notas_duplicadas_revisar');
+   }
    if(confirmed.length!==1||confirmed[0].note!==desired)throw fail('nota_no_confirmada');
    // Detect a human edit during the API call; next run sends the new content.
    const latest=await at.get(row.id);
