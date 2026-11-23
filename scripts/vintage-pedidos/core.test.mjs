@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {F,SELLER,buildSummary,selectNote,syncSales,noteTarget,unpackNotes,validateOrder} from './core.mjs';
+import {F,SELLER,buildSummary,selectNote,syncSales,noteTarget,unpackNotes,validateOrder,classifyOrder} from './core.mjs';
 const oid='2000000000000001';
 const order=()=>({id:oid,seller:{id:SELLER},currency_id:'UYU',status:'paid',date_created:'2026-11-22T16:00:00Z',total_amount:2400,buyer:{first_name:'Test'},order_items:[{item:{id:'MLU0000001',title:'Libro de prueba'},quantity:2,unit_price:1200}],shipping:{id:'1234'},pack_id:'9876'});
 function fixture({rows=[],orders=[order()],searchIds=orders.map(o=>o.id),notes=[],postTimeout=false}={}){
@@ -15,6 +15,7 @@ function fixture({rows=[],orders=[order()],searchIds=orders.map(o=>o.id),notes=[
   get:async path=>{
    if(path==='/users/me')return {id:SELLER,site_id:'MLU'};
    if(path.endsWith('/notes'))return [{results:structuredClone(listNotes)}];
+   if(path.startsWith('/items/'))return {id:path.split('/').pop(),seller_id:SELLER,domain_id:'MLU-BOOKS',sale_terms:[{id:'MANUFACTURING_TIME',value_name:'18 días'}]};
    if(path.startsWith('/shipments/'))return {status:'ready_to_ship',substatus:'printed'};
    const o=orders.find(x=>'/orders/'+x.id===path);if(!o)throw Object.assign(new Error(),{code:'ml_http_404'});return structuredClone(o);
   },
@@ -114,4 +115,27 @@ test('ambiguous email pack fails before any mutation',async()=>{
  const second={...order(),id:'2000000000000002'};
  const t=fixture({orders:[order(),second],rows:[{id:'recTest',fields:{[F.id]:'9876'}}]});
  await assert.rejects(syncSales({...t,real:true}),/pack_email_con_varias_ordenes_revisar/);assert.equal(t.writes.length,0);
+});
+
+test('stock books and non-books do not create orders or notes',async()=>{
+ for(const [domain,terms,counter] of [['MLU-BOOKS',[],'skippedStock'],['MLU-BRACELETS',[{id:'MANUFACTURING_TIME',value_name:'18 días'}],'skippedNotBook']]){
+  const t=fixture(),get=t.ml.get;
+  t.ml.get=async p=>p.startsWith('/items/')?{id:p.split('/').pop(),seller_id:SELLER,domain_id:domain,sale_terms:terms}:get(p);
+  const s=await syncSales({...t,real:true});assert.equal(s[counter],1);assert.equal(t.writes.length,0);
+ }
+});
+test('unknown item identity fails before writes',async()=>{
+ const t=fixture(),get=t.ml.get;t.ml.get=async p=>p.startsWith('/items/')?{id:p.split('/').pop(),seller_id:'other'}:get(p);
+ const s=await syncSales({...t,real:true});assert.equal(s.errors,1);assert.equal(t.writes.length,0);
+});
+test('historical delivered orders are not reopened as pending',async()=>{
+ const t=fixture(),get=t.ml.get;t.ml.get=async p=>p.startsWith('/shipments/')?{status:'delivered'}:get(p);
+ await syncSales({...t,real:true});assert.equal(t.records[0].fields[F.state],'entregado');
+ assert.equal(t.records[0].fields[F.category],'Por encargo');
+});
+test('delayed note visibility retries reads without another POST',async()=>{
+ const t=fixture(),get=t.ml.get;let hidden=2,waits=0;
+ t.ml.get=async p=>{if(p.endsWith('/notes')&&t.listNotes.length&&hidden-->0)return [];return get(p);};
+ const s=await syncSales({...t,real:true,wait:async()=>{waits++;}});
+ assert.equal(s.errors,0);assert.equal(waits,2);assert.equal(t.writes.filter(w=>w[0]==='POST').length,1);
 });

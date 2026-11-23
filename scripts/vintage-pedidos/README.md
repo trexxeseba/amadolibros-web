@@ -1,7 +1,8 @@
 # Seguimiento de ventas Vintage
 
-Importa ventas pagadas de AMADO_VINTAGE desde el 22/11/2026 (hora de Uruguay)
-en PEDIDOS AMADO LIBROS. Las siguientes corridas releen todas las ventas desde
+Importa ventas pagadas de AMADO_VINTAGE desde el 09/11/2026 (hora de Uruguay)
+en PEDIDOS AMADO LIBROS. La ampliación al 09/11 fue solicitada por Seba el 22/11 para cubrir los últimos 14 días calendario.
+Solo se crean órdenes de libros (domain_id MLU-BOOKS) con MANUFACTURING_TIME positivo. Las filas ya vinculadas siguen actualizándose. Las ventas entregadas se crean como entregado; los artículos de stock y otras categorías se cuentan y excluyen. Las siguientes corridas releen todas las ventas desde
 ese inicio y todas las filas ya vinculadas, incluidas las antiguas, para recuperar
 interrupciones y actualizar cancelaciones/envíos. Si se alcanza un límite de
 paginación, la corrida falla explícitamente en lugar de omitir ventas.
