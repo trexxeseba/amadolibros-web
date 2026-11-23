@@ -440,7 +440,8 @@ export async function competitionByIsbn(db, isbns, { tolerarFotoDeAyer = false }
     }
     const rel = ownPrice && minPrice ? ownPrice / minPrice : null;
     const ref = `del más barato con entrega inmediata${ownRow ? (Number(ownRow.free_shipping) ? ' con envío gratis' : ' sin envío gratis') : ''}`;
-    if (rel && rel >= 1.15) avisos.push({ tipo: 'precio_arriba', texto: `Tu precio (${money(ownPrice)}) está ${Math.round((rel - 1) * 100)}% arriba ${ref} (${money(minPrice)}).` });
+    const barato = minPrice == null ? null : comparables.find(r => r.price === minPrice);
+    if (rel && rel >= 1.15) avisos.push({ tipo: 'precio_arriba', tuPrecio: ownPrice, minPrecio: minPrice, pct: Math.round((rel - 1) * 100), vendedor: barato ? name(barato.seller_id) : null, texto: `Tu precio (${money(ownPrice)}) está ${Math.round((rel - 1) * 100)}% arriba ${ref} (${money(minPrice)}).` });
     if (rel && rel <= 0.9) avisos.push({ tipo: 'precio_abajo', texto: `Tu precio (${money(ownPrice)}) está ${Math.round((1 - rel) * 100)}% abajo ${ref} (${money(minPrice)}): podrías estar regalando margen.` });
     out.set(t.isbn, {
       catalog_product_id: t.catalog_product_id, foto: dia, foto_anterior: prevOk ? diaPrev : null, foto_vieja: fotoVieja,
@@ -457,7 +458,9 @@ export async function competitionByIsbn(db, isbns, { tolerarFotoDeAyer = false }
 }
 
 // Eventos del día en todos los productos vigilados (para el panel, el correo y GPT).
-export async function competitionEvents(db, { limit = 30 } = {}) {
+// `enteros`: tipos de aviso que se devuelven completos (sin el corte de `limit`),
+// para quien necesita todos los de un tipo aunque haya muchos de los otros.
+export async function competitionEvents(db, { limit = 30, enteros = [] } = {}) {
   let targets;
   try { targets = (await db.prepare('SELECT isbn FROM comp_targets ORDER BY priority DESC').all()).results; } catch { return { foto: null, eventos: [], vigilados: 0 }; }
   const facts = await competitionByIsbn(db, targets.map(t => t.isbn));
@@ -471,7 +474,8 @@ export async function competitionEvents(db, { limit = 30 } = {}) {
   eventos.sort((a, b) => order.indexOf(a.tipo) - order.indexOf(b.tipo));
   const foto = [...facts.values()].reduce((m, f) => (f.foto > (m ?? '') ? f.foto : m), null);
   const porTipo = eventos.reduce((m, e) => (m[e.tipo] = (m[e.tipo] ?? 0) + 1, m), {});
-  return { foto, vigilados: targets.length, por_tipo: porTipo, eventos: eventos.slice(0, limit) };
+  return { foto, vigilados: targets.length, por_tipo: porTipo, eventos: eventos.slice(0, limit),
+    enteros: Object.fromEntries(enteros.map(t => [t, eventos.filter(e => e.tipo === t)])) };
 }
 
 // Cobertura de la vigilancia: de los productos vigilados, cuántos tienen una foto

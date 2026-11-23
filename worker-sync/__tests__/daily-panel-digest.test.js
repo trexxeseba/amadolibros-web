@@ -208,3 +208,16 @@ test('con DAILY_BRUJULA_TO salen dos correos: el del equipo sin Brújula ni mont
   assert.doesNotMatch(equipo.text + equipo.html, /Brújula|BRÚJULA|9\.800|Costo/);
   assert.match(equipo.text, /Ventas en Mercado Libre: 4\n/);
 });
+
+test('"Estás perdiendo estas ventas": lista los libros con stock donde tu precio es superior, sólo en el correo del dueño', () => {
+  const pierde = { total: 37, lista: [{ isbn: '9788408259442', title: 'Libro <caro>', tuPrecio: 2300, minPrecio: 1754, pct: 31, vendedor: 'EL-YELMO-LIBROS', stock: 2 }] };
+  const base = { toShip: [], unpaid: [], soldCount: 0, soldTotal: 0, createdCount: 0, pierde };
+  const { text, html } = buildDigestEmail(base);
+  assert.match(text, /RESUMEN: Perdés por precio: 37/);
+  assert.match(text, /SEBA, ESTÁS PERDIENDO ESTAS VENTAS: TU PRECIO ES SUPERIOR \(1 DE 37; TODOS EN EL PANEL\)/);
+  assert.match(text, /- Libro <caro>: Tu precio \$ 2\.300 · EL-YELMO-LIBROS lo tiene con entrega inmediata a \$ 1\.754 · estás 31% arriba · para igualarlo bajá \$ 546 · tenés 2 en stock/);
+  assert.match(html, /Seba, estás perdiendo estas ventas: tu precio es superior/);
+  assert.match(html, /Libro &lt;caro&gt;/);
+  const equipo = buildDigestEmail(base, { equipo: true });
+  assert.doesNotMatch(equipo.text + equipo.html, /perdiendo|2\.300/i);
+});
