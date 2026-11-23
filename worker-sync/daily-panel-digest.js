@@ -174,13 +174,16 @@ export function clasificarReposicion(b) {
       if (vistos.has(id)) continue;
       vistos.add(id);
       const fila = { ...r, origen: ORIGEN[key] };
-      if (d.pedido === 'si') { out.enCamino.push(fila); continue; }
-      if (d.competencia === 'si') {
+      if (d.pedido === 'si') { out.enCamino.push({ ...fila, motivo: 'Ya está pedido: no lo pidas de nuevo.' }); continue; }
+      // Un competidor más caro que tu precio no te saca la venta: se revisa, no se descarta.
+      const masCaro = d.competencia === 'si' && d.competidorMin && d.precio && d.competidorMin > d.precio;
+      if (d.competencia === 'si' && !masCaro) {
         out.noReponer.push({ ...fila, motivo: `Hay competencia con entrega inmediata${d.competidorMin ? ` desde ${money(d.competidorMin)}` : ''}: reponerlo inmoviliza capital.` });
         continue;
       }
       const motivos = [];
       if (d.pedido === 'sin_verificar') motivos.push('confirmá que no esté pedido');
+      if (masCaro) motivos.push(`otro lo tiene con entrega inmediata, pero más caro (${money(d.competidorMin)} contra tu ${money(d.precio)})`);
       if (d.competencia === 'sin_dato') motivos.push('sin dato de competencia, mirá la ficha en Mercado Libre');
       if (d.pocoVendido) motivos.push(`vendió ${d.u365} en 12 meses, decidí vos si vale reponerlo`);
       if (motivos.length) out.revisar.push({ ...fila, motivo: `Antes de pedir: ${motivos.join('; ')}.` });

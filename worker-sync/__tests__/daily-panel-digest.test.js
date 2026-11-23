@@ -221,3 +221,13 @@ test('"Estás perdiendo estas ventas": lista los libros con stock donde tu preci
   const equipo = buildDigestEmail(base, { equipo: true });
   assert.doesNotMatch(equipo.text + equipo.html, /perdiendo|2\.300/i);
 });
+
+test('un competidor más caro que tu precio va a "Revisar", no a "No reponer"; y los ya pedidos lo dicen', () => {
+  const g = clasificarReposicion({ reponer: [{ isbn: '7', title: 'Competidor caro', detalle: 'x', datos: datos({ precio: 2482, competencia: 'si', competidorMin: 3142 }) }],
+    pedidos: [{ isbn: '6', title: 'En camino', detalle: 'x', datos: datos({ pedido: 'si' }) }] });
+  assert.deepEqual(g.noReponer, []);
+  assert.match(g.revisar[0].motivo, /más caro \(\$ 3\.142 contra tu \$ 2\.482\)/);
+  assert.equal(g.enCamino[0].motivo, 'Ya está pedido: no lo pidas de nuevo.');
+  const { text, html } = buildDigestEmail({ toShip: [], unpaid: [], soldCount: 0, soldTotal: 0, createdCount: 0, brujula: BRUJULA });
+  assert.doesNotMatch(text + html, /undefined/);
+});
