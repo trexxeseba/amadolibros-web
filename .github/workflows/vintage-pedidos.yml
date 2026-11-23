@@ -1,0 +1,54 @@
+name: Vintage pedidos y notas
+on:
+  pull_request:
+    paths:
+      - 'scripts/vintage-pedidos/**'
+      - '.github/workflows/vintage-pedidos.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/vintage-pedidos/**'
+      - '.github/workflows/vintage-pedidos.yml'
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      real:
+        description: 'Sincronizar ventas y notas (false = solo comprobar)'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: vintage-pedidos-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests de duplicados y preservación de notas
+        run: node --test scripts/vintage-pedidos/core.test.mjs
+      - name: Consultar y sincronizar
+        env:
+          AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PAUSA: ${{ vars.VINTAGE_PEDIDOS_PAUSA }}
+          REAL: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'push' || inputs.real == true) }}
+        shell: bash
+        run: |
+          if [ "$PAUSA" = "true" ]; then echo "Sincronización pausada"; exit 0; fi
+          if [ "$REAL" = "true" ]; then
+            node scripts/vintage-pedidos/run.mjs --real
+          else
+            node scripts/vintage-pedidos/run.mjs
+          fi
