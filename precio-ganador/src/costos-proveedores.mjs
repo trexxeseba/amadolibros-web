@@ -1,4 +1,4 @@
-// Costos de proveedores que no están en la lista de SBS (Arnoia; Celesa cuando esté).
+// Costos de proveedores que no están en la lista de SBS (Arnoia y Celesa).
 //
 // Las listas con el costo por libro se bajan con la sesión de Seba en el portal del
 // proveedor y se guardan en el repo PRIVADO (rama estado/precio-ganador, carpeta costos/):
@@ -43,6 +43,18 @@ export function cotizarDesdeCostos(lista, ean, politica, ahora = Date.now()) {
   const completo = quoteMercadoLibre({ ...fila }, pol);
   const piso = quoteMercadoLibre({ ...fila, competitor: { price: 1, at: ahora, days: pol.availabilityDays ?? null } }, pol);
   return { completo, piso_18: Number(piso?.competitive?.floor), disponible: l.disponible !== false };
+}
+
+// Entre varias listas (Arnoia, Celesa), la más barata que tenga el libro disponible; si en
+// ninguna está disponible, la más barata igual. Devuelve { proveedor, ...cotización } o null.
+export function mejorProveedor(listas, ean, politica, ahora = Date.now()) {
+  const opciones = Object.entries(listas ?? {})
+    .map(([proveedor, lista]) => ({ proveedor, c: cotizarDesdeCostos(lista, ean, politica, ahora) }))
+    .filter(o => o.c && Number.isFinite(Number(o.c.completo?.cost)));
+  if (!opciones.length) return null;
+  const orden = (a, b) => (b.c.disponible - a.c.disponible) || (Number(a.c.completo.cost) - Number(b.c.completo.cost));
+  const [mejor] = opciones.sort(orden);
+  return { proveedor: mejor.proveedor, ...mejor.c, alternativas: Object.fromEntries(opciones.map(o => [o.proveedor, Math.round(Number(o.c.completo.cost))])) };
 }
 
 export const eanDeSku = (sku, prefijo) => new RegExp(`^${prefijo}-(\\d{10,13})$`).exec(String(sku ?? ''))?.[1] ?? null;
