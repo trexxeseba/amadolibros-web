@@ -57,3 +57,20 @@ test('publicaciones de Arnoia en catálogo: EAN por item_id', async () => {
   assert.equal(m.get('MLU1'), '9788432251436');
   assert.equal(arnoiaPorPublicacion(null).size, 0);
 });
+
+test('Arnoia y Celesa: gana el más barato disponible', async () => {
+  const { mejorProveedor } = await import('../src/costos-proveedores.mjs');
+  const ean = '9788423370504';
+  const arn = { ...lista, libros: { [ean]: { costo_eur: 17.96, iva: 4, peso_g: 500 } } };
+  const cel = { ...lista, libros: { [ean]: { costo_eur: 16.5, iva: 4, peso_g: 500 } } };
+  const m = mejorProveedor({ arnoia: arn, celesa: cel }, ean, politica, ahora);
+  assert.equal(m.proveedor, 'celesa');
+  assert.ok(m.alternativas.arnoia > m.alternativas.celesa);
+  // Celesa más barata pero sin stock: va Arnoia.
+  const celSin = { ...cel, libros: { [ean]: { ...cel.libros[ean], disponible: false } } };
+  assert.equal(mejorProveedor({ arnoia: arn, celesa: celSin }, ean, politica, ahora).proveedor, 'arnoia');
+  // Sólo en una lista.
+  assert.equal(mejorProveedor({ arnoia: arn }, ean, politica, ahora).proveedor, 'arnoia');
+  assert.equal(mejorProveedor({ arnoia: arn, celesa: cel }, '9789999999999', politica, ahora), null);
+  assert.equal(mejorProveedor({}, ean, politica, ahora), null);
+});
