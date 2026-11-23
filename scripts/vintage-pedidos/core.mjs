@@ -82,7 +82,7 @@ export function newFields(o,shipment) {
  };
 }
 export async function syncSales({ml,at,real=false,start=START,now=()=>new Date().toISOString()}) {
- const stats={read:0,created:0,updated:0,notesWritten:0,unchanged:0,errors:0};
+ const stats={read:0,created:0,updated:0,notesWritten:0,unchanged:0,aliases:0,errors:0};
  const me=await ml.get('/users/me');
  if(String(me.id)!==SELLER||me.site_id!=='MLU')throw fail('token_no_es_vintage');
  const rows=await at.list();
@@ -93,11 +93,30 @@ export async function syncSales({ml,at,real=false,start=START,now=()=>new Date()
   byId.set(key,r);
  }
  const discovered=await ml.search(start);
+ const orderCache=new Map(), packOrders=new Map();
+ for(const orderId of discovered.map(id)){
+  const o=validateOrder(await ml.get('/orders/'+orderId),orderId);
+  orderCache.set(orderId,o);
+  if(o.pack_id){const p=id(o.pack_id);packOrders.set(p,[...(packOrders.get(p)||[]),orderId]);}
+ }
+ // Email sale links can carry a pack ID. Resolve only an exact, unambiguous
+ // API relationship, before importing anything; never match by title/buyer.
+ for(const [key,row] of [...byId]){
+  if(orderCache.has(key)||!packOrders.has(key))continue;
+  const matches=packOrders.get(key);
+  if(matches.length!==1)throw fail('pack_email_con_varias_ordenes_revisar');
+  const canonical=matches[0];
+  if(byId.has(canonical))throw fail('airtable_pack_y_orden_duplicados');
+  const fields={[F.id]:canonical,[F.pack]:key};
+  if(real)await at.patch(row.id,fields);
+  row.fields={...row.fields,...fields};
+  byId.delete(key);byId.set(canonical,row);stats.aliases++;
+ }
  const ids=[...new Set([...byId.keys(),...discovered.map(id)])];
  for(const orderId of ids){
   let row=byId.get(orderId);
   try {
-   const o=validateOrder(await ml.get('/orders/'+orderId),orderId);
+   const o=orderCache.get(orderId)||validateOrder(await ml.get('/orders/'+orderId),orderId);
    stats.read++;
    if(!row && (o.status!=='paid'||Date.parse(o.date_created)<Date.parse(start)))continue;
    let shipment=null;

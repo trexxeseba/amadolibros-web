@@ -39,7 +39,7 @@ test('dry run never mutates either service',async()=>{
 });
 test('wrong seller blocks writes',async()=>{
  const o=order();o.seller.id='440298103';const t=fixture({orders:[o]});
- const s=await syncSales({...t,real:true});assert.equal(s.errors,1);assert.equal(t.writes.length,0);
+ await assert.rejects(syncSales({...t,real:true}),/venta_cuenta_incorrecta/);assert.equal(t.writes.length,0);
 });
 test('foreign token stops before Airtable',async()=>{
  const t=fixture();t.ml.get=async()=>({id:'440298103',site_id:'MLU'});
@@ -101,4 +101,17 @@ test('unsafe numerical order IDs are rejected',()=>{
 test('uncertain PUT with desired content is reconciled',()=>{
  const f={[F.id]:oid,[F.state]:'comprado',[F.noteId]:'noteOwned',[F.noteText]:'old', [F.follow]:'Actualizar'};
  assert.equal(selectNote([{id:'noteOwned',note:buildSummary(f,oid)}],f,oid).id,'noteOwned');
+});
+
+test('email pack alias resolves to canonical order without a duplicate',async()=>{
+ const t=fixture({rows:[{id:'recTest',fields:{[F.id]:'9876',[F.state]:'comprado',[F.notes]:'Preservar'}}]});
+ const dry=await syncSales(t);assert.equal(dry.aliases,1);assert.equal(dry.created,0);assert.equal(t.writes.length,0);
+ const real=await syncSales({...t,real:true});assert.equal(real.aliases,1);assert.equal(real.errors,0);
+ assert.equal(t.records.length,1);assert.equal(t.records[0].fields[F.id],oid);
+ assert.equal(t.records[0].fields[F.state],'comprado');assert.equal(t.records[0].fields[F.notes],'Preservar');
+});
+test('ambiguous email pack fails before any mutation',async()=>{
+ const second={...order(),id:'2000000000000002'};
+ const t=fixture({orders:[order(),second],rows:[{id:'recTest',fields:{[F.id]:'9876'}}]});
+ await assert.rejects(syncSales({...t,real:true}),/pack_email_con_varias_ordenes_revisar/);assert.equal(t.writes.length,0);
 });
