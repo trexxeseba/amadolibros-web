@@ -4,6 +4,8 @@ export const UMBRAL_CAMBIO_PRECIO = 0.05;
 // GLIC (tienda oficial; trae los libros de Amazon.com). Seba, 20/11/2026: republicar sus mismos libros a 3 % menos, calculado sobre el
 // PRECIO DE LISTA (el de antes del descuento: GLIC tenía descuentos de hasta 24 %), con un mínimo de $1.200.
 export const GLIC_SELLER_ID = 345281879;
+// NEIMOD (23/11/2026): otra tienda que trae de Estados Unidos. Misma regla que GLIC: 3 % menos que su precio de lista.
+export const NEIMOD_SELLER_ID = 156632201;
 export const DESCUENTO_SOBRE_GLIC = 0.03;
 export const PRECIO_MINIMO = 1200;
 export function precioDesdeLista(oferta, descuento = DESCUENTO_SOBRE_GLIC) {
