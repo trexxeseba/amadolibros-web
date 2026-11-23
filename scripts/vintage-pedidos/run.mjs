@@ -67,7 +67,7 @@ export function clients({env=process.env,fetcher=fetch,tokenSource}={}) {
  };
  const ml={
   get:path=>mlRequest('GET',path),
-  write:(method,path,body)=>mlRequest(method,path,body),
+  // Mercado Libre is read-only; seller notes belong to the team.
   reportError:code=>console.error('Sincronización: '+code),
   async search(start){
    if(!Number.isFinite(Date.parse(start))||Date.parse(start)<Date.parse(START))throw fail('fecha_inicio_invalida');
