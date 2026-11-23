@@ -80,7 +80,10 @@ COVER_ALLOW_GENERATIVE_UPSCALE = "false"
 IMAGE_VARIANTS_WRITE_ENABLED = "false"
 CANONICAL_ORIGIN = "https://www.amadolibros.com"
 # Correo diario del panel: quién lo recibe (separados por coma).
-DAILY_DIGEST_TO = "undiaes@gmail.com,adm@amadolibros.com"
+# Dos correos: el corto (pedidos, WhatsApp) al equipo y el completo (Brújula,
+# competencia, montos) sólo al dueño. Sin DAILY_BRUJULA_TO sale uno solo a todos.
+DAILY_DIGEST_TO = "adm@amadolibros.com"
+DAILY_BRUJULA_TO = "undiaes@gmail.com"
 # Vigía de la campaña de Amado Vintage (worker-sync/vintage-watch.js): cada 5
 # minutos lee D1 y avisa por ntfy si la PC dejó de publicar. Umbrales en minutos.
 # El tema de ntfy (VINTAGE_NOTIFY_URL) es un secret: quien conoce el nombre de

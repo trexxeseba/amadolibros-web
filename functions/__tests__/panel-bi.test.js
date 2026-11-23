@@ -405,3 +405,25 @@ test('la competencia que viene de la foto de ayer lo dice en la línea del corre
   assert.equal(mercadoCorto({ estado: 'solo', aPedido: 0, fotoVieja: true }), 'nadie más lo tiene con entrega inmediata en Uruguay (dato de ayer: la foto de hoy no llegó a completarse)');
   assert.equal(mercadoCorto({ estado: 'con_stock', nacionales: 1, min: 900, vendedor: 'Pocho', fotoVieja: false }), '1 lo tiene con entrega inmediata en Uruguay (Pocho a $ 900)');
 });
+
+test('los días se cuentan por calendario de Montevideo: una venta de ayer a la tarde no es "hoy"', async () => {
+  const { diasCalendario, datosReposicion } = await import('../_shared/panel-bi.js');
+  const now = Date.parse('2026-11-23T11:03:00Z'); // lunes 08:03 en Montevideo
+  assert.equal(diasCalendario(now, Date.parse('2026-11-22T20:00:00Z')), 1, 'domingo 17:00: menos de 24 horas, pero fue ayer');
+  assert.equal(diasCalendario(now, Date.parse('2026-11-23T04:00:00Z')), 0, 'lunes 01:00: hoy');
+  assert.equal(diasCalendario(now, Date.parse('2026-11-23T02:00:00Z')), 1, 'domingo 23:00 de Montevideo: ayer aunque en UTC ya sea lunes');
+  const b = { now, stock: 0, u30p: 2, u90p: 8, u365p: 19, u90: 8, ritmo: 19, pedir: 3, lastOwnMs: Date.parse('2026-11-22T20:00:00Z') };
+  assert.match(detalleReposicion({ ...b, mercado: { estado: 'solo' }, compras: { enCamino: 0, sinIsbn: 0, ultima: null } }), /última venta el 22\/11\/26 \(hace 1 día\)/);
+  const d = (compras, mercado, faltan = []) => datosReposicion({ ...b, compras, mercado }, faltan);
+  const comprada = { enCamino: 0, sinIsbn: 0, ultima: { fecha: '2026-09-08', dias: 75, cantidad: 2, proveedor: 'CELESA', vendidasDesde: 6 } };
+  assert.deepEqual([d(comprada, { estado: 'solo' }).pedido, d(comprada, { estado: 'solo' }).competencia], ['no', 'no']);
+  assert.equal(d({ ...comprada, enCamino: 3 }, { estado: 'solo' }).pedido, 'si');
+  assert.equal(d(undefined, { estado: 'solo' }).pedido, 'sin_verificar', 'no se pudieron leer las compras');
+  assert.equal(d({ enCamino: 0, sinIsbn: 0, ultima: null }, { estado: 'solo' }, ['CASASSA']).pedido, 'sin_verificar', 'sin compras y faltan proveedores por cargar');
+  assert.equal(d({ enCamino: 0, sinIsbn: 0, ultima: null }, { estado: 'solo' }, []).pedido, 'no');
+  assert.equal(d({ ...comprada, sinIsbn: 1 }, { estado: 'solo' }).pedido, 'sin_verificar', 'una compra sin ISBN podría ser este libro');
+  assert.equal(d(comprada, { estado: 'sostenible', nacionales: 1, min: 750 }).competencia, 'si');
+  assert.equal(d(comprada, { estado: 'sostenible', nacionales: 1, min: 750 }).competidorMin, 750);
+  assert.equal(d(comprada, { estado: 'sin_dato' }).competencia, 'sin_dato');
+  assert.doesNotMatch(d({ enCamino: 0, sinIsbn: 0, ultima: null }, { estado: 'solo' }, ['CASASSA']).compra, /faltan cargar/, 'la nota va una sola vez en el correo');
+});
