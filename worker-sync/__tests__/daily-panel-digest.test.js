@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildDigestEmail, montevideoDay, sendDailyPanelDigest } from '../daily-panel-digest.js';
+import { buildDigestEmail, clasificarReposicion, montevideoDay, sendDailyPanelDigest } from '../daily-panel-digest.js';
 
 const NOW = new Date('2026-10-08T11:03:00.000Z'); // 08:03 en Montevideo
 
@@ -22,7 +22,7 @@ test('el correo cuenta qué hay para hacer y no lleva teléfonos ni direcciones'
   assert.match(text, /PARA DESPACHAR \(1\)/);
   assert.match(text, /AL-1 · Ana · \$ 2\.160 · envío — https:\/\/www\.amadolibros\.com\/panel\/pedido\/AL-1/);
   assert.match(text, /SIN PAGAR — escribile al cliente \(1\)/);
-  assert.match(text, /Ventas cobradas: 2 \(\$ 4\.000\)/);
+  assert.match(text, /Ventas cobradas en la web: 2 \(\$ 4\.000\)/);
   assert.match(html, /Abrir el panel/);
   // El nombre lo escribe el comprador: nunca se inserta como HTML.
   assert.doesNotMatch(html, /<b>Beto/);
@@ -147,4 +147,64 @@ test('sección Brújula: "Volvieron a tener stock" y "Competidores que se quedar
   assert.match(html, /Volvieron a tener stock/);
   assert.match(html, /Relato &lt;del&gt; psicoanálisis/, 'el título va escapado');
   assert.doesNotMatch(text, /Conviene reponer|Ya pedidos/, 'los bloques vacíos no aparecen');
+});
+
+const datos = extra => ({ stock: 0, cobertura: null, ultimaVenta: '22/11/26', hace: 1, u30: 2, u90: 8, u365: 19, ritmo: 19, meses: [3, 2, 0, 2, 4, 2],
+  precio: 2638, pedir: 3, costo: 1097, proveedor: 'Celesa', compra: 'Última compra: 2 u. el 08/09/26 (Celesa), hace 75 días', mercado: 'Nadie más lo tiene con entrega inmediata en Uruguay',
+  pedido: 'no', competencia: 'no', competidorMin: null, pocoVendido: false, sinIdentidad: false, ...extra });
+const BRUJULA = {
+  reponer: [
+    { isbn: '1', title: 'Verificado', detalle: 'x', datos: datos() },
+    { isbn: '2', title: 'Con competencia', detalle: 'x', datos: datos({ competencia: 'si', competidorMin: 750 }) },
+    { isbn: '3', title: 'Sin compras cargadas', detalle: 'x', datos: datos({ pedido: 'sin_verificar', compra: 'Sin compras registradas' }) },
+  ],
+  ultimo: [{ isbn: '4', title: 'Sin dato de mercado', detalle: 'x', datos: datos({ stock: 1, cobertura: 17, competencia: 'sin_dato' }) }],
+  hoy: [{ isbn: '5', title: 'Una sola venta', detalle: 'x', datos: datos({ u365: 1, pocoVendido: true }) }, { isbn: '1', title: 'Verificado', detalle: 'x', datos: datos() }],
+  pedidos: [{ isbn: '6', title: 'En camino', detalle: 'x', datos: datos({ pedido: 'si' }) }],
+  subir: [], agotan: [], perdida: [], faltan: ['Casassa y Lorenzo', 'Amazon.com'], ultimoTotal: 28,
+};
+
+test('antes de decir "pedí": sólo va a "Para pedir hoy" lo que no está pedido y no tiene competencia con entrega inmediata', () => {
+  const g = clasificarReposicion(BRUJULA);
+  assert.deepEqual(g.pedir.map(r => r.title), ['Verificado'], 'una sola vez aunque esté en dos bloques');
+  assert.deepEqual(g.noReponer.map(r => r.title), ['Con competencia']);
+  assert.match(g.noReponer[0].motivo, /desde \$ 750/);
+  assert.deepEqual(g.revisar.map(r => r.title), ['Sin compras cargadas', 'Sin dato de mercado', 'Una sola venta']);
+  assert.match(g.revisar[0].motivo, /confirmá que no esté pedido/);
+  assert.match(g.revisar[1].motivo, /sin dato de competencia/);
+  assert.deepEqual(g.enCamino.map(r => r.title), ['En camino']);
+});
+
+test('el correo agrupa la reposición por chequeo y avisa una sola vez qué compras faltan cargar', () => {
+  const { text, html } = buildDigestEmail({ toShip: [], unpaid: [], soldCount: 0, soldTotal: 0, createdCount: 0, brujula: BRUJULA });
+  assert.match(text, /RESUMEN: Para pedir hoy: 1 · Revisar antes: 3 · No reponer: 1/);
+  assert.match(html, /Para pedir hoy: sin pedido y sin competencia con entrega inmediata \(1\)/);
+  assert.match(html, /No reponer por ahora: hay competencia con entrega inmediata \(1\)/);
+  assert.equal(html.split('Faltan cargar las compras de Casassa y Lorenzo, Amazon.com').length - 1, 1);
+  assert.match(html, /última venta el 22\/11\/26 \(ayer\)/);
+  assert.match(text, /En el panel están todos: 28 con último ejemplar/);
+});
+
+test('"Ayer" suma las ventas de Mercado Libre y la competencia sale con el título del libro', () => {
+  const base = { toShip: [], unpaid: [], soldCount: 0, soldTotal: 0, createdCount: 0, ml: { count: 4, total: 9800 },
+    competition: { eventos: [{ isbn: '9788415292739', title: 'El libro tibetano', texto: 'Perdiste el primer lugar del catálogo: para ganar, $ 1.068.' }] } };
+  const { text, html } = buildDigestEmail(base);
+  assert.match(text, /Ventas en Mercado Libre: 4 \(\$ 9\.800\)/);
+  assert.match(text, /- El libro tibetano \(9788415292739\): Perdiste el primer lugar/);
+  assert.match(html, /El libro tibetano/);
+});
+
+test('con DAILY_BRUJULA_TO salen dos correos: el del equipo sin Brújula ni montos, y el completo al dueño', async () => {
+  const env = { ...ENV(), DAILY_DIGEST_TO: 'equipo@x.com', DAILY_BRUJULA_TO: 'dueno@x.com' };
+  const calls = [];
+  const fetchFn = async (url, init) => { calls.push({ body: JSON.parse(init.body), headers: init.headers }); return { ok: true, status: 200 }; };
+  const r = await sendDailyPanelDigest(env, { now: NOW, fetchFn });
+  assert.equal(r.status, 'sent');
+  assert.equal(r.correos, 2);
+  assert.deepEqual(calls.map(c => c.body.to), [['equipo@x.com'], ['dueno@x.com']]);
+  assert.match(calls[1].body.subject, /^Brújula Amado —/);
+  assert.equal(calls[1].headers['Idempotency-Key'], 'panel-brujula/2026-10-08');
+  const equipo = buildDigestEmail({ toShip: [], unpaid: [], soldCount: 0, soldTotal: 0, createdCount: 0, brujula: BRUJULA, ml: { count: 4, total: 9800 } }, { equipo: true });
+  assert.doesNotMatch(equipo.text + equipo.html, /Brújula|BRÚJULA|9\.800|Costo/);
+  assert.match(equipo.text, /Ventas en Mercado Libre: 4\n/);
 });
