@@ -215,9 +215,9 @@ export default {
       }));
       return;
     }
-    // Correo diario del panel (08:03 Montevideo; el segundo disparo, una hora
-    // después, solo actúa si el primero no llegó a mandarlo).
-    if (event?.cron === '3 11 * * *' || event?.cron === '3 12 * * *') {
+    // Prepara el correo a las 19:55 de Montevideo; Resend lo entrega a las 20:00.
+    // Reintenta a las 19:58 solo si la primera preparación no fue aceptada.
+    if (event?.cron === '55 22 * * *' || event?.cron === '58 22 * * *') {
       ctx.waitUntil(sendDailyPanelDigest(env).then(result => {
         console.log('[panel digest]', JSON.stringify(result));
       }));
