@@ -52,7 +52,7 @@ detalle va a Airtable.
 
 ## Decisiones de Seba del 11/11/2026 (fila `direccion|decisiones-seba-2026-11-11`)
 
-- Tope de publicidad: $20.000 por mes calendario (`LIMITES.adsMensualMaxUyu`).
+- Tope de publicidad: $60.000 por mes calendario (`LIMITES.adsMensualMaxUyu`).
 - Reparto: Code toma por API las promociones por título, la selección de 50
   títulos con ventas y visitas y la lectura del gasto de Ads. El agente único de
   Cowork sigue con cupones, Ads por navegador y el aviso a Seba.
