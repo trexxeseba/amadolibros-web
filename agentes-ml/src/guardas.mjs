@@ -18,7 +18,7 @@
 //   - Interruptor general: deja todo en solo lectura.
 //
 // Decisiones de Seba del 11/11/2026 (fila direccion|decisiones-seba-2026-11-11):
-//   - Publicidad: tope de $20.000 por mes calendario (antes $30.000). Code sólo lo
+//   - Publicidad: tope de $60.000 por mes calendario (Seba, 24/11/2026; antes $20.000 y $30.000). Code sólo lo
 //     lee y avisa; los ajustes de Ads los hace el agente único por navegador.
 //   - Se mantiene la regla de cero escritura en Ads por API.
 //   - Un pedido expreso de Seba sobre un título puede saltar las exclusiones de
@@ -42,7 +42,7 @@ export const LIMITES = Object.freeze({
   stockMinimoParaPromo: 3,
   diasMinimosDesdeAlta: 90,
   stockMinimoTrasReservar: 3,
-  adsMensualMaxUyu: 20000,
+  adsMensualMaxUyu: 60000,
   adsAlertaPct: 80,
 });
 
