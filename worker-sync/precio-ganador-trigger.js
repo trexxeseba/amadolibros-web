@@ -1,3 +1,4 @@
+import { nextInternalEmailAt } from '../functions/_shared/internal-email-schedule.js';
 /**
  * worker-sync/precio-ganador-trigger.js
  *
@@ -73,7 +74,7 @@ async function alertar(env, fetcher, resultado) {
   try {
     const res = await fetcher('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(20000),
-      body: JSON.stringify({ from: env?.REPORT_EMAIL_FROM || 'Amado Libros <web@notificaciones.amadolibros.com>', to, subject: `ALARMA Precio Ganador: el Worker no pudo lanzar la corrida (${resultado.state})`,
+      body: JSON.stringify({ scheduled_at: nextInternalEmailAt(), from: env?.REPORT_EMAIL_FROM || 'Amado Libros <web@notificaciones.amadolibros.com>', to, subject: `ALARMA Precio Ganador: el Worker no pudo lanzar la corrida (${resultado.state})`,
         text: `El Worker de Cloudflare no pudo pedirle a GitHub que corra Precio Ganador.\nMotivo: ${resultado.detalle ?? resultado.state}.\nSi el cron de GitHub tampoco corre, lanzala a mano en Actions > Precio Ganador.` }),
     });
     return { ...resultado, alerta: res.ok ? 'enviada' : `resend_http_${res.status}` };

@@ -1,3 +1,4 @@
+import { nextInternalEmailAt } from '../../functions/_shared/internal-email-schedule.js';
 /**
  * Manda un informe por correo, vía Resend.
  *
@@ -126,6 +127,7 @@ export async function sendReportEmail({ subject, markdown, config, fetchFn = glo
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
+      scheduled_at: nextInternalEmailAt(),
       from: config.from,
       to: config.to,
       subject,

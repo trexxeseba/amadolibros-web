@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'worker-sync/**'
+      - 'functions/_shared/internal-email-schedule.js'
       - 'functions/_shared/cover-public-index.js'
       # El sync genera la cohorte de fichas ampliadas con este módulo.
       - 'functions/_shared/showcase-ranking.js'

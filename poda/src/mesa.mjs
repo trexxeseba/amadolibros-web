@@ -1,3 +1,4 @@
+import { nextInternalEmailAt } from '../../functions/_shared/internal-email-schedule.js';
 // Fila diaria de la poda en la mesa de decisiones (Airtable) y mail de respaldo.
 // El detalle con montos va SOLO acá y a D1: nunca a los logs de Actions (repo público).
 // Code nunca pone una fila en Aprobada ni en Rechazada.
@@ -55,7 +56,7 @@ export async function enviarMail({ asunto, texto, env = process.env, fetcher = (
   if (!apiKey || !to.length) return { ok: false, motivo: 'sin_credenciales' };
   const res = await fetcher('https://api.resend.com/emails', {
     method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(30000),
-    body: JSON.stringify({ from: env.REPORT_EMAIL_FROM || 'Amado Libros <web@notificaciones.amadolibros.com>', to, subject: asunto, text: texto }),
+    body: JSON.stringify({ scheduled_at: nextInternalEmailAt(), from: env.REPORT_EMAIL_FROM || 'Amado Libros <web@notificaciones.amadolibros.com>', to, subject: asunto, text: texto }),
   }).catch(() => null);
   return res?.ok ? { ok: true } : { ok: false, motivo: `resend_http_${res?.status ?? 'transporte'}` };
 }

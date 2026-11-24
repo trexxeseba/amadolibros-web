@@ -1,5 +1,6 @@
+import { nextInternalEmailAt } from '../functions/_shared/internal-email-schedule.js';
 /**
- * Correo diario del panel: cada mañana (08:00 en Montevideo) le llega a quien
+ * Correo diario del panel: cada noche (20:00 en Montevideo) le llega a quien
  * atiende la tienda lo que hay que hacer hoy, sin tener que abrir el panel
  * para enterarse. Es un resumen para ACTUAR:
  *
@@ -439,7 +440,7 @@ async function sendEmail({ apiKey, from, to, email, idempotencyKey }, fetchFn) {
     const response = await fetchFn(RESEND_ENDPOINT, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
-      body: JSON.stringify({ from, to, ...email }),
+      body: JSON.stringify({ scheduled_at: nextInternalEmailAt(), from, to, ...email }),
       signal: controller.signal,
     });
     return { ok: response.ok, status: response.status };
@@ -464,7 +465,7 @@ export async function sendDailyPanelDigest(env, { now = new Date(), fetchFn = gl
   const today = montevideoDay(now).date;
   const claimKey = `digest:panel:${today}`;
   // Una prueba manual no gasta ni libera la reserva del día: el correo real de
-  // las 08:03 sale igual.
+  // las 20:00 sale igual.
   const useClaim = Boolean(env.AMADO_KV) && !test;
   if (useClaim) {
     if (await env.AMADO_KV.get(claimKey)) return { status: 'skipped', reason: 'already_sent' };
