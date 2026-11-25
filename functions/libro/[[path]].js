@@ -1,6 +1,7 @@
 import { cleanBookDescription, cleanBookFormat } from '../_shared/book-display-cleanup.js';
 import { coverSources } from '../book-cover/[[path]].js';
 import { googleReadyImage, googleFutureReadyImage, mlImageIdentity } from '../_shared/image-source-policy.js';
+import { NON_BOOK_IMAGE_HASHES, isBookGalleryImage, cleanBookGallery } from '../_shared/book-gallery-policy.js';
 import { findPreviewCover } from '../_shared/preview-cover.js';
 /**
  * functions/libro/[[path]].js
@@ -91,24 +92,6 @@ function httpsImg(url) {
         .replace(/-I\.(jpg|jpeg|png|webp)(?=($|\?))/i, '-O.$1');
 }
 
-// Logos verificados visualmente: sus copias permanentes no son fotos del libro.
-const NON_BOOK_IMAGE_HASHES = new Set([
-    'eed924a9ecbe503f14c34dc6626aeff509374511ffcf20f06f522172f9797590',
-    '1965d41c371323ff00e38f74b691e0249ed0a941d279f99dadd4b2d016219152',
-    '2d52adbf9ce271d33c85b132334ce6f8e90a82bab65ebf9288294d47a54620c9',
-    '16f5d2a6eef31eaf1896c3d5dc5d81e2186b4abed238060423afae080fbb305f',
-    '0d03a12400a13808be27f64ab1ac5843adbb745628249007ddf59684dab040fa',
-]);
-
-function isBookGalleryImage(source) {
-    const path = String(source || '').split('?')[0];
-    const hash = path.split('/').pop().split('.')[0];
-    // Preview puede servir estas mismas imágenes verificadas sin copia por hash.
-    const verifiedLogoRoute = /\/book-cover\/MLU640785075\/cover-[45]\.jpg$/.test(path) ||
-        /\/book-cover\/MLU633445690\/cover-[567]\.jpg$/.test(path);
-    return !NON_BOOK_IMAGE_HASHES.has(hash) && !verifiedLogoRoute;
-}
-
 export function normalizeImages(item, previewCoverSrc = '') {
     const NON_BOOK_IMAGE_ASSETS = new Set([
         'D_768794-MLU78243849622_082024-O.jpg',
@@ -133,7 +116,7 @@ export function normalizeImages(item, previewCoverSrc = '') {
             const normalized = httpsImg(picture);
             const asset = normalized.split('/').pop()?.split('?')[0] || '';
             const identity = mlImageIdentity(normalized) || normalized;
-            if (!NON_BOOK_IMAGE_ASSETS.has(asset) && !duplicates.has(asset) && !seenAssets.has(identity)) {
+            if (!NON_BOOK_IMAGE_ASSETS.has(asset) && isBookGalleryImage(normalized) && !duplicates.has(asset) && !seenAssets.has(identity)) {
                 seenAssets.add(identity);
                 pictures.push(normalized);
             }
@@ -487,12 +470,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const originalSources = normalizeImages(item);
     const catalogSources = coverSources(item);
     const sourceImages = normalizeImages(item, previewCoverSrc);
-    const images       = (permanentSources || (isPreview
+    const images       = cleanBookGallery(permanentSources || (isPreview
         ? sourceImages
         : sourceImages.map((source, position) => {
             const catalogPosition = catalogSources.indexOf(originalSources[position]);
             return catalogPosition >= 0 ? bookCoverUrl(item.id, catalogPosition) : source;
-        }))).filter(isBookGalleryImage);
+        })));
     const img          = images[0] || '';
     const cartThumbnail = responsiveImage(img, {
         widths: [240],
@@ -1391,3 +1374,4 @@ export async function onRequest(context) {
         },
     });
 }
+

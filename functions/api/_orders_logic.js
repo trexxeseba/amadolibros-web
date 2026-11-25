@@ -4,6 +4,7 @@ export const SHIPPING_COST           = 250;
 export const FREE_SHIPPING_THRESHOLD = 1500;
 export const TRANSFER_FACTOR         = 0.88;
 import { transferProductsTotal as cappedTransferProductsTotal } from '../_shared/descuentos.js';
+import { contactValidation } from '../../shared/contact-validation.js';
 export const EXPIRY_MINUTES          = 60;
 export const MAX_BODY_BYTES          = 32 * 1024;
 export const MAX_ITEMS               = 20;
@@ -96,6 +97,7 @@ export function validateBody(body) {
   if (body.buyer.name.trim().length > MAX_NAME_LEN) return 'Nombre demasiado largo.';
   if (!isNonEmptyString(body.buyer.phone)) return 'Teléfono del comprador requerido.';
   if (body.buyer.phone.trim().length > MAX_PHONE_LEN) return 'Teléfono demasiado largo.';
+  if (!contactValidation.validPhone(body.buyer.phone)) return 'Ingresá un teléfono o WhatsApp válido, con código de país si es del exterior.';
   if (!normalizeBuyerEmail(body.buyer.email)) return 'Correo del comprador inválido.';
 
   if (body.delivery_type === 'shipping') {
@@ -485,3 +487,4 @@ export function generatePublicCode(now = new Date()) {
 export function transferProductsTotalForSnapshot(snapshotItems, now = new Date()) {
   return cappedTransferProductsTotal(snapshotItems, now);
 }
+
