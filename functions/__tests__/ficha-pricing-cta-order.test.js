@@ -257,7 +257,7 @@ test('datos básicos visibles fuera del desplegable y una sola ayuda al comprar'
 });
 
 test('la compra está antes de la tabla de datos sin ocultar ISBN, idioma ni condición', () => {
-    const html = renderPage(book({ language: 'Español' }), 'un-libro', false, '');
+    const html = renderPage(book({ bibliographic: { language: 'Español' } }), 'un-libro', false, '');
     const body = html.slice(html.indexOf('<main>'), html.indexOf('</main>'));
     const cart = body.indexOf('data-action="add-to-cart"');
     const essentials = body.indexOf('class="details book-essentials"');
