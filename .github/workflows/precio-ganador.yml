@@ -27,7 +27,7 @@ on:
       accion:
         description: 'correr = corrida normal (con auditoría) · auditar = sólo la auditoría, no cambia nada · restaurar = volver al precio original (todo, o sólo los IDs de abajo) · ventas = cruce de ventas, sólo lee · baratos = libros que ganamos muy por debajo del competidor, sólo lee · subir = aplica la lista de subidas aprobada por Seba (con prueba=true sólo lista) · inmediatos = libros más caros que un vendedor con entrega inmediata, sólo lee · cotizar = cotiza una muestra de Vintage con el cotizador (costo y margen), sólo lee · cotizar_todas = cotiza todas las que pierden la ficha, con el perfil de los rivales, sólo lee · sombra = modo sombra de Vintage sobre la última corrida (regla 18 % vs $400 con frenos), sólo lee'
         type: choice
-        options: [correr, auditar, restaurar, diagnosticar, ventas, baratos, subir, inmediatos, regla_inmediata, referencias, dormidas, cotizar, cotizar_todas, sombra]
+        options: [correr, auditar, restaurar, diagnosticar, ventas, baratos, subir, inmediatos, regla_inmediata, referencias, dormidas, top_visitas, cotizar, cotizar_todas, sombra]
         default: correr
       max_marcadas:
         description: 'Cortar al encontrar N marcadas (vacío = todas)'
@@ -206,6 +206,11 @@ jobs:
             node precio-ganador/src/sombra.mjs --filas estado/ultima/vintage-filas.json --estado estado/state --salida estado/sombra
             exit $?
           fi
+          if [ "$IN_ACCION" = "top_visitas" ]; then
+            # Publicaciones sin catálogo con stock, por visitas, para revisar en pantalla. Sólo lee.
+            node precio-ganador/src/top-visitas.mjs --cuenta libros --salida "estado/pruebas/$GITHUB_RUN_ID"
+            exit $?
+          fi
           if [ "$IN_ACCION" = "dormidas" ]; then
             # Publicaciones con stock, sin visitas y sin anuncio. Sólo lee.
             node precio-ganador/src/dormidas.mjs --cuenta libros --salida "estado/pruebas/$GITHUB_RUN_ID" --visitas 5
@@ -237,7 +242,7 @@ jobs:
       # todas las que el sistema bajó y la regla recalculada sobre las marcadas.
       # Si encuentra una discrepancia, el workflow falla y GitHub manda el mail.
       - name: Auditoría
-        if: success() && inputs.accion != 'restaurar' && inputs.accion != 'diagnosticar' && inputs.accion != 'ventas' && inputs.accion != 'baratos' && inputs.accion != 'subir' && inputs.accion != 'inmediatos' && inputs.accion != 'regla_inmediata' && inputs.accion != 'referencias' && inputs.accion != 'dormidas' && inputs.accion != 'cotizar' && inputs.accion != 'cotizar_todas' && inputs.accion != 'sombra'
+        if: success() && inputs.accion != 'restaurar' && inputs.accion != 'diagnosticar' && inputs.accion != 'ventas' && inputs.accion != 'baratos' && inputs.accion != 'subir' && inputs.accion != 'inmediatos' && inputs.accion != 'regla_inmediata' && inputs.accion != 'referencias' && inputs.accion != 'dormidas' && inputs.accion != 'top_visitas' && inputs.accion != 'cotizar' && inputs.accion != 'cotizar_todas' && inputs.accion != 'sombra'
         shell: bash
         env:
           CUENTA: ${{ matrix.cuenta }}
