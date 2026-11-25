@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { purchaseTrustHtml } from '../../../shared/purchase-trust.js';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import WAFloat from '../components/WAFloat.astro';
@@ -163,6 +164,7 @@ const jsonLd = {
           Guardamos el pedido con un código para seguirlo, sin pedirte datos personales. Al continuar se abre WhatsApp con la información ordenada para que podamos buscarlo.
         </p>
       </form>
+      <Fragment set:html={purchaseTrustHtml()} />
     </div>
   </main>
   <Footer />

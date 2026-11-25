@@ -60,6 +60,7 @@ import {
 import { isPausedProductInSeoCohort } from '../_shared/paused-seo-cohort.js';
 import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../../shared/delivery-badge.js';
 import { googleReviewsHtml } from '../../shared/google-reviews.js';
+import { purchaseTrustHtml } from '../../shared/purchase-trust.js';
 import { pruebaSocialHtml } from '../../shared/prueba-social.js';
 
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
@@ -712,16 +713,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       <span>Podemos intentar conseguirlo por encargo. Consultanos y verificamos disponibilidad, edición y precio.</span>
     </div>`;
 
-    const trustHtml = inStock ? `<section class="trust-box" aria-label="Comprá con confianza">
-      <h2>Comprá con tranquilidad</h2>
-      <ul>
-        <li>Pago protegido con Mercado Pago</li>
-        <li>Somos Mercado Líder en Mercado Libre Uruguay</li>
-        <li>Retiro coordinado en Ciudad Vieja, con confirmación por WhatsApp (<a href="/contacto/">ver cómo llegar</a>)</li>
-        <li>Si no te convence, tenés 5 días hábiles para devolverlo (<a href="/devoluciones/">ver devoluciones</a>)</li>
-        <li>Te contestamos por WhatsApp y armamos el pedido con vos</li>
-      </ul>
-    </section>` : '';
+    const trustHtml = inStock ? purchaseTrustHtml({ compact: true }) : '';
 
     const actionHtml = sellableInCheckout
         ? `<button

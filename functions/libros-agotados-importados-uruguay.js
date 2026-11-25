@@ -7,6 +7,7 @@ import { BRAND, CONTACT, FOOTER_LINKS, faviconHeadHtml } from './_shared/brand.j
 import { SEO_SPECIALTIES, specialtyPath } from './_shared/seo-specialties.js';
 import { WHATSAPP_NUMBER } from '../shared/whatsapp-messages.js';
 import { googleRatingHtml, googleReviewsHtml } from '../shared/google-reviews.js';
+import { purchaseTrustHtml } from '../shared/purchase-trust.js';
 
 const PATH = '/libros-agotados-importados-uruguay';
 const TITLE = 'Libros agotados e importados en Uruguay | Amado Libros';
@@ -345,6 +346,8 @@ export async function onRequest({ request } = {}) {
         <li><a href="/contacto/"><span aria-hidden="true">✦</span> Retiro coordinado en Ciudad Vieja</a></li>
       </ul>
     </div>
+
+    <div class="wrap">${purchaseTrustHtml()}</div>
 
     <section class="wrap section" aria-label="Opiniones de clientes">
       ${googleReviewsHtml({ limit: 3, columns: 3, animate: false })}
