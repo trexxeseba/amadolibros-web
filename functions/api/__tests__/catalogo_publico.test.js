@@ -57,3 +57,35 @@ test('es de lectura: rechaza escrituras sin consultar fuentes; admite OPTIONS y 
     assert.equal(response.status, 200);
     assert.equal(await response.text(), '');
 });
+
+test('el handler real conserva la pareja versionada de activas y pausadas', async () => {
+    const originalFetch = globalThis.fetch, originalCaches = globalThis.caches;
+    const root = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev';
+    const descriptor = { version: '20261119114156236',
+        index_key: 'catalog/versions/20261119114156236/index.json',
+        active_index_key: 'catalog/versions/20261119114156236/active-index.json',
+        block_prefix: 'catalog/versions/20261119114156236', block_count: 128 };
+    const objects = new Map([
+        [root + '/catalog/manifest.json', { schema_version: 1, current: descriptor }],
+        [root + '/' + descriptor.active_index_key, { schema_version: 1,
+            fields: ['id', 'title', 'author', 'isbn', 'image', 'price', 'available_quantity'],
+            derived_fields: { slug: 'slugify-v1', status: 'active' },
+            items: [['MLU1', 'Disponible', '', '', '', 1500, 1]] }],
+        [root + '/' + descriptor.index_key, { schema_version: 1,
+            fields: ['id', 'title', 'author', 'isbn', 'image'], block_count: 128,
+            derived_fields: { slug: 'slugify-v1', status: 'paused', block: 'numeric-id-mod-block-count' },
+            items: [['MLU2', 'Por encargo', '', '', '']] }],
+    ]);
+    globalThis.caches = { default: { async match() { return null; }, async put() {} } };
+    globalThis.fetch = async url => objects.has(String(url))
+        ? Response.json(objects.get(String(url))) : new Response('not found', { status: 404 });
+    try {
+        const context = ctx(); context.env.WEB_PROMO_OFF = '1'; context.waitUntil = () => {};
+        const response = await createPublicCatalogHandler()(context);
+        assert.equal(response.status, 200);
+        const data = await response.json();
+        assert.equal(data.catalog_version, descriptor.version);
+        assert.deepEqual(data.counts, { in_stock: 1, on_request: 1 });
+        assert.equal(data.complete, true);
+    } finally { globalThis.fetch = originalFetch; globalThis.caches = originalCaches; }
+});

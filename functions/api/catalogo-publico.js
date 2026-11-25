@@ -1,9 +1,10 @@
-import { BASE, fetchCheckoutCatalog, fetchPausedIndex } from '../_shared/catalog.js';
+import { BASE, fetchActiveIndex, fetchPausedIndex } from '../_shared/catalog.js';
 import { slugify } from '../_shared/slug.js';
 import { promoAwareCacheControl } from '../_shared/web-promo.js';
 
-// Public catalog only. Use the same versioned stock/prices as checkout and
-// explicitly map fields so future internal catalog fields cannot leak here.
+// Snapshot público de activas y pausadas: ambos índices deben pertenecer a
+// la misma publicación versionada. Checkout valida contra el catálogo vivo.
+// Los campos se mapean explícitamente para no exponer datos internos.
 export function publicCatalogItem(item, availability) {
     if (!item || !/^MLU\d+$/.test(String(item.id)) || !String(item.title || '').trim()) return null;
     const available = availability === 'in_stock';
@@ -23,7 +24,7 @@ export function publicCatalogItem(item, availability) {
     };
 }
 
-export function createPublicCatalogHandler({ loadActive = fetchCheckoutCatalog, loadPaused = fetchPausedIndex } = {}) {
+export function createPublicCatalogHandler({ loadActive = fetchActiveIndex, loadPaused = fetchPausedIndex } = {}) {
     return async context => {
         const headers = {
             'Content-Type': 'application/json; charset=utf-8',

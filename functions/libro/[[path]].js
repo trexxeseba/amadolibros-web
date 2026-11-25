@@ -1,5 +1,6 @@
+import { cleanBookDescription, cleanBookFormat } from '../_shared/book-display-cleanup.js';
 import { coverSources } from '../book-cover/[[path]].js';
-import { googleReadyImage, googleFutureReadyImage } from '../_shared/image-source-policy.js';
+import { googleReadyImage, googleFutureReadyImage, mlImageIdentity } from '../_shared/image-source-policy.js';
 import { findPreviewCover } from '../_shared/preview-cover.js';
 /**
  * functions/libro/[[path]].js
@@ -90,19 +91,52 @@ function httpsImg(url) {
         .replace(/-I\.(jpg|jpeg|png|webp)(?=($|\?))/i, '-O.$1');
 }
 
+// Logos verificados visualmente: sus copias permanentes no son fotos del libro.
+const NON_BOOK_IMAGE_HASHES = new Set([
+    'eed924a9ecbe503f14c34dc6626aeff509374511ffcf20f06f522172f9797590',
+    '1965d41c371323ff00e38f74b691e0249ed0a941d279f99dadd4b2d016219152',
+    '2d52adbf9ce271d33c85b132334ce6f8e90a82bab65ebf9288294d47a54620c9',
+    '16f5d2a6eef31eaf1896c3d5dc5d81e2186b4abed238060423afae080fbb305f',
+    '0d03a12400a13808be27f64ab1ac5843adbb745628249007ddf59684dab040fa',
+]);
+
+function isBookGalleryImage(source) {
+    const path = String(source || '').split('?')[0];
+    const hash = path.split('/').pop().split('.')[0];
+    // Preview puede servir estas mismas imágenes verificadas sin copia por hash.
+    const verifiedLogoRoute = /\/book-cover\/MLU640785075\/cover-[45]\.jpg$/.test(path) ||
+        /\/book-cover\/MLU633445690\/cover-[567]\.jpg$/.test(path);
+    return !NON_BOOK_IMAGE_HASHES.has(hash) && !verifiedLogoRoute;
+}
+
 export function normalizeImages(item, previewCoverSrc = '') {
     const NON_BOOK_IMAGE_ASSETS = new Set([
         'D_768794-MLU78243849622_082024-O.jpg',
         'D_823347-MLU78243898758_082024-O.jpg',
+        // Carteles de entrega, embalaje y logo verificados el 25/11/2026.
+        'D_884143-MLU71032024881_082023-O.jpg',
+        'D_838339-MLU70995270338_082023-O.jpg',
+        'D_779639-MLU70995173764_082023-O.jpg',
     ]);
     const pictures = [];
+    // Dos copias visualmente idénticas de portada/interior, con otros IDs ML.
+    // Se excluyen solo en esta ficha; no se eliminan fotos de otros libros.
+    const duplicates = item.id === 'MLU633445690' ? new Set([
+        'D_NQ_NP_952436-MLA99508947388_112025-F.jpg',
+        'D_NQ_NP_785404-MLA99992928035_112025-F.jpg',
+    ]) : new Set();
+    const seenAssets = new Set();
 
     if (Array.isArray(item.pictures)) {
         for (const picture of item.pictures) {
             if (typeof picture !== 'string') continue;
             const normalized = httpsImg(picture);
             const asset = normalized.split('/').pop()?.split('?')[0] || '';
-            if (!NON_BOOK_IMAGE_ASSETS.has(asset)) pictures.push(normalized);
+            const identity = mlImageIdentity(normalized) || normalized;
+            if (!NON_BOOK_IMAGE_ASSETS.has(asset) && !duplicates.has(asset) && !seenAssets.has(identity)) {
+                seenAssets.add(identity);
+                pictures.push(normalized);
+            }
         }
     }
 
@@ -453,12 +487,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const originalSources = normalizeImages(item);
     const catalogSources = coverSources(item);
     const sourceImages = normalizeImages(item, previewCoverSrc);
-    const images       = permanentSources || (isPreview
+    const images       = (permanentSources || (isPreview
         ? sourceImages
         : sourceImages.map((source, position) => {
             const catalogPosition = catalogSources.indexOf(originalSources[position]);
             return catalogPosition >= 0 ? bookCoverUrl(item.id, catalogPosition) : source;
-        }));
+        }))).filter(isBookGalleryImage);
     const img          = images[0] || '';
     const cartThumbnail = responsiveImage(img, {
         widths: [240],
@@ -489,7 +523,11 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         ? item.bibliographic
         : {};
     const editorialHtml = renderEditorialEnrichment(editorial);
-    const description = item.description ? String(item.description).trim() : '';
+    const rawDescription = cleanBookDescription(item.description);
+    const description = item.id === 'MLU640785075'
+        ? rawDescription.replace('universidadá Morrieá Schwartz', 'universidad, Morrie Schwartz')
+            .replace(/\bdespues\b/g, 'después').replace(/\btraves\b/g, 'través')
+        : rawDescription;
     const descriptionHtml = description && !editorial
         ? `<div class="book-description"><h2>Descripción</h2><p>${escapeHtml(description)}</p></div>`
         : '';
@@ -523,7 +561,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         displayAuthor ? detailRow('Autor', displayAuthor) : '',
         detailRow('ISBN', item.isbn),
         detailRow('Idioma', bibliographic.language),
-        detailRow('Formato', bibliographic.format),
+        detailRow('Formato', cleanBookFormat(bibliographic.format)),
         detailRow('Condición', condition),
     ].filter(Boolean).join('\n');
     const essentialHtml = essentialRows ? `<dl class="details book-essentials" aria-label="Datos del libro">${essentialRows}</dl>` : '';
@@ -653,8 +691,8 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     if (bibliographic.language) {
         schemaProduct.inLanguage = bibliographic.language;
     }
-    if (bibliographic.format) {
-        schemaProduct.bookFormat = bibliographic.format;
+    if (cleanBookFormat(bibliographic.format)) {
+        schemaProduct.bookFormat = cleanBookFormat(bibliographic.format);
     }
     if (bibliographic.edition) {
         schemaProduct.bookEdition = bibliographic.edition;
@@ -816,15 +854,16 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         border-bottom:1px solid #e2e8f0;color:#64748b}
     nav a{color:#a94e3d;text-decoration:none}
     main{max-width:940px;margin:1.5rem auto;padding:0 1rem;
-         display:grid;grid-template-columns:1fr;gap:1.75rem}
-    @media(min-width:640px){main{grid-template-columns:380px 1fr}}
+         display:grid;grid-template-columns:minmax(0,1fr);gap:1.75rem}
+    .cover,.info{min-width:0}
+    @media(min-width:640px){main{grid-template-columns:minmax(0,380px) minmax(0,1fr)}}
     /* Celular: la tapa ocupaba toda la primera pantalla y el precio quedaba
        dos pantallas abajo. Tapa centrada y contenida, miniaturas en una fila. */
     @media(max-width:639px){
       main{margin-top:1rem;gap:1.1rem}
-      .cover-main{width:auto;height:auto;max-width:100%;max-height:38vh;margin:0 auto;object-fit:contain}
+      main .cover-main{width:auto;height:auto;max-width:100%;max-height:38vh;margin:0 auto;object-fit:contain}
       .cover-btn{text-align:center}
-      main .thumbs{max-width:none;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;
+      main .thumbs{width:100%;max-width:100%;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;
                    scrollbar-width:none;padding-bottom:.2rem}
       main .thumbs::-webkit-scrollbar{display:none}
       main .thumb-btn{width:48px;height:48px}
@@ -873,7 +912,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .meta strong{color:#1e293b}
     .badge{display:inline-block;padding:.2rem .7rem;border-radius:2rem;
            font-size:.75rem;font-weight:600;margin-bottom:.875rem}
-    .in-stock{background:#dcfce7;color:#16a34a}
+    .in-stock{background:#dcfce7;color:#166534}
     .details{background:white;border:1px solid #e2e8f0;border-radius:.5rem;
              margin:.65rem 0 0;overflow:hidden}
     .detail-row{display:grid;grid-template-columns:94px 1fr;gap:.75rem;
@@ -943,6 +982,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .buy-bar-btn{flex:0 0 auto;min-height:46px;padding:.7rem 1.1rem;border:0;border-radius:.6rem;
                  background:#b4442a;color:#fff;font:inherit;font-size:.95rem;font-weight:800;cursor:pointer}
     body.has-buy-bar{padding-bottom:78px}
+    body.has-buy-bar #amado-consent{bottom:calc(88px + env(safe-area-inset-bottom,0px))!important}
     body.has-buy-bar .wa-float{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
     .btn-ml{background:#fff;color:#7a6a1f;border:1.5px solid #e8dfa0;
             font-size:.82rem;font-weight:600;padding:.65rem 1.25rem}
@@ -1026,20 +1066,20 @@ ${siteHeaderHtml()}
     <h1>${safeTitle}</h1>
     ${inStock ? `<span class="badge in-stock">✓ En stock</span>` : ''}
     ${deliveryBadgeHtml(inStock)}
-    ${essentialHtml}
-    ${inStock ? moreDetailsHtml : ''}
     ${priceHtml}
     <div class="cta">
       ${actionHtml}
     </div>
     ${trustHtml}
+    ${essentialHtml}
+    ${inStock ? moreDetailsHtml : ''}
     ${inStock ? googleReviewsHtml({ limit: 3, seed: item.id, columns: 1, title: 'Lo que cuentan quienes ya compraron' }) : ''}
     ${editorialHtml}
     ${!inStock ? moreDetailsHtml : ''}
     ${seoOpportunityHtml}
     <p class="shipping">${inStock
       ? '🚚 Entrega en el día en Montevideo según zona, horario y confirmación · Envío $250 · Gratis desde $1.500 · Atención personalizada.'
-      : '🌎 Si preferís no esperar, también podemos buscarlo por encargo en el exterior.'
+      : '🌎 Podemos buscarlo por encargo. Te confirmamos disponibilidad, precio y plazo antes de reservar.'
     } <a href="/politicas/#envios">Ver política de envíos</a>.</p>
   </div>
   ${relatedBooksHtml}
@@ -1308,7 +1348,7 @@ export async function onRequest(context) {
     if (context.env?.COVER_GOOGLE_QUALITY_GATE === 'true') {
         googleImages = copies
             .map((copy, index) => ({ current: copy?.entry?.current, index }))
-            .filter(candidate => googleReadyImage(candidate.current))
+            .filter(candidate => googleReadyImage(candidate.current) && !NON_BOOK_IMAGE_HASHES.has(copies[candidate.index]?.sha256))
             // La primera de la lista es la que Google toma como principal. Las
             // que ya cumplen el mínimo de 2027 van adelante: sirven hoy, van a
             // seguir sirviendo y no arrastran el aviso de resolución. Las que

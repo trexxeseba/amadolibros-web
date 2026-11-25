@@ -51,13 +51,14 @@ test('los accesos editoriales cubren diferenciales concretos y conducen al formu
   assert.match(ideas, /No es una respuesta automática/i);
 });
 
-// PEDIDO-LIBRO-1: el pedido se registra en el servidor (sin datos personales)
-// para que book_request_submitted mida pedidos recibidos; después sigue a WhatsApp.
-test('el pedido ordena los datos, se registra sin datos personales y termina en WhatsApp', () => {
+// La solicitud se resuelve en la web; WhatsApp queda como ayuda opcional.
+test('el pedido reúne el libro y un contacto y ofrece WhatsApp como alternativa', () => {
   for (const field of ['request_type', 'query', 'author_isbn', 'format', 'language', 'budget', 'details']) {
     assert.match(requestPage, new RegExp(`name="${field}"`));
   }
-  assert.match(requestPage, /Guardamos el pedido con un código para seguirlo, sin pedirte datos personales/);
+  assert.match(requestPage, /name="reply_contact"[^>]*required/);
+  assert.match(requestPage, /id="request-result"[\s\S]*?role="status"/);
+  assert.doesNotMatch(requestPage, /window\.location\.(href\s*=|assign\()/);
   assert.doesNotMatch(requestPage, /name="(name|phone|email|whatsapp)"/);
   assert.match(requestPage, /https:\/\/wa\.me\/\$\{WA_NUMBER\}\?text=/);
   assert.match(requestPage, /const WA_NUMBER = '59899841325'/);

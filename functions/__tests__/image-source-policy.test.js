@@ -53,9 +53,11 @@ test('el mínimo se endurece solo el 2027-01-31, sin que nadie se acuerde',()=>{
 });
 
 
+// Una contraportada distinta; a/b son deliberadamente variantes de la misma foto.
+const c='https://http2.mlstatic.com/D_654321-MLU987654321_022026-O.jpg';
 test('JSON-LD respeta imágenes verificadas sin esconder la galería visible', () => {
   const item = {id:'MLU123456',title:'Libro de prueba',status:'active',available_quantity:1,
-    price:500,currency:'UYU',pictures:[a,b],permalink:'https://example.com/libro'};
+    price:500,currency:'UYU',pictures:[a,c],permalink:'https://example.com/libro'};
   const productSchema = html => [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
     .map(match => JSON.parse(match[1])).find(schema => schema['@type'] === 'Book' || schema['@type']?.includes?.('Product'));
   const good = 'https://www.amadolibros.com/book-cover/MLU123456/cover.jpg';
@@ -69,7 +71,7 @@ test('JSON-LD respeta imágenes verificadas sin esconder la galería visible', (
 
 test('quitar una placa no cambia la identidad de las imágenes restantes', () => {
   const item = {id:'MLU123456',title:'Libro',status:'active',available_quantity:1,price:500,
-    pictures:['https://http2.mlstatic.com/D_768794-MLU78243849622_082024-O.jpg',a,b]};
+    pictures:['https://http2.mlstatic.com/D_768794-MLU78243849622_082024-O.jpg',a,c]};
   const html = renderPage(item,'libro',false,'');
   const schema = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
     .map(match => JSON.parse(match[1])).find(schema => schema['@type'] === 'Book' || schema['@type']?.includes?.('Product'));

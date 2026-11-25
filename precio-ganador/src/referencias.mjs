@@ -22,10 +22,13 @@ const monto = v => num(v?.amount ?? v);
 // De la respuesta de /suggestions/items/{id}/details a una fila chica. Función pura.
 export function filaReferencia(item, d) {
   const precio = num(item?.price), sugerido = monto(d?.suggested_price), actual = monto(d?.current_price), minimo = monto(d?.lowest_price);
+  // Seba, 25/11/2026: sólo se compara contra Mercado Libre (interno), no contra precios de otras tiendas (externo).
+  const interno = monto(d?.internal_price), externo = monto(d?.external_price);
+  const brechaInterna = precio !== null && interno !== null && precio > 0 ? Math.round((precio - interno) / precio * 1000) / 10 : null;
   const brecha = precio !== null && sugerido !== null && precio > 0 ? Math.round((precio - sugerido) / precio * 1000) / 10 : null;
   return {
     id: item?.id ?? d?.item_id ?? null, titulo: String(item?.title ?? '').slice(0, 70), precio, stock: num(item?.available_quantity), catalogo: !!item?.catalog_listing,
-    estado: String(d?.status ?? ''), sugerido, precio_segun_ml: actual, minimo, brecha_pct: brecha,
+    estado: String(d?.status ?? ''), sugerido, precio_segun_ml: actual, minimo, brecha_pct: brecha, interno, externo, brecha_interna_pct: brechaInterna,
     comparadas: num(d?.metadata?.compared_values) ?? (Array.isArray(d?.metadata?.graph) ? d.metadata.graph.length : null),
     claves: d && typeof d === 'object' ? Object.keys(d) : [],
   };
@@ -36,8 +39,9 @@ const mediana = xs => { if (!xs.length) return null; const s = [...xs].sort((a, 
 export function resumenReferencias(filas) {
   const porEstado = {};
   for (const f of filas) porEstado[f.estado || 'sin_estado'] = (porEstado[f.estado || 'sin_estado'] ?? 0) + 1;
-  const caras = filas.filter(f => f.sugerido !== null && f.precio !== null && f.sugerido < f.precio);
+  const caras = filas.filter(f => (f.sugerido !== null && f.precio !== null && f.sugerido < f.precio) || (f.interno != null && f.precio != null && f.interno < f.precio));
   return {
+    con_interno: filas.filter(f => f.interno != null).length, mas_caras_que_el_interno: filas.filter(f => f.interno != null && f.precio != null && f.interno < f.precio).length,
     leidas: filas.length, por_estado: porEstado, con_sugerido: filas.filter(f => f.sugerido !== null).length,
     mas_caras_que_el_sugerido: caras.length, brecha_mediana_pct: mediana(caras.map(f => f.brecha_pct)),
     brecha_hasta_10: caras.filter(f => f.brecha_pct <= 10).length, brecha_10_a_25: caras.filter(f => f.brecha_pct > 10 && f.brecha_pct <= 25).length, brecha_mas_de_25: caras.filter(f => f.brecha_pct > 25).length,

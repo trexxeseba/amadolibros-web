@@ -255,3 +255,57 @@ test('datos básicos visibles fuera del desplegable y una sola ayuda al comprar'
     const paused = renderPage(book({ status: 'paused', available_quantity: 0 }), 'un-libro', false, '');
     assert.match(paused, /class="wa-float"/);
 });
+
+test('la compra está antes de la tabla de datos sin ocultar ISBN, idioma ni condición', () => {
+    const html = renderPage(book({ bibliographic: { language: 'Español' } }), 'un-libro', false, '');
+    const body = html.slice(html.indexOf('<main>'), html.indexOf('</main>'));
+    const cart = body.indexOf('data-action="add-to-cart"');
+    const essentials = body.indexOf('class="details book-essentials"');
+    assert.ok(cart > 0 && cart < essentials);
+    assert.ok(body.indexOf('class="price-box"') < cart);
+    const details = body.slice(essentials, body.indexOf('</dl>', essentials));
+    assert.match(details, /9788499809991/);
+    assert.match(details, /Español/);
+    assert.match(details, /Nuevo/);
+});
+
+test('la galería omite los logos conocidos y mantiene las posiciones originales de las fotos', () => {
+    const urls = [
+        '/preview-cover/MLU1/0/portada.webp',
+        '/preview-cover/MLU1/3/eed924a9ecbe503f14c34dc6626aeff509374511ffcf20f06f522172f9797590.webp',
+        '/preview-cover/MLU1/4/1965d41c371323ff00e38f74b691e0249ed0a941d279f99dadd4b2d016219152.webp',
+        '/preview-cover/MLU1/5/contratapa.webp',
+    ];
+    const html = renderPage(book(), 'un-libro', false, '', '', [], null, urls);
+    assert.doesNotMatch(html, /eed924a9ecbe503f14c34dc6626aeff509374511ffcf20f06f522172f9797590/);
+    assert.doesNotMatch(html, /1965d41c371323ff00e38f74b691e0249ed0a941d279f99dadd4b2d016219152/);
+    assert.ok(html.includes('/MLU1/0/portada.webp'));
+    assert.ok(html.includes('/MLU1/5/contratapa.webp'));
+    const main = html.slice(html.indexOf('<main>'), html.indexOf('<div class="info">'));
+    assert.equal((main.match(/class="thumb-btn"/g) || []).length, 2);
+});
+
+test('la ruta alternativa de las dos imágenes verificadas también se excluye, sin afectar otros libros', () => {
+    const urls = [
+        'https://preview.example/book-cover/MLU640785075/cover.jpg',
+        'https://preview.example/book-cover/MLU640785075/cover-4.jpg',
+        'https://preview.example/book-cover/MLU640785075/cover-5.jpg',
+        'https://preview.example/book-cover/MLU640785075/cover-6.jpg',
+    ];
+    const html = renderPage(book(), 'un-libro', true, '', '', [], null, urls);
+    assert.ok(html.includes('/MLU640785075/cover-6.jpg'));
+    assert.ok(!html.includes('/MLU640785075/cover-4.jpg'));
+    assert.ok(!html.includes('/MLU640785075/cover-5.jpg'));
+    const other = renderPage(book(), 'un-libro', true, '', '', [], null, urls.map(url => url.replace('MLU640785075', 'MLU2')));
+    assert.ok(other.includes('/MLU2/cover-4.jpg'));
+    assert.ok(other.includes('/MLU2/cover-5.jpg'));
+});
+
+test('la descripción de la edición revisada corrige caracteres defectuosos sin alterar el catálogo', () => {
+    const item = book({ id: 'MLU640785075', description: 'Su profesor de universidadá Morrieá Schwartz, despues de muchos años, a traves de las conversaciones.' });
+    const html = renderPage(item, 'un-libro', false, '');
+    assert.match(html, /universidad, Morrie Schwartz/);
+    assert.match(html, /después de muchos años, a través/);
+    assert.doesNotMatch(html, /universidadá|Morrieá/);
+    assert.ok(item.description.includes('universidadá'));
+});
