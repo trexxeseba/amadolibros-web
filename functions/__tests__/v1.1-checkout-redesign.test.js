@@ -538,8 +538,8 @@ test('29. progressive disclosure de envío no cambió: sigue oculto con retiro, 
 
 // ── 9. Microcopy de respaldo humano (texto final) ────────────────────────
 
-test('30. el texto final aprobado reemplaza la versión anterior en #310', () => {
-  assert.match(CARRITO, /y te ayudamos a completar la compra\./);
+test('30. el respaldo humano se centra en ayudar a completar la compra', () => {
+  assert.match(CARRITO, /¿Necesitás ayuda para completar la compra\? Escribinos por WhatsApp\./);
   assert.doesNotMatch(CARRITO, /Te atendemos personalmente\./);
   assert.doesNotMatch(CARRITO, /si algo no funciona como esperabas/i);
 });

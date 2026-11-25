@@ -519,13 +519,17 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         items: [{ id: item.id, quantity: 1, ...(sellableInCheckout ? { price } : {}) }],
     };
 
-    const detailRows = [
+    const essentialRows = [
         displayAuthor ? detailRow('Autor', displayAuthor) : '',
         detailRow('ISBN', item.isbn),
-        detailRow('Editorial', normalizePublisher(item.publisher)),
-        item.pages ? detailRow('Páginas', `${item.pages}`) : '',
         detailRow('Idioma', bibliographic.language),
         detailRow('Formato', bibliographic.format),
+        detailRow('Condición', condition),
+    ].filter(Boolean).join('\n');
+    const essentialHtml = essentialRows ? `<dl class="details book-essentials" aria-label="Datos del libro">${essentialRows}</dl>` : '';
+    const detailRows = [
+        detailRow('Editorial', normalizePublisher(item.publisher)),
+        item.pages ? detailRow('Páginas', `${item.pages}`) : '',
         detailRow('Edición', bibliographic.edition),
         detailRow('Año', bibliographic.publication_year),
         detailRow('Fecha de publicación', bibliographic.publication_date),
@@ -538,7 +542,6 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         detailRow('Ilustrador/a', bibliographic.illustrator),
         detailRow('Subtítulo', bibliographic.subtitle),
         detailRow('Medidas', dimensions),
-        detailRow('Condición', condition),
         // CF-STOCK-1-UX-FIX: la fila "Disponibilidad" solo tiene sentido
         // cuando hay stock que mostrar. Para no disponibles, la jerarquía
         // comercial (ver más abajo) ya cubre el mensaje — repetirlo acá
@@ -728,12 +731,14 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       >
         <span data-cart-label>🛒 Agregar al carrito</span>
       </button>
+      <div class="purchase-alternatives" aria-label="Ayuda y otras formas de comprar">
       <a class="btn btn-wa" href="${escapeHtml(waLink)}" target="_blank" rel="noopener noreferrer">
-        💬 Consultar por WhatsApp
+        Consultar sobre el libro o la entrega
       </a>
       <a class="btn btn-ml" href="${escapeHtml(item.permalink)}" target="_blank" rel="noopener noreferrer">
         Comprar en MercadoLibre
-      </a>`
+      </a>
+      </div>`
         : inStock
           ? `<a class="btn btn-wa" href="${escapeHtml(waLink)}" target="_blank" rel="noopener noreferrer">
         Consultar precio y forma de pago
@@ -909,6 +914,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .btn{display:block;padding:.875rem 1.25rem;border-radius:.5rem;font-size:.95rem;
          font-weight:700;text-align:center;text-decoration:none;transition:opacity .15s}
     .btn:hover{opacity:.85}
+    .book-essentials{margin:.75rem 0;font-size:.9rem}
+    .purchase-alternatives{display:flex;flex-wrap:wrap;gap:.25rem 1rem;align-items:center}
+    .purchase-alternatives .btn{background:transparent;border:0;padding:.6rem .25rem;min-height:44px;box-sizing:border-box;text-align:left;font-size:.875rem;font-weight:600;text-decoration:underline;text-underline-offset:3px}
+    .purchase-alternatives .btn-wa{color:#176637}
+    .purchase-alternatives .btn-ml{color:#635225}
+    .purchase-alternatives .btn:focus-visible{outline:3px solid #b4442a;outline-offset:2px}
     /* Jerarquía de compra: el carrito es la acción principal (sólido, alto
        contraste); WhatsApp acompaña con contorno verde; Mercado Libre queda
        tercero. Antes el carrito salmón claro parecía deshabilitado al lado
@@ -1015,6 +1026,7 @@ ${siteHeaderHtml()}
     <h1>${safeTitle}</h1>
     ${inStock ? `<span class="badge in-stock">✓ En stock</span>` : ''}
     ${deliveryBadgeHtml(inStock)}
+    ${essentialHtml}
     ${inStock ? moreDetailsHtml : ''}
     ${priceHtml}
     <div class="cta">
@@ -1045,7 +1057,7 @@ ${sellableInCheckout ? `<div class="buy-bar" id="buy-bar" hidden>
   <div class="buy-bar-price"><strong>$${priceUY}</strong><small>o $${transferPrice} por transferencia</small></div>
   <button type="button" class="buy-bar-btn" data-buy-bar>Agregar al carrito</button>
 </div>` : ''}
-${waFloatHtml(waMessage, canonicalUrl)}
+${sellableInCheckout ? '' : waFloatHtml(waMessage, canonicalUrl)}
 
 <script>(function(){
   // Barra de compra fija en el celular: aparece cuando el botón principal

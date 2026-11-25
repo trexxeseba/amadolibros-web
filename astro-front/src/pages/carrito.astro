@@ -222,7 +222,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
           <section class="cart-section">
             <h2 class="cart-section-h2">Tus datos</h2>
             <p class="buyer-note"><strong>Comprá sin crear una cuenta.</strong> Completá tus datos para coordinar el pedido.</p>
-            <p class="buyer-note">Mientras completás el pedido, recordamos estos datos en esta pestaña para que no los pierdas si abrís el banco o WhatsApp.</p>
+            <p class="buyer-note">Tus datos se conservan en esta pestaña mientras completás el pedido.</p>
 
             <!-- CUENTA-1 · Identificarse es OPCIONAL: el formulario de abajo
                  está disponible desde el primer momento y la compra como
@@ -356,7 +356,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
                   <a href="/devoluciones" target="_blank">devoluciones</a>.
                 </p>
                 <p class="checkout-personal-note">
-                  Somos una librería familiar y esta web también la hacemos nosotros. Si necesitás ayuda, escribinos por WhatsApp y te ayudamos a completar la compra.
+                  ¿Necesitás ayuda para completar la compra? Escribinos por WhatsApp.
                 </p>
                 <button type="button" id="btn-wa-order" class="btn-wa-secondary">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -3409,9 +3409,6 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
 
     // ── Vaciar carrito ────────────────────────────────────────────────────
     var btnBackToShopping = document.getElementById('btn-back-to-shopping');
-    var btnEmptyBack = document.getElementById('btn-empty-back');
-    var shoppingContext = window.AmadoCartContext ? window.AmadoCartContext.get() : null;
-    if (btnEmptyBack && shoppingContext) btnEmptyBack.href = shoppingContext.url;
     if (btnBackToShopping) {
       btnBackToShopping.addEventListener('click', function () {
         if (window.AmadoCartContext) window.AmadoCartContext.returnToShopping();
