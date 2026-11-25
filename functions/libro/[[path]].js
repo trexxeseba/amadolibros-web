@@ -7,27 +7,27 @@ import { findPreviewCover } from '../_shared/preview-cover.js';
  * functions/libro/[[path]].js
  *
  * Fichas de producto SSR para amadolibros.com.
- * URLs: /libro/:id/:slug (canonical) | /libro/:id  301 a canonical
+ * URLs: /libro/:id/:slug (canonical) | /libro/:id → 301 a canonical
  *
- * Fuente de datos: catalog.json en R2 (via URL p�blica + CF edge cache).
+ * Fuente de datos: catalog.json en R2 (via URL pública + CF edge cache).
  * No depende de item:MLU... en KV (esas keys no existen).
  *
  * REGLAS DE SEGURIDAD:
- * - Todos los datos de KV/cat�logo se escapan antes de insertarlos en HTML.
- * - JSON-LD generado con JSON.stringify, nunca concatenaci�n manual.
+ * - Todos los datos de KV/catálogo se escapan antes de insertarlos en HTML.
+ * - JSON-LD generado con JSON.stringify, nunca concatenación manual.
  * - URLs de WhatsApp con encodeURIComponent.
  */
 
 import { slugify } from '../_shared/slug.js';
 import { buscarReemplazo, fichaRetiradaResponse, librosParecidos } from '../_shared/ficha-retirada.js';
 import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_FONTS_HEAD } from '../_shared/site-header.js';
-// FICHAS-QUALITY-GUARD-1: fuente �nica sobre autor�a gen�rica/ausente.
+// FICHAS-QUALITY-GUARD-1: fuente única sobre autoría genérica/ausente.
 import { isGenericAuthor, realAuthor, stripGenericAuthorMention } from '../_shared/generic-author.js';
 import { BASE, fetchCatalog, fetchPausedItem } from '../_shared/catalog.js';
 import { promoAwareCacheControl, promoWasHtml } from '../_shared/web-promo.js';
 import { transferDisplayPrice } from '../_shared/descuentos.js';
-// QW3A: misma validaci�n de ISBNGTIN que ya usa el feed de Merchant - nunca
-// inventa ni corrige d�gitos, s�lo evita publicar un ISBN mal formado.
+// QW3A: misma validación de ISBN→GTIN que ya usa el feed de Merchant — nunca
+// inventa ni corrige dígitos, sólo evita publicar un ISBN mal formado.
 import { isBookProduct, normalizeIsbnToGtin } from '../feed.xml.js';
 import { applyBookEnrichment } from '../_shared/book-enrichment-registry.js';
 import { previewCoverUrl as resolvePreviewCoverUrl } from '../_shared/preview-cover.js';
@@ -102,7 +102,7 @@ export function normalizeImages(item, previewCoverSrc = '') {
         'D_779639-MLU70995173764_082023-O.jpg',
     ]);
     const pictures = [];
-    // Dos copias visualmente id�nticas de portada/interior, con otros IDs ML.
+    // Dos copias visualmente idénticas de portada/interior, con otros IDs ML.
     // Se excluyen solo en esta ficha; no se eliminan fotos de otros libros.
     const duplicates = item.id === 'MLU633445690' ? new Set([
         'D_NQ_NP_952436-MLA99508947388_112025-F.jpg',
@@ -123,10 +123,10 @@ export function normalizeImages(item, previewCoverSrc = '') {
         }
     }
 
-    // `thumbnail` es una versi�n -I de la primera portada y no una foto
-    // adicional. Solo se usa como fallback si ML no entreg� pictures[].
+    // `thumbnail` es una versión -I de la primera portada y no una foto
+    // adicional. Solo se usa como fallback si ML no entregó pictures[].
     if (pictures.length === 0 && item.thumbnail) pictures.push(httpsImg(item.thumbnail));
-    // Mercado Libre suele entregar menos, pero se preserva la galer�a oficial
+    // Mercado Libre suele entregar menos, pero se preserva la galería oficial
     // completa con una guarda amplia y coherente con el proxy 0..15.
     const normalized = cleanBookGallery(pictures).slice(0, 16);
     if (previewCoverSrc && normalized.length > 0) normalized[0] = previewCoverSrc;
@@ -169,7 +169,7 @@ function formatDimensions(dimensions) {
     if (isValidDimensionValue(dimensions.length)) rows.push(`Largo ${dimensions.length}`);
     if (isValidDimensionValue(dimensions.weight)) rows.push(`Peso ${dimensions.weight}`);
 
-    return rows.length ? rows.join(' � ') : null;
+    return rows.length ? rows.join(' · ') : null;
 }
 
 function detailRow(label, value) {
@@ -202,8 +202,8 @@ function renderGallery(images, safeTitle) {
         : '';
 
     const thumbsHtml = multi
-        ? `<div class="thumbs" role="group" aria-label="M�s im�genes del libro">
-${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" data-idx="${i}" aria-label="${safeTitle} - imagen ${i + 1}" aria-current="${i === 0 ? 'true' : 'false'}"><img src="${escapeHtml(image.thumb)}" alt="${safeTitle} - imagen ${i + 1}" loading="lazy" decoding="async" width="56" height="56"></button>`).join('\n')}
+        ? `<div class="thumbs" role="group" aria-label="Más imágenes del libro">
+${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" data-idx="${i}" aria-label="${safeTitle} — imagen ${i + 1}" aria-current="${i === 0 ? 'true' : 'false'}"><img src="${escapeHtml(image.thumb)}" alt="${safeTitle} — imagen ${i + 1}" loading="lazy" decoding="async" width="56" height="56"></button>`).join('\n')}
   </div>`
         : '';
 
@@ -217,9 +217,9 @@ ${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" d
     <img class="cover-main" id="gMainImg" src="${escapeHtml(mainImage.src)}"${mainResponsiveAttrs} alt="${safeTitle}" loading="eager" decoding="async" fetchpriority="high" width="360" height="540" data-title="${safeTitle}">
   </button>
   ${thumbsHtml}
-  <div id="glb" class="lb" role="dialog" aria-modal="true" aria-label="Galer�a de im�genes" tabindex="-1" hidden>
+  <div id="glb" class="lb" role="dialog" aria-modal="true" aria-label="Galería de imágenes" tabindex="-1" hidden>
     <div class="lb-inner">
-      <button type="button" class="lb-close" id="glbClose" aria-label="Cerrar galer�a">&#10005;</button>
+      <button type="button" class="lb-close" id="glbClose" aria-label="Cerrar galería">&#10005;</button>
       <img class="lb-img" id="glbImg" alt="${safeTitle}" decoding="async">
       <p class="lb-counter" id="glbCounter" aria-live="polite" aria-atomic="true">Imagen 1 de ${images.length}</p>
       <div class="lb-nav">${navBtns}</div>
@@ -247,7 +247,7 @@ ${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" d
       mainImg.removeAttribute('srcset');
       mainImg.removeAttribute('sizes');
     }
-    mainImg.alt=title+' - imagen '+(idx+1);
+    mainImg.alt=title+' — imagen '+(idx+1);
     mainBtn.setAttribute('data-current-index',String(idx));
     thumbBtns.forEach(function(b,i){b.setAttribute('aria-current',i===idx?'true':'false');});
   }
@@ -267,7 +267,7 @@ ${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" d
 
   function updateLb(){
     lbImg.src=imgs[cur].lightbox;
-    lbImg.alt=title+' - imagen '+(cur+1);
+    lbImg.alt=title+' — imagen '+(cur+1);
     if(lbCtr)lbCtr.textContent='Imagen '+(cur+1)+' de '+n;
   }
 
@@ -295,8 +295,8 @@ ${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" d
 })();<\/script>`;
 }
 
-// FICHAS-QUALITY-GUARD-1: la lista local de autores gen�ricos se elimin�.
-// Ahora se usa isGenericAuthor() de _shared/generic-author.js - una sola lista
+// FICHAS-QUALITY-GUARD-1: la lista local de autores genéricos se eliminó.
+// Ahora se usa isGenericAuthor() de _shared/generic-author.js — una sola lista
 // para ficha, relacionados, WhatsApp, JSON-LD y feed.
 
 function authorKey(author) {
@@ -304,9 +304,9 @@ function authorKey(author) {
 }
 
 /**
- * SEO-AUTOR: el cat�logo activo ya est� en memoria cuando se renderiza una
+ * SEO-AUTOR: el catálogo activo ya está en memoria cuando se renderiza una
  * ficha. Reutilizarlo evita otra lectura de R2 y permite crear enlaces HTML
- * rastreables hacia otros t�tulos del mismo autor.
+ * rastreables hacia otros títulos del mismo autor.
  */
 export function selectRelatedBooks(catalogItems, item, limit = 4) {
     if (!Array.isArray(catalogItems) || !item) return [];
@@ -336,9 +336,9 @@ function renderRelatedBooks(relatedBooks, author, useCloudflareImages = true) {
     if (!Array.isArray(relatedBooks) || relatedBooks.length === 0) return '';
 
     const cards = relatedBooks.map((book) => {
-        // FICHAS-QUALITY-GUARD-1: se limpia s�lo el fragmento expl�cito
-        // �de <autor gen�rico>� del texto VISIBLE (t�tulo de tarjeta y alt).
-        // El t�tulo comercial almacenado no se modifica.
+        // FICHAS-QUALITY-GUARD-1: se limpia sólo el fragmento explícito
+        // «de <autor genérico>» del texto VISIBLE (título de tarjeta y alt).
+        // El título comercial almacenado no se modifica.
         const title = escapeHtml(stripGenericAuthorMention(book.title) || book.title);
         const href = `/libro/${encodeURIComponent(book.id)}/${slugify(book.title)}`;
         const source = useCloudflareImages
@@ -360,8 +360,8 @@ function renderRelatedBooks(relatedBooks, author, useCloudflareImages = true) {
     </li>`;
     }).join('\n');
 
-    // FICHAS-QUALITY-GUARD-1: sin autor�a real no se puede decir "Otros libros
-    // de X". El bloque conserva su valor de navegaci�n con un heading neutro.
+    // FICHAS-QUALITY-GUARD-1: sin autoría real no se puede decir "Otros libros
+    // de X". El bloque conserva su valor de navegación con un heading neutro.
     const realName = realAuthor(author);
     const authorPath = realName ? authorPathForName(realName) : null;
     const heading = !realName
@@ -395,14 +395,14 @@ function renderEditorialEnrichment(editorial) {
       ${editorial.eyebrow ? `<p class="editorial-eyebrow">${escapeHtml(editorial.eyebrow)}</p>` : ''}
       <h2 id="editorial-enrichment-heading">${escapeHtml(editorial.heading)}</h2>
       ${paragraphs.map(paragraph => `<p>${escapeHtml(paragraph)}</p>`).join('\n')}
-      ${highlights.length ? `<h3>${escapeHtml(editorial.highlights_heading || 'Caracter�sticas comprobadas')}</h3>
+      ${highlights.length ? `<h3>${escapeHtml(editorial.highlights_heading || 'Características comprobadas')}</h3>
       <ul>${highlights.map(value => `<li>${escapeHtml(value)}</li>`).join('')}</ul>` : ''}
       ${editorial.decision_heading && editorial.decision_copy ? `<div class="editorial-decision">
         <h3>${escapeHtml(editorial.decision_heading)}</h3>
         <p>${escapeHtml(editorial.decision_copy)}</p>
       </div>` : ''}
       ${links.length ? `<div class="editorial-links">${links.map(link =>
-        `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)} </a>`
+        `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)} →</a>`
       ).join('')}</div>` : ''}
     </section>`;
 }
@@ -417,7 +417,7 @@ function notFound() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Libro no encontrado - Amado Libros</title>
+  <title>Libro no encontrado — Amado Libros</title>
   <meta name="robots" content="noindex">
   ${faviconHeadHtml()}
   <style>
@@ -429,9 +429,9 @@ function notFound() {
 <body>
   <h1 style="font-size:1.5rem;margin-bottom:1rem">Libro no encontrado</h1>
   <p style="color:#64748b;margin-bottom:1.5rem">
-    Este libro no est� disponible en el cat�logo.
+    Este libro no está disponible en el catálogo.
   </p>
-  <a href="/"> Volver al cat�logo</a>
+  <a href="/">← Volver al catálogo</a>
 </body>
 </html>`;
     return new Response(html, {
@@ -448,12 +448,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
     // B11: los textos alternativos describen la portada sin arrastrar una
-    // autor�a gen�rica del t�tulo comercial. El t�tulo almacenado, el slug,
+    // autoría genérica del título comercial. El título almacenado, el slug,
     // el canonical y la identidad de carrito permanecen intactos.
     const safeImageTitle = escapeHtml(stripGenericAuthorMention(item.title) || item.title);
-    // FICHAS-QUALITY-GUARD-1: 'Desconocido', 'Unknown', 'Varios autores'. no
-    // son autor�a. displayAuthor queda null y TODA superficie que dependa de
-    // �l (fila Autor, JSON-LD, WhatsApp, relacionados, meta description) omite
+    // FICHAS-QUALITY-GUARD-1: 'Desconocido', 'Unknown', 'Varios autores'… no
+    // son autoría. displayAuthor queda null y TODA superficie que dependa de
+    // él (fila Autor, JSON-LD, WhatsApp, relacionados, meta description) omite
     // el dato en vez de imprimir un nombre falso. Nunca se sustituye.
     const displayAuthor = realAuthor(item.author);
     const safeAuthor   = displayAuthor ? escapeHtml(displayAuthor) : null;
@@ -482,7 +482,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         defaultWidth: 240,
         sizes: '240px',
     }).src;
-    // Las redes sociales suelen bloquear im�genes servidas directamente por
+    // Las redes sociales suelen bloquear imágenes servidas directamente por
     // mlstatic. La portada social sale desde nuestro dominio y el proxy valida
     // el MLU antes de obtenerla, para que WhatsApp/Facebook reciban HTTP 200.
     const socialImage  = `${BASE}/book-cover/${encodeURIComponent(item.id)}/cover.jpg`;
@@ -490,8 +490,8 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const currency      = String(item.currency || item.currency_id || 'UYU').trim().toUpperCase() || 'UYU';
     const checkoutCurrencySupported = currency === 'UYU';
     const priceUY       = price.toLocaleString('es-UY');
-    // Con el tope de 25 % (descuentos.js), un libro ya en liquidaci�n no suma
-    // el 12 % por transferencia: se muestra un �nico precio final.
+    // Con el tope de 25 % (descuentos.js), un libro ya en liquidación no suma
+    // el 12 % por transferencia: se muestra un único precio final.
     const transferAmount = transferDisplayPrice(item);
     const transferPrice = transferAmount === null ? '' : transferAmount.toLocaleString('es-UY');
     const transferSaving = transferAmount === null ? '' : (price - transferAmount).toLocaleString('es-UY');
@@ -508,11 +508,11 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const editorialHtml = renderEditorialEnrichment(editorial);
     const rawDescription = cleanBookDescription(item.description);
     const description = item.id === 'MLU640785075'
-        ? rawDescription.replace('universidad� Morrie� Schwartz', 'universidad, Morrie Schwartz')
-            .replace(/\bdespues\b/g, 'despu�s').replace(/\btraves\b/g, 'trav�s')
+        ? rawDescription.replace('universidadá Morrieá Schwartz', 'universidad, Morrie Schwartz')
+            .replace(/\bdespues\b/g, 'después').replace(/\btraves\b/g, 'través')
         : rawDescription;
     const descriptionHtml = description && !editorial
-        ? `<div class="book-description"><h2>Descripci�n</h2><p>${escapeHtml(description)}</p></div>`
+        ? `<div class="book-description"><h2>Descripción</h2><p>${escapeHtml(description)}</p></div>`
         : '';
     const waMessage = buildBookWhatsAppMessage({
         title: item.title,
@@ -545,35 +545,35 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         detailRow('ISBN', item.isbn),
         detailRow('Idioma', bibliographic.language),
         detailRow('Formato', cleanBookFormat(bibliographic.format)),
-        detailRow('Condici�n', condition),
+        detailRow('Condición', condition),
     ].filter(Boolean).join('\n');
     const essentialHtml = essentialRows ? `<dl class="details book-essentials" aria-label="Datos del libro">${essentialRows}</dl>` : '';
     const detailRows = [
         detailRow('Editorial', normalizePublisher(item.publisher)),
-        item.pages ? detailRow('P�ginas', `${item.pages}`) : '',
-        detailRow('Edici�n', bibliographic.edition),
-        detailRow('A�o', bibliographic.publication_year),
-        detailRow('Fecha de publicaci�n', bibliographic.publication_date),
-        detailRow('G�nero', bibliographic.genre),
+        item.pages ? detailRow('Páginas', `${item.pages}`) : '',
+        detailRow('Edición', bibliographic.edition),
+        detailRow('Año', bibliographic.publication_year),
+        detailRow('Fecha de publicación', bibliographic.publication_date),
+        detailRow('Género', bibliographic.genre),
         detailRow('Temas', Array.isArray(bibliographic.subjects)
-            ? bibliographic.subjects.map(value => String(value || '').trim()).filter(Boolean).join(' � ')
+            ? bibliographic.subjects.map(value => String(value || '').trim()).filter(Boolean).join(' · ')
             : ''),
-        detailRow('Colecci�n', bibliographic.collection),
+        detailRow('Colección', bibliographic.collection),
         detailRow('Traductor/a', bibliographic.translator),
         detailRow('Ilustrador/a', bibliographic.illustrator),
-        detailRow('Subt�tulo', bibliographic.subtitle),
+        detailRow('Subtítulo', bibliographic.subtitle),
         detailRow('Medidas', dimensions),
         // CF-STOCK-1-UX-FIX: la fila "Disponibilidad" solo tiene sentido
-        // cuando hay stock que mostrar. Para no disponibles, la jerarqu�a
-        // comercial (ver m�s abajo) ya cubre el mensaje - repetirlo ac�
-        // ser�a la tercera vez que la ficha dice "no disponible".
+        // cuando hay stock que mostrar. Para no disponibles, la jerarquía
+        // comercial (ver más abajo) ya cubre el mensaje — repetirlo acá
+        // sería la tercera vez que la ficha dice "no disponible".
         inStock
             ? detailRow('Disponibilidad', `${stockQty} disponible${stockQty === 1 ? '' : 's'}`)
             : '',
     ].filter(Boolean).join('\n');
     const moreDetailsHtml = detailRows || descriptionHtml
         ? `<details class="book-more">
-      <summary>Ver m�s sobre este libro</summary>
+      <summary>Ver más sobre este libro</summary>
       ${descriptionHtml}
       ${detailRows ? `<dl class="details">${detailRows}</dl>` : ''}
     </details>`
@@ -581,15 +581,15 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
 
     const defaultMetaDesc = sellableInCheckout
         ? (safeAuthor
-            ? `Compr� &quot;${safeTitle}&quot; de ${safeAuthor} en Amado Libros. Transferencia: $${transferPrice} UYU. Env�os a todo Uruguay.`
-            : `Compr� &quot;${safeTitle}&quot; en Amado Libros. Transferencia: $${transferPrice} UYU. Env�os a todo Uruguay.`)
+            ? `Comprá &quot;${safeTitle}&quot; de ${safeAuthor} en Amado Libros. Transferencia: $${transferPrice} UYU. Envíos a todo Uruguay.`
+            : `Comprá &quot;${safeTitle}&quot; en Amado Libros. Transferencia: $${transferPrice} UYU. Envíos a todo Uruguay.`)
         : inStock
-          ? `Consult� precio y forma de pago de &quot;${safeTitle}&quot;, publicado en ${escapeHtml(currency)}, en Amado Libros.`
+          ? `Consultá precio y forma de pago de &quot;${safeTitle}&quot;, publicado en ${escapeHtml(currency)}, en Amado Libros.`
         : indexWhenPaused
           ? (safeAuthor
-              ? `Buscamos &quot;${safeTitle}&quot; de ${safeAuthor} por encargo en Uruguay. Consult� disponibilidad, edici�n, precio y demora.`
-              : `Buscamos &quot;${safeTitle}&quot; por encargo en Uruguay. Consult� disponibilidad, edici�n, precio y demora.`)
-          : `Ped� un aviso cuando &quot;${safeTitle}&quot; vuelva a estar disponible en Amado Libros. Tambi�n podemos buscarlo por encargo.`;
+              ? `Buscamos &quot;${safeTitle}&quot; de ${safeAuthor} por encargo en Uruguay. Consultá disponibilidad, edición, precio y demora.`
+              : `Buscamos &quot;${safeTitle}&quot; por encargo en Uruguay. Consultá disponibilidad, edición, precio y demora.`)
+          : `Pedí un aviso cuando &quot;${safeTitle}&quot; vuelva a estar disponible en Amado Libros. También podemos buscarlo por encargo.`;
     const metaDesc = seoOverride?.description
         ? escapeHtml(seoOverride.description)
         : editorial?.meta_description
@@ -603,10 +603,10 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     </section>`
         : '';
 
-    // JSON-LD - generado con JSON.stringify, nunca concatenaci�n
-    // SCHEMA-NON-BOOK-1: el cat�logo tambi�n publica discos, revistas,
-    // mazos y antig�edades. Declararlos `Book` es un dato estructurado falso,
-    // as� que se reusa la misma regla que ya deja fuera de Merchant a lo que
+    // JSON-LD — generado con JSON.stringify, nunca concatenación
+    // SCHEMA-NON-BOOK-1: el catálogo también publica discos, revistas,
+    // mazos y antigüedades. Declararlos `Book` es un dato estructurado falso,
+    // así que se reusa la misma regla que ya deja fuera de Merchant a lo que
     // no es libro. Sin oferta vendible un `Product` pelado dispara el error
     // "falta offers, review o aggregateRating" en Search Console, por eso en
     // ese caso queda como `Thing`. Los pausados no traen `domain_id`: sin
@@ -617,12 +617,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         '@type':    isBook ? ['Product', 'Book'] : (sellableInCheckout ? 'Product' : 'Thing'),
         'name':     item.title,
         ...(images.length ? { image: images } : {}),
-        'description': description || (displayAuthor ? `${item.title} - ${displayAuthor}` : item.title),
+        'description': description || (displayAuthor ? `${item.title} — ${displayAuthor}` : item.title),
         'sku':      item.id,
     };
     // La calidad determina la preferencia, no la existencia de la foto.
-    // [] tambi�n puede significar que fall� la lectura del �ndice de R2.
-    // Conservamos la primera portada real de la galer�a en ambos casos;
+    // [] también puede significar que falló la lectura del índice de R2.
+    // Conservamos la primera portada real de la galería en ambos casos;
     // si no existe ninguna, no inventamos una ni usamos el logo.
     if (googleImages?.length) schemaProduct.image = googleImages;
     else if (googleImages !== null && images.length) schemaProduct.image = images.slice(0, 1);
@@ -650,15 +650,15 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
             },
         };
     }
-    // FICHAS-QUALITY-GUARD-1: sin autor�a real no se declara `author` en el
+    // FICHAS-QUALITY-GUARD-1: sin autoría real no se declara `author` en el
     // JSON-LD. Un Person llamado "Desconocido" es un dato estructurado falso.
     if (displayAuthor) {
         schemaProduct.author = { '@type': 'Person', 'name': displayAuthor };
     }
-    // QW3A: s�lo se publica un ISBN que valide como ISBN-13/ISBN-10 real (la
-    // misma regla que ya usa Merchant); si adem�s valida, se suma `gtin`
-    // (ISBN-13) como identificador adicional - dato que ya existe, sin
-    // inventar ni corregir d�gitos.
+    // QW3A: sólo se publica un ISBN que valide como ISBN-13/ISBN-10 real (la
+    // misma regla que ya usa Merchant); si además valida, se suma `gtin`
+    // (ISBN-13) como identificador adicional — dato que ya existe, sin
+    // inventar ni corregir dígitos.
     const isbnResult = normalizeIsbnToGtin(item.isbn);
     if (isbnResult.valid) {
         schemaProduct.isbn = isbnResult.gtin;
@@ -701,7 +701,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     if (enrichmentSchema?.datePublished) schemaProduct.datePublished = enrichmentSchema.datePublished;
     if (enrichmentSchema?.genre) schemaProduct.genre = enrichmentSchema.genre;
     if (!isBook) {
-        // Propiedades que s�lo existen para `Book`/`CreativeWork`. El `gtin`
+        // Propiedades que sólo existen para `Book`/`CreativeWork`. El `gtin`
         // validado se conserva: es un identificador de producto, no de libro.
         for (const key of NON_BOOK_SCHEMA_DROP) delete schemaProduct[key];
     }
@@ -722,19 +722,19 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       </div>
       <div class="price-installment">Hasta 12 cuotas de aprox. $${installment} UYU</div>
       ${transferAmount === null ? '' : `<div class="price-transfer">
-        <span class="price-transfer-line"><span aria-hidden="true">???</span> 12% menos por transferencia: <strong>$${transferPrice} UYU</strong></span>
-        <span class="price-saving">Ahorr�s $${transferSaving} UYU</span>
+        <span class="price-transfer-line"><span aria-hidden="true">🏷️</span> 12% menos por transferencia: <strong>$${transferPrice} UYU</strong></span>
+        <span class="price-saving">Ahorrás $${transferSaving} UYU</span>
       </div>`}
-      ${hasFreeShipping ? '<div class="price-free-shipping"><span aria-hidden="true">??</span> Env�o gratis</div>' : ''}
+      ${hasFreeShipping ? '<div class="price-free-shipping"><span aria-hidden="true">🚚</span> Envío gratis</div>' : ''}
     </div>`
         : inStock
           ? `<div class="order-box">
       <strong>Precio publicado: ${escapeHtml(currency)} ${escapeHtml(priceUY)}</strong>
-      <span>Esta publicaci�n no se convierte autom�ticamente a UYU. Consultanos para confirmar precio y forma de pago, o comprala directamente en MercadoLibre.</span>
+      <span>Esta publicación no se convierte automáticamente a UYU. Consultanos para confirmar precio y forma de pago, o comprala directamente en MercadoLibre.</span>
     </div>`
         : `<div class="order-box">
-      <strong>�Busc�s este libro?</strong>
-      <span>Podemos intentar conseguirlo por encargo. Consultanos y verificamos disponibilidad, edici�n y precio.</span>
+      <strong>¿Buscás este libro?</strong>
+      <span>Podemos intentar conseguirlo por encargo. Consultanos y verificamos disponibilidad, edición y precio.</span>
     </div>`;
 
     const trustHtml = inStock ? purchaseTrustHtml({ compact: true }) : '';
@@ -750,7 +750,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         data-thumbnail="${escapeHtml(cartThumbnail)}"
         data-max-qty="${stockQty}"
       >
-        <span data-cart-label>?? Agregar al carrito</span>
+        <span data-cart-label>🛒 Agregar al carrito</span>
       </button>
       <div class="purchase-alternatives" aria-label="Ayuda y otras formas de comprar">
       <a class="btn btn-wa" href="${escapeHtml(waLink)}" target="_blank" rel="noopener noreferrer">
@@ -852,10 +852,10 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       main .thumb-btn{width:48px;height:48px}
       main .thumb-btn img{width:48px;height:48px}
     }
-    /* height:auto es lo que mantiene la proporci�n real de la foto: sin eso
+    /* height:auto es lo que mantiene la proporción real de la foto: sin eso
        el alto del atributo (540) quedaba fijo y, al angostarse el ancho, la
-       tapa sal�a aplastada de costado. object-fit:contain cubre el caso en
-       que el m�ximo de alto recorta: se encoge entera, nunca se deforma. */
+       tapa salía aplastada de costado. object-fit:contain cubre el caso en
+       que el máximo de alto recorta: se encoge entera, nunca se deforma. */
     .cover-main{width:100%;height:auto;max-width:300px;max-height:min(70vh,520px);object-fit:contain;
                 border-radius:.5rem;box-shadow:0 4px 20px rgba(0,0,0,.12);display:block;background:white}
     .cover-btn{background:none;border:none;padding:0;cursor:pointer;display:block;width:100%;text-align:left}
@@ -867,7 +867,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .thumb-btn img{width:56px;height:56px;object-fit:contain;display:block;background:white}
     /* Computadora: las miniaturas en una columna a la izquierda de la tapa,
        a la vista sin bajar. Debajo quedaban en dos filas y no se notaba que
-       hab�a m�s fotos. En el celular siguen en una tira debajo (arriba). */
+       había más fotos. En el celular siguen en una tira debajo (arriba). */
     @media(min-width:640px){
       .cover.has-thumbs{display:flex;align-items:flex-start;gap:.6rem}
       .cover.has-thumbs .cover-btn{flex:1;min-width:0}
@@ -942,9 +942,9 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .purchase-alternatives .btn-wa{color:#176637}
     .purchase-alternatives .btn-ml{color:#635225}
     .purchase-alternatives .btn:focus-visible{outline:3px solid #b4442a;outline-offset:2px}
-    /* Jerarqu�a de compra: el carrito es la acci�n principal (s�lido, alto
-       contraste); WhatsApp acompa�a con contorno verde; Mercado Libre queda
-       tercero. Antes el carrito salm�n claro parec�a deshabilitado al lado
+    /* Jerarquía de compra: el carrito es la acción principal (sólido, alto
+       contraste); WhatsApp acompaña con contorno verde; Mercado Libre queda
+       tercero. Antes el carrito salmón claro parecía deshabilitado al lado
        del verde de WhatsApp. */
     .btn-wa{background:#fff;color:#117a37;border:1.5px solid #25d366}
     .btn-wa:hover{background:#effaf3;opacity:1}
@@ -952,8 +952,8 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
               cursor:pointer;width:100%;font-size:1.02rem;padding:1rem 1.25rem}
     .btn-cart:hover{background:#9a3a23;opacity:1}
     .btn-cart:disabled{opacity:.7;cursor:default}
-    /* AL-WEB: Mercado Libre queda tercero y subordinado - sin relleno
-       amarillo dominante, fuente m�s chica y peso menor que carrito/WhatsApp.
+    /* AL-WEB: Mercado Libre queda tercero y subordinado — sin relleno
+       amarillo dominante, fuente más chica y peso menor que carrito/WhatsApp.
        Sigue siendo un enlace funcional, solo pierde peso visual. */
     .buy-bar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;align-items:center;
              justify-content:space-between;gap:.75rem;padding:.6rem .9rem calc(.6rem + env(safe-area-inset-bottom,0px));
@@ -1039,15 +1039,15 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
 ${siteHeaderHtml()}
 
 <nav>
-  <a href="/">Inicio</a> >
-  <span>${safeTitle.substring(0, 70)}${item.title.length > 70 ? '.' : ''}</span>
+  <a href="/">Inicio</a> ›
+  <span>${safeTitle.substring(0, 70)}${item.title.length > 70 ? '…' : ''}</span>
 </nav>
 
 <main>
   ${renderGallery(images, safeImageTitle)}
   <div class="info">
     <h1>${safeTitle}</h1>
-    ${inStock ? `<span class="badge in-stock">V En stock</span>` : ''}
+    ${inStock ? `<span class="badge in-stock">✓ En stock</span>` : ''}
     ${deliveryBadgeHtml(inStock)}
     ${priceHtml}
     <div class="cta">
@@ -1061,9 +1061,9 @@ ${siteHeaderHtml()}
     ${!inStock ? moreDetailsHtml : ''}
     ${seoOpportunityHtml}
     <p class="shipping">${inStock
-      ? '?? Entrega en el d�a en Montevideo seg�n zona, horario y confirmaci�n � Env�o $250 � Gratis desde $1.500 � Atenci�n personalizada.'
-      : '?? Podemos buscarlo por encargo. Te confirmamos disponibilidad, precio y plazo antes de reservar.'
-    } <a href="/politicas/#envios">Ver pol�tica de env�os</a>.</p>
+      ? '🚚 Entrega en el día en Montevideo según zona, horario y confirmación · Envío $250 · Gratis desde $1.500 · Atención personalizada.'
+      : '🌎 Podemos buscarlo por encargo. Te confirmamos disponibilidad, precio y plazo antes de reservar.'
+    } <a href="/politicas/#envios">Ver política de envíos</a>.</p>
   </div>
   ${relatedBooksHtml}
 </main>
@@ -1083,8 +1083,8 @@ ${sellableInCheckout ? `<div class="buy-bar" id="buy-bar" hidden>
 ${sellableInCheckout ? '' : waFloatHtml(waMessage, canonicalUrl)}
 
 <script>(function(){
-  // Barra de compra fija en el celular: aparece cuando el bot�n principal
-  // sale de la pantalla y lo dispara (misma l�gica de carrito, sin duplicarla).
+  // Barra de compra fija en el celular: aparece cuando el botón principal
+  // sale de la pantalla y lo dispara (misma lógica de carrito, sin duplicarla).
   var bar=document.getElementById('buy-bar');
   var main=document.querySelector('button.btn-cart[data-id]');
   if(!bar||!main||!('IntersectionObserver' in window))return;
@@ -1117,7 +1117,7 @@ ${sellableInCheckout ? '' : waFloatHtml(waMessage, canonicalUrl)}
     if(n>0){
       badge.textContent=n>99?'99+':String(n);
       badge.hidden=false;
-      link.setAttribute('aria-label','Ver carrito ('+(n===1?'1 art�culo':n+' art�culos')+')');
+      link.setAttribute('aria-label','Ver carrito ('+(n===1?'1 artículo':n+' artículos')+')');
     }else{
       badge.hidden=true;
       link.setAttribute('aria-label','Ver carrito');
@@ -1147,10 +1147,10 @@ ${!inStock && waitlistSiteKey ? `
     var email=form.elements.email.value.trim();
     var tokenInput=form.querySelector('input[name="cf-turnstile-response"]');
     var token=tokenInput?tokenInput.value:'';
-    if(!email){show('Ingres� tu WhatsApp o correo.','is-error');form.elements.email.focus();return;}
-    if(!token){show('Complet� la verificaci�n antes de continuar.','is-error');return;}
+    if(!email){show('Ingresá tu WhatsApp o correo.','is-error');form.elements.email.focus();return;}
+    if(!token){show('Completá la verificación antes de continuar.','is-error');return;}
     button.disabled=true;
-    button.textContent='Guardando.';
+    button.textContent='Guardando…';
     show('','');
     try{
       var response=await fetch('/api/stock-waitlist',{
@@ -1168,11 +1168,11 @@ ${!inStock && waitlistSiteKey ? `
       try{data=await response.json();}catch(_error){}
       if(!response.ok)throw new Error(data.error||'No pudimos guardar el aviso.');
       show(data.already_registered
-        ? 'Ya ten�amos registrado este correo para este libro.'
+        ? 'Ya teníamos registrado este correo para este libro.'
         : 'Pronto. Te avisaremos cuando vuelva a estar disponible.','is-ok');
       form.elements.email.value='';
     }catch(error){
-      show(error&&error.message?error.message:'No pudimos guardar el aviso. Intent� nuevamente.','is-error');
+      show(error&&error.message?error.message:'No pudimos guardar el aviso. Intentá nuevamente.','is-error');
     }finally{
       button.disabled=false;
       button.textContent='Avisame cuando llegue';
@@ -1186,7 +1186,7 @@ ${pruebaSocialHtml()}
 }
 
 // ---------------------------------------------------------------------------
-// Normalizaci�n de URL can�nica de producto
+// Normalización de URL canónica de producto
 // ---------------------------------------------------------------------------
 
 export function canonicalProductRedirectUrl({
@@ -1199,8 +1199,8 @@ export function canonicalProductRedirectUrl({
     if (providedSlug && providedSlug === canonicalSlug) return null;
 
     const currentUrl = new URL(requestUrl);
-    // layout es un par�metro hist�rico de presentaci�n: no debe sobrevivir
-    // al salto can�nico. El resto de la query se conserva.
+    // layout es un parámetro histórico de presentación: no debe sobrevivir
+    // al salto canónico. El resto de la query se conserva.
     currentUrl.searchParams.delete('layout');
     return `${navigationBase}/libro/${id}/${canonicalSlug}${currentUrl.search}`;
 }
@@ -1233,7 +1233,7 @@ export async function onRequest(context) {
         return Response.redirect(destination.toString(), 301);
     }
 
-    // Cargar cat�logo (con edge cache)
+    // Cargar catálogo (con edge cache)
     const catalog = await fetchCatalog(context);
     const activeCatalogAvailable = catalog && Array.isArray(catalog.items);
     const activeLookupStartedAt = perfNow();
@@ -1243,10 +1243,10 @@ export async function onRequest(context) {
     recordPerf(context, 'active_lookup', activeLookupStartedAt, {
         found: Boolean(item),
     });
-    // CF-R2-2-BRIDGE: habilitado en Preview y producci�n - cada uno resuelve
+    // CF-R2-2-BRIDGE: habilitado en Preview y producción — cada uno resuelve
     // contra su propio manifest (fetchPausedItem -> manifestUrlFor en
     // _shared/catalog.js). Si el manifest de ese entorno falta o es
-    // inv�lido, fetchPausedItem devuelve null y el flujo sigue igual que
+    // inválido, fetchPausedItem devuelve null y el flujo sigue igual que
     // hoy (notFound), sin 500.
     if (!item && ['preview', 'production'].includes(context.env?.APP_ENV)) {
         const pausedLookupStartedAt = perfNow();
@@ -1256,14 +1256,14 @@ export async function onRequest(context) {
         });
     }
     if (!item && !activeCatalogAvailable) {
-        return new Response('Error al cargar el cat�logo. Intent� de nuevo en unos segundos.', {
+        return new Response('Error al cargar el catálogo. Intentá de nuevo en unos segundos.', {
             status: 503,
             headers: { 'content-type': 'text/plain;charset=UTF-8' },
         });
     }
     if (!item) {
-        // Publicaci�n finalizada: ni activa ni pausada. Si el mismo libro tiene
-        // otra publicaci�n activa, se redirige; si no, ficha de "se agot�".
+        // Publicación finalizada: ni activa ni pausada. Si el mismo libro tiene
+        // otra publicación activa, se redirige; si no, ficha de "se agotó".
         const items = activeCatalogAvailable ? catalog.items : [];
         const reemplazo = providedSlug ? buscarReemplazo(items, providedSlug, id) : null;
         if (reemplazo) {
@@ -1277,8 +1277,8 @@ export async function onRequest(context) {
         });
     }
 
-    // El enriquecimiento s�lo agrega datos bibliogr�ficos verificados. El
-    // t�tulo permanece intacto, por lo que el slug/canonical conserva la URL
+    // El enriquecimiento sólo agrega datos bibliográficos verificados. El
+    // título permanece intacto, por lo que el slug/canonical conserva la URL
     // comercial existente.
     item = applyBookEnrichment(item);
     const slug = slugify(item.title);
@@ -1287,7 +1287,7 @@ export async function onRequest(context) {
         ? new URL(context.request.url).origin
         : BASE;
 
-    // Una sola URL por entidad: slug faltante o incorrecto -> 301 can�nico.
+    // Una sola URL por entidad: slug faltante o incorrecto -> 301 canónico.
     const canonicalRedirect = canonicalProductRedirectUrl({
         requestUrl: context.request.url,
         navigationBase,
@@ -1333,10 +1333,10 @@ export async function onRequest(context) {
             .map((copy, index) => ({ current: copy?.entry?.current, index }))
             .filter(candidate => googleReadyImage(candidate.current) && !NON_BOOK_IMAGE_HASHES.has(copies[candidate.index]?.sha256))
             // La primera de la lista es la que Google toma como principal. Las
-            // que ya cumplen el m�nimo de 2027 van adelante: sirven hoy, van a
-            // seguir sirviendo y no arrastran el aviso de resoluci�n. Las que
-            // s�lo cumplen el m�nimo vigente quedan detr�s, pero NO se
-            // descartan - descartarlas era lo que dejaba miles de libros fuera
+            // que ya cumplen el mínimo de 2027 van adelante: sirven hoy, van a
+            // seguir sirviendo y no arrastran el aviso de resolución. Las que
+            // sólo cumplen el mínimo vigente quedan detrás, pero NO se
+            // descartan — descartarlas era lo que dejaba miles de libros fuera
             // del feed. El orden dentro de cada grupo se conserva.
             .sort((left, right) =>
                 (googleFutureReadyImage(right.current) ? 1 : 0) -
