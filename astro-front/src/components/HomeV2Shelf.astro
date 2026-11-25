@@ -1,5 +1,6 @@
 ---
 import fs from 'node:fs';
+import { selectDistinctHomeBooks } from '../../../shared/home-selection.js';
 import path from 'node:path';
 import { responsiveBookCover } from '../lib/cloudflare-images.js';
 import { deliveryBadgeHtml } from '../../../shared/delivery-badge.js';
@@ -20,11 +21,11 @@ let books: Book[] = [];
 try {
   const raw = fs.readFileSync(HOME_JSON, 'utf-8');
   const data = JSON.parse(raw) as { items?: Book[] };
-  books = (data.items || [])
+  books = selectDistinctHomeBooks((data.items || [])
     .filter(book => /^MLU\d+$/.test(book.id || ''))
     .filter(book => book.status === 'active' && Number(book.available_quantity || 0) > 0)
     .sort((a, b) => String(b.start_time || '').localeCompare(String(a.start_time || '')))
-    .slice(0, 7);
+    , 7);
 } catch (error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   console.warn('[HomeV2Shelf] home.json no disponible:', message);
