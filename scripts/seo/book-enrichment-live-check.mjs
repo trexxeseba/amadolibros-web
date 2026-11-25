@@ -17,6 +17,7 @@ import {
   listBookEnrichments,
 } from '../../functions/_shared/book-enrichment-registry.js';
 import { normalizeValidIsbn } from '../../functions/_shared/showcase-ranking.js';
+import { isEligibleForFeed } from '../../functions/feed.xml.js';
 
 const BASE_URL = String(process.env.BOOK_ENRICHMENT_BASE_URL || '').replace(/\/$/, '');
 const OUTPUT_DIR = process.env.BOOK_ENRICHMENT_OUTPUT_DIR || 'artifacts/fichas-quality';
@@ -182,6 +183,32 @@ export function verifyBookEnrichmentFeed(feedXml, record, item) {
   return failures;
 }
 
+// La ficha sigue siendo obligatoria para cada edición activa. Merchant sólo
+// corresponde cuando alguna oferta cumple las mismas reglas que usa el feed.
+// Por ejemplo, los paquetes con Ebook se excluyen deliberadamente de Shopping.
+export function verifyBookEnrichmentMerchantCoverage(feedXml, record, candidates) {
+  const eligible = candidates.filter(isEligibleForFeed);
+  if (!eligible.length) {
+    return {
+      status: 'not_applicable',
+      reason: 'feed_policy_excluded',
+      product_id: null,
+      failures: [],
+    };
+  }
+  // Merchant consolida duplicados por GTIN: se controla el MLU que ganó.
+  const merchantItem = eligible.find(item => itemBlock(feedXml, item.id));
+  const failures = merchantItem
+    ? verifyBookEnrichmentFeed(feedXml, record, merchantItem)
+    : ['ninguna publicación de la edición aparece en Merchant'];
+  return {
+    status: failures.length ? 'failed' : 'verified',
+    reason: null,
+    product_id: merchantItem?.id || null,
+    failures,
+  };
+}
+
 async function mapWithConcurrency(values, concurrency, worker) {
   const output = new Array(values.length);
   let next = 0;
@@ -262,15 +289,11 @@ async function main() {
     reports.push(report);
     pageTasks.push({ record, item: pageItem, report });
 
-    // Merchant consolida ofertas duplicadas por GTIN. Se verifica el MLU que
-    // efectivamente ganó en el feed, no se presupone que sea el de mayor stock.
-    const merchantItem = candidates.find(item => itemBlock(feedResponse.text, item.id));
-    if (!merchantItem) {
-      report.failures.push('ninguna publicación de la edición aparece en Merchant');
-    } else {
-      report.failures.push(...verifyBookEnrichmentFeed(feedResponse.text, record, merchantItem));
-    }
-    report.merchant_product_id = merchantItem?.id || null;
+    const merchant = verifyBookEnrichmentMerchantCoverage(feedResponse.text, record, candidates);
+    report.merchant_product_id = merchant.product_id;
+    report.merchant_status = merchant.status;
+    report.merchant_reason = merchant.reason;
+    report.failures.push(...merchant.failures);
   }
 
   await mapWithConcurrency(pageTasks, 10, async ({ record, item, report }) => {
@@ -309,6 +332,9 @@ async function main() {
     if (report.status === 'not_applicable') {
       console.warn('    - edición enriquecida conservada; sin oferta activa para verificar en este Preview');
     }
+    if (report.merchant_reason === 'feed_policy_excluded') {
+      console.log('    - ficha verificada; Merchant no aplicable por las reglas vigentes del feed');
+    }
     // console.log en vez de console.error: en CI, stderr se pierde por
     // buffering cuando el proceso termina justo después de escribir (visto
     // en la corrida de PR #305 — las líneas de resumen por ISBN llegaban al
@@ -318,7 +344,7 @@ async function main() {
 
   if (failed.length) throw new Error(`${failed.length} edición(es) activas fallaron la verificación HTTP.`);
   console.log(
-    `OK: ${verified.length} ediciones activas verificadas en ficha y Merchant; ` +
+    `OK: ${verified.length} ediciones activas verificadas en ficha y en Merchant cuando corresponde; ` +
     `${notApplicable.length} sin oferta activa quedaron como no aplicables.`
   );
 }
