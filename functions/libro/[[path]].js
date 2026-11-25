@@ -1066,8 +1066,9 @@ ${waFloatHtml(waMessage, canonicalUrl)}
   }).observe(main);
   if(mq.addEventListener)mq.addEventListener('change',sync);
   var barButton=bar.querySelector('[data-buy-bar]');
+  var initialLabel=barButton.textContent;
   function syncLabel(){
-    barButton.textContent=main.dataset.goCart?'Ver carrito':'Agregar al carrito';
+    barButton.textContent=main.dataset.goCart?'Ver carrito':initialLabel;
   }
   new MutationObserver(syncLabel).observe(main,{attributes:true,attributeFilter:['data-go-cart']});
   syncLabel();
