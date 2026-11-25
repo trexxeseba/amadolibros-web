@@ -239,7 +239,18 @@
   // Cierre: botón X
   closeBtn.addEventListener('click', closeOverlay);
 
-  // Escape y contención de foco: diálogo nativo.
+  // Contener Tab también en navegadores que pasan por su barra de herramientas.
+  overlay.addEventListener('keydown', function (event) {
+    if (event.key !== 'Tab') return;
+    var controls = Array.from(overlay.querySelectorAll('button, input, a[href], select, textarea, [tabindex="0"]'))
+      .filter(function (el) { return !el.disabled && el.getClientRects().length; });
+    var first = controls[0], last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault(); last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault(); first.focus();
+    }
+  });
 
   // Cierre: click en backdrop (fuera del panel)
   overlay.addEventListener('click', function (e) {

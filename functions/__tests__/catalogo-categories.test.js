@@ -467,7 +467,7 @@ test('catálogo: encabezado de marca y temas a la vista en vez de «← Amado Li
   assert.ok(index.indexOf('Psicología') < index.indexOf('Historia'), 'los temas más grandes primero');
   assert.match(index, /href="\/catalogo\?categoria=historia&amp;disponibilidad=encargo"/);
   assert.doesNotMatch(index, /Otros libros|Derecho/);
-  assert.match(index, /href="\/temas">Todos los temas/);
+  assert.match(index, /href="#cat-select">Todos los temas/);
   const inside = topicNavHtml({ categories: cats, categoria: 'historia', subcategoria: 'historia-mundial' });
   assert.match(inside, /← Todos los temas/);
   assert.match(inside, /class="topic-chip is-current" href="\/catalogo\?categoria=historia&amp;subcategoria=historia-mundial" aria-current="page">Historia mundial/);
