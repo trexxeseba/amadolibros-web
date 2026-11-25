@@ -17,7 +17,7 @@ import { CUENTA, SITE_ID, fechaMontevideo, fechaCorrida } from './config.mjs';
 import { crearCliente } from './ml.mjs';
 import { texto, elegir, detalleError } from './sanear.mjs';
 import { modoDeEscritura, evaluarEscritura, aplicarPedidoSeba, verificarPostEscritura, cuponVigente, evaluarGastoAds, LIMITES } from './guardas.mjs';
-import { buscarPromo, entradaEnPromo, precioObjetivo, cuerpoPost, cuponesVigentes, unidadesPorItem, armarSeleccion, gastoDelMes, primerDiaDelMes, bucketPct, TIPOS_ESCRIBIBLES, TIPOS_PROHIBIDOS } from './promos-logica.mjs';
+import { buscarPromo, entradaEnPromo, precioObjetivo, cuerpoPost, cuponesVigentes, unidadesPorItem, armarSeleccion, gastoDelMes, primerDiaDelMes, bucketPct, TIPOS_ESCRIBIBLES, TIPOS_PROHIBIDOS, evaluarCambioPrecio } from './promos-logica.mjs';
 import { fuenteTokenD1 } from '../../precio-ganador/src/token.mjs';
 import { bulkItemsPath, bulkEntryItem } from '../../worker-sync/meli-bulk.js';
 
@@ -44,7 +44,7 @@ function imprimir(titulo, valor) { salida[titulo] = valor; console.log(`\n## ${t
 function resumen(md) { if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, md + '\n'); console.log(md); }
 const fallo = (code, extra = {}) => { imprimir('resultado', { ok: false, error: code, ...extra }); process.exitCode = 1; };
 
-const escribe = modo === 'real' && ['sumar', 'sumar-lote', 'sacar'].includes(ACCION);
+const escribe = modo === 'real' && ['sumar', 'sumar-lote', 'sacar', 'cambiar-precio'].includes(ACCION);
 const ml = crearCliente(fuenteTokenD1(CUENTA), { intentos: 4, concurrencia: 4, soloLectura: !escribe });
 const CAMPOS_ITEM = 'id,title,price,base_price,original_price,available_quantity,sold_quantity,status,sub_status,catalog_listing,catalog_product_id,date_created,last_updated,listing_type_id';
 
@@ -205,6 +205,41 @@ async function sacar() {
   imprimir('resultado', { ok: true, modo, accion: ACCION, item: ITEM, promo: resumenPromo(promo), respuesta: elegir(del ?? {}, ['status', 'message']), estado_entrada: despues?.status ?? 'sin_entrada' });
 }
 
+// Cambia el precio de un título que ya está en la promo (solo hacia abajo). Guarda el precio anterior
+// en el registro, relee y, si la lectura no coincide o el visible pasa del tope, vuelve al anterior.
+async function cambiarPrecio() {
+  if (!ID_RE.test(ITEM)) return fallo("item_invalido");
+  if (!(PRECIO > 0)) return fallo("falta_precio");
+  const prep = await prepararPromo();
+  if (prep.error) return fallo(prep.error, { candidatas: prep.candidatas ?? [], tipo: prep.tipo ?? null });
+  const promo = prep.promo;
+  const f = await fichaItem(ITEM);
+  const entrada = entradaEnPromo(f.promosCrudas, promo);
+  const ev = evaluarCambioPrecio(entrada, PRECIO);
+  const envio = await ml.sonda(`/items/${ITEM}?attributes=shipping`);
+  const envioGratis = envio.ok ? envio.json?.shipping?.free_shipping === true : null;
+  imprimir("lectura", { promo: resumenPromo(promo), item: f.item, entrada: resumenEntrada(entrada), evaluacion: ev, envio_gratis: envioGratis });
+  if (!ev.ok) return fallo(ev.motivo, { evaluacion: ev });
+  if (envioGratis !== true) return fallo("sin_envio_gratis", { envio_gratis: envioGratis, antes: ev.antes, propuesto: ev.despues });
+  const body = cuerpoPost(promo, ev.despues, entrada);
+  if (modo !== "real") { imprimir("resultado", { ok: true, modo, accion: ACCION, item: ITEM, haria: body, antes: ev.antes, despues: ev.despues, pct: ev.pct }); return; }
+  let r;
+  try { r = await ml.put(`/seller-promotions/items/${ITEM}?${V2}`, body); }
+  catch (e) { return fallo("put_fallo", { detalle: detalleError(e), body, antes: ev.antes }); }
+  await sleep(8000);
+  const despues = entradaEnPromo(await leerPromosItem(ITEM), promo);
+  const venta2 = await leerSalePrice(ITEM);
+  const check = verificarPostEscritura(venta2 ?? {});
+  const coincide = Number(despues?.price) === ev.despues;
+  imprimir("verificacion", { respuesta: elegir(r ?? {}, ["id", "status", "price", "original_price", "message"]), entrada: resumenEntrada(despues), relectura: check, coincide });
+  if (!coincide || !check.ok) {
+    let volver; try { volver = await ml.put(`/seller-promotions/items/${ITEM}?${V2}`, cuerpoPost(promo, ev.antes, entrada)); } catch (e) { volver = { error: detalleError(e) }; }
+    return fallo("verificacion_fallo_se_volvio_al_anterior", { antes: ev.antes, intentado: ev.despues, volver });
+  }
+  resumen(`| ${ITEM} | ${texto(f.item?.title ?? "")} | antes ${ev.antes} | despues ${ev.despues} | ${ev.pct}% |`);
+  imprimir("resultado", { ok: true, modo, accion: ACCION, item: ITEM, antes: ev.antes, despues: ev.despues, pct: ev.pct });
+}
+
 async function seleccion() {
   const hoy = fechaMontevideo(), desde = fechaCorrida(-DIAS_VENTAS);
   const ordenes = []; let totalOrdenes = null;
@@ -267,7 +302,7 @@ async function main() {
   console.log(`Promos ${new Date().toISOString()} | accion=${ACCION} modo=${modo} escribe=${escribe} item=${ITEM || '-'} items=${ITEMS.length} promocion="${texto(PROMOCION)}" precio=${PRECIO ?? '-'} pedido_seba=${PEDIDO_SEBA}`);
   const yo = await ml.get('/users/me');
   if (String(yo?.id) !== CUENTA.sellerId) throw Object.assign(new Error('token_de_otra_cuenta'), { fatal: true });
-  const acciones = { estado, sumar, 'sumar-lote': sumarLote, sacar, seleccion, 'ads-gasto': adsGasto };
+  const acciones = { estado, sumar, 'sumar-lote': sumarLote, sacar, 'cambiar-precio': cambiarPrecio, seleccion, 'ads-gasto': adsGasto };
   if (!acciones[ACCION]) return fallo('accion_desconocida', { acciones: Object.keys(acciones) });
   await acciones[ACCION]();
   imprimir('estadisticas_cliente', ml.stats);

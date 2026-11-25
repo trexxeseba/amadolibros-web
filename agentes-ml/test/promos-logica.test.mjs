@@ -121,3 +121,18 @@ test('gasto de Ads del mes y tope de $60.000: dentro, alerta desde 80 %, superad
 test('Product Ads sigue sin escritura por API, también desde el job', () => {
   assert.equal(evaluarEscritura('ads', { modo: 'real' }).permitido, false);
 });
+
+test('cambiar-precio: solo baja, activa, dentro del tope de 15 % sobre el regular', async () => {
+  const { evaluarCambioPrecio } = await import('../src/promos-logica.mjs');
+  const entrada = { status: 'started', price: 995.6, original_price: 1048 };
+  assert.deepEqual(evaluarCambioPrecio(entrada, 970), { ok: true, antes: 995.6, despues: 970, pct: 7.44 });
+  assert.equal(evaluarCambioPrecio(entrada, 1000).motivo, 'no_baja_el_precio');
+  assert.equal(evaluarCambioPrecio(entrada, 995.6).motivo, 'no_baja_el_precio');
+  assert.equal(evaluarCambioPrecio(entrada, 880).motivo, 'descuento_mayor_al_tope');
+  assert.equal(evaluarCambioPrecio({ ...entrada, status: 'pending' }, 970).motivo, 'no_esta_activa_en_la_promo');
+  assert.equal(evaluarCambioPrecio({ status: 'started', price: 100 }, 90).motivo, 'entrada_sin_precios');
+  assert.equal(evaluarCambioPrecio(null, 90).motivo, 'no_esta_activa_en_la_promo');
+  assert.equal(evaluarCambioPrecio(entrada, 'x').motivo, 'precio_invalido');
+  // Sin piso de 500: un libro barato puede igualar al ganador si el descuento da.
+  assert.equal(evaluarCambioPrecio({ status: 'started', price: 600, original_price: 620 }, 550).ok, true);
+});
