@@ -17,7 +17,7 @@
 // Cada entrada es una expresión sobre el texto normalizado (minúsculas, sin acentos, sin signos).
 export const IP_RISK_PATTERNS=[
  // Digital, descargable, acceso online
- ['digital','\\bdigital(es)?\\b|\\bdigitale\\b|\\bnumerique\\b|\\bdigitalausgabe\\b'],
+ ['digital','\\bdigital(es)?\\b|\\bdigitaliz\\w*|\\bdigitalis\\w*|\\bdigitale\\b|\\bnumerique\\b|\\bdigitalausgabe\\b'],
  ['ebook','\\be ?books?\\b|\\be ?libro\\b|\\blibro electronico\\b|\\belectronic\\b|\\betext\\b|\\be text\\b'],
  ['formato_archivo','\\bpdf\\b|\\bepub\\b|\\bmobi\\b|\\bkindle\\b|\\bmp3\\b|\\bcd ?rom\\b|\\bdvd\\b|\\bmultirom\\b|\\bcd\\b|\\bdiscos?\\b'],
  ['descarga','\\bdescarga(s|ble|bles)?\\b|\\bdownload(able)?\\b|\\bonline\\b|\\bon line\\b|\\ben linea\\b'],
@@ -44,6 +44,9 @@ export const IP_RISK_PATTERNS=[
  ['reclamado_antes','\\bmente millonaria\\b|\\bmillionaire mind\\b|\\bnever finished\\b|\\blibera tu mente y gana\\b|\\bwhy men love bitches\\b|\\breplicas escritos sobre arte\\b|\\beternauta\\b|\\bcodice nesham'],
  // Marcas y personajes que aparecieron en bajas y reclamos (Supercell, Red Bull, ZAG/Miraculous, Swarovski, Pandora, Starbucks, Pierre Cardin, McLaren/Bburago, Stitch).
  ['marca_reclamada','\\bsupercell\\b|\\bbrawl stars\\b|\\bclash royale\\b|\\bclash of clans\\b|\\bred bull\\b|\\bmiraculous\\b|\\bladybug\\b|\\bswarovski\\b|\\bpandora\\b|\\bstarbucks\\b|\\bpierre cardin\\b|\\bmclaren\\b|\\bbburago\\b|\\bstitch\\b|\\blilo\\b'],
+ // 23/11/2026: Aranzadi denunció por propiedad intelectual una publicación de catálogo en Vintage (MLU1543811562) y el vigía frenó todo.
+ // Sale todo el grupo editorial (Aranzadi, Civitas, Lex Nova). "La Ley" no se pone porque es una frase común en títulos.
+ ['editorial_reclamada','\\baranzadi\\b|\\bcivitas\\b|\\blex nova\\b'],
  // Editoriales de texto escolar e idiomas: las cinco infracciones de libros de la campaña fueron de
  // Hodder Education, Alma Edizioni y Eli Edizioni (Arriviamo! 3 no tenía ninguna palabra de riesgo).
  ['editorial_educativa','\\bhodder\\b|\\balma edizioni\\b|\\beli edizioni\\b|\\bloescher\\b|\\bzanichelli\\b|\\bedilingua\\b|\\bedelsa\\b|\\bsgel\\b|\\bdifusion\\b|\\bedinumen\\b|\\banaya ele\\b|\\bhueber\\b|\\bklett\\b|\\bcornelsen\\b|\\bhachette fle\\b|\\bcle international\\b|\\bmaison des langues\\b|\\bcambridge university press\\b|\\bcambridge english\\b|\\boxford university press\\b|\\bmacmillan education\\b|\\bnational geographic learning\\b|\\bcengage\\b|\\bmcgraw\\b|\\bexpress publishing\\b|\\bhelbling\\b|\\bsantillana\\b|\\bedebe\\b|\\bsm ediciones\\b|\\bkapelusz\\b|\\bpuerto de palos\\b|\\btinta fresca\\b|\\bmaipue\\b|\\bwiley\\b|\\belsevier\\b|\\bpanamericana\\b|\\bmarban\\b|\\bharcourt\\b|\\bsavvas\\b|\\bhoughton\\b'],

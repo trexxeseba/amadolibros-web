@@ -159,6 +159,30 @@ export async function syncSales({ml,at,real=false,start=START,now=()=>new Date()
    // Reread immediately before composing: keep current human edits.
    if(real)row=await at.get(row.id);
    const f={...row.fields,...incoming};
+   if (!ml.write) {
+    // Read every available surface: a seller may have used the order or the pack.
+    const archive = 'Respaldo notas manuales ML';
+    const targets = [...new Set([noteTarget(o), '/orders/'+orderId+'/notes'])];
+    const previous = f[archive] || '';
+    let snapshot = previous;
+    let unavailable = false;
+    for (const path of targets) {
+     try {
+      for (const entry of unpackNotes(await ml.get(path))) {
+       if (!entry.note || (entry.id === String(f[F.noteId]) && entry.note === f[F.noteText])) continue;
+       const block = path+' #'+entry.id+'\n'+entry.note;
+       if (!snapshot.split('\n\n---\n\n').includes(block)) snapshot += (snapshot?'\n\n---\n\n':'')+block;
+      }
+     } catch { unavailable = true; }
+    }
+    if (real) await at.patch(row.id,{
+     ...(snapshot!==previous ? {[archive]:snapshot} : {}),
+     [F.sync]:unavailable?'Solo lectura ML: lectura parcial':'Solo lectura ML',
+     [F.synced]:now()
+    });
+    if (unavailable) stats.errors++;
+    continue;
+   }
    const desired=buildSummary(f,orderId), target=noteTarget(o);
    const notes=unpackNotes(await ml.get(target));
    const old=selectNote(notes,f,orderId);

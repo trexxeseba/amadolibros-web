@@ -94,7 +94,8 @@ export function markdownTodas(o) {
   const l = [`# Cotización completa de Vintage · ${o.fecha}`, '',
     `Lista de SBS del ${String(o.info.lista_sbs).slice(0, 10)} (${o.info.dias_lista} días), ${o.info.renglones} renglones. Comisión ${Math.round(o.info.comision * 100)} %, margen publicado ${Math.round(o.info.margen_publicado * 100)} %.`,
     `Pierden la ficha: ${a.pierden} (con costo conocido ${a.con_costo}, sin costo ${a.sin_costo}). Con costo por fuente: ${Object.entries(a.con_costo_por_fuente ?? {}).map(([k, v]) => `${k} ${v}`).join(', ') || 'sbs'}.`,
-    o.info.costos_arnoia ? `Costos de Arnoia del ${String(o.info.costos_arnoia.fecha).slice(0, 10)} (${o.info.costos_arnoia.libros} libros, euro a ${o.info.costos_arnoia.eur_uyu}).` : 'Sin lista de costos de Arnoia.', '',
+    o.info.costos_arnoia ? `Costos de Arnoia del ${String(o.info.costos_arnoia.fecha).slice(0, 10)} (${o.info.costos_arnoia.libros} libros, euro a ${o.info.costos_arnoia.eur_uyu}).` : 'Sin lista de costos de Arnoia.',
+    o.info.costos_celesa ? `Costos de Celesa del ${String(o.info.costos_celesa.fecha).slice(0, 10)} (${o.info.costos_celesa.libros} libros): cada libro de Arnoia se cotiza con el más barato de los dos que lo tenga.` : 'Sin lista de costos de Celesa.', '',
     '## Qué decide cada regla', '', '| Regla | Bajarían | Sobre costo (mediana) |', '|---|---:|---:|',
     `| Actual (diferencia hasta 400 y piso 1.200) | ${a.regla_actual.bajarian} | ${a.regla_actual.mediana_sobre_costo ?? ''} % |`];
   for (const [m, s] of Object.entries(a.sensibilidad_margen)) l.push(`| Por margen: queda al menos ${m} % sobre costo | ${s.bajarian} | ${s.mediana_sobre_costo ?? ''} % |`);

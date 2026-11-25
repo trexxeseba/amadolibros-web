@@ -24,7 +24,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {exigirVintage, exigirItemDeVintage} from './guardia.mjs';
-import {precioMio, precioDesdeLista, GLIC_SELLER_ID, PRECIO_MINIMO, paqueteDeVendedor, armarPayload, armarPayloadTradicional, CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, cupoParaOtros, inicioDiaUy} from './lib.mjs';
+import {precioMio, precioDesdeLista, GLIC_SELLER_ID, NEIMOD_SELLER_ID, PRECIO_MINIMO, paqueteDeVendedor, armarPayload, armarPayloadTradicional, CUENTA_HERMES, TOPE_DIARIO_COMPARTIDO, cupoParaOtros, inicioDiaUy} from './lib.mjs';
 
 const pausa = ms => new Promise(r => setTimeout(r, ms));
 
@@ -47,7 +47,8 @@ const [, , fichasPath, pubPath, ...flags] = process.argv;
 const real = flags.includes('--real');
 const celesa = flags.includes('--fuente=celesa'); // mismo flujo que Arnoia (catálogo por EAN, tapa propia), con la tapa que trae el archivo de Celesa
 const arnoia = flags.includes('--fuente=arnoia') || celesa;
-const glic = flags.includes('--fuente=glic'); // mismas fichas de catálogo que Hermes, pero la oferta de referencia es la de GLIC
+const neimod = flags.includes('--fuente=neimod'); // mismo flujo que GLIC, con la oferta de NEIMOD como referencia
+const glic = flags.includes('--fuente=glic') || neimod; // mismas fichas de catálogo que Hermes, pero la oferta de referencia es la de GLIC
 const ambos = flags.includes('--ambos'); // catálogo si la ficha existe; si no, publicación normal con portada
 const tradicional = flags.includes('--tradicional'); // solo libros SIN ficha de catálogo (publicación normal con portada)
 const maxPedido = Number(flags.find(f => f.startsWith('--max='))?.slice(6) || 1e9);
@@ -175,14 +176,14 @@ const anotadoVigente = p => Boolean(p) && !(p.reintentar_desde && new Date().toI
 const resolverHermes = async f => {
   if (conArroba(f)) return {omitir: true}; // arroba en los datos: ni se busca, ni se anota, ni gasta cupo de revisión (regla de Seba)
   if (publicadas[f.producto]?.item_id || f.mi_mlu || descartadas.has(f.producto) || anotadoVigente(publicadas[f.producto])) return {omitir: true};
-  const lec = await leerFicha(ml, f.producto, undefined, glic ? GLIC_SELLER_ID : undefined);
+  const lec = await leerFicha(ml, f.producto, undefined, neimod ? NEIMOD_SELLER_ID : glic ? GLIC_SELLER_ID : undefined);
   if (!lec.oferta) return {etiqueta: f.n, clave: f.producto, saltar: glic ? 'glic_no_ofrece' : 'hermes_no_ofrece', marcar: {omitido: glic ? 'glic_no_ofrece' : 'hermes_no_ofrece', reintentar_desde: diasDesdeHoy(3)}};
   const precioFicha = glic ? precioDesdeLista({...lec.oferta, original_price: lec.oferta.original_price ?? f.precio_lista}) : precioMio(lec.oferta.price);
   if (glic && (!precioFicha || precioFicha < PRECIO_MINIMO)) return {etiqueta: f.n, clave: f.producto, saltar: 'precio_bajo_minimo', marcar: {omitido: 'precio_bajo_minimo', reintentar_desde: diasDesdeHoy(3)}};
   await pausa(500);
   const prod = await ml.get(`/products/${f.producto}`).catch(() => null);
   if (!prod || prod.status !== 'active') return {etiqueta: f.n, clave: f.producto, saltar: 'ficha_inactiva', marcar: {omitido: 'ficha_inactiva', reintentar_desde: diasDesdeHoy(3)}};
-  return {etiqueta: f.n, clave: f.producto, producto: f.producto, prod, precio: precioFicha, categoria: lec.oferta.category_id, registro: glic ? {precio_glic: lec.oferta.price, precio_lista_glic: lec.oferta.original_price ?? null, fuente_glic: true} : {precio_hermes: lec.oferta.price}, nota: `${glic ? 'GLIC' : 'Hermes'} ${lec.oferta.price}`, titulo: f.titulo};
+  return {etiqueta: f.n, clave: f.producto, producto: f.producto, prod, precio: precioFicha, categoria: lec.oferta.category_id, registro: glic ? {precio_glic: lec.oferta.price, precio_lista_glic: lec.oferta.original_price ?? null, fuente_glic: true} : {precio_hermes: lec.oferta.price}, nota: `${neimod ? 'NEIMOD' : glic ? 'GLIC' : 'Hermes'} ${lec.oferta.price}`, titulo: f.titulo};
 };
 // Regla de Seba (20/11/2026): una @ en el título, el autor o la editorial deja el libro fuera. Va antes de todo: no se busca, no se limpia, no se sube, no se guarda.
 const conArroba = f => /@/.test([f.titulo, f.autor, f.editorial].filter(Boolean).join(' '));
@@ -284,7 +285,7 @@ for (const f of fichas) {
     try { exigirItemDeVintage(await ml.get(`/items/${r?.id}`)); }
     catch (e) { await ml.put(`/items/${r?.id}`, {status: 'paused'}).catch(() => {}); console.log(`${ctx.etiqueta}\tCORTE: ${e.code} (${r?.id}), se pausó y se frena todo`); process.exit(1); }
     if (ctx.descripcion && r?.id) await ml.post(`/items/${r.id}/description`, {plain_text: ctx.descripcion}).catch(e => console.log(`${ctx.etiqueta}\tdescripción no cargada (${e.code})`));
-    publicadas[ctx.clave] = {item_id: r?.id, precio, ...ctx.registro, fuente: celesa ? 'celesa' : arnoia ? 'arnoia' : glic ? 'glic' : 'hermes', fecha: new Date().toISOString().slice(0, 10), ts: Date.now(), cuenta: CUENTA_HERMES};
+    publicadas[ctx.clave] = {item_id: r?.id, precio, ...ctx.registro, fuente: celesa ? 'celesa' : arnoia ? 'arnoia' : neimod ? 'neimod' : glic ? 'glic' : 'hermes', fecha: new Date().toISOString().slice(0, 10), ts: Date.now(), cuenta: CUENTA_HERMES};
     await fs.writeFile(pubPath, JSON.stringify(publicadas, null, 1));
     erroresSeguidos = 0; hechas++;
     console.log(`${ctx.etiqueta}\tPUBLICADA ${r?.id} precio ${precio}`);
