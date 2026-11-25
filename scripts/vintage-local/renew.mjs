@@ -59,13 +59,25 @@ export async function downloadStock(source,{fetcher=fetch,cookie='',origin=''}={
  let url=source;
  for(let hop=0;hop<5;hop++){
   const headers={'Cache-Control':'no-cache'};
-  if(cookie&&origin&&new URL(url).origin===origin)headers.Cookie=cookie;
+  if(cookie&&origin&&new URL(url).origin===origin){
+   headers.Cookie=cookie;
+   // El portal de SBS devolvió 500 a pedidos sin estos datos mientras en un navegador andaba (10/11/2026):
+   // se piden como lo haría un navegador que llega desde la página de Catálogo. Sólo al origen del portal.
+   headers['User-Agent']='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
+   headers.Referer=origin+'/Home/Catalog';
+   headers.Accept='text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
+   headers['Accept-Language']='es-UY,es;q=0.9';
+  }
   const response=await fetcher(url,{headers,redirect:'manual',signal:AbortSignal.timeout(120000)});
   if(REDIRECTS.includes(response.status)){
    const location=response.headers.get('location');if(!location)throw problem('supplier_download_failed',{http_status:response.status});
    url=new URL(location,url).href;if(/\/Account\/Login/i.test(url))throw problem('supplier_login_required');continue;
   }
-  if(!response.ok||!response.body)throw problem('supplier_download_failed',{http_status:response.status});
+  if(!response.ok||!response.body){
+   // Diagnóstico del error del proveedor: tipo de contenido y un trozo del cuerpo (sin correos ni cookies).
+   let snippet='';try{snippet=String(await response.text()).replace(/<(style|script)[\s\S]*?<\/\1>/gi,' ').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').replace(/[\w.+-]+@[\w-]+\.[\w.]+/g,'[mail]').trim().slice(0,600);}catch{}
+   throw problem('supplier_download_failed',{http_status:response.status,content_type:response.headers.get('content-type')??null,server:response.headers.get('server')??null,body:snippet});
+  }
   if(/text\/html/i.test(response.headers.get('content-type')??''))throw problem('supplier_login_required',{http_status:response.status});
   const reader=response.body.getReader(),chunks=[];let length=0;
   for(;;){const {value,done}=await reader.read();if(done)break;length+=value.length;if(length>MAX_BYTES){await reader.cancel();throw problem('supplier_file_too_large');}chunks.push(value);}
@@ -85,7 +97,30 @@ export function makeRenewClient(secret,{fetcher=fetch,endpoint=RENEW_ENDPOINT}={
 export async function renewConnection({excel,connection,secret,source,sbs=null,fetcher=fetch,inspect=inspectWorkbook,now=Date.now,log=()=>{}}){
  let download={source:source||SBS_SOURCE};
  if(sbs){log({step:'login',portal:sbs.portal||SBS_PORTAL});download=await sbsLogin({...sbs,fetcher});if(source)download.source=source;}
- const bytes=await downloadStock(download.source,{fetcher,cookie:download.cookie,origin:download.origin});
+ let bytes;
+ try{bytes=await downloadStock(download.source,{fetcher,cookie:download.cookie,origin:download.origin});}
+ catch(error){
+  // Si el portal falla, se mira si el enlace de la lista cambió de lugar: enlaces de la página principal
+  // (sólo rutas, sin recursos estáticos, cookies ni correos).
+  if(error.code==='supplier_download_failed'&&download.cookie){
+   try{
+    const home=await fetcher(download.origin+'/',{headers:{Cookie:download.cookie},redirect:'manual',signal:AbortSignal.timeout(30000)});
+    const html=home.ok?await home.text():'';
+    const links=[...new Set([...html.matchAll(/href="([^"#]+)"/gi)].map(m=>m[1]).filter(h=>!/\.(css|js|png|jpe?g|gif|svg|ico|woff2?)(\?|$)/i.test(h)&&!/^(mailto|tel|javascript):/i.test(h)))].slice(0,80);
+    // Páginas donde podría estar hoy la exportación: rutas que mencionen exportar, excel, descarga o listas.
+    const pages={};
+    for(const page of ['/Home/Books','/Home/Catalog','/Home/RecentlyAdded']){
+     try{
+      const r=await fetcher(download.origin+page,{headers:{Cookie:download.cookie},redirect:'manual',signal:AbortSignal.timeout(30000)});
+      const h=r.ok?await r.text():'';
+      pages[page]={http:r.status,rutas:[...new Set([...h.matchAll(/["'(]((?:https?:)?\/[A-Za-z0-9_\-\/.?=&%]*(?:export|excel|xls|descarg|download|pricelist|lista)[A-Za-z0-9_\-\/.?=&%]*)["')]/gi)].map(m=>m[1]).filter(x=>!/\.(css|js|png|jpe?g|svg|ico|woff2?)(\?|$)/i.test(x)))].slice(0,20)};
+     }catch{pages[page]={http:null};}
+    }
+    error.detail={...(error.detail??{}),portal_home_http:home.status,portal_links:links,portal_pages:pages};
+   }catch{}
+  }
+  throw error;
+ }
  await writeAtomic(excel,bytes);
  const input=await inspect(excel);
  if(!stockIsFresh(input.source_date,now(),VINTAGE_STOCK_MAX_HOURS))throw problem('supplier_stock_stale',{source_date:input.source_date});

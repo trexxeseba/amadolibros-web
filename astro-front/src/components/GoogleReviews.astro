@@ -1,0 +1,21 @@
+---
+// Reseñas de Google en la portada: cascada de tarjetas con los comentarios
+// reales de clientes. Datos y render en shared/google-reviews.js.
+import { googleReviewsHtml } from '../../../shared/google-reviews.js';
+
+const html = googleReviewsHtml({
+  limit: 12,
+  columns: 3,
+  title: 'Lo que cuentan quienes ya compraron',
+});
+---
+<section class="home-reviews" id="resenas" aria-label="Reseñas de clientes">
+  <Fragment set:html={html} />
+</section>
+
+<style>
+  .home-reviews {
+    padding: 3rem 1.25rem;
+    background: var(--cream, #faf6ee);
+  }
+</style>

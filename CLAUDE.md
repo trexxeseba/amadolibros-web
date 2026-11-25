@@ -38,6 +38,17 @@
   está en solo lectura. Antes de tocar cualquier camino que publique, leer
   `docs/cuentas-mercado-libre.md`.
 
+## Publicar: cuenta verificada, siempre
+
+- Antes de crear, pausar o cerrar publicaciones en Mercado Libre, la cuenta tiene que estar
+  nombrada en el pedido de Seba ("Vintage" o "Libros"). Si el pedido dice "las mías" o no aclara
+  cuenta, se pregunta cuál es antes de tocar nada. Pasó el 18/11/2026: se publicaron 149 en Amado
+  Libros cuando Seba hablaba de Vintage.
+- Todo código que cree publicaciones verifica con Mercado Libre quién es el dueño del token
+  (`/users/me`) antes de escribir, y comprueba el dueño de lo creado. Ejemplo: `hermes-monitor/guardia.mjs`.
+  Los tests `functions/__tests__/hermes-guardia.test.js` fallan si Hermes nombra Amado Libros o si
+  aparece otro lugar que cree publicaciones sin pasar por el candado.
+
 ## Una tarea, una carpeta
 
 Varias sesiones trabajan a la vez sobre este repo. La carpeta principal

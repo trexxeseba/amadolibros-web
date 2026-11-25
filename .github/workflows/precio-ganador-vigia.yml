@@ -1,0 +1,28 @@
+name: Precio Ganador (vigía)
+
+# Cada 3 horas comprueba que Precio Ganador haya corrido bien en las últimas 7 horas.
+# Si no, manda un mail de alarma y falla (GitHub manda también su mail de falla).
+on:
+  schedule:
+    - cron: '35 */3 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  vigia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Comprobar la última corrida
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
+        run: node precio-ganador/src/vigia.mjs

@@ -800,6 +800,30 @@ async function readCatalogGalleryCache(bucket) {
   }
 }
 
+/**
+ * Texto de la ficha de catálogo de ML (/products/:id → short_description).
+ * En las publicaciones de catálogo /items/:id/description suele venir vacío:
+ * la sinopsis vive en la ficha del producto.
+ */
+export function catalogProductDescription(payload) {
+  const raw = payload?.short_description;
+  const content = raw && typeof raw === 'object' ? raw.content : raw;
+  return sanitizeDescription(content);
+}
+
+function itemNeedsDescription(item) {
+  const description = sanitizeDescription(item?.description);
+  return !description || description === String(item?.title || '').trim();
+}
+
+// Sólo completa: una descripción propia de la publicación nunca se pisa.
+function applyCatalogProductDescription(item, description) {
+  const clean = sanitizeDescription(description);
+  if (!clean || !itemNeedsDescription(item)) return false;
+  item.description = clean;
+  return true;
+}
+
 function mergeOfficialGallery(item, pictures) {
   const merged = normalizePictures([
     ...(Array.isArray(item?.pictures) ? item.pictures : []),
@@ -845,22 +869,32 @@ export async function enrichCatalogProductPictures(items, env, accessToken, {
   const priorityIds = galleryPriorityIds(env);
   const candidates = [];
   let reused = 0;
+  let descriptionsApplied = 0;
   for (const [productId, productItems] of groups) {
     const cached = cache.entries[productId];
-    if (freshGalleryEntry(cached, refreshDays, now.getTime())) {
-      for (const item of productItems) mergeOfficialGallery(item, cached.pictures);
+    // Las entradas guardadas antes de leer short_description no tienen la
+    // clave `description`: si alguna publicación del grupo sigue sin texto,
+    // se vuelve a consultar la ficha aunque la galería siga vigente.
+    const missingDescription = !(cached && 'description' in cached) &&
+      productItems.some(itemNeedsDescription);
+    if (freshGalleryEntry(cached, refreshDays, now.getTime()) && !missingDescription) {
+      for (const item of productItems) {
+        mergeOfficialGallery(item, cached.pictures);
+        if (applyCatalogProductDescription(item, cached.description)) descriptionsApplied++;
+      }
       reused++;
       continue;
     }
     const newestStart = Math.max(...productItems.map(item => Date.parse(item.start_time || '') || 0));
     const fewestPictures = Math.min(...productItems.map(item => normalizePictures(item.pictures).length));
-    candidates.push({ productId, productItems, newestStart, fewestPictures });
+    candidates.push({ productId, productItems, newestStart, fewestPictures, missingDescription });
   }
 
   candidates.sort((a, b) => {
     const priorityA = priorityIds.has(a.productId) ? 1 : 0;
     const priorityB = priorityIds.has(b.productId) ? 1 : 0;
     if (priorityA !== priorityB) return priorityB - priorityA;
+    if (a.missingDescription !== b.missingDescription) return a.missingDescription ? -1 : 1;
     if (a.fewestPictures !== b.fewestPictures) return a.fewestPictures - b.fewestPictures;
     if (a.newestStart !== b.newestStart) return b.newestStart - a.newestStart;
     return a.productId.localeCompare(b.productId);
@@ -879,8 +913,12 @@ export async function enrichCatalogProductPictures(items, env, accessToken, {
         { ...mlGetDeps, retryBudget },
       );
       const pictures = normalizePictures(payload?.pictures);
-      cache.entries[candidate.productId] = { pictures, checked_at: checkedAt };
-      for (const item of candidate.productItems) mergeOfficialGallery(item, pictures);
+      const description = catalogProductDescription(payload);
+      cache.entries[candidate.productId] = { pictures, checked_at: checkedAt, description };
+      for (const item of candidate.productItems) {
+        mergeOfficialGallery(item, pictures);
+        if (applyCatalogProductDescription(item, description)) descriptionsApplied++;
+      }
       if (pictures.length > 1) galleriesWithMultipleImages++;
       fetched++;
     } catch (error) {
@@ -888,6 +926,9 @@ export async function enrichCatalogProductPictures(items, env, accessToken, {
       const stale = cache.entries[candidate.productId];
       if (Array.isArray(stale?.pictures)) {
         for (const item of candidate.productItems) mergeOfficialGallery(item, stale.pictures);
+      }
+      for (const item of candidate.productItems) {
+        if (applyCatalogProductDescription(item, stale?.description)) descriptionsApplied++;
       }
       console.warn(`[Catalog] Galería ${candidate.productId} pendiente: ${error.message}`);
     }
@@ -921,6 +962,7 @@ export async function enrichCatalogProductPictures(items, env, accessToken, {
     fetched,
     failed,
     multiple_image_galleries: galleriesWithMultipleImages,
+    descriptions_from_product: descriptionsApplied,
     pending: Math.max(0, candidates.length - fetched),
     refresh_days: refreshDays,
     cache_write_error: cacheWriteError,

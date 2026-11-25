@@ -54,7 +54,8 @@ export function createOrderStatusHandler() {
     const order = await db
       .prepare(
         'SELECT id,public_code,payment_status,status,delivery_type,products_total_uyu,' +
-        'pickup_discount_uyu,shipping_cost_uyu,payable_total_uyu,currency ' +
+        'pickup_discount_uyu,shipping_cost_uyu,payable_total_uyu,currency,' +
+        'premio_code,premio_discount_uyu ' +
         'FROM orders WHERE public_code=? AND idempotency_key=?'
       )
       .bind(publicCode, idempotencyKey)
@@ -81,6 +82,7 @@ export function createOrderStatusHandler() {
         pickup_discount_uyu: Number(order.pickup_discount_uyu) || 0,
         shipping_cost_uyu: Number(order.shipping_cost_uyu) || 0,
         payable_total_uyu: Number(order.payable_total_uyu) || 0,
+        premio_discount_uyu: Number(order.premio_discount_uyu) || 0,
         currency: order.currency === 'UYU' ? 'UYU' : '',
       },
       items: items.map(item => ({

@@ -1,0 +1,33 @@
+name: Plata ML/MP (diagnóstico de permisos)
+
+# Solo lectura. Llama GET /money/probe del Worker, que prueba cada endpoint de
+# plata con el token real y devuelve únicamente códigos HTTP. El repo es
+# público: acá nunca se imprimen montos, ids ni datos de ventas.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ml-plata-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+    env:
+      WORKER: https://amadolibros-sync.undiaes.workers.dev
+      SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+    steps:
+      - name: Esperar a que el Worker exponga /money/probe
+        run: |
+          for i in $(seq 1 40); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $SYNC_SECRET" "$WORKER/money/probe")
+            [ "$code" = "200" ] && exit 0
+            echo "HTTP $code, esperando deploy..."; sleep 15
+          done
+          exit 1
+      - name: Diagnóstico
+        run: |
+          curl -sS --max-time 90 -H "Authorization: Bearer $SYNC_SECRET" "$WORKER/money/probe" | jq -c '.resultados | to_entries[] | {endpoint:.key, http:.value.http, ok:.value.ok, motivo:.value.motivo}'

@@ -7,6 +7,11 @@ import {
   getBookEnrichmentByIsbn,
   validateBookEnrichment,
 } from '../_shared/book-enrichment-registry.js';
+import { BOOK_TAROT_ENRICHMENTS } from '../_shared/book-tarot-enrichments.js';
+
+// TAROT-FICHAS-1: estas ediciones suman copy editorial de la editorial sobre
+// los hechos del lote; la descripción deja de ser la original a propósito.
+const TAROT_EDITORIAL_ISBNS = new Set(BOOK_TAROT_ENRICHMENTS.map(record => record.isbn));
 
 // La fusión de lotes hace que el registry devuelva un objeto COMBINADO, no el
 // del módulo: un lote posterior puede completarle campos a la misma edición.
@@ -69,6 +74,9 @@ test('las 1.000 proyecciones mejoran la ficha sin datos comerciales ni sinopsis 
       assert.notEqual(enriched.description, original.description, entry.isbn);
       assert.match(enriched.description, /coloreando números y zonas según un código de color/i);
       assert.equal(enriched._amadoEnrichmentLevel, 'editorial_real');
+    } else if (TAROT_EDITORIAL_ISBNS.has(entry.isbn)) {
+      assert.notEqual(enriched.description, original.description, entry.isbn);
+      assert.ok(enriched.description.length > 200, entry.isbn);
     } else {
       assert.equal(enriched.description, original.description, entry.isbn);
     }

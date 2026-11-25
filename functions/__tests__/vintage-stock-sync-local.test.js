@@ -97,3 +97,41 @@ test('a suspiciously incomplete list, report mode, pause_only, grace and identit
  await assert.rejects(()=>f.run(new Set(ISBNS),{readWorkbook:async()=>({source_date:f.c.source_date,source_sha256:'f'.repeat(64),rows:[]})}),/workbook_does_not_match_current_approved_stock/);
  await assert.rejects(()=>f.run(new Set(ISBNS),{mode:'close_all'}),/invalid_stock_sync_mode/);
 });
+test('stock_only (cloud mode) pauses and reactivates but never touches a price: Precio Ganador owns them',async t=>{
+ const f=await fixture(t),all=new Set(ISBNS);
+ const list=Object.fromEntries(ISBNS.map(isbn=>[isbn,40000]));
+ const workbook=stocked=>async()=>({source_date:f.c.source_date,source_sha256:f.c.source_sha256,rows:ISBNS.map(isbn=>({isbn,title:'x',listArs:list[isbn],weightKg:.5,stock:stocked.has(isbn)?'3':'0'}))});
+ for(const item of f.items.values()){item.price=1250;item.currency_id='UYU';}
+ let s=await f.run(all,{readWorkbook:workbook(all),mode:'stock_only'});assert.equal(s.repriced,undefined);assert.equal(f.puts.length,0);
+ list[ISBNS[0]]=90000;
+ const gone=new Set(ISBNS.slice(1));
+ s=await f.run(gone,{readWorkbook:workbook(gone),mode:'stock_only'});
+ assert.equal(s.paused,1);assert.ok(f.puts.every(p=>!('price' in p.body)));
+ f.puts.length=0;s=await f.run(all,{readWorkbook:workbook(all),mode:'stock_only'});
+ assert.equal(s.activated,1);assert.deepEqual(f.puts,[{id:'MLU900',body:{status:'active',available_quantity:1}}]);
+ assert.ok([...f.items.values()].every(i=>i.price===1250));
+});
+test('on a brand-new database (cloud) the request clock table is created, so the real reads do not all fail',async t=>{
+ const f=await fixture(t);
+ await f.run(new Set(ISBNS),{mode:'report'});
+ const db=openDatabase(path.join(f.temp,'publisher.sqlite'));t.after(()=>db.close());
+ assert.ok(await db.prepare('SELECT next_at FROM ml_vintage_bulk_rate WHERE id=1').first());
+});
+test('a run where nothing changed leaves updated_at alone, so the cloud saves no rows to D1',async t=>{
+ const f=await fixture(t),all=new Set(ISBNS);
+ await f.run(all,{mode:'report'});
+ const db=openDatabase(path.join(f.temp,'publisher.sqlite'));t.after(()=>db.close());
+ const before=(await db.prepare('SELECT MAX(updated_at) m FROM vintage_stock_sync').first()).m;
+ f.clock.value+=3600000;
+ await f.run(all,{mode:'report'});
+ assert.equal((await db.prepare('SELECT COUNT(*) n FROM vintage_stock_sync WHERE updated_at>?').bind(before).first()).n,0);
+ // Un libro que falta hoy sí cambia.
+ await f.run(new Set(ISBNS.slice(1)),{mode:'report'});
+ assert.equal((await db.prepare('SELECT COUNT(*) n FROM vintage_stock_sync WHERE updated_at>?').bind(before).first()).n,1);
+});
+test('books to pause go first, ahead of the active ones still to check',async t=>{
+ const f=await fixture(t);
+ const gone=new Set(ISBNS.slice(0,9));// falta sólo el último
+ const s=await f.run(gone,{mode:'stock_only',batch:1});
+ assert.equal(s.paused,1);assert.deepEqual(f.puts.map(p=>p.id),['MLU909']);
+});

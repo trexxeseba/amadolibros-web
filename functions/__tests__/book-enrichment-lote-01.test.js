@@ -10,6 +10,11 @@ import {
   listBookEnrichments,
   validateBookEnrichment,
 } from '../_shared/book-enrichment-registry.js';
+import { BOOK_TAROT_ENRICHMENTS } from '../_shared/book-tarot-enrichments.js';
+
+// TAROT-FICHAS-1: estas ediciones suman copy editorial de la editorial sobre
+// los hechos del lote; la descripción deja de ser la original a propósito.
+const TAROT_EDITORIAL_ISBNS = new Set(BOOK_TAROT_ENRICHMENTS.map(record => record.isbn));
 
 // La fusión de lotes hace que el registry devuelva un objeto COMBINADO, no el
 // del módulo: un lote posterior puede completarle campos a la misma edición.
@@ -45,7 +50,7 @@ test('el lote 01 incorpora 187 ISBN nuevos con evidencia verificable', () => {
   }
   // El total global sube con cada lote posterior (los lotes 01, 02 y 03
   // final de B11.2 agregan 83 más).
-  assert.equal(listBookEnrichments().length, 1879);
+  assert.equal(listBookEnrichments().length, 1882);
 });
 
 test('el lote 01 no contiene ni modifica títulos o datos comerciales', () => {
@@ -73,7 +78,12 @@ test('el lote 01 no contiene ni modifica títulos o datos comerciales', () => {
 
     assert.notEqual(enriched, original, entry.isbn);
     assert.equal(enriched.title, original.title, entry.isbn);
-    assert.equal(enriched.description, original.description, entry.isbn);
+    if (TAROT_EDITORIAL_ISBNS.has(entry.isbn)) {
+      assert.notEqual(enriched.description, original.description, entry.isbn);
+      assert.ok(enriched.description.length > 200, entry.isbn);
+    } else {
+      assert.equal(enriched.description, original.description, entry.isbn);
+    }
     assert.equal(enriched.price, original.price, entry.isbn);
     assert.equal(enriched.available_quantity, original.available_quantity, entry.isbn);
     assert.equal(enriched.condition, original.condition, entry.isbn);

@@ -123,7 +123,7 @@ test('os-07b: devuelve totales e items autenticados para purchase de GA4', async
   assert.deepEqual(data.order, {
     public_code: 'AL-001', delivery_type: 'shipping', products_total_uyu: 1100,
     pickup_discount_uyu: 0, shipping_cost_uyu: 190, payable_total_uyu: 1290,
-    currency: 'UYU',
+    premio_discount_uyu: 0, currency: 'UYU',
   });
   assert.deepEqual(data.items, items);
 });

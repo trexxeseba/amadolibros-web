@@ -226,6 +226,22 @@
     return 'content';
   }
 
+  // Tema e id MLU declarados en el botón (data-topic / data-mlu), para las
+  // vitrinas que muestran muchos libros en una misma página (/liquidacion).
+  function elementData(element, name) {
+    var holder = element && typeof element.closest === 'function'
+      ? element.closest('[data-' + name + ']')
+      : null;
+    return holder && typeof holder.getAttribute === 'function'
+      ? String(holder.getAttribute('data-' + name) || '')
+      : '';
+  }
+
+  function elementProductId(element) {
+    var raw = elementData(element, 'mlu').trim().toUpperCase();
+    return /^MLU\d{1,20}$/.test(raw) ? raw : '';
+  }
+
   function isWhatsAppUrl(href) {
     try {
       var url = new URL(href, window.location.href);
@@ -257,9 +273,10 @@
       cta_location: safeToken(options.ctaLocation, 'content'),
     };
 
-    var topic = safeToken(options.topic || context.topic, '');
+    var topic = safeToken(options.topic || elementData(options.element, 'topic') || context.topic, '');
     if (topic) params.topic = topic;
-    if (context.productId) params.product_id = context.productId;
+    var productId = context.productId || elementProductId(options.element);
+    if (productId) params.product_id = productId;
     var availabilityType = productAvailabilityType();
     if (availabilityType) params.availability_type = availabilityType;
 
@@ -267,7 +284,7 @@
     // en Google Ads/Meta; transport_type=beacon porque el clic navega fuera del sitio.
     params.origen = whatsappOrigin(context, options.element);
     params.ruta = window.location.pathname;
-    params.libro_id = context.productId || '';
+    params.libro_id = productId || '';
     params.transport_type = 'beacon';
 
     window.gtag('event', 'whatsapp_click', params);

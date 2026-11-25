@@ -1,4 +1,17 @@
 {
   "target_total": 80000,
-  "mode": "correct_only"
+  "mode": "correct_only",
+  "ejecutor": "nube",
+  "nube": {
+    "modo": "real",
+    "tanda": 90,
+    "tope_diario": 2000,
+    "minutos": 50,
+    "intervalo_ms": 500,
+    "clasificadores": 1,
+    "clasificar": {
+      "clasificadores": 4,
+      "intervalo_ms": 250
+    }
+  }
 }

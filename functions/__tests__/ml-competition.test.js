@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { createMlCompetition, competitionByIsbn, competitionEvents, competitionStatus, montevideoDate } from '../../worker-sync/ml-competition.js';
+import { createMlCompetition, competitionByIsbn, competitionEvents, competitionStatus, competitionCoverage, COMPETITION_SCHEMA, montevideoDate } from '../../worker-sync/ml-competition.js';
 import { createReposicionFacts } from '../../worker-sync/reposicion-facts.js';
 import { SALES_SCHEMA } from '../../worker-sync/ml-sales.js';
 import { importPurchases } from '../../worker-sync/purchases.js';
@@ -35,21 +35,17 @@ function fakeMl(state) {
   return async url => {
     const u = new URL(String(url));
     if (state.closed) return new Response('forbidden', { status: 403 });
-    // Usado más barato (44), del exterior (55) y uno sin condición en el listado (MLUC, se completa con /items/bulk).
+    // Usado más barato (44), del exterior (55) y uno sin condición en el listado (MLUC, más caro que un inmediato: no frena).
     const noise = [{ item_id: 'MLUU', seller_id: 44, price: 300, condition: 'used' }, { item_id: 'MLUX', seller_id: 55, price: 400, condition: 'new', international_delivery_mode: 'cbt' }];
     if (u.pathname === '/products/MLU999/items') return Response.json({ paging: { total: state.partial ? 99 : 6 }, results: state.day === 1
-      ? [{ item_id: 'MLU2', seller_id: Number(OWN), price: 1200, condition: 'new' }, { item_id: 'MLUA', seller_id: 11, price: 1000, condition: 'new', shipping: { free_shipping: true, logistic_type: 'fulfillment' } }, { item_id: 'MLUB', seller_id: 22, price: 1100, condition: 'new' }, { item_id: 'MLUP', seller_id: 77, price: 500, condition: 'new', sale_terms: [] }, ...noise]
-      : [{ item_id: 'MLU2', seller_id: Number(OWN), price: 1200, condition: 'new' }, { item_id: 'MLUA', seller_id: 11, price: 900, condition: 'new' }, { item_id: 'MLUC', seller_id: 33, price: 950 }, { item_id: 'MLUP', seller_id: 77, price: 500, condition: 'new', sale_terms: [] }, ...noise] });
-    // MLUP vende a pedido (21 días): no compite con un libro en stock.
-    if (u.pathname === '/items/bulk') {
-      if (state.bulkClosed) return new Response('forbidden', { status: 403 });
-      return Response.json(u.searchParams.get('ids').split(',').filter(id => id !== state.omitBulkId).map(id => ({ status_code: 200, body: {
-        id, status: state.inactive ? 'paused' : 'active', available_quantity: state.noStock ? 0 : 1, currency_id: state.noCurrency ? undefined : 'UYU',
-        condition: id === 'MLUU' ? 'used' : 'new',
-        shipping: { free_shipping: id === 'MLUA' && state.day === 1 },
-        international_delivery_mode: id === 'MLUX' ? 'cbt' : 'none',
-        sale_terms: state.noManufacturing ? [] : [{ id: 'MANUFACTURING_TIME', value_struct: { number: id === 'MLUP' ? 21 : 0, unit: 'días' } }],
-      } })));
+      ? [{ item_id: 'MLU2', seller_id: Number(OWN), price: 1200, condition: 'new' }, { item_id: 'MLUA', seller_id: 11, price: 1000, condition: 'new', shipping: { free_shipping: true, logistic_type: 'fulfillment' } }, { item_id: 'MLUB', seller_id: 22, price: 1100, condition: 'new' }, { item_id: 'MLUP', seller_id: 77, price: 500, condition: 'new' }, ...noise]
+      : [{ item_id: 'MLU2', seller_id: Number(OWN), price: 1200, condition: 'new' }, { item_id: 'MLUA', seller_id: 11, price: 900, condition: 'new' }, { item_id: 'MLUC', seller_id: 33, price: 950 }, { item_id: 'MLUP', seller_id: 77, price: 500, condition: 'new' }, ...noise] });
+    // Plazo por opciones de envío: MLUP vende a pedido (504 h = 21 días); el resto sin preparación.
+    const ship = /^\/items\/(MLU\w+)\/shipping_options$/.exec(u.pathname);
+    if (ship) {
+      if (state.shipClosed) return new Response('forbidden', { status: 403 });
+      if (state.noShipping) return Response.json({ options: [{ display: 'recommended', estimated_delivery_time: { schedule: null, handling: 96, unit: 'hour' } }] });
+      return Response.json({ options: [{ display: 'recommended', estimated_delivery_time: ship[1] === 'MLUP' ? { schedule: 504, handling: 24, unit: 'hour' } : { schedule: null, handling: 24, unit: 'hour' } }] });
     }
     if (u.pathname === '/items/MLU2/price_to_win') return Response.json(state.day === 1 ? { status: 'winning', price_to_win: 1200, winner: { item_id: 'MLU2' } } : { status: 'competing', price_to_win: 880, winner: { item_id: 'MLUA' } });
     const m = /^\/users\/(\d+)$/.exec(u.pathname);
@@ -74,8 +70,8 @@ test('foto diaria: competidores, primer lugar perdido, competidor que dejó de o
   const f = (await competitionByIsbn(db, [ISBN])).get(ISBN);
   assert.equal(f.foto, montevideoDate(DAY2));
   assert.equal(f.competidores, 5);
-  assert.equal(f.competidores_comparables, 2, 'usado, del exterior y a pedido quedan afuera');
-  assert.equal(f.excluidos_de_precio, 3);
+  assert.equal(f.competidores_comparables, 1, 'usado, del exterior, a pedido y sin condición quedan afuera');
+  assert.equal(f.excluidos_de_precio, 4);
   assert.equal(f.precio_minimo, 900, 'el de $500 vende a pedido: no cuenta');
   assert.equal(f.competidores_a_pedido, 1);
   assert.equal(f.precio_minimo_a_pedido, 500);
@@ -92,7 +88,6 @@ test('foto diaria: competidores, primer lugar perdido, competidor que dejó de o
   // Re-ejecutar el mismo día no duplica la foto.
   await runDay(db, state, DAY2 + 3600000);
   assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM comp_snapshots WHERE snap_date=?').get(montevideoDate(DAY2)).n, 6);
-  assert.equal(db.sqlite.prepare("SELECT condition FROM comp_snapshots WHERE item_id='MLUC'").get().condition, 'new', 'condición completada con /items/bulk');
 });
 
 test('si ML cierra el endpoint se detiene, lo registra y Salud lo muestra', async t => {
@@ -149,12 +144,8 @@ test('días de preparación: sólo un cero explícito prueba ausencia de prepara
 });
 
 for (const [name, missing] of [
-  ['bulk cerrado', { bulkClosed: true }],
-  ['bulk omite un vendedor', { omitBulkId: 'MLUP' }],
-  ['bulk sin plazo', { noManufacturing: true }],
-  ['sin stock disponible', { noStock: true }],
-  ['publicación pausada', { inactive: true }],
-  ['moneda sin verificar', { noCurrency: true }],
+  ['opciones de envío cerradas', { shipClosed: true }],
+  ['plazo ilegible', { noShipping: true }],
   ['listado paginado incompleto', { partial: true }],
 ]) test(`${name}: no hay recomendación de inmediatez ni de exclusividad`, async t => {
   const db = await seed(t);
@@ -210,4 +201,199 @@ test('la lista de vendedores viene por páginas: se piden todas y el producto qu
   const f = (await competitionByIsbn(db, [ISBN])).get(ISBN);
   assert.ok(f, 'el producto quedó completo, no parcial');
   assert.equal(f.competidores, 8);
+});
+
+test('opciones de envío: schedule = horas de preparación; sin schedule y despacho ≤ 24 h = inmediato; otra cosa = sin dato', async () => {
+  const { readShipping } = await import('../../worker-sync/ml-competition.js');
+  assert.equal(readShipping({ options: [{ display: 'recommended', estimated_delivery_time: { schedule: 552, handling: 24, unit: 'hour' } }] }).plazo_dias, 23);
+  assert.equal(readShipping({ options: [{ estimated_delivery_time: { schedule: null, handling: 0, unit: 'hour' } }] }).plazo_dias, 0);
+  assert.equal(readShipping({ options: [{ estimated_delivery_time: { schedule: null, handling: 72 } }] }).plazo_dias, null);
+  assert.equal(readShipping({ options: [] }).sin_envio, true);
+  assert.equal(readShipping({}), null);
+});
+
+// ── Cobertura de todo el catálogo con stock (10/11/2026) ─────────────────────
+const TAIL = '9788441437623', AGOTADO = '9788420412146';
+const catalogoAmplio = { updated_at: catalog.updated_at, items: [
+  ...catalog.items,
+  // Sin ventas en 12 meses pero con stock: entra a la cola.
+  { id: 'MLU3', isbn: TAIL, status: 'active', available_quantity: 1, catalog_listing: true, catalog_product_id: 'MLU888', price: 1395, title: 'Cola larga' },
+  // Sin ventas y sin stock: no se vigila.
+  { id: 'MLU4', isbn: AGOTADO, status: 'paused', available_quantity: 0, catalog_listing: true, catalog_product_id: 'MLU777', price: 900 },
+] };
+function fakeMlAmplio(state) {
+  const base = fakeMl(state);
+  return async url => {
+    const u = new URL(String(url));
+    if (u.pathname === '/products/MLU888/items') {
+      if (state.tailErrorsLeft > 0) { state.tailErrorsLeft--; return new Response('boom', { status: 500 }); }
+      if (state.tailPartial) return Response.json({ paging: { total: 99 }, results: [{ item_id: 'MLU3', seller_id: Number(OWN), price: 1395, condition: 'new' }] });
+      return Response.json({ paging: { total: 2 }, results: [{ item_id: 'MLU3', seller_id: Number(OWN), price: 1395, condition: 'new' }, { item_id: 'MLUD', seller_id: 88, price: 1890, condition: 'new' }] });
+    }
+    if (u.pathname === '/items/MLUD/shipping_options') return Response.json({ options: [{ display: 'recommended', estimated_delivery_time: { schedule: 504, handling: 24, unit: 'hour' } }] });
+    if (u.pathname === '/items/MLU3/price_to_win') return state.ptw404 ? new Response('nope', { status: 404 }) : Response.json({ status: 'winning', price_to_win: 1395, winner: { item_id: 'MLU3' } });
+    return base(url);
+  };
+}
+const amplio = (state, nowMs) => createMlCompetition({ fetcher: fakeMlAmplio(state), tokenProvider: async () => 'tok', now: () => nowMs, loadCatalog: async () => catalogoAmplio });
+async function diaCompleto(db, state, nowMs) {
+  const comp = amplio(state, nowMs);
+  let r;
+  for (let i = 0; i < 6; i++) { r = await comp.sync({ ORDERS_DB: db }, { calls: 50 }); if (r.state === 'done' || r.state === 'error') break; }
+  return r;
+}
+
+test('todo el catálogo con stock se vigila: primero los más vendidos, después la cola; sin stock y sin ventas queda afuera', async t => {
+  const db = await seed(t);
+  assert.equal((await diaCompleto(db, { day: 1 }, DAY1)).state, 'done');
+  const targets = db.sqlite.prepare('SELECT catalog_product_id,isbn,priority,own_catalog_item_id FROM comp_targets ORDER BY priority DESC').all();
+  assert.deepEqual(targets.map(r => r.catalog_product_id), ['MLU999', 'MLU888']);
+  assert.equal(targets[1].isbn, TAIL);
+  assert.equal(targets[1].own_catalog_item_id, 'MLU3');
+  // El libro de la cola: único con entrega inmediata, el otro lo vende a pedido bastante más caro.
+  const f = (await competitionByIsbn(db, [TAIL])).get(TAIL);
+  assert.equal(f.tu_precio, 1395);
+  assert.equal(f.competidores_comparables, 0);
+  assert.equal(f.precio_minimo_a_pedido, 1890);
+  assert.equal(f.primer_lugar, 'winning');
+  assert.ok(f.avisos.some(a => a.tipo === 'solos_en_catalogo' && /único con entrega inmediata/.test(a.texto)));
+  assert.equal((await competitionEvents(db)).vigilados, 2);
+});
+
+test('mientras la foto de hoy no llegó a un libro vale la de ayer, sin comparar días; si la de hoy quedó parcial no hay dato', async t => {
+  const db = await seed(t);
+  const state = { day: 1 };
+  await diaCompleto(db, state, DAY1);
+  // Día 2: el cupo alcanza sólo para el primero (el más vendido).
+  state.day = 2;
+  const r = await amplio(state, DAY2).sync({ ORDERS_DB: db }, { calls: 1 });
+  assert.equal(r.products, 1);
+  const facts = await competitionByIsbn(db, [ISBN, TAIL]);
+  assert.equal(facts.get(ISBN).foto, montevideoDate(DAY2));
+  assert.ok(facts.get(ISBN).avisos.some(a => a.tipo === 'primer_lugar_perdido'), 'el que ya tiene foto de hoy compara contra ayer');
+  const cola = facts.get(TAIL);
+  assert.equal(cola.foto, montevideoDate(DAY1));
+  assert.equal(cola.foto_anterior, null);
+  assert.equal(cola.precio_minimo_a_pedido, 1890);
+  assert.deepEqual(cola.avisos.map(a => a.tipo), ['solos_en_catalogo']);
+  // La tanda siguiente llega a la cola pero ML devuelve la lista incompleta: sin dato, no se usa la de ayer.
+  state.tailPartial = true;
+  await amplio(state, DAY2 + 300000).sync({ ORDERS_DB: db }, { calls: 50 });
+  assert.equal(db.sqlite.prepare("SELECT status FROM comp_product_days WHERE catalog_product_id='MLU888' AND snap_date=?").get(montevideoDate(DAY2)).status, 'partial');
+  assert.equal((await competitionByIsbn(db, [TAIL])).has(TAIL), false);
+});
+
+test('un 404 suelto de price_to_win no apaga el endpoint para el resto del catálogo', async t => {
+  const db = await seed(t);
+  // La cola responde 404 en price_to_win; el más vendido se lee igual al día siguiente.
+  const state = { day: 1, ptw404: true };
+  await diaCompleto(db, state, DAY1);
+  const st = await competitionStatus(db);
+  assert.equal(st.cursor.caps.price_to_win, 'ok');
+  assert.equal(st.cursor.ptwFails, 1);
+  assert.equal((await competitionByIsbn(db, [ISBN])).get(ISBN).primer_lugar, 'winning');
+  assert.equal((await competitionByIsbn(db, [TAIL])).get(TAIL).primer_lugar, null);
+});
+
+test('una lista armada con el criterio anterior se rearma en la primera tanda, sin esperar al día siguiente', async t => {
+  const db = await seed(t);
+  await diaCompleto(db, { day: 1 }, DAY1);
+  // Cursor del mismo día dejado por la versión que sólo vigilaba los más vendidos.
+  db.sqlite.prepare("DELETE FROM comp_targets WHERE catalog_product_id='MLU888'").run();
+  const viejo = JSON.parse(db.sqlite.prepare("SELECT cursor_json FROM comp_state WHERE name='daily'").get().cursor_json);
+  delete viejo.tv;
+  db.sqlite.prepare("UPDATE comp_state SET cursor_json=?,lease_until=0 WHERE name='daily'").run(JSON.stringify(viejo));
+  const r = await amplio({ day: 1 }, DAY1 + 600000).sync({ ORDERS_DB: db }, { calls: 0 });
+  assert.equal(r.targets, 2);
+  assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM comp_targets').get().n, 2);
+});
+
+test('vendedor lento conocido cuenta a pedido aunque ML lo muestre inmediato; Amado Vintage no es competencia', async t => {
+  const db = await seed(t);
+  const state = { day: 1 }, base = fakeMl(state), pedidos = [];
+  const fetcher = async url => {
+    const u = new URL(String(url)); pedidos.push(u.pathname);
+    if (u.pathname === '/products/MLU999/items') {
+      const r = await (await base(url)).json();
+      r.results.push({ item_id: 'MLUH', seller_id: 471589392, price: 600, condition: 'new' }, { item_id: 'MLUV', seller_id: 2341378249, price: 650, condition: 'new' });
+      return Response.json(r);
+    }
+    return base(url);
+  };
+  const comp = createMlCompetition({ fetcher, tokenProvider: async () => 'tok', now: () => DAY1, loadCatalog: async () => catalog });
+  for (let i = 0; i < 5; i++) { const r = await comp.sync({ ORDERS_DB: db }, { calls: 50 }); if (r.state === 'done') break; }
+  assert.ok(!pedidos.includes('/items/MLUH/shipping_options'), 'no se consulta su plazo');
+  assert.ok(!pedidos.includes('/items/MLUV/shipping_options'));
+  const f = (await competitionByIsbn(db, [ISBN])).get(ISBN);
+  assert.equal(f.competidores_inmediatos, 1, 'Hermes a $600 vende a pedido: el único inmediato es el de $1000');
+  assert.equal(f.competidores_a_pedido, 2);
+  assert.equal(f.vendedores.find(v => /471589392/.test(v.vendedor)).dias_preparacion, 12);
+  assert.ok(!f.vendedores.some(v => /2341378249/.test(v.vendedor)), 'Amado Vintage queda afuera');
+  // Una foto vieja que lo guardó como inmediato se corrige al leer.
+  db.sqlite.prepare("UPDATE comp_snapshots SET manufacturing_days=0 WHERE seller_id='471589392'").run();
+  assert.equal((await competitionByIsbn(db, [ISBN])).get(ISBN).competidores_inmediatos, 1);
+});
+
+test('cobertura: cuenta por qué un producto vigilado queda sin dato (sin foto, foto que no sirve, o foto de ayer)', async t => {
+  const db = database(t);
+  await db.batch(COMPETITION_SCHEMA.map(sql => db.prepare(sql)));
+  db.sqlite.exec('ALTER TABLE comp_product_days ADD COLUMN snapshot_version INTEGER');
+  const target = db.sqlite.prepare('INSERT INTO comp_targets(catalog_product_id,isbn,own_item_ids,priority,updated_at) VALUES(?,?,?,?,0)');
+  const day = db.sqlite.prepare('INSERT INTO comp_product_days(snap_date,catalog_product_id,status,fetched_at,snapshot_version) VALUES(?,?,?,0,?)');
+  ['A', 'B', 'C', 'D', 'E', 'F'].forEach((p, i) => target.run(`MLU${p}`, `97800000000${i}0`, '[]', 10 - i));
+  day.run('2026-11-19', 'MLUA', 'ok', 7);       // foto de hoy que sirve
+  day.run('2026-11-19', 'MLUB', 'partial', 7);  // foto de hoy incompleta: no se tapa con la de ayer
+  day.run('2026-11-18', 'MLUB', 'ok', 7);
+  day.run('2026-11-18', 'MLUC', 'ok', 7);       // sólo la de ayer: sirve
+  day.run('2026-11-19', 'MLUD', 'ok', 3);       // versión vieja de la foto
+  day.run('2026-11-18', 'MLUE', 'error', 7);    // sólo la de ayer y falló
+  const r = await competitionCoverage(db);       // MLUF no tiene ninguna foto
+  assert.equal(r.vigilados, 6);
+  assert.deepEqual(r.dias, ['2026-11-19', '2026-11-18']);
+  assert.deepEqual([r.con_foto_vigente, r.foto_de_hoy, r.solo_foto_de_ayer, r.sin_foto], [2, 1, 1, 1]);
+  assert.deepEqual(r.foto_no_vigente, { partial: 1, 'ok:version_vieja': 1, error: 1 });
+  assert.equal(r.con_dato + r.sin_evidencia, r.con_foto_vigente);
+  assert.ok(!JSON.stringify(r).includes('9780'), 'sólo conteos: ningún ISBN');
+});
+
+test('con tolerarFotoDeAyer, un producto cuya foto de hoy quedó parcial usa la de ayer y lo dice; sin la opción sigue sin dato', async t => {
+  const db = await seed(t);
+  const state = { day: 1 };
+  await diaCompleto(db, state, DAY1);
+  state.day = 2;
+  await amplio(state, DAY2).sync({ ORDERS_DB: db }, { calls: 1 });
+  state.tailPartial = true;
+  await amplio(state, DAY2 + 300000).sync({ ORDERS_DB: db }, { calls: 50 });
+  assert.equal((await competitionByIsbn(db, [TAIL])).has(TAIL), false, 'por defecto no se tapa con la de ayer');
+  const f = (await competitionByIsbn(db, [TAIL], { tolerarFotoDeAyer: true })).get(TAIL);
+  assert.equal(f.foto, montevideoDate(DAY1));
+  assert.equal(f.foto_vieja, true);
+  assert.equal(f.foto_anterior, null, 'no compara días: sólo cuenta lo que había ayer');
+  assert.equal(f.precio_minimo_a_pedido, 1890);
+  const ok = (await competitionByIsbn(db, [ISBN], { tolerarFotoDeAyer: true })).get(ISBN);
+  assert.equal(ok.foto_vieja, false, 'el que tiene foto de hoy no se marca');
+  const cov = await competitionCoverage(db);
+  assert.equal(cov.recuperables_con_foto_de_ayer, 1);
+  assert.deepEqual(cov.foto_no_vigente, { partial: 1 });
+});
+
+test('un error momentáneo de ML en un producto se reintenta el mismo día y queda con dato', async t => {
+  const db = await seed(t);
+  const state = { day: 1, tailErrorsLeft: 1 };   // la primera consulta de la cola responde 500
+  const r = await diaCompleto(db, state, DAY1);
+  assert.equal(r.state, 'done');
+  assert.equal(db.sqlite.prepare("SELECT status FROM comp_product_days WHERE catalog_product_id='MLU888' AND snap_date=?").get(montevideoDate(DAY1)).status, 'ok', 'el segundo intento lo completó');
+  assert.equal((await competitionByIsbn(db, [TAIL])).has(TAIL), true);
+  assert.equal(state.tailErrorsLeft, 0);
+  const st = await competitionStatus(db);
+  assert.equal(st.cursor.retries, 1, 'un solo reintento, de ese producto');
+});
+
+test('el reintento diario se hace una sola vez por producto: si sigue parcial no se insiste', async t => {
+  const db = await seed(t);
+  const state = { day: 1, tailPartial: true };
+  const r = await diaCompleto(db, state, DAY1);
+  assert.equal(r.state, 'done');
+  assert.equal((await competitionStatus(db)).cursor.retries, 1);
+  assert.equal(db.sqlite.prepare("SELECT status FROM comp_product_days WHERE catalog_product_id='MLU888' AND snap_date=?").get(montevideoDate(DAY1)).status, 'partial');
 });

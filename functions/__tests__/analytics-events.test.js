@@ -352,3 +352,66 @@ test('expone client_id y session_id anónimos para atribuir la compra server-sid
     { client_id: '123456789.987654321', session_id: 1786921140 },
   );
 });
+
+// Liquidación y agotados: el botón declara tema e id MLU (data-topic /
+// data-mlu) y cta_location (data-cta-location). El evento sigue siendo
+// whatsapp_click, el mismo que importa Google Ads.
+test('whatsapp_click toma tema, id MLU y cta_location del botón en /liquidacion y en agotados', () => {
+  function fire(pathname, attrs) {
+    const listeners = {};
+    const window = {
+      location: { hostname: 'www.amadolibros.com', pathname, href: `https://www.amadolibros.com${pathname}` },
+      dataLayer: [],
+    };
+    const document = {
+      querySelector: () => null,
+      createElement: () => ({}),
+      head: { appendChild: () => {} },
+      addEventListener: (name, handler) => { listeners[name] = handler; },
+    };
+    runInNewContext(analytics, { document, window, URL, Set, Date, Object, String, encodeURIComponent });
+    const holder = { getAttribute: name => attrs[name] ?? null };
+    const anchor = {
+      href: 'https://wa.me/59899841325?text=hola',
+      closest: selector => {
+        const m = selector.match(/^\[(data-[a-z-]+)\]$/);
+        return m && m[1] in attrs ? holder : null;
+      },
+    };
+    listeners.click({ target: { closest: selector => (selector === 'a[href]' ? anchor : null) } });
+    const [, eventName, params] = Array.from(window.dataLayer.at(-1));
+    assert.equal(eventName, 'whatsapp_click');
+    return { ...params };
+  }
+
+  const card = fire('/liquidacion', {
+    'data-cta-location': 'liquidacion_card',
+    'data-mlu': 'mlu1453287196',
+    'data-topic': 'psicologia',
+  });
+  assert.equal(card.cta_location, 'liquidacion_card');
+  assert.equal(card.topic, 'psicologia');
+  assert.equal(card.product_id, 'MLU1453287196');
+  assert.equal(card.libro_id, 'MLU1453287196');
+  assert.equal(card.ruta, '/liquidacion');
+
+  const agotados = fire('/libros-agotados-importados-uruguay', {
+    'data-cta-location': 'agotados_hero',
+    'data-topic': 'libros_agotados_importados',
+  });
+  assert.equal(agotados.cta_location, 'agotados_hero');
+  assert.equal(agotados.topic, 'libros_agotados_importados');
+  assert.equal(agotados.libro_id, '');
+  assert.equal('product_id' in agotados, false);
+
+  // Un id que no es MLU no viaja.
+  const raro = fire('/liquidacion', { 'data-cta-location': 'liquidacion_card', 'data-mlu': '099841325' });
+  assert.equal(raro.libro_id, '');
+});
+
+test('los CTA de agotados y "Lo quiero" de liquidación declaran sus parámetros', () => {
+  const agotadosPage = readFileSync('functions/libros-agotados-importados-uruguay.js', 'utf8');
+  assert.match(agotadosPage, /data-cta-location="agotados_hero" data-topic="libros_agotados_importados"/);
+  assert.match(agotadosPage, /data-cta-location="agotados_cierre" data-topic="libros_agotados_importados"/);
+  assert.doesNotMatch(agotadosPage, /[úu]nicamente|No podemos asegurar/);
+});

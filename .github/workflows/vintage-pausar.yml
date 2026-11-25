@@ -1,0 +1,109 @@
+name: Vintage pausar riesgosas
+
+# Pausa (no elimina) las publicaciones de Amado Vintage (2341378249) de la lista aprobada por Seba
+# el 08/11/2026 (scripts/vintage-cloud/pausar-2026-11-09.txt), por riesgo de propiedad intelectual.
+# Guarda un respaldo completo de cada una antes de pausarla y al final vuelve a leer el estado:
+# la corrida falla si alguna sigue activa. Sin "real" sólo lee e informa. Nunca toca Amado Libros.
+on:
+  workflow_dispatch:
+    inputs:
+      real:
+        description: 'Pausar de verdad (sin tildar: sólo informa)'
+        type: boolean
+        default: false
+      confirmar:
+        description: 'Para pausar de verdad escribí PAUSAR'
+        required: false
+      ebook:
+        description: 'Pausa preventiva: activas de Hodder, Alma y Eli Edizioni, o con ebook / e-book / libro electrónico / acceso digital en título o descripción. Sin real sólo cuenta y lista. Con real: confirmar=PAUSAR.'
+        type: boolean
+        default: false
+      sin_descripciones:
+        description: 'Con ebook: mirar sólo título y editorial (unos 10 minutos) y no la descripción de cada publicación (más de una hora).'
+        type: boolean
+        default: false
+      archivo_eliminar:
+        description: 'Con eliminar_lista: archivo de la lista, dentro de scripts/vintage-cloud (por defecto la de las 719 del 09/11, que ya se borró: usar eliminar-2026-11-11.txt para las de propiedad intelectual).'
+        required: false
+        default: 'eliminar-2026-11-11.txt'
+      eliminar_lista:
+        description: 'ELIMINAR las 719 infectadas de scripts/vintage-cloud/eliminar-2026-11-09.txt (con real y confirmar=ELIMINAR). Irreversible; respaldo antes de cada una.'
+        type: boolean
+        default: false
+      eliminar_fuera:
+        description: 'Con real: las riesgosas activas que el barrido encuentra fuera de la lista se ELIMINAN (respaldo antes). Si son más de 300, sólo se pausan.'
+        type: boolean
+        default: false
+      barrido:
+        description: 'Antes de pausar, revisar todas las activas de la cuenta y listar las riesgosas que no están en la lista (p. ej. gemelas de catálogo). Tarda ~15 min.'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vintage-pausar
+  cancel-in-progress: false
+
+jobs:
+  pausar:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests
+        run: node --experimental-sqlite --test functions/__tests__/vintage-pausar.test.js
+      - name: Pausar
+        env:
+          REAL: ${{ inputs.real }}
+          CONFIRMAR: ${{ inputs.confirmar }}
+        shell: bash
+        run: |
+          if [ "${{ inputs.ebook }}" = "true" ]; then
+            EARGS=()
+            if [ "${{ inputs.sin_descripciones }}" = "true" ]; then EARGS+=(--sin-descripciones); fi
+            if [ "$REAL" = "true" ]; then
+              if [ "$CONFIRMAR" != "PAUSAR" ]; then echo "Para pausar de verdad hay que escribir PAUSAR"; exit 1; fi
+              EARGS+=(--real)
+            fi
+            node scripts/vintage-cloud/pausar-ebook.mjs "${EARGS[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [ "${{ inputs.eliminar_lista }}" = "true" ]; then
+            if [ "$REAL" != "true" ] || [ "$CONFIRMAR" != "ELIMINAR" ]; then echo "Para eliminar hay que tildar real y escribir ELIMINAR"; exit 1; fi
+            ARCH="${{ inputs.archivo_eliminar }}"
+            # Sólo archivos eliminar-AAAA-MM-DD.txt de esa carpeta: nada de rutas libres.
+            if ! [[ "$ARCH" =~ ^eliminar-[0-9]{4}-[0-9]{2}-[0-9]{2}\.txt$ ]]; then echo "Archivo no permitido: $ARCH"; exit 1; fi
+            node scripts/vintage-cloud/pausar.mjs --eliminar-lista "scripts/vintage-cloud/$ARCH" --real | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          ARGS=(--lista scripts/vintage-cloud/pausar-2026-11-09.txt)
+          if [ "${{ inputs.barrido }}" = "true" ]; then ARGS+=(--barrido); fi
+          if [ "$REAL" = "true" ]; then
+            if [ "$CONFIRMAR" != "PAUSAR" ]; then echo "Para pausar de verdad hay que escribir PAUSAR"; exit 1; fi
+            ARGS+=(--real)
+          fi
+          if [ "${{ inputs.eliminar_fuera }}" = "true" ]; then ARGS+=(--eliminar-fuera); fi
+          node scripts/vintage-cloud/pausar.mjs "${ARGS[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Respaldo
+        if: always() && inputs.real
+        uses: actions/upload-artifact@v4
+        with:
+          name: vintage-respaldo-pausa
+          path: |
+            artifacts/vintage/respaldo-pausa.jsonl
+            artifacts/vintage/respaldo-eliminar.jsonl
+            artifacts/vintage/respaldo-ebook.jsonl
+          if-no-files-found: ignore
+          retention-days: 90

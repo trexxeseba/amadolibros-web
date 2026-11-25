@@ -1,3 +1,6 @@
+import { dispararPrecioGanador, CRONS_PRECIO_GANADOR } from './precio-ganador-trigger.js';
+import { dispararPoda, CRONS_PODA } from './poda-trigger.js';
+import { dispararVintageNube, dispararVintageVigia, dispararArnoia, dispararHermes, dispararGuardian, CRON_VINTAGE_NUBE, CRON_VINTAGE_VIGIA, CRON_ARNOIA, CRON_HERMES, CRON_GUARDIAN } from './vintage-nube-trigger.js';
 import { IMAGE_SOURCE_POLICY_VERSION } from '../functions/_shared/image-source-policy.js';
 /**
  * worker-sync/index.js
@@ -65,9 +68,10 @@ import { processPendingGa4Purchases } from '../functions/api/_ga4_measurement.js
 import { processPendingMetaPurchases } from '../functions/_shared/purchase-tracking.js';
 import { buildCatalogDiff, recordCatalogSyncLog } from './catalog-sync-log.js';
 import { mlSales, handleSalesRoute } from './ml-sales.js';
+import { handleMoneyRoute } from './money-probe.js';
 import { handlePurchasesRoute } from './purchases.js';
 import { handleReposicionRead, REPOSICION_PATH } from './reposicion-read.js';
-import { mlCompetition, competitionStatus } from './ml-competition.js';
+import { mlCompetition, competitionStatus, competitionCoverage } from './ml-competition.js';
 import { fxRates } from './fx-rates.js';
 import {
   addCompressedIndexes,
@@ -132,11 +136,12 @@ export default {
           console.error('[ml sales] Error', error?.code || error?.name || 'Error');
           return { state: 'error' };
         }),
-        // Competencia por API de ML: una foto por día de los productos de
-        // catálogo de los libros que más vendemos, por tandas. Sólo conteos en
-        // el log (los datos de terceros quedan en D1). Inerte sin
-        // ML_COMPETITION_ENABLED="true".
-        (String(env.ML_COMPETITION_ENABLED) === 'true' ? mlCompetition.sync(env, { calls: 30 }) : Promise.resolve({ state: 'disabled' })).then(result => {
+        // Competencia por API de ML: una foto por día de todos los productos de
+        // catálogo con stock (unos 3.100), por tandas. 120 llamadas por tanda
+        // alcanzan para tener la foto completa antes del correo de la mañana
+        // (96 tandas de 00:00 a 08:00). Sólo conteos en el log (los datos de
+        // terceros quedan en D1). Inerte sin ML_COMPETITION_ENABLED="true".
+        (String(env.ML_COMPETITION_ENABLED) === 'true' ? mlCompetition.sync(env, { calls: 120, deadlineMs: 90000 }) : Promise.resolve({ state: 'disabled' })).then(result => {
           if (!['disabled', 'idle', 'busy'].includes(result?.state)) console.log('[ml competition]', JSON.stringify({ state: result.state, products: result.products, sellers: result.sellers, caps: result.caps, code: result.code }));
           return result;
         }).catch(error => {
@@ -163,9 +168,56 @@ export default {
       ]));
       return;
     }
-    // Correo diario del panel (08:03 Montevideo; el segundo disparo, una hora
-    // después, solo actúa si el primero no llegó a mandarlo).
-    if (event?.cron === '3 11 * * *' || event?.cron === '3 12 * * *') {
+    // Precio Ganador: a las 09:00, 15:00 y 21:00 de Montevideo le pide a GitHub (Vintage a las 09:00 y 21:00)
+    // que corra el workflow (el cron de GitHub se atrasa horas; queda de respaldo).
+    // Publicador de Amado Vintage en la nube: cada hora le pide a GitHub que corra
+    // vintage-nube.yml (el cron de GitHub no lo estaba lanzando).
+    if (event?.cron === CRON_VINTAGE_NUBE) {
+      ctx.waitUntil(dispararVintageNube(env).then(result => {
+        console.log('[vintage nube]', JSON.stringify(result));
+      }));
+      return;
+    }
+    if (event?.cron === CRON_ARNOIA) {
+      ctx.waitUntil(dispararArnoia(env).then(result => {
+        console.log('[arnoia vintage]', JSON.stringify(result));
+      }));
+      return;
+    }
+    if (event?.cron === CRON_HERMES) {
+      ctx.waitUntil(dispararHermes(env).then(result => {
+        console.log('[hermes vintage]', JSON.stringify(result));
+      }));
+      return;
+    }
+    if (event?.cron === CRON_GUARDIAN) {
+      ctx.waitUntil(dispararGuardian(env).then(result => {
+        console.log('[guardian vintage]', JSON.stringify(result));
+      }));
+      return;
+    }
+    if (event?.cron === CRON_VINTAGE_VIGIA) {
+      ctx.waitUntil(dispararVintageVigia(env).then(result => {
+        console.log('[vintage vigia]', JSON.stringify(result));
+      }));
+      return;
+    }
+    // Poda de anuncios de Mercado Ads: 11:30 (correr) y 21:30 (auditar) de Montevideo.
+    if (CRONS_PODA.includes(event?.cron)) {
+      ctx.waitUntil(dispararPoda(env, { cron: event.cron }).then(result => {
+        console.log('[poda anuncios]', JSON.stringify(result));
+      }));
+      return;
+    }
+    if (CRONS_PRECIO_GANADOR.includes(event?.cron)) {
+      ctx.waitUntil(dispararPrecioGanador(env, { cron: event.cron }).then(result => {
+        console.log('[precio ganador]', JSON.stringify(result));
+      }));
+      return;
+    }
+    // Prepara el correo a las 19:55 de Montevideo; Resend lo entrega a las 20:00.
+    // Reintenta a las 19:58 solo si la primera preparación no fue aceptada.
+    if (event?.cron === '55 22 * * *' || event?.cron === '58 22 * * *') {
       ctx.waitUntil(sendDailyPanelDigest(env).then(result => {
         console.log('[panel digest]', JSON.stringify(result));
       }));
@@ -204,10 +256,14 @@ export default {
     if (url.pathname.startsWith('/publisher/')) return handlePublicationRoute(request,env,{admin:true});
     // Ventas de ML por ISBN/título y sincronización manual, detrás de SYNC_SECRET.
     if (url.pathname.startsWith('/sales/')) return handleSalesRoute(request, env);
+    // Diagnóstico de solo lectura de permisos de plata (solo códigos HTTP), detrás de SYNC_SECRET.
+    if (url.pathname.startsWith('/money/')) return handleMoneyRoute(request, env);
     // Compras a proveedores normalizadas (import idempotente y consulta), detrás de SYNC_SECRET.
     if (url.pathname.startsWith('/purchases/')) return handlePurchasesRoute(request, env);
     // Competencia: estado (capacidades de la API, avance del día) y corrida manual.
     if (request.method === 'GET' && url.pathname === '/competition/status') return json(await competitionStatus(env.ORDERS_DB) ?? { state: 'sin_datos' });
+    // Cobertura de la vigilancia: sólo conteos (por qué una línea dice "sin dato de competencia").
+    if (request.method === 'GET' && url.pathname === '/competition/coverage') return json(await competitionCoverage(env.ORDERS_DB));
     if (request.method === 'POST' && url.pathname === '/competition/sync') return json(await mlCompetition.sync(env, { calls: 120, deadlineMs: 25000 }));
     // Lectura de atributos de libros (solo lectura), detrás de SYNC_SECRET.
     if (url.pathname === '/attribute-audit') return handleAttributeAudit(request, env);

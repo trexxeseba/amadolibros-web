@@ -8,7 +8,8 @@
  * Qué hace, y nada más:
  *   - pasa el pedido a pagado (status='paid', payment_status='approved'),
  *     con payment_provider='bank_transfer', la fecha y el monto realmente
- *     cobrado (el total con el 12 % de descuento en libros);
+ *     cobrado (el total con el descuento por transferencia en libros, con el
+ *     tope de 25 % guardado al crear el pedido);
  *   - deja una fila `transfer_confirmed` en el historial con el monto.
  *
  * Funciona aunque el pedido figure vencido: la transferencia suele llegar
@@ -17,6 +18,7 @@
  */
 
 import { calculateTransferTotals } from '../api/_orders_logic.js';
+import { marcarPremioUsadoStmt } from './premio-web.js';
 
 export const TRANSFER_CONFIRMED_EVENT = 'transfer_confirmed';
 export const TRANSFER_PROVIDER = 'bank_transfer';
@@ -31,6 +33,8 @@ export function transferAmountFor(order) {
     productsTotal: Number(order?.products_total_uyu) || 0,
     pickupDiscount: Number(order?.pickup_discount_uyu) || 0,
     shippingCost: Number(order?.shipping_cost_uyu) || 0,
+    // TOPE-25: el mismo total que vio y pagó el cliente (NULL en pedidos viejos).
+    transferProductsTotal: order?.transfer_products_total_uyu == null ? null : Number(order.transfer_products_total_uyu),
   });
   return {
     amount: totals.transferPayableTotal,
@@ -95,6 +99,7 @@ export async function confirmTransfer({ db, order, now = new Date() }) {
         `SELECT ?,?,'${TRANSFER_CONFIRMED_EVENT}',?,? WHERE EXISTS ` +
         "(SELECT 1 FROM orders WHERE id=? AND payment_provider=? AND payment_status='approved')"
       ).bind(transferEventId(order.id), order.id, payload, at, order.id, TRANSFER_PROVIDER),
+      ...(order.premio_code ? [marcarPremioUsadoStmt(db, order.id, at, { transferencia: true })] : []),
     ]);
   } catch {
     return { ok: false, message: 'No se pudo guardar. Probá de nuevo en un momento.' };

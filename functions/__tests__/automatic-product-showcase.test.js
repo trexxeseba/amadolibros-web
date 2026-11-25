@@ -53,6 +53,17 @@ function rendered(item = book(), relatedBooks = []) {
   return renderPage(item, SLUG, false, '', '', relatedBooks);
 }
 
+test('la ficha no enlaza el género a una búsqueda del catálogo (caía siempre en "sin resultados")', () => {
+  const showcase = buildAutomaticProductShowcase(book());
+  const links = showcase?.links || [];
+  assert.ok(links.length > 0);
+  for (const link of links) {
+    assert.doesNotMatch(link.label, /Explorar libros de/);
+    assert.doesNotMatch(link.href, /\/catalogo\?q=Psicolog/i, 'el género no va como texto de búsqueda');
+  }
+  assert.ok(!links.some(link => /Psicolog[ií]a cl[ií]nica/i.test(decodeURIComponent(link.href))));
+});
+
 function schemas(html) {
   return [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
     .map(match => JSON.parse(match[1]));

@@ -1,0 +1,72 @@
+name: Competencia catálogo (foto semanal)
+
+# Foto semanal de un vendedor competidor de Mercado Libre (por defecto HERMES_PROMOSML,
+# seller 471589392): cuánto vende (contador de operaciones de su ficha pública) y qué hace en
+# los libros que vendemos nosotros (sus ofertas en nuestros productos de catálogo: precio,
+# posición, cantidad si ML la informa, preguntas). Guarda la foto en D1 y manda por mail el
+# movimiento desde la anterior. Sólo lee de Mercado Libre, con el token de Amado Vintage.
+# Nunca publica ni toca Amado Libros. Código: scripts/mercadolibre/catalogo-competidor.mjs y
+# docs/competencia-catalogo.md.
+on:
+  schedule:
+    # Domingos 06:10 UTC (03:10 en Montevideo): foto completa e informe por mail.
+    - cron: '10 6 * * 0'
+    # Lunes a sábado: pulso de una llamada que anota el contador de operaciones del día.
+    - cron: '10 6 * * 1-6'
+  workflow_dispatch:
+    inputs:
+      seller:
+        description: 'seller_id del vendedor a fotografiar'
+        default: '471589392'
+        required: true
+      accion:
+        description: 'foto (toma la foto y manda el informe), informe (sólo manda el informe de las fotos que ya hay), pulso (anota el contador de operaciones del día, sin mail) o sondeo (prueba qué rutas de la API responden)'
+        default: 'foto'
+        required: true
+        type: choice
+        options: [foto, informe, pulso, sondeo]
+
+concurrency:
+  group: competencia-catalogo
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  fotografiar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests del módulo
+        run: node --experimental-sqlite --test scripts/__tests__/catalogo-competidor.test.mjs
+      - name: Qué toca hoy
+        id: accion
+        env:
+          PEDIDA: ${{ github.event.inputs.accion }}
+          CRON: ${{ github.event.schedule }}
+        run: |
+          if [ -n "$PEDIDA" ]; then ACCION="$PEDIDA"
+          elif [ "$CRON" = "10 6 * * 1-6" ]; then ACCION=pulso
+          else ACCION=foto; fi
+          echo "accion=$ACCION" >> "$GITHUB_OUTPUT"
+          echo "Acción: $ACCION"
+      - name: Sondeo de rutas de la API (sólo códigos de respuesta)
+        if: steps.accion.outputs.accion == 'sondeo'
+        run: node scripts/mercadolibre/sondeo-competidor.mjs --seller "${{ github.event.inputs.seller || '471589392' }}"
+      - name: Foto, informe o pulso
+        if: steps.accion.outputs.accion != 'sondeo'
+        run: node scripts/mercadolibre/catalogo-competidor.mjs --seller "${{ github.event.inputs.seller || '471589392' }}" --accion "${{ steps.accion.outputs.accion }}"

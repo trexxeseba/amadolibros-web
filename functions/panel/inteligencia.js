@@ -4,7 +4,7 @@
 // Sólo lectura, con sesión del panel y en producción. HTML + SVG, sin JavaScript.
 import { deriveSessionSecret, hasValidSession, resolvePanelConfig } from '../_shared/panel-auth.js';
 import { fetchCatalogRaw as fetchCatalog } from '../_shared/catalog.js';
-import { loadBi } from '../_shared/panel-bi.js';
+import { loadBi, CONSTANTE_MIN_VENTAS_365, COBERTURA_AVISO_DIAS, comprasTexto, mercadoCorto } from '../_shared/panel-bi.js';
 
 const ORIGIN = 'https://www.amadolibros.com';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -51,16 +51,16 @@ function kpiBlock(s) {
 }
 
 const VEREDICTO = { solo: ['t-a', 'Reponer: nadie lo tiene'], sostenible: ['t-a', 'Conviene reponer'], mas_barato: ['t-b', 'Mirar el costo'], no_conviene: ['t-bad', 'No conviene'], sin_dato: ['t-c', 'Por verificar'] };
-function sinStockTable(items) {
+function sinStockTable(items, faltan = []) {
   if (!items?.length) return '';
   const rows = items.map(b => {
     const m = b.mercado ?? { estado: 'sin_dato' }, [cls, label] = VEREDICTO[m.estado] ?? VEREDICTO.sin_dato;
-    const compra = b.compra ? `${esc(SUPPLIERS[b.compra.supplier] ?? b.compra.supplier)} · ${day(new Date(b.compra.d).toISOString())}` : '—';
+    const compra = b.compras !== undefined ? esc(comprasTexto(b.compras, faltan, 0)) : b.compra ? `${esc(SUPPLIERS[b.compra.supplier] ?? b.compra.supplier)} · ${day(new Date(b.compra.d).toISOString())}` : '—';
     return `<tr><td><a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a><div class="muted">${esc(m.texto ?? 'Falta verificar stock y plazos de todos los competidores. La competencia no permite decidir todavía.')}</div></td>
       <td class="n">${num(b.u90)}</td><td class="n">${b.avgPrice ? money(b.avgPrice) : '—'}</td><td class="n">${m.estado === 'sin_dato' ? '—' : num(m.nacionales)}</td>
       <td class="n">${m.min != null ? money(m.min) : '—'}</td><td class="n">${b.costo ? money(b.costo) : '—'}</td><td class="n">${b.margen ? `<span class="${b.margen.margin < 0 ? 'down' : 'up'}">${money(b.margen.margin)}</span>` : '—'}</td><td>${compra}</td><td><span class="tag ${cls}">${label}</span></td></tr>`;
   }).join('');
-  return `<h2>Libros A sin stock: ¿conviene reponer?</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio prom.</th><th class="n">Con entrega inmediata</th><th class="n">Más barato inmediato</th><th class="n">Costo hoy</th><th class="n">Ganás por libro</th><th>Última compra</th><th>Qué hacer</th></tr></thead><tbody>${rows}</tbody></table>
+  return `<h2>Libros A sin stock: ¿conviene reponer?</h2><div class="card scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 90 d</th><th class="n">Tu precio prom.</th><th class="n">Con entrega inmediata</th><th class="n">Más barato inmediato</th><th class="n">Costo hoy</th><th class="n">Ganás por libro</th><th>Compras</th><th>Qué hacer</th></tr></thead><tbody>${rows}</tbody></table>
     <p class="muted">"Con entrega inmediata": vendedores con el libro nuevo, sin envío del exterior y sin días de preparación en la publicación de catálogo de ML (foto diaria). Los que lo venden a pedido no cuentan. Los 15 que más vendían.</p></div>`;
 }
 
@@ -102,7 +102,19 @@ function inventoryBlock(s) {
       <p class="muted">Stock para menos de ${15 * 2} días al ritmo actual (el proveedor tarda ~15).</p>${list(v.coberturaBaja, b => `<tr><td>${link(b)}</td><td class="n">${b.dias} días</td></tr>`)}</div>
     <div class="card"><div class="kpi"><div class="l">Stock muerto</div><div class="v">${num(v.muertoCount)}</div></div>
       <p class="muted">${num(v.muertoUnidades)} unidades con stock y sin ventas en 6 meses: candidatos a promoción o rebaja.</p>${list(v.muerto, b => `<tr><td>${link(b)}</td><td class="n">${b.stock} u.</td></tr>`)}</div>
-  </div>${sinStockTable(v.aSinStock)}`;
+  </div>${constantesBlock(v.constantes)}${sinStockTable(v.aSinStock, v.faltanCompras)}`;
+}
+
+// Lentos pero constantes: 2 o más ventas propias en 12 meses y stock para 75
+// días o menos. Es la lista para no quebrar los que venden 1 cada 60 días.
+function constantesBlock(c) {
+  if (!c) return '';
+  const rows = (c.lista ?? []).map(b => `<tr><td><a href="/panel/reposicion?q=${esc(b.isbn)}">${esc(b.title ?? b.isbn)}</a><br><small class="muted">${esc(b.isbn)}${b.clase ? ` · clase ${esc(b.clase)}` : ''}</small></td>
+    <td class="n">${num(b.u365p)}</td><td class="n">1 cada ${num(b.ritmo)} d</td><td class="n">${b.avgPrice ? money(b.avgPrice) : '—'}</td><td class="n">${b.stock === 0 ? '<span class="tag t-bad">0</span>' : b.stock}</td><td class="n">${b.cobertura} d</td><td class="n"><b>${num(b.pedir)}</b></td>
+    <td>${esc(mercadoCorto(b.mercado))}<br><small class="muted">${esc(comprasTexto(b.compras, c.faltan, b.stock))}.</small></td></tr>`).join('');
+  return `<div class="card"><div class="kpi"><div class="l">Lentos pero constantes: último ejemplar o agotados</div><div class="v">${num(c.total)}</div></div>
+    <p class="muted">Vendieron ${CONSTANTE_MIN_VENTAS_365} o más en 12 meses con stock propio y lo que queda alcanza para ${COBERTURA_AVISO_DIAS} días o menos (el proveedor tarda ~15 más 75 de colchón). Pedir = lo que falta para el objetivo del motor, mínimo 1. De los ${num(c.total)}: ${num(c.conStock)} con stock bajo que siguen vendiendo, ${num(c.agotadosRecientes)} agotados que vendieron en los últimos 4 meses, ${num(c.agotadosViejos)} agotados hace más y ${num(c.sinMovimiento)} con stock y sin ventas en 4 meses. Se listan los más urgentes de los dos primeros grupos: primero los que todavía tienen un ejemplar, después los que se agotaron más recién.${c.enCamino ? ` ${num(c.enCamino)} ya tienen compra en camino y no se listan.` : ''}${c.error ? ` <b>No se pudo calcular: ${esc(c.error)}.</b>` : ''}</p>
+    ${rows ? `<div class="scroll"><table><thead><tr><th>Libro</th><th class="n">Vendidos 12 m</th><th class="n">Ritmo</th><th class="n">Precio</th><th class="n">Stock</th><th class="n">Alcanza</th><th class="n">Pedir</th><th>Stock inmediato en Uruguay</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">Ninguno en riesgo hoy.</p>'}</div>`;
 }
 
 function purchasesBlock(s) {

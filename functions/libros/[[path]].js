@@ -6,6 +6,7 @@
  */
 import { slugify } from '../_shared/slug.js';
 import { promoAwareCacheControl, promoWasHtml } from '../_shared/web-promo.js';
+import { transferDisplayPrice } from '../_shared/descuentos.js';
 import { BASE, fetchActiveIndex, fetchPausedIndex, fetchCatalog } from '../_shared/catalog.js';
 import {
     BRAND,
@@ -311,7 +312,8 @@ function cardHtml(item, index, navigationBase) {
     const byRequest = item.status === 'paused';
     const price = byRequest ? 0 : Number(item.price) || 0;
     const priceText = price.toLocaleString('es-UY');
-    const transferText = Math.round(price * 0.88).toLocaleString('es-UY');
+    const transferValue = byRequest ? null : transferDisplayPrice(item);
+    const transferText = transferValue === null ? '' : transferValue.toLocaleString('es-UY');
     const installmentText = Math.round(price / 12).toLocaleString('es-UY');
     const responsiveAttrs = image.srcset
         ? ` srcset="${escapeHtml(image.srcset)}" sizes="${escapeHtml(image.sizes)}"`
@@ -330,7 +332,7 @@ function cardHtml(item, index, navigationBase) {
       <strong>$${escapeHtml(priceText)} UYU</strong>
       ${promoWasHtml(item)}
       <span>Hasta 12 cuotas de aprox. $${escapeHtml(installmentText)}</span>
-      <span class="transfer">Transferencia: $${escapeHtml(transferText)}</span>
+      ${transferText ? `<span class="transfer">Transferencia: $${escapeHtml(transferText)}</span>` : ''}
     </div>` : ''}
     ${byRequest ? '<p class="book-order-note">Consultá precio y plazo de entrega.</p>' : ''}
     <a class="book-cta" href="${escapeHtml(href)}">${byRequest ? 'Consultar ficha' : 'Ver ficha'}</a>

@@ -3,8 +3,9 @@
 // producto de catálogo y a qué precio), /items/{id}/price_to_win (si ganamos el
 // primer lugar) y /users/{id} (ventas totales del vendedor, para inferir).
 //
-// Una foto por día (fecha de Montevideo) de los productos que importan: los de
-// catálogo de los libros que más vendemos (no las ~7.000 publicaciones). El
+// Una foto por día (fecha de Montevideo) de todos los productos de catálogo con
+// stock: primero los de los libros que más vendemos (TOP_TARGETS) y después el
+// resto del catálogo (la cola larga también puede estar regalando margen). El
 // cron de 5 minutos avanza por tandas con un cursor en D1.
 //
 // Los datos de terceros (vendedores, precios) quedan en D1: nunca en logs, en
@@ -13,11 +14,57 @@
 import { getAccessToken } from './meli-auth.js';
 import { topOwnSalesIsbns, SALES_SELLER_ID } from './ml-sales.js';
 import { bookIsbn } from './isbn.js';
-import { bulkItemsPath, bulkEntryItem } from './meli-bulk.js';
 
 const ML_ORIGIN = 'https://api.mercadolibre.com';
-const PRODUCT_PAGES = 5, PRODUCT_PAGE_SIZE = 50;
-const DAY_MS = 86400000, LEASE_MS = 240000, MAX_TARGETS = 400, MAX_SELLERS = 60, SNAPSHOT_VERSION = 6;
+const PRODUCT_PAGES = 5, PRODUCT_PAGE_SIZE = 50, RETRY_MAX = 800, RETRY_FROM = 1e12;
+const DAY_MS = 86400000, LEASE_MS = 240000, MAX_SELLERS = 60, SNAPSHOT_VERSION = 7;
+// Los más vendidos van primero (foto fresca de madrugada); después, el resto del
+// catálogo con stock. El 10/11/2026 eran 3.121 productos distintos con stock.
+export const TOP_TARGETS = 400, MAX_TARGETS = 4500;
+const PTW_MAX_FAILS = 3;
+// Cambia cuando cambia el criterio de qué se vigila: la lista se rearma en la
+// primera tanda después del deploy, sin esperar al día siguiente.
+const TARGETS_VERSION = 2;
+
+// Plazo de preparación por /items/{id}/shipping_options (destino: Cordón,
+// Montevideo). Calibrado el 03/11/2026 con 60 publicaciones propias
+// inmediatas: schedule null y handling 0 o 24 h. Un vendedor a pedido trae en
+// schedule las horas de preparación (p. ej. 552 h). Regla:
+//   schedule con número             → preparación = schedule
+//   schedule null y handling ≤ 24 h → sin preparación
+//   cualquier otra cosa             → null (sin dato), nunca "inmediata"
+export const SHIPPING_CITY = 'TUxVQ0NPUjZmZjNm';
+const HANDLING_IMMEDIATE_MAX_H = 24, MAX_SHIPPING_CHECKS = 12;
+
+// Vendedores que ML muestra sin plazo de preparación pero que en la práctica
+// venden a pedido (revisado a mano). Seller id → días reales aproximados. Para
+// ellos no se consulta shipping_options: cuentan siempre como a pedido.
+export const SLOW_SELLERS = new Map([
+  ['471589392', 12], // HERMES_PROMOSML: figura sin plazo, entrega en unos 12 días (26/10/2026)
+]);
+// Cuentas de la casa: nunca son competencia.
+export const HOUSE_SELLERS = new Set([SALES_SELLER_ID, '2341378249']); // Amado Libros, Amado Vintage
+export function realDays(sellerId, days) {
+  const slow = SLOW_SELLERS.get(String(sellerId ?? ''));
+  return slow != null && (days == null || days < slow) ? slow : days;
+}
+const toNum = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+const toHours = (v, unit) => v == null ? null : String(unit ?? 'hour').toLowerCase().startsWith('day') ? v * 24 : v;
+export function readShipping(data) {
+  const opts = Array.isArray(data?.options) ? data.options : null;
+  if (!opts) return null;
+  if (!opts.length) return { plazo_dias: null, sin_envio: true };
+  const recommended = opts.filter(o => o?.display === 'recommended');
+  const times = (recommended.length ? recommended : opts).map(o => o?.estimated_delivery_time).filter(Boolean);
+  if (!times.length) return null;
+  const hours = times.map(e => {
+    const sched = toHours(toNum(e.schedule), e.unit), handling = toHours(toNum(e.handling), e.unit);
+    if (sched != null) return sched;
+    if (handling != null && handling <= HANDLING_IMMEDIATE_MAX_H) return 0;
+    return null;
+  }).filter(h => h != null);
+  return { plazo_dias: hours.length ? Math.ceil(Math.min(...hours) / 24) : null, sin_envio: false };
+}
 
 // Días de preparación de una publicación (venta a pedido). 0 = entrega
 // sin preparación informada; null = no se pudo verificar el plazo.
@@ -38,6 +85,8 @@ export const COMPETITION_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS comp_product_days(snap_date TEXT NOT NULL,catalog_product_id TEXT NOT NULL,status TEXT NOT NULL,winner_item_id TEXT,own_status TEXT,price_to_win REAL,fetched_at INTEGER NOT NULL,PRIMARY KEY(snap_date,catalog_product_id))`,
   `CREATE TABLE IF NOT EXISTS comp_seller_days(snap_date TEXT NOT NULL,seller_id TEXT NOT NULL,nickname TEXT,transactions_completed INTEGER,power_seller_status TEXT,fetched_at INTEGER NOT NULL,PRIMARY KEY(snap_date,seller_id))`,
   `CREATE TABLE IF NOT EXISTS comp_state(name TEXT PRIMARY KEY,cursor_json TEXT NOT NULL,lease_until INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL,last_result_json TEXT)`,
+  // La tanda recorre los productos por prioridad: sin índice ordena la tabla entera en cada paso.
+  `CREATE INDEX IF NOT EXISTS comp_targets_priority ON comp_targets(priority)`,
 ];
 
 export const montevideoDate = ms => new Date(ms - 3 * 3600000).toISOString().slice(0, 10);
@@ -68,20 +117,22 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     try { return await res.json(); } catch { throw new CompError('ml_bad_json'); }
   }
 
-  // Productos a vigilar: los de catálogo de los libros con más ventas propias.
+  // Productos a vigilar: los de catálogo de los libros con más ventas propias y,
+  // detrás, todos los demás del catálogo que hoy tienen stock.
   async function buildTargets(db, catalog) {
     const byIsbn = new Map();
     for (const item of Array.isArray(catalog?.items) ? catalog.items : []) {
       const isbn = bookIsbn(item?.isbn);
       const pid = typeof item?.catalog_product_id === 'string' ? item.catalog_product_id.trim().toUpperCase() : '';
       if (!isbn || !pid) continue;
-      const entry = byIsbn.get(isbn) ?? { pid, items: [], catalogItem: null, price: null };
+      const entry = byIsbn.get(isbn) ?? { pid, items: [], catalogItem: null, price: null, enVenta: false };
       entry.items.push(item.id);
+      if (item.status === 'active' && Number(item.available_quantity) > 0) entry.enVenta = true;
       if (item.catalog_listing === true && item.status === 'active') entry.catalogItem = item.id;
       if (item.status === 'active' && Number.isFinite(Number(item.price))) entry.price = entry.price == null ? Number(item.price) : Math.min(entry.price, Number(item.price));
       byIsbn.set(isbn, entry);
     }
-    const top = await topOwnSalesIsbns(db, { minUnits365: 1, limit: MAX_TARGETS * 2, nowMs: now() });
+    const top = await topOwnSalesIsbns(db, { minUnits365: 1, limit: TOP_TARGETS * 2, nowMs: now() });
     // Los que se agotaron y ya no están en el catálogo: el producto de catálogo
     // sale de la identidad de sus ventas, para saber si otro lo vende hoy.
     const missing = top.map(r => r.isbn).filter(isbn => !byIsbn.has(isbn));
@@ -89,25 +140,35 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
       try {
         const { results } = await db.prepare(`SELECT isbn, MAX(catalog_product_id) AS pid FROM ml_sales_item_identity
           WHERE isbn IN (SELECT value FROM json_each(?)) AND catalog_product_id IS NOT NULL AND catalog_product_id<>'' GROUP BY isbn`).bind(JSON.stringify(missing)).all();
-        for (const r of results) byIsbn.set(r.isbn, { pid: String(r.pid).trim().toUpperCase(), items: [], catalogItem: null, price: null });
+        for (const r of results) byIsbn.set(r.isbn, { pid: String(r.pid).trim().toUpperCase(), items: [], catalogItem: null, price: null, enVenta: false });
       } catch { /* sin identidades: sólo lo del catálogo */ }
     }
-    const rows = [];
+    const rows = [], vistos = new Set();
     for (const r of top) {
       const e = byIsbn.get(r.isbn);
-      if (!e || rows.some(x => x.pid === e.pid)) continue;
-      rows.push({ ...e, isbn: r.isbn });
-      if (rows.length >= MAX_TARGETS) break;
+      if (!e || vistos.has(e.pid)) continue;
+      vistos.add(e.pid); rows.push({ ...e, isbn: r.isbn });
+      if (rows.length >= TOP_TARGETS) break;
     }
+    // La cola: el resto del catálogo que hoy tiene stock. Cada día arranca en otro
+    // punto: si un día el cupo no alcanzara para todos, no quedan siempre los mismos
+    // sin foto.
+    const cola = [];
+    for (const [isbn, e] of byIsbn) {
+      if (!e.enVenta || vistos.has(e.pid)) continue;
+      vistos.add(e.pid); cola.push({ ...e, isbn });
+    }
+    const giro = cola.length ? (Math.floor((now() - 3 * 3600000) / DAY_MS) * 389) % cola.length : 0;
+    rows.push(...[...cola.slice(giro), ...cola.slice(0, giro)].slice(0, Math.max(0, MAX_TARGETS - rows.length)));
     const t = now();
     const stmts = [db.prepare('DELETE FROM comp_targets')];
     rows.forEach((e, i) => stmts.push(db.prepare('INSERT INTO comp_targets(catalog_product_id,isbn,own_item_ids,own_catalog_item_id,own_price,priority,updated_at) VALUES(?,?,?,?,?,?,?)')
-      .bind(e.pid, e.isbn, JSON.stringify(e.items), e.catalogItem, e.price, MAX_TARGETS - i, t)));
+      .bind(e.pid, e.isbn, JSON.stringify(e.items), e.catalogItem, e.price, rows.length - i, t)));
     for (let i = 0; i < stmts.length; i += 80) await db.batch(stmts.slice(i, i + 80));
     return rows.length;
   }
 
-  async function snapProduct(db, token, target, date, caps) {
+  async function snapProduct(db, token, target, date, caps, cursor = {}) {
     const t = now();
     let items = null, winner = null, complete = false, pageCalls = 0;
     try {
@@ -136,37 +197,39 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     }
     const ok = items !== null && complete;
     let ptw = null;
-    if (target.own_catalog_item_id && caps.price_to_win !== 'ml_http_403' && caps.price_to_win !== 'ml_http_404') {
-      try { ptw = await ml(`/items/${encodeURIComponent(target.own_catalog_item_id)}/price_to_win?version=v2`, token); caps.price_to_win = 'ok'; }
-      catch (e) { caps.price_to_win = e.code; if (e.status === 429) throw e; }
+    // Un 403/404 suelto (una publicación que se pausó después del sync) no cierra
+    // el endpoint para el resto del catálogo: recién con tres seguidos se deja de pedir.
+    if (target.own_catalog_item_id && (cursor.ptwFails ?? 0) < PTW_MAX_FAILS) {
+      try { ptw = await ml(`/items/${encodeURIComponent(target.own_catalog_item_id)}/price_to_win?version=v2`, token); caps.price_to_win = 'ok'; cursor.ptwFails = 0; }
+      catch (e) {
+        if (e.status === 429) throw e;
+        if (e.status === 403 || e.status === 404) { cursor.ptwFails = (cursor.ptwFails ?? 0) + 1; if (cursor.ptwFails >= PTW_MAX_FAILS) caps.price_to_win = e.code; }
+        else caps.price_to_win = e.code;
+      }
     }
     winner = ptw?.winner?.item_id ?? null;
     let extraCalls = Math.max(0, pageCalls - 1);
-    // Condición y días de preparación de cada competidor salen siempre de
-    // /items/bulk: el listado del catálogo no trae el plazo de preparación
-    // completo. Si ML no lo manda, queda sin dato (null), nunca como inmediato.
-    const competitors = (items ?? []).filter(it => typeof it?.item_id === 'string' && String(it.seller_id ?? '') !== SALES_SELLER_ID);
-    const sinCondicion = [...new Set(competitors.map(it => it.item_id))];
-    // El listado del catálogo no es evidencia de plazo/stock. Se descarta
-    // antes del bulk para que un 403 o una respuesta parcial no deje un 0 falso.
-    for (const it of competitors) { it.sale_terms = undefined; it.condition = undefined; it.international_delivery_mode = undefined; }
-    if (sinCondicion.length && caps.items_bulk !== 'ml_http_403' && caps.items_bulk !== 'ml_http_401') {
-      const extra = new Map();
-      for (let i = 0; i < sinCondicion.length; i += 20) {
-        try {
-          const raw = await ml(bulkItemsPath(sinCondicion.slice(i, i + 20), 'id,status,available_quantity,currency_id,condition,shipping,international_delivery_mode,sale_terms'), token);
-          extraCalls++; caps.items_bulk = 'ok';
-          for (const item of (Array.isArray(raw) ? raw : []).map(bulkEntryItem).filter(Boolean)) extra.set(item.id, item);
-        } catch (e) { caps.items_bulk = e.code; if (e.status === 429) throw e; break; }
-      }
+    // Plazo de cada competidor por /items/{id}/shipping_options: /items/bulk de
+    // terceros responde 403 y el listado del catálogo no trae el plazo. Del más
+    // barato al más caro, hasta encontrar uno nuevo y nacional sin preparación:
+    // los más caros que ése no cambian la comparación. Sin dato = null, nunca
+    // "inmediato".
+    const competitors = (items ?? []).filter(it => typeof it?.item_id === 'string' && /^MLU[A-Z0-9]+$/i.test(it.item_id) && !HOUSE_SELLERS.has(String(it.seller_id ?? '')))
+      .sort((a, b) => (Number(a.price) || Infinity) - (Number(b.price) || Infinity));
+    if (caps.shipping_options !== 'ml_http_403' && caps.shipping_options !== 'ml_http_401') {
+      let inmediata = false, consultas = 0;
       for (const it of competitors) {
-        const x = extra.get(it.item_id);
-        if (!x) continue;
-        it.condition = x.condition;
-        it.currency_id = x.currency_id;
-        it.international_delivery_mode = x.international_delivery_mode;
-        it.shipping = x.shipping;
-        it.sale_terms = x.status === 'active' && Number(x.available_quantity) > 0 && Array.isArray(x.sale_terms) ? x.sale_terms : undefined;
+        if (inmediata || consultas >= MAX_SHIPPING_CHECKS) break;
+        const slow = SLOW_SELLERS.get(String(it.seller_id ?? ''));
+        if (slow != null) { it._prep = slow; continue; }
+        try {
+          const env = readShipping(await ml(`/items/${encodeURIComponent(it.item_id)}/shipping_options?city_to=${SHIPPING_CITY}`, token));
+          consultas++; extraCalls++;
+          caps.shipping_options = 'ok';
+          if (!env || env.sin_envio) continue;
+          it._prep = env.plazo_dias;
+          if (env.plazo_dias === 0 && it.condition === 'new' && (it.international_delivery_mode == null || it.international_delivery_mode === 'none') && (it.currency_id ?? 'UYU') === 'UYU') inmediata = true;
+        } catch (e) { consultas++; extraCalls++; caps.shipping_options = e.code; if (e.status === 429) throw e; if (e.status === 401 || e.status === 403) break; }
       }
     }
     const stmts = [];
@@ -178,7 +241,7 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
         ON CONFLICT(snap_date,catalog_product_id,item_id) DO UPDATE SET price=excluded.price,free_shipping=excluded.free_shipping,logistic_type=excluded.logistic_type,is_winner=excluded.is_winner,fetched_at=excluded.fetched_at,condition=excluded.condition,international=excluded.international,manufacturing_days=excluded.manufacturing_days`)
         .bind(date, target.catalog_product_id, it.item_id, String(it.seller_id ?? ''), Number.isFinite(Number(it.price)) ? Number(it.price) : null, it.currency_id ?? null,
           it.shipping?.free_shipping ? 1 : 0, it.shipping?.logistic_type ?? null, winner && winner === it.item_id ? 1 : 0, t,
-          typeof it.condition === 'string' ? it.condition : null, intl, manufacturingDays(it)));
+          typeof it.condition === 'string' ? it.condition : null, intl, it._prep ?? null));
     }
     stmts.push(db.prepare(`INSERT INTO comp_product_days(snap_date,catalog_product_id,status,winner_item_id,own_status,price_to_win,fetched_at,snapshot_version) VALUES(?,?,?,?,?,?,?,?)
       ON CONFLICT(snap_date,catalog_product_id) DO UPDATE SET status=excluded.status,winner_item_id=excluded.winner_item_id,own_status=excluded.own_status,price_to_win=excluded.price_to_win,fetched_at=excluded.fetched_at,snapshot_version=excluded.snapshot_version`)
@@ -207,17 +270,17 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     const row = await db.prepare('UPDATE comp_state SET lease_until=? WHERE name=? AND lease_until<? RETURNING cursor_json').bind(token_, 'daily', started).first();
     if (!row) return { state: 'busy' };
     let cursor = JSON.parse(row.cursor_json || '{}');
-    const result = { state: 'idle', products: 0, sellers: 0 };
+    const result = { state: 'idle', products: 0, sellers: 0, retried: 0 };
     const date = montevideoDate(started);
     const hasTime = () => calls > 0 && now() - started < deadlineMs;
     try {
       // v2 agrega condición y envío internacional: una foto vieja del mismo día se rehace.
-      if (cursor.date !== date || cursor.v !== SNAPSHOT_VERSION) {
+      if (cursor.date !== date || cursor.v !== SNAPSHOT_VERSION || cursor.tv !== TARGETS_VERSION) {
         const loader = loadCatalog ?? (async () => { const obj = await env.CATALOG_R2?.get('catalog.json'); return obj ? obj.json() : null; });
         const catalog = await loader();
         if (!catalog) throw new CompError('catalog_unavailable', 503);
         result.targets = await buildTargets(db, catalog);
-        cursor = { date, v: SNAPSHOT_VERSION, phase: 'products', offset: 0, fails: 0, okToday: 0, caps: {} };
+        cursor = { date, v: SNAPSHOT_VERSION, tv: TARGETS_VERSION, phase: 'products', offset: 0, fails: 0, okToday: 0, caps: {} };
       }
       const caps = cursor.caps ?? {};
       if (cursor.phase === 'products' && hasTime()) {
@@ -227,10 +290,10 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
           const t = await db.prepare('SELECT * FROM comp_targets ORDER BY priority DESC LIMIT 1 OFFSET ?').bind(cursor.offset).first();
           if (!t) {
             if (!cursor.okToday && cursor.fails) { cursor = { ...cursor, phase: 'done' }; result.state = 'products_endpoint_unavailable'; }
-            else cursor = { ...cursor, phase: 'sellers', offset: 0 };
+            else cursor = { ...cursor, phase: 'retry', retryLast: RETRY_FROM, retries: 0 };
             break;
           }
-          const { ok, extraCalls } = await snapProduct(db, token, t, date, caps);
+          const { ok, extraCalls } = await snapProduct(db, token, t, date, caps, cursor);
           calls -= (t.own_catalog_item_id ? 2 : 1) + extraCalls; cursor.offset++; result.products++;
           cursor.fails = ok ? 0 : (cursor.fails ?? 0) + 1;
           cursor.okToday = (cursor.okToday ?? 0) + (ok ? 1 : 0);
@@ -238,6 +301,22 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
           // no tiene sentido seguir quemando cupo hasta mañana.
           if (!cursor.okToday && cursor.fails >= 3) { cursor = { ...cursor, phase: 'done' }; result.state = 'products_endpoint_unavailable'; break; }
         }
+      }
+      // Un día cuyo recorrido ya terminó con la versión anterior (sin reintento) lo hace una vez.
+      if (cursor.phase === 'done' && cursor.retries === undefined && cursor.okToday > 0) cursor = { ...cursor, phase: 'retry', retryLast: RETRY_FROM, retries: 0 };
+      // Segundo intento, una vez por día, de los productos cuya foto falló o quedó parcial: de los más
+      // vendidos a los menos. Un error de ML suele ser momentáneo y no vale dejar al libro sin dato todo el día.
+      if (cursor.phase === 'retry' && hasTime()) {
+        const token = await tokenProvider(env);
+        while (hasTime() && (cursor.retries ?? 0) < RETRY_MAX) {
+          const t = await db.prepare(`SELECT t.* FROM comp_targets t JOIN comp_product_days d ON d.catalog_product_id=t.catalog_product_id AND d.snap_date=?
+            WHERE (d.status<>'ok' OR d.snapshot_version IS NOT ?) AND t.priority<? ORDER BY t.priority DESC LIMIT 1`).bind(date, SNAPSHOT_VERSION, cursor.retryLast ?? RETRY_FROM).first();
+          if (!t) { cursor = { ...cursor, phase: 'sellers', offset: 0 }; break; }
+          result.state = 'retry';
+          const { extraCalls } = await snapProduct(db, token, t, date, caps, cursor);
+          calls -= (t.own_catalog_item_id ? 2 : 1) + extraCalls; cursor.retryLast = t.priority; cursor.retries = (cursor.retries ?? 0) + 1; result.retried++;
+        }
+        if (cursor.phase === 'retry' && (cursor.retries ?? 0) >= RETRY_MAX) cursor = { ...cursor, phase: 'sellers', offset: 0 };
       }
       if (cursor.phase === 'sellers' && hasTime()) {
         const token = await tokenProvider(env);
@@ -274,7 +353,10 @@ const money = v => v == null ? '—' : `$ ${Math.round(v).toLocaleString('es-UY'
 // Hechos de competencia por ISBN comparando la última foto con la anterior.
 // Pocas consultas en total (json_each), no una por producto: el panel en Pages
 // tiene tope de consultas a D1 por request.
-export async function competitionByIsbn(db, isbns) {
+// opts.tolerarFotoDeAyer: si la foto de hoy de un producto falló o quedó parcial y la de ayer sirve, se
+// usa la de ayer (marcada foto_vieja y sin comparar días). Para decidir una reposición alcanza: lo que
+// hace un competidor no cambia en un día. Los eventos y precios siguen sin tolerarla.
+export async function competitionByIsbn(db, isbns, { tolerarFotoDeAyer = false } = {}) {
   const out = new Map();
   const valid = [...new Set(isbns.filter(Boolean))];
   if (!valid.length) return out;
@@ -294,25 +376,44 @@ export async function competitionByIsbn(db, isbns) {
   ])).map(r => r.results);
   const sellerDay = new Map(sellers.map(r => [`${r.snap_date}|${r.seller_id}`, r]));
   const name = sid => sellerDay.get(`${today}|${sid}`)?.nickname ?? sellerDay.get(`${prev}|${sid}`)?.nickname ?? `vendedor ${sid}`;
+  // Índices por producto: con todo el catálogo vigilado, filtrar la lista entera
+  // por cada libro no entra en el tiempo de CPU del panel.
+  const snapsBy = new Map(), pdBy = new Map();
+  for (const r of snaps) { const l = snapsBy.get(r.catalog_product_id); if (l) l.push(r); else snapsBy.set(r.catalog_product_id, [r]); }
+  for (const p of pdays) pdBy.set(`${p.catalog_product_id}|${p.snap_date}`, p);
+  const vigente = p => p?.status === 'ok' && p.snapshot_version === SNAPSHOT_VERSION;
   for (const t of targets) {
-    const rows = snaps.filter(r => r.catalog_product_id === t.catalog_product_id);
-    const pd = pdays.find(p => p.catalog_product_id === t.catalog_product_id && p.snap_date === today);
-    if (!pd || pd.status !== 'ok' || pd.snapshot_version !== SNAPSHOT_VERSION) continue;
-    const pdPrev = prev ? pdays.find(p => p.catalog_product_id === t.catalog_product_id && p.snap_date === prev) : null;
-    const prevOk = pdPrev?.status === 'ok' && pdPrev.snapshot_version === SNAPSHOT_VERSION;
-    const others = d => rows.filter(r => r.snap_date === d && r.seller_id !== SALES_SELLER_ID);
-    const ownToday = rows.some(r => r.snap_date === today && r.seller_id === SALES_SELLER_ID);
-    const hoy = others(today), ayer = prevOk ? others(prev) : [];
+    const rows = snapsBy.get(t.catalog_product_id) ?? [];
+    // La foto del día se arma por tandas. Mientras la de hoy no llegó a este
+    // libro vale la de ayer (sin comparar contra el día anterior). Si la de hoy
+    // existe y falló o quedó parcial, no hay dato: no se tapa con la de ayer.
+    const pdHoy = pdBy.get(`${t.catalog_product_id}|${today}`) ?? null;
+    const pdAyer = prev ? pdBy.get(`${t.catalog_product_id}|${prev}`) ?? null : null;
+    let pd = pdHoy ?? pdAyer, fotoVieja = false;
+    if (tolerarFotoDeAyer && pdHoy && !vigente(pdHoy) && vigente(pdAyer)) { pd = pdAyer; fotoVieja = true; }
+    if (!vigente(pd)) continue;
+    const dia = pd.snap_date, diaPrev = pdHoy && !fotoVieja ? prev : null;
+    const pdPrev = diaPrev ? pdAyer : null;
+    const prevOk = vigente(pdPrev);
+    // Fotos viejas pueden traer a un vendedor lento como inmediato: se corrige al leer.
+    const others = d => rows.filter(r => r.snap_date === d && !HOUSE_SELLERS.has(String(r.seller_id)))
+      .map(r => SLOW_SELLERS.has(String(r.seller_id)) ? { ...r, manufacturing_days: realDays(r.seller_id, r.manufacturing_days) } : r);
+    const ownToday = rows.some(r => r.snap_date === dia && r.seller_id === SALES_SELLER_ID);
+    const hoy = others(dia), ayer = prevOk ? others(diaPrev) : [];
     // Una oferta sin evidencia no prueba inmediatez ni ausencia de competencia.
-    // Todos los consumidores reciben "sin dato" hasta completar la verificación.
-    if (hoy.some(r => r.manufacturing_days == null || r.international == null || r.condition == null || r.currency_id !== 'UYU')) continue;
+    // El plazo se verifica del más barato al más caro hasta el primer inmediato:
+    // si queda alguna oferta nueva y nacional sin plazo (o sin condición) más
+    // barata que ese inmediato, el libro queda "sin dato" para todos.
+    const candidata = r => r.price > 0 && r.condition === 'new' && r.international !== 1 && (r.currency_id ?? 'UYU') === 'UYU';
+    const minInmediato = hoy.filter(r => candidata(r) && r.manufacturing_days === 0).reduce((m, r) => (m == null || r.price < m) ? r.price : m, null);
+    if (hoy.some(r => (r.condition == null || (candidata(r) && r.manufacturing_days == null)) && (minInmediato == null || r.price < minInmediato))) continue;
     const sellersHoy = new Set(hoy.map(r => r.seller_id)), sellersAyer = new Set(ayer.map(r => r.seller_id));
     // Precio justo: sólo competidores nuevos (no usados), nacionales, con
     // entrega inmediata (sin días de preparación) y con el mismo tipo de envío
     // que nuestra publicación. Los que venden a pedido tardan semanas: no le
     // compiten a un libro en stock. Si algo no se pudo saber, no se compara.
-    const ownRow = rows.find(r => r.snap_date === today && r.seller_id === SALES_SELLER_ID) ?? null;
-    const nuevosNacionales = hoy.filter(r => r.currency_id === 'UYU' && r.price > 0 && r.condition === 'new' && r.international === 0);
+    const ownRow = rows.find(r => r.snap_date === dia && r.seller_id === SALES_SELLER_ID) ?? null;
+    const nuevosNacionales = hoy.filter(candidata);
     const aPedido = nuevosNacionales.filter(r => Number(r.manufacturing_days) > 0);
     const inmediatos = nuevosNacionales.filter(r => r.manufacturing_days === 0);
     const comparables = inmediatos.filter(r =>
@@ -324,7 +425,7 @@ export async function competitionByIsbn(db, isbns) {
     const avisos = [];
     for (const s of sellersAyer) {
       if (sellersHoy.has(s)) continue;
-      const a = sellerDay.get(`${prev}|${s}`), b = sellerDay.get(`${today}|${s}`);
+      const a = sellerDay.get(`${diaPrev}|${s}`), b = sellerDay.get(`${dia}|${s}`);
       // Venta inferida: dejó de ofrecerlo y su contador total de ventas subió. Nunca es seguro.
       const probable = a?.transactions_completed != null && b?.transactions_completed != null && b.transactions_completed > a.transactions_completed;
       avisos.push({ tipo: 'competidor_sin_stock', texto: `${name(s)} dejó de ofrecer este libro en el catálogo${probable ? ' (probablemente lo vendió)' : ''}.` });
@@ -339,10 +440,11 @@ export async function competitionByIsbn(db, isbns) {
     }
     const rel = ownPrice && minPrice ? ownPrice / minPrice : null;
     const ref = `del más barato con entrega inmediata${ownRow ? (Number(ownRow.free_shipping) ? ' con envío gratis' : ' sin envío gratis') : ''}`;
-    if (rel && rel >= 1.15) avisos.push({ tipo: 'precio_arriba', texto: `Tu precio (${money(ownPrice)}) está ${Math.round((rel - 1) * 100)}% arriba ${ref} (${money(minPrice)}).` });
+    const barato = minPrice == null ? null : comparables.find(r => r.price === minPrice);
+    if (rel && rel >= 1.15) avisos.push({ tipo: 'precio_arriba', tuPrecio: ownPrice, minPrecio: minPrice, pct: Math.round((rel - 1) * 100), vendedor: barato ? name(barato.seller_id) : null, texto: `Tu precio (${money(ownPrice)}) está ${Math.round((rel - 1) * 100)}% arriba ${ref} (${money(minPrice)}).` });
     if (rel && rel <= 0.9) avisos.push({ tipo: 'precio_abajo', texto: `Tu precio (${money(ownPrice)}) está ${Math.round((1 - rel) * 100)}% abajo ${ref} (${money(minPrice)}): podrías estar regalando margen.` });
     out.set(t.isbn, {
-      catalog_product_id: t.catalog_product_id, foto: today, foto_anterior: prevOk ? prev : null,
+      catalog_product_id: t.catalog_product_id, foto: dia, foto_anterior: prevOk ? diaPrev : null, foto_vieja: fotoVieja,
       competidores: sellersHoy.size, competidores_comparables: comparables.length, excluidos_de_precio: excluidos,
       competidores_inmediatos: new Set(inmediatos.map(r => r.seller_id)).size,
       competidores_a_pedido: aPedido.length, precio_minimo_a_pedido: minAPedido,
@@ -356,7 +458,9 @@ export async function competitionByIsbn(db, isbns) {
 }
 
 // Eventos del día en todos los productos vigilados (para el panel, el correo y GPT).
-export async function competitionEvents(db, { limit = 30 } = {}) {
+// `enteros`: tipos de aviso que se devuelven completos (sin el corte de `limit`),
+// para quien necesita todos los de un tipo aunque haya muchos de los otros.
+export async function competitionEvents(db, { limit = 30, enteros = [] } = {}) {
   let targets;
   try { targets = (await db.prepare('SELECT isbn FROM comp_targets ORDER BY priority DESC').all()).results; } catch { return { foto: null, eventos: [], vigilados: 0 }; }
   const facts = await competitionByIsbn(db, targets.map(t => t.isbn));
@@ -370,7 +474,38 @@ export async function competitionEvents(db, { limit = 30 } = {}) {
   eventos.sort((a, b) => order.indexOf(a.tipo) - order.indexOf(b.tipo));
   const foto = [...facts.values()].reduce((m, f) => (f.foto > (m ?? '') ? f.foto : m), null);
   const porTipo = eventos.reduce((m, e) => (m[e.tipo] = (m[e.tipo] ?? 0) + 1, m), {});
-  return { foto, vigilados: targets.length, por_tipo: porTipo, eventos: eventos.slice(0, limit) };
+  return { foto, vigilados: targets.length, por_tipo: porTipo, eventos: eventos.slice(0, limit),
+    enteros: Object.fromEntries(enteros.map(t => [t, eventos.filter(e => e.tipo === t)])) };
+}
+
+// Cobertura de la vigilancia: de los productos vigilados, cuántos tienen una foto
+// utilizable (hoy, o la de ayer si la de hoy todavía no llegó) y cuántos terminan
+// con dato de competencia en el correo. Sirve para saber por qué una línea dice
+// "sin dato de competencia". Sólo conteos: los registros de Actions son públicos.
+export async function competitionCoverage(db) {
+  const targets = (await db.prepare('SELECT isbn,catalog_product_id FROM comp_targets').all()).results;
+  const days = (await db.prepare('SELECT DISTINCT snap_date FROM comp_product_days ORDER BY snap_date DESC LIMIT 2').all()).results.map(r => r.snap_date);
+  const [today, prev] = days;
+  const byDay = new Map();
+  if (days.length) {
+    const rows = (await db.prepare(`SELECT snap_date,catalog_product_id,status,snapshot_version FROM comp_product_days WHERE snap_date IN (${days.map(() => '?').join(',')})`).bind(...days).all()).results;
+    for (const p of rows) byDay.set(`${p.catalog_product_id}|${p.snap_date}`, p);
+  }
+  const vigente = p => p?.status === 'ok' && p.snapshot_version === SNAPSHOT_VERSION;
+  const out = { vigilados: targets.length, dias: days, con_foto_vigente: 0, foto_de_hoy: 0, solo_foto_de_ayer: 0, sin_foto: 0, foto_no_vigente: {}, recuperables_con_foto_de_ayer: 0, con_dato: 0, sin_evidencia: 0 };
+  const conFoto = [];
+  for (const t of targets) {
+    const hoy = byDay.get(`${t.catalog_product_id}|${today}`) ?? null, ayer = prev ? byDay.get(`${t.catalog_product_id}|${prev}`) ?? null : null;
+    const pd = hoy ?? ayer;  // igual que competitionByIsbn: si la de hoy existe y no sirve, no se tapa con la de ayer
+    if (!pd) { out.sin_foto++; continue; }
+    if (!vigente(pd)) { const k = `${pd.status}${pd.snapshot_version === SNAPSHOT_VERSION ? '' : ':version_vieja'}`; out.foto_no_vigente[k] = (out.foto_no_vigente[k] ?? 0) + 1; if (hoy && vigente(ayer)) out.recuperables_con_foto_de_ayer++; continue; }
+    out.con_foto_vigente++;
+    if (hoy) out.foto_de_hoy++; else out.solo_foto_de_ayer++;
+    conFoto.push(t.isbn);
+  }
+  for (let i = 0; i < conFoto.length; i += 400) out.con_dato += (await competitionByIsbn(db, conFoto.slice(i, i + 400))).size;
+  out.sin_evidencia = out.con_foto_vigente - out.con_dato;
+  return out;
 }
 
 export async function competitionStatus(db) {

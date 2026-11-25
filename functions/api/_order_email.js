@@ -49,7 +49,13 @@ function itemRows(items) {
 }
 
 function totalsText(order, payment) {
-  const lines = [`Productos: ${formatMoney(order.products_total_uyu)}`];
+  // Con premio, products_total_uyu ya viene sin el premio: se muestra antes y
+  // después en su propia línea, para que las cuentas cierren a la vista.
+  const premio = Number(order.premio_discount_uyu) || 0;
+  const lines = [`Productos: ${formatMoney(Number(order.products_total_uyu) + premio)}`];
+  if (premio > 0) {
+    lines.push(`Premio${order.premio_code ? ` ${order.premio_code}` : ''}: −${formatMoney(premio)}`);
+  }
   if (Number(order.pickup_discount_uyu) > 0) {
     lines.push(`Descuento por retiro: −${formatMoney(order.pickup_discount_uyu)}`);
   }

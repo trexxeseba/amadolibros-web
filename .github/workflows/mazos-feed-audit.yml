@@ -1,0 +1,29 @@
+name: Mazos y cartas, auditoría del feed (solo lectura)
+
+# Cuenta cuántos mazos de tarot, oráculos, cartas y barajas del catálogo entran hoy
+# al feed de Merchant Center y por qué los otros no. SOLO LEE el catálogo público:
+# no usa secretos, no llama a Merchant ni a Mercado Libre y no cambia nada.
+#
+# Sólo manual.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auditoria:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Bajar el catálogo público
+        run: curl -fsS --max-time 120 -o "$RUNNER_TEMP/catalog.json" https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json
+
+      - name: Auditar
+        run: node scripts/commerce/mazos-feed-audit.mjs --catalogo "$RUNNER_TEMP/catalog.json" | tee -a "$GITHUB_STEP_SUMMARY"

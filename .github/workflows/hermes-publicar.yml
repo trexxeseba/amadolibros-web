@@ -1,0 +1,120 @@
+name: Hermes y Arnoia publicar (Amado Vintage)
+
+# Republica en Amado VINTAGE (nunca Amado Libros) las fichas de catálogo de Hermes: 1 unidad, a 1 % menos
+# que su precio (decisión de Seba, 18/11/2026), en tandas de 25 por hora (minuto :07, lejos del :37 de SBS),
+# con el freno del vigía, los ISBN bloqueados, el filtro de propiedad intelectual y un techo diario
+# compartido con la subida de SBS. A mano, por defecto solo valida y no crea nada.
+# Lo publicado queda en la rama hermes-datos (publicadas-vintage.json) y el chequeo diario lo pausa cuando
+# Hermes deja de ofrecer la ficha. Código: hermes-monitor/publicar.mjs.
+on:
+  schedule:
+    # Un solo carril (21/11/2026): cada corrida hace GLIC y después Arnoia. Antes había tres disparos distintos compitiendo por la misma
+    # fila y GitHub descartaba las corridas que esperaban. El Worker pide una al :17 (y al :07 de 09 a 15); esta es el respaldo.
+    - cron: '47 * * * *'
+  workflow_dispatch:
+    inputs:
+      fuente:
+        description: 'todo (NEIMOD, GLIC, Arnoia, Arnoia ampliado y Celesa), o una sola: hermes, arnoia, arnoia2, glic, celesa o neimod'
+        type: choice
+        options: [todo, hermes, arnoia, arnoia2, glic, celesa, neimod]
+        default: todo
+      modo:
+        description: 'validar (no crea nada) o publicar (crea publicaciones)'
+        type: choice
+        options: [validar, publicar]
+        default: validar
+      tradicional:
+        description: 'Solo Arnoia: publicar los libros SIN ficha de catálogo, con su portada'
+        type: boolean
+        default: false
+      cantidad:
+        description: 'Cuántas fichas procesar'
+        default: '1'
+      rama:
+        description: 'Rama con el código (main salvo pruebas)'
+        default: 'main'
+
+concurrency:
+  group: hermes-datos
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    if: vars.HERMES_APAGADO != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.rama || 'main' }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Traer lo guardado (rama hermes-datos)
+        run: |
+          mkdir -p "$RUNNER_TEMP/datos"
+          echo '[]' > "$RUNNER_TEMP/datos/historial.json"; echo '{}' > "$RUNNER_TEMP/datos/publicadas-vintage.json"
+          if git ls-remote --exit-code --heads origin hermes-datos >/dev/null 2>&1; then
+            git fetch --depth=1 origin hermes-datos
+            git show FETCH_HEAD:historial.json > "$RUNNER_TEMP/datos/h.tmp" 2>/dev/null && mv "$RUNNER_TEMP/datos/h.tmp" "$RUNNER_TEMP/datos/historial.json" || true
+            git show FETCH_HEAD:publicadas-vintage.json > "$RUNNER_TEMP/datos/p.tmp" 2>/dev/null && mv "$RUNNER_TEMP/datos/p.tmp" "$RUNNER_TEMP/datos/publicadas-vintage.json" || true
+            git show FETCH_HEAD:publicadas-libros-error.json > "$RUNNER_TEMP/datos/e.tmp" 2>/dev/null && mv "$RUNNER_TEMP/datos/e.tmp" "$RUNNER_TEMP/datos/publicadas-libros-error.json" || git show FETCH_HEAD:publicadas.json > "$RUNNER_TEMP/datos/publicadas-libros-error.json" 2>/dev/null || true
+          fi
+      - name: Asegurar los archivos de datos
+        run: |
+          [ -s "$RUNNER_TEMP/datos/historial.json" ] || echo '[]' > "$RUNNER_TEMP/datos/historial.json"
+          [ -s "$RUNNER_TEMP/datos/publicadas-vintage.json" ] || echo '{}' > "$RUNNER_TEMP/datos/publicadas-vintage.json"
+          [ -s "$RUNNER_TEMP/datos/publicadas-libros-error.json" ] || echo '{}' > "$RUNNER_TEMP/datos/publicadas-libros-error.json"
+      - name: Leer el Excel
+        run: |
+          pip install -q openpyxl
+          python3 hermes-monitor/leer_excel.py hermes-monitor/data/hermes-top149-17-11.xlsx "$RUNNER_TEMP/fichas.json" "$RUNNER_TEMP/datos/publicadas-vintage.json"
+          python3 hermes-monitor/leer_glic.py "$RUNNER_TEMP/fichas-glic.json"
+          python3 hermes-monitor/leer_glic.py "$RUNNER_TEMP/fichas-neimod.json" neimod
+      # 19/11/2026: la publicación normal vuelve con un control de tapas por lector de texto (tesseract): una tapa con dirección web, @,
+      # redes, teléfono o etiquetas de Mercado Libre se salta (4 de las últimas 60 habían quedado en revisión de fotos).
+      - name: Instalar el lector de texto y el borrador de tapas
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q tesseract-ocr tesseract-ocr-spa
+          pip install -q opencv-python-headless numpy pillow
+      - name: Validar o publicar
+        env:
+          TRADICIONAL_IN: ${{ inputs.tradicional || 'false' }}
+          FUENTE: ${{ inputs.fuente || 'todo' }}
+          CANTIDAD: ${{ inputs.cantidad }}
+        run: |
+          REAL=""; [ "${{ inputs.modo || 'publicar' }}" = "publicar" ] && REAL="--real"
+          TRADICIONAL=""; [ "$TRADICIONAL_IN" = "true" ] && TRADICIONAL="--tradicional"
+          DATOS="$RUNNER_TEMP/datos/publicadas-vintage.json"
+          # El segundo valor es el tope de minutos de cada fuente: entre todas tienen que entrar en los 55 de la tanda.
+          glic() { node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas-glic.json" "$DATOS" --fuente=glic $REAL --max="$1" --minutos="${2:-25}"; }
+          arnoia() { node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-catalogo-19-11.json "$DATOS" --fuente=arnoia --ambos ${TRADICIONAL} $REAL --max="$1" --minutos="${2:-25}"; }
+          # NEIMOD (23/11/2026): va primero en la tanda, por pedido de Seba.
+          neimod() { node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas-neimod.json" "$DATOS" --fuente=neimod $REAL --max="$1" --minutos="${2:-25}"; }
+          # Catálogo ampliado de Arnoia (22/11/2026): 32.567 libros que no estaban en la lista anterior.
+          arnoia2() { node hermes-monitor/publicar.mjs hermes-monitor/data/arnoia-catalogo-22-11.json "$DATOS" --fuente=arnoia --ambos $REAL --max="$1" --minutos="${2:-25}"; }
+          celesa() { node hermes-monitor/publicar.mjs hermes-monitor/data/celesa-catalogo-22-11.json "$DATOS" --fuente=celesa --ambos $REAL --max="$1" --minutos="${2:-25}"; }
+          case "$FUENTE" in
+            todo) neimod 60 9 || echo "::warning::la parte de NEIMOD terminó con error; sigue GLIC"; glic 30 5 || echo "::warning::la parte de GLIC terminó con error; sigue Arnoia"; arnoia 20 3 || echo "::warning::la parte de Arnoia terminó con error; sigue Arnoia ampliado"; arnoia2 90 18 || echo "::warning::la parte de Arnoia ampliado terminó con error; sigue Celesa"; celesa 60 12 ;;
+            neimod) neimod "${CANTIDAD:-60}" ;;
+            arnoia2) arnoia2 "${CANTIDAD:-90}" ;;
+            celesa) celesa "${CANTIDAD:-80}" ;;
+            glic) glic "${CANTIDAD:-60}" ;;
+            arnoia) arnoia "${CANTIDAD:-70}" ;;
+            *) node hermes-monitor/publicar.mjs "$RUNNER_TEMP/fichas.json" "$DATOS" $REAL --max="${CANTIDAD:-25}" ;;
+          esac
+      - name: Guardar lo publicado
+        if: always() && (inputs.modo || 'publicar') == 'publicar'
+        run: |
+          cd "$RUNNER_TEMP/datos"
+          git init -q && git checkout -q -b hermes-datos
+          git config user.name "hermes-monitor" && git config user.email "hermes-monitor@users.noreply.github.com"
+          git add historial.json publicadas-vintage.json publicadas-libros-error.json && git commit -q -m "Publicadas de Hermes $(date -u +%F)"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" hermes-datos

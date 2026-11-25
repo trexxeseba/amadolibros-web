@@ -33,11 +33,26 @@ function identifiers(item){
  const values=[item.seller_custom_field,...(item.attributes??[]).filter(a=>['ISBN','GTIN','EAN','SELLER_SKU'].includes(a.id)).flatMap(a=>[a.value_name,...(a.values??[]).map(x=>x.name)]),...(item.variations??[]).flatMap(v=>[v.seller_custom_field,...(v.attributes??[]).filter(a=>['ISBN','GTIN','SELLER_SKU'].includes(a.id)).map(a=>a.value_name)])];
  const set=new Set();for(const value of values)try{set.add(canonicalIsbn(String(value??'').replace(/^AMADO-AR-/,'')));}catch{}return [...set];
 }
-export function checkCreated(item,isbn,price){
+// price null: reconciliación de un alta de otra corrida (no se sabe qué precio se envió y
+// Precio Ganador o la sincronización pueden haberlo cambiado después). Se exige lo que
+// identifica al alta como nuestra (vendedor, ISBN, moneda, piso, 18 días) y no el precio
+// exacto, la cantidad 1 ni que siga activa.
+// picturesPending (la nube): un alta recién creada que Mercado Libre tiene pausada sólo porque
+// todavía descarga las fotos se acepta sin esperar; lo demás se exige igual. Mercado Libre la
+// activa sola al terminar la descarga.
+export function checkCreated(item,isbn,price,{picturesPending=false}={}){
  const term=(item?.sale_terms??[]).find(x=>x.id==='MANUFACTURING_TIME');
  // Vendido antes de confirmarlo: sin stock pero con ventas sigue siendo nuestro alta.
  const sold=Number(item?.sold_quantity)>0&&item?.available_quantity===0&&['active','paused','closed'].includes(item?.status);
- if(String(item?.seller_id)!==SELLER||!identifiers(item).includes(isbn)||item.price!==price||item.price<VINTAGE_COMPETITIVE_MINIMUM_UYU||item.currency_id!=='UYU'||!sold&&(item.available_quantity!==1||item.status!=='active')||Number(term?.value_struct?.number??parseInt(term?.value_name,10))!==18)throw new MercadoLibreError('created_item_check_failed',409);
+ const known=price!==null;
+ const waitingPictures=picturesPending&&item?.status==='paused'&&(item?.sub_status??[]).includes('picture_download_pending')&&item?.available_quantity===1;
+ const stateOk=known?sold||waitingPictures||item?.available_quantity===1&&item?.status==='active':sold||['active','paused'].includes(item?.status)&&Number(item?.available_quantity)>=1;
+ if(String(item?.seller_id)!==SELLER||!identifiers(item).includes(isbn)||known&&item.price!==price||!(item.price>=VINTAGE_COMPETITIVE_MINIMUM_UYU)||item.currency_id!=='UYU'||!stateOk||Number(term?.value_struct?.number??parseInt(term?.value_name,10))!==18)throw new MercadoLibreError('created_item_check_failed',409);
+}
+// Sube el objetivo (sin el piloto) a `total`; nunca lo baja ni pasa MAX_TARGET_TOTAL.
+export async function raiseTarget(store,total){
+ const to=Math.min(total,MAX_TARGET_TOTAL)-5,current=await store.target(BULK_RUN);
+ if(current&&to>current.target_published)await store.raiseTarget(BULK_RUN,to,MAX_TARGET_TOTAL-5);
 }
 // ¿Se llega de `from` a `to` siguiendo las enmiendas registradas en el servidor?
 export function amendmentChain(amendments,from,to){
@@ -51,7 +66,7 @@ export async function inspectWorkbook(file){
  const bytes=await fs.readFile(file),input=readFullStock(bytes);
  return {...input,source_sha256:await sha256('vintage-bulk-positive-v1:'+await sha256(bytes))};
 }
-export async function run({excel,connection,directory,target=1000,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
+export async function run({excel,connection,directory,target=1000,raiseTargetTo=0,intervalMs=2000,requestTimeoutMs=60000,statusEvery=1,keepIndexDays=0,classifiers=0,classifyOnly=false,maxValidated=300,trustPreparedMs=0,deferPictures=false,productNotFoundAsMissing=false,requeueReviewCodes=[],blockedIsbns=null,catalogOnly=false,shouldStop=null,stopCheckMs=15000,validateOnly=0,limitNew=0,maxMs=0,onStatus=console.log,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,waitFor=pause}){
  if(!Number.isInteger(target)||target<5||target>MAX_TARGET_TOTAL||!Number.isInteger(validateOnly)||validateOnly<0||validateOnly>5)throw new Error('invalid_local_limits');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c);
  if(await policyHash(policy)!==c.policy_hash)throw new Error('connection_policy_changed');
@@ -59,8 +74,8 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
  if(!stockIsFresh(input.source_date,Date.now(),VINTAGE_STOCK_MAX_HOURS)||input.source_sha256!==c.source_sha256||Date.parse(input.source_date)!==Date.parse(c.source_date))throw new Error('workbook_does_not_match_current_approved_stock');
  await fs.mkdir(directory,{recursive:true});
  const db=openDatabase(path.join(directory,validateOnly?'validation.sqlite':'publisher.sqlite')),broker=brokerFactory(c),env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id,ML_PUBLISHER_MODE:'enabled',ML_PUBLISH_QUEUE_ENABLED:'false'};
- let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false,capHit=false,sliceDone=false;
- const limited=createVintageBulkFetch(),rateLog=path.join(directory,'rate-limit-events.jsonl');let listingQuotaHit=false;
+ let api,tokenCache=null,reservationsThisProcess=0,failedReadback=false,capHit=false,sliceDone=false,brakeStop=false;
+ const limited=createVintageBulkFetch({intervalMs,cooldownFloorMs:intervalMs<2000?15000:120000,parallel:classifiers>0,cacheTtlMs:classifiers>0?7*86400000:1800000}),rateLog=path.join(directory,'rate-limit-events.jsonl');let listingQuotaHit=false;
  // Records which endpoint got a real 429 (no ids or tokens) and notices the listing-quota refusal.
  const watched=async(url,options)=>{
   const response=await limited(env,url,options);
@@ -70,27 +85,49 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
   }catch{}
   return response;
  };
- api=apiFactory({sellerId:SELLER,timeouts:{request:60000,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>watched(url,options)});
+ api=apiFactory({sellerId:SELLER,timeouts:{request:requestTimeoutMs,create:60000},trustPreparedMs,productNotFoundAsMissing,catalogOnly,tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<Date.now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>watched(url,options)});
+ const inFlight=new Set();
  class LocalStore extends VintageBulkStore{
   async reserve(seller,isbn,runId,now,cap,lease){
    if(validateOnly)throw new Error('validation_cannot_reserve');
+   if(classifyOnly)throw new Error('classify_only_cannot_reserve');
    const result=await broker('reserve',{isbn,policy_hash:c.policy_hash});
    if(!result.reserved){const r=result.receipt;if(r)await this.stmt('INSERT OR IGNORE INTO ml_pub_receipts VALUES(?,?,?,?,?,?,?)',SELLER,r.isbn,r.state,r.item_id??null,r.run_id,r.created_at,r.updated_at).run();return null;}
    reservationsThisProcess++;
    return super.reserve(seller,isbn,runId,now,cap,lease);
+  }
+  // Lista nueva del proveedor: el servidor borra el recorrido del inventario y lo rehace entero
+  // (~15.000 publicaciones, un tercio de la corrida). Con keepIndexDays se conserva un recorrido
+  // completo de hace menos de N días. No abre duplicados: los recibos, la reserva por ISBN en el
+  // servidor y la búsqueda por SKU de cada candidato siguen igual.
+  // El publicador no toma un candidato que un clasificador está revisando en este momento.
+  async nextJob(id,now,publishing=true){
+   if(!inFlight.size)return super.nextJob(id,now,publishing);
+   const rows=(await this.stmt("SELECT j.* FROM ml_pub_jobs j JOIN ml_pub_runs r ON r.id=j.run_id LEFT JOIN ml_pub_stock s ON s.feed_id=r.feed_id AND s.isbn=j.isbn WHERE j.run_id=? AND j.state IN ('pending','validated','retry') AND (?=1 OR j.state<>'validated') AND j.next_at<=? ORDER BY CASE j.state WHEN 'validated' THEN 0 ELSE 1 END,s.rowid IS NULL,s.rowid,j.isbn LIMIT ?",id,publishing?1:0,now,inFlight.size+1).all()).results;
+   return rows.find(r=>!inFlight.has(r.isbn))??null;
+  }
+  async attachFeed(id,feedId){
+   const before=await this.run(id);let keep=null,rows=null;
+   try{keep=JSON.parse(before?.index_json??'null');}catch{}
+   const fresh=keepIndexDays>0&&keep?.done&&Date.now()-Date.parse(keep.completedAt??'')<keepIndexDays*86400000;
+   if(fresh)rows=(await this.stmt('SELECT item_id,isbn,title_key,status FROM ml_pub_index WHERE run_id=?',id).all()).results;
+   await super.attachFeed(id,feedId);
+   if(rows)await this.saveIndex(id,keep,rows.map(r=>({id:r.item_id,isbn:r.isbn,titleKey:r.title_key,status:r.status})));
   }
   async receiptState(seller,isbn,state,itemId=null){
    if(state==='published'){
     try{
      // El precio enviado queda en el payload del trabajo; el Excel de hoy puede haber cambiado o no traer el ISBN.
      const job=await this.stmt('SELECT payload_json FROM ml_pub_jobs WHERE run_id=? AND isbn=?',BULK_RUN,isbn).first();
+     // Sin payload (alta de otra corrida o de una base nueva) no se sabe qué precio se envió:
+     // se verifica la identidad del alta sin exigir el precio exacto (checkCreated con null).
      let price=null;try{price=JSON.parse(job?.payload_json??'null')?.price??null;}catch{}
-     if(!Number.isFinite(price)){const row=await this.stock(c.feed_id,isbn);if(!row)throw new MercadoLibreError('reconcile_price_unknown',503);price=quoteMercadoLibre(row,policy).price;}
+     if(!Number.isFinite(price))price=null;
      // Mercado Libre downloads pictures after the create, so a new item is briefly paused for that
      // reason only. Wait a bounded time for that exact state; any other mismatch fails at once.
      for(let attempt=0;;attempt++){
       const item=await api.call(env,'/items/'+itemId);
-      try{checkCreated(item,isbn,price);break;}
+      try{checkCreated(item,isbn,price,{picturesPending:deferPictures});break;}
       catch(error){
        if(item?.status!=='paused'||!(item.sub_status??[]).includes('picture_download_pending'))throw error;
        // Pictures still downloading after the wait: defer this book (the service retries it without a new POST
@@ -105,6 +142,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
   }
  }
  const s=new LocalStore(db,{sellerId:SELLER});
+ let stopPool=null;
  try{
   await new PublicationStore(db).initialize();await s.initialize();
   const supplier=createSbsStock({maxHours:VINTAGE_STOCK_MAX_HOURS});
@@ -125,6 +163,8 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
    await s.attachFeed(BULK_RUN,c.feed_id);
    await s.stmt("INSERT OR IGNORE INTO ml_pub_jobs(run_id,isbn,state) SELECT ?,isbn,'pending' FROM ml_pub_stock WHERE feed_id=?",BULK_RUN,c.feed_id).run();
   }
+  // Base guardada entre corridas (la nube la cachea): una prueba anterior cortada vuelve a preflight.
+  if(existing&&validateOnly&&['auth_error','stock_stale','paused','publishing'].includes(existing.state))await s.stmt("UPDATE ml_pub_runs SET state='preflight',approved_hash=NULL,preflight_limit=? WHERE id=? AND lease_until<?",validateOnly,BULK_RUN,Date.now()).run();
   if(existing&&!validateOnly&&['paused','auth_error','stock_stale'].includes(existing.state))await s.stmt("UPDATE ml_pub_runs SET state='publishing' WHERE id=? AND lease_until<?",BULK_RUN,Date.now()).run();
   if(existing&&!validateOnly)await s.reopenForRaisedTarget(BULK_RUN,Date.now());
   if(!existing){
@@ -133,9 +173,14 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
     await s.saveIndex(BULK_RUN,c.inventory_checkpoint,c.inventory.map(x=>({id:x.item_id,isbn:x.isbn,titleKey:x.title_key,status:x.status})));
     for(const x of c.identifiers??[])await db.prepare('INSERT OR IGNORE INTO ml_vintage_bulk_identifiers VALUES(?,?,?)').bind(BULK_RUN,x.isbn,x.item_id).run();
    }
-   for(const r of c.receipts??[])if(r.run_id===BULK_RUN)await s.job(BULK_RUN,r.isbn,r.state==='published'?'published':'uncertain',{itemId:r.item_id??undefined});
+   // Un recibo de un libro que ya no viene en la lista de hoy no tiene fila de trabajo en una base
+   // nueva (la nube arranca vacía en cada corrida): se crea antes de marcarlo.
+   for(const r of c.receipts??[])if(r.run_id===BULK_RUN){await s.stmt("INSERT OR IGNORE INTO ml_pub_jobs(run_id,isbn,state) VALUES(?,?,'pending')",BULK_RUN,r.isbn).run();await s.job(BULK_RUN,r.isbn,r.state==='published'?'published':'uncertain',{itemId:r.item_id??undefined});}
    if(validateOnly)await s.stmt("UPDATE ml_pub_runs SET state='preflight',approved_hash=NULL,preflight_limit=? WHERE id=?",validateOnly,BULK_RUN).run();
   }
+  // Base nueva (la nube arranca cada corrida desde D1): el objetivo vuelve al de createRun y hay
+  // que subirlo al de campaign.json, como hace set-target en la PC.
+  if(!existing&&!validateOnly&&raiseTargetTo){await raiseTarget(s,raiseTargetTo);await s.reopenForRaisedTarget(BULK_RUN,Date.now());}
   // Complete inventory scans persist locally; resume does not start again.
   const localApi={...api,async indexSlice(e,index){
    const next=structuredClone(index);
@@ -143,7 +188,7 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
     const q=new URLSearchParams({search_type:'scan',limit:'100'});if(next.scroll)q.set('scroll_id',next.scroll);
     let page;try{page=await api.call(e,`/users/${SELLER}/items/search?${q}`);}catch(error){if(!next.scroll||![400,404,410].includes(error.status))throw error;q.delete('scroll_id');next.scroll=null;page=await api.call(e,`/users/${SELLER}/items/search?${q}`);}
     if(page.seller_id!==undefined&&String(page.seller_id)!==SELLER)throw new Error('inventory_seller_mismatch');
-    if(page.results===null||Array.isArray(page.results)&&!page.results.length)return {index:{...next,done:true},items:[]};
+    if(page.results===null||Array.isArray(page.results)&&!page.results.length)return {index:{...next,done:true,completedAt:new Date().toISOString()},items:[]};
     if(!Array.isArray(page.results)||page.results.some(x=>!/^MLU\d+$/.test(x)))throw new Error('inventory_invalid');
     next.pending=page.results;next.scroll=page.scroll_id??null;
    }
@@ -161,29 +206,88 @@ export async function run({excel,connection,directory,target=1000,validateOnly=0
   },async skuItems(e,isbn){const ids=new Set(await api.skuItems(e,isbn)),q=new URLSearchParams({seller_sku:'AMADO-AR-'+isbn,limit:'100'}),result=await api.call(e,`/users/${SELLER}/items/search?${q}`);if(!Array.isArray(result.results)||result.results.some(x=>!/^MLU\d+$/.test(x)))throw new Error('sku_lookup_invalid');result.results.forEach(x=>ids.add(x));return [...ids];}};
   const service=createPublicationService({sellerId:SELLER,api:localApi,storeFactory:()=>s,maxJobsPerTick:1,maxIndexSlicesPerTick:1,stockMaxHours:VINTAGE_STOCK_MAX_HOURS});
   const identity=await api.account(env);if(String(identity.id)!==SELLER)throw new Error('seller_mismatch');
+  // Revisiones que con la configuración actual se pueden volver a intentar (p. ej. ficha 404 que
+  // ahora se publica sin catálogo): vuelven a pendiente. Nunca toca altas hechas ni dudosas.
+  for(const code of requeueReviewCodes)if(/^[a-z0-9_]{1,60}$/.test(code))await s.stmt("UPDATE ml_pub_jobs SET state='pending',error_code=NULL,payload_json=NULL,next_at=0 WHERE run_id=? AND state='review' AND error_code=? AND item_id IS NULL",BULK_RUN,code).run();
+  // ISBN de publicaciones pausadas por riesgo de propiedad intelectual: nunca se vuelven a dar de alta.
+  if(blockedIsbns&&blockedIsbns.size)for(const isbn of blockedIsbns)if(/^\d{13}$/.test(isbn))await s.stmt("UPDATE ml_pub_jobs SET state='skipped_ip_risk',error_code='ip_risk_bloqueada',payload_json=NULL WHERE run_id=? AND isbn=? AND state IN ('pending','validated','retry','review')",BULK_RUN,isbn).run();
+  // Clasificadores: revisan candidatos pendientes en paralelo (sólo lecturas a Mercado Libre) y los
+  // dejan 'validated' o descartados. Nunca reservan ni crean: las altas las hace sólo el publicador,
+  // de a una, con la reserva por ISBN del servidor.
+  const classifyStats={};let stopClassify=false,classifyAuthError=false;
+  const countState=state=>{classifyStats[state]=(classifyStats[state]??0)+1;};
+  async function classifierWorker(){
+   while(!stopClassify){
+    const current=await s.run(BULK_RUN);let index={};try{index=JSON.parse(current.index_json);}catch{}
+    if(!index.done){await waitFor(3000);continue;}
+    if(!classifyOnly&&((await s.counts(BULK_RUN)).find(x=>x.state==='validated')?.n??0)>=maxValidated){await waitFor(2000);continue;}
+    const isbn=(await s.openJobs(BULK_RUN,Date.now(),classifiers*3+1)).find(i=>!inFlight.has(i));
+    if(!isbn){if(classifyOnly)return;await waitFor(5000);continue;}
+    inFlight.add(isbn);
+    try{
+     const r=await service.classify(env,BULK_RUN,isbn);countState(r.state);
+     if(r.state==='auth_error'){classifyAuthError=true;stopClassify=true;}
+     else if(r.state==='stock_stale')stopClassify=true;
+     else if(r.state==='transient'){
+      await s.stmt("UPDATE ml_pub_jobs SET next_at=? WHERE run_id=? AND isbn=? AND state IN ('pending','retry')",Date.now()+300000,BULK_RUN,isbn).run();
+      if(r.status===429)await waitFor(Math.max(15000,(r.retryAfter||0)*1000));
+     }
+    }catch{countState('error');await s.stmt("UPDATE ml_pub_jobs SET next_at=? WHERE run_id=? AND isbn=? AND state IN ('pending','retry')",Date.now()+300000,BULK_RUN,isbn).run();}
+    finally{inFlight.delete(isbn);}
+   }
+  }
+  const pool=classifiers>0&&!validateOnly?Promise.all(Array.from({length:classifiers},classifierWorker)):null;
+  // Pase lo que pase en el ciclo principal, los clasificadores terminan antes de cerrar la base.
+  stopPool=async()=>{stopClassify=true;if(pool)await pool.catch(()=>{});};
+  // Sólo clasificar: recorre el inventario si hace falta (sin tick, así nunca se llega a crear) y
+  // espera a los clasificadores hasta el tiempo dado o hasta que no queden pendientes.
+  if(classifyOnly){
+   const started=Date.now();let last=0;
+   try{
+    for(;;){
+     if(maxMs&&Date.now()-started>=maxMs)break;
+     const current=await s.run(BULK_RUN);let index={};try{index=JSON.parse(current.index_json);}catch{}
+     if(!index.done){const slice=await localApi.indexSlice(env,index);await s.saveIndex(BULK_RUN,slice.index,slice.items);continue;}
+     if(!pool||classifyAuthError)break;
+     const done=await Promise.race([pool.then(()=>true),waitFor(15000).then(()=>false)]);
+     if(Date.now()-last>60000){last=Date.now();onStatus(JSON.stringify({at:new Date().toISOString(),mode:'classify_only',classified:classifyStats}));}
+     if(done)break;
+    }
+   }finally{stopClassify=true;if(pool)await pool;}
+   const counts=await s.counts(BULK_RUN);
+   return {state:classifyAuthError?'auth_error':'classified',classified:classifyStats,counts,minutes:Math.round((Date.now()-started)/600)/100,published_total:5+await s.publishedCount(BULK_RUN)};
+  }
   const start=5+await s.publishedCount(BULK_RUN);let batchStart=start;
+  let remoteCache=null,reservationsAtStatus=0,ticks=0,lastStopCheck=0;
   // Turno de publicación: con maxMs el motor cede el tiempo restante a la corrección de
   // precios de lo ya publicado (reparto 70/30 del día, lo fija el autorun).
   const turnStarted=Date.now();
   for(;;){
    if(maxMs&&Date.now()-turnStarted>=maxMs){sliceDone=true;break;}
-   const remote=await broker('status'),hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0);const dailyCap=Number.isInteger(remote.daily_cap)&&remote.daily_cap>0?remote.daily_cap:1000;if(!validateOnly)await s.stmt('UPDATE ml_pub_runs SET daily_cap=? WHERE id=? AND daily_cap<>?',dailyCap,BULK_RUN,dailyCap).run();if(remote.daily_created>=dailyCap&&!validateOnly&&!hasUncertain){capHit=true;const capped={at:new Date().toISOString(),seller_id:SELLER,state:'daily_cap_reached',published_total:remote.published_total};await fs.writeFile(path.join(directory,'status.json'),JSON.stringify(capped,null,2));onStatus(JSON.stringify(capped));break;}
+   // Freno externo (vigía de propiedad intelectual): se consulta cada stopCheckMs, no sólo al arrancar.
+   if(shouldStop&&Date.now()-lastStopCheck>=stopCheckMs){lastStopCheck=Date.now();if(await shouldStop()){brakeStop=true;break;}}
+   // El estado del servidor (altas del día, total) se pide cada statusEvery vueltas; entre medio se
+   // suman las reservas propias, así el tope diario se respeta igual.
+   if(!remoteCache||ticks%statusEvery===0){remoteCache=await broker('status');reservationsAtStatus=reservationsThisProcess;}
+   ticks++;
+   const extra=reservationsThisProcess-reservationsAtStatus,remote={...remoteCache,daily_created:(remoteCache.daily_created??0)+extra,published_total:(remoteCache.published_total??0)+extra},hasUncertain=(await s.counts(BULK_RUN)).some(x=>['creating','uncertain'].includes(x.state)&&x.n>0);const dailyCap=Number.isInteger(remote.daily_cap)&&remote.daily_cap>0?remote.daily_cap:1000;if(!validateOnly)await s.stmt('UPDATE ml_pub_runs SET daily_cap=? WHERE id=? AND daily_cap<>?',dailyCap,BULK_RUN,dailyCap).run();if(remote.daily_created>=dailyCap&&!validateOnly&&!hasUncertain){capHit=true;const capped={at:new Date().toISOString(),seller_id:SELLER,state:'daily_cap_reached',published_total:remote.published_total};await fs.writeFile(path.join(directory,'status.json'),JSON.stringify(capped,null,2));onStatus(JSON.stringify(capped));break;}
    if(!validateOnly&&(remote.published_total>=target||limitNew&&reservationsThisProcess>=limitNew))break;
-   const result=await service.tick(env,BULK_RUN),summary=await s.summary(BULK_RUN),published=5+await s.publishedCount(BULK_RUN),status={at:new Date().toISOString(),seller_id:SELLER,mode:validateOnly?'validate_only':'publish',published_total:published,run:summary,state:result.state??summary.state};
+   const result=await service.tick(env,BULK_RUN),summary=await s.summary(BULK_RUN),published=5+await s.publishedCount(BULK_RUN),status={at:new Date().toISOString(),seller_id:SELLER,mode:validateOnly?'validate_only':'publish',published_total:published,run:summary,state:result.state??summary.state,...(result.error?{error:result.error}:{})};
    if(failedReadback)status.state='stopped_item_readback_failed';else if(listingQuotaHit)status.state='stopped_listing_quota';
    await fs.writeFile(path.join(directory,'status.json'),JSON.stringify(status,null,2));onStatus(JSON.stringify(status));
    if(failedReadback||listingQuotaHit)break;
    if(validateOnly&&summary.state==='ready'||['stock_stale','auth_error','complete','complete_with_review'].includes(summary.state))break;
    const activeRun=await s.run(BULK_RUN);
-   let wait=Math.max(1000,activeRun.backoff_until-Date.now(),result.state==='busy'?Math.min(15000,Math.max(1000,activeRun.lease_until-Date.now())):0,remote.daily_created>=dailyCap?60000:0);
+   let wait=Math.max(statusEvery>1?200:1000,activeRun.backoff_until-Date.now(),result.state==='busy'?Math.min(15000,Math.max(1000,activeRun.lease_until-Date.now())):0,remote.daily_created>=dailyCap?60000:0);
    if(published-batchStart>=25){batchStart=published;wait=Math.max(wait,20000);}
    if(wait>1000)onStatus(JSON.stringify({state:'waiting',seconds:Math.ceil(wait/1000)}));await waitFor(wait);
   }
+  stopClassify=true;if(pool)await pool;
   if(validateOnly)await fs.writeFile(path.join(directory,'items.preview.json'),JSON.stringify(await s.preview(BULK_RUN),null,2));
-  const final=failedReadback?'stopped_item_readback_failed':listingQuotaHit?'stopped_listing_quota':capHit?'daily_cap_reached':sliceDone?'time_slice_done':(await s.run(BULK_RUN)).state;
+  const final=brakeStop?'stopped_brake':failedReadback?'stopped_item_readback_failed':listingQuotaHit?'stopped_listing_quota':capHit?'daily_cap_reached':sliceDone?'time_slice_done':(await s.run(BULK_RUN)).state;
   if(sliceDone)await fs.writeFile(path.join(directory,'status.json'),JSON.stringify({at:new Date().toISOString(),seller_id:SELLER,state:final,published_total:5+await s.publishedCount(BULK_RUN)},null,2));
-  return {state:final,published_total:5+await s.publishedCount(BULK_RUN)};
- }finally{db.close();}
+  return {state:final,published_total:5+await s.publishedCount(BULK_RUN),...(classifiers>0?{classified:classifyStats}:{})};
+ }finally{if(stopPool)await stopPool();db.close();}
 }
 async function main(){
  const args=process.argv.slice(2),get=name=>args[args.indexOf(name)+1];

@@ -10,6 +10,10 @@ import {
     onRequest,
     isEligibleForFeed,
     isBookProduct,
+    isCardDeckProduct,
+    feedGtin,
+    googleProductCategory,
+    hasDigitalTitle,
     cleanIsbnRaw,
     isValidIsbn13,
     isValidIsbn10,
@@ -342,6 +346,106 @@ test('17d. Clasifica libros con señales fuertes sin aceptar una señal legado a
     });
     assert.equal(isBookProduct(ssd), false);
     assert.equal(isEligibleForFeed(ssd), false);
+});
+
+test('17d2. Mazos de tarot y barajas entran con ISBN válido aunque no tengan autor ni páginas', () => {
+    const deck = (extra = {}) => book({
+        domain_id: 'MLU-TAROT_CARDS', isbn: '9788499809991', author: null, pages: null, bibliographic: null, ...extra,
+    });
+    assert.equal(isCardDeckProduct(deck()), true);
+    assert.equal(isEligibleForFeed(deck()), true);
+    assert.equal(isEligibleForFeed(deck({ domain_id: 'MLU-BOARD_AND_CARD_GAMES' })), true);
+    // La ficha del producto NO lo declara libro: la regla de mazos es solo del feed.
+    assert.equal(isBookProduct(deck()), false);
+    // Sin código válido entran igual, pero declarados sin código (ver 17d3).
+    assert.equal(isEligibleForFeed(deck({ isbn: null })), true);
+    assert.equal(isEligibleForFeed(deck({ isbn: '1234567890123' })), true);
+    // El ISBN solo no alcanza para otros rubros.
+    const otro = book({
+        domain_id: 'MLU-COMPUTER_COMPONENTS', isbn: '9788499809991', author: null, pages: null, bibliographic: null,
+    });
+    assert.equal(isCardDeckProduct(otro), false);
+    assert.equal(isEligibleForFeed(otro), false);
+    // Un mazo publicado lleva su código de barras y no inventa autor ni marca.
+    const xml = renderFeedItem(deck({ id: 'MLU999', title: 'Oráculo de prueba' }));
+    assert.match(xml, /<g:gtin>9788499809991<\/g:gtin>/);
+    assert.doesNotMatch(xml, /identifier_exists/);
+    assert.doesNotMatch(xml, /<g:brand>/);
+});
+
+test('17d3. Mazos: EAN/UPC real como GTIN; sin código, identifier_exists=no y marca real', () => {
+    const deck = (extra = {}) => book({
+        domain_id: 'MLU-TAROT_CARDS', isbn: null, author: null, pages: null, bibliographic: null, ...extra,
+    });
+    // UPC-12 y EAN-13 con dígito verificador correcto.
+    assert.equal(feedGtin(deck({ isbn: '850006058358' })).gtin, '850006058358');
+    assert.equal(feedGtin(deck({ isbn: '8001097400072' })).gtin, '8001097400072');
+    // Dígito verificador roto: no se acepta ni se corrige.
+    assert.equal(feedGtin(deck({ isbn: '850006058359' })).valid, false);
+    // Un libro no acepta EAN que no sea ISBN.
+    assert.equal(feedGtin(book({ isbn: '850006058358' })).valid, false);
+    let xml = renderFeedItem(deck({ id: 'MLU1', isbn: '850006058358', publisher: 'Da Brigh' }));
+    assert.match(xml, /<g:gtin>850006058358<\/g:gtin>/);
+    assert.doesNotMatch(xml, /identifier_exists|<g:brand>/);
+    // Sin código: identifier_exists=no y marca solo si es editorial real.
+    xml = renderFeedItem(deck({ id: 'MLU2', publisher: 'Luciernaga' }));
+    assert.doesNotMatch(xml, /<g:gtin>/);
+    assert.match(xml, /<g:brand>Luciernaga<\/g:brand>/);
+    assert.match(xml, /<g:identifier_exists>no<\/g:identifier_exists>/);
+    xml = renderFeedItem(deck({ id: 'MLU3', publisher: 'Genérica' }));
+    assert.doesNotMatch(xml, /<g:brand>/);
+    assert.match(xml, /<g:identifier_exists>no<\/g:identifier_exists>/);
+    // Un libro sin ISBN nunca lleva marca.
+    assert.doesNotMatch(renderFeedItem(book({ id: 'MLU4', publisher: 'Luciernaga' })), /<g:brand>/);
+});
+
+test('17d4. Categoría de Google: libros 784, tarot 499711, juegos de cartas 1247', () => {
+    const it = (domain_id) => book({ domain_id, isbn: '9788499809991' });
+    assert.equal(googleProductCategory(it('MLU-BOOKS')), '784');
+    assert.equal(googleProductCategory(it('MLU-TAROT_CARDS')), '499711');
+    assert.equal(googleProductCategory(it('MLU-BOARD_AND_CARD_GAMES')), '1247');
+    assert.match(renderFeedItem(it('MLU-TAROT_CARDS')), /<g:google_product_category>499711<\/g:google_product_category>/);
+    assert.match(renderFeedItem(it('MLU-BOOKS')), /<g:google_product_category>784<\/g:google_product_category>/);
+});
+
+test('17d5. Los libros con "+ Ebook" o "Digital Pack" no van al feed (Merchant no admite libros digitales)', () => {
+    const t = title => book({ title, isbn: '9788499809991' });
+    for (const titulo of [
+        "Wider World 3 - Student's Book + Ebook + Myenglishlab",
+        'Bright Ideas Starter - Sb + Digital Pack',
+        'Close-up B1 - Curso De Inglés Con Ebook Y Prácticas',
+        'Mi libro (E-book incluido)',
+    ]) {
+        assert.equal(hasDigitalTitle(t(titulo)), true, titulo);
+        assert.equal(isEligibleForFeed(t(titulo)), false, titulo);
+    }
+    for (const titulo of [
+        'Cambridge Igcse English As A Second Language Coursebook',
+        'All You Need Is Love. Editorial Poebooks, Tapa Blanda',
+        'Un libro físico cualquiera',
+        'Rayuela',
+    ]) {
+        assert.equal(hasDigitalTitle(t(titulo)), false, titulo);
+        assert.equal(isEligibleForFeed(t(titulo)), true, titulo);
+    }
+});
+
+test('17d6. custom_label_1 = tarot para mazos y libros de la subcategoría Tarot y oráculos', () => {
+    const categoryData = {
+        categories: [
+            { id: 'esoterismo', name: 'Esoterismo y tarot', subcategories: [{ id: 'tarot', name: 'Tarot y oráculos' }, { id: 'otros', name: 'Otros' }] },
+            { id: 'novela', name: 'Literatura y ficción', subcategories: [] },
+        ],
+        items: { MLU10: [['esoterismo', 'tarot']], MLU11: [['esoterismo', 'otros']], MLU12: [['novela', null]] },
+    };
+    const conTarot = xml => /<g:custom_label_1>tarot<\/g:custom_label_1>/.test(xml);
+    // Un mazo de tarot lo lleva aunque no tenga categoría de libros.
+    assert.equal(conTarot(renderFeedItem(book({ id: 'MLU1', domain_id: 'MLU-TAROT_CARDS', isbn: '9788499809991' }))), true);
+    assert.equal(conTarot(renderFeedItem(book({ id: 'MLU10' }), null, categoryData)), true);
+    assert.equal(conTarot(renderFeedItem(book({ id: 'MLU11' }), null, categoryData)), false);
+    assert.equal(conTarot(renderFeedItem(book({ id: 'MLU12' }), null, categoryData)), false);
+    // Un juego de cartas que no es de tarot no lo lleva.
+    assert.equal(conTarot(renderFeedItem(book({ id: 'MLU2', domain_id: 'MLU-BOARD_AND_CARD_GAMES', isbn: '9788499809991' }))), false);
 });
 
 test('17e. Producción publica sólo portadas primarias válidas y vigentes en R2', () => {

@@ -14,6 +14,8 @@
 // - Cobertura: purchase_coverage registra qué período de cada proveedor está
 //   cargado completo, para distinguir "no compramos" de "no cargado".
 import { bookIsbn } from './isbn.js';
+// purchases-sealed.js importa de este módulo (ciclo seguro: sólo se usa al ejecutar la ruta).
+import { ensureSealKey, importSealed } from './purchases-sealed.js';
 
 export const MATCH_METHODS = Object.freeze(['isbn13', 'isbn10', 'title_author', 'title_publisher', 'title_only', 'unresolved']);
 export const DOCUMENT_TYPES = Object.freeze(['invoice', 'receipt', 'order', 'credit_note']);
@@ -408,6 +410,9 @@ export async function handlePurchasesRoute(request, env) {
     let body;
     try { body = await request.json(); } catch { throw new PurchaseError('invalid_json'); }
     if (url.pathname === '/purchases/import') return reply(await importPurchases(db, body));
+    // Compras selladas (cifradas con la clave pública del Worker): sólo conteos en la respuesta.
+    if (url.pathname === '/purchases/key') return reply({ public_jwk: (await ensureSealKey(db)).publicJwk });
+    if (url.pathname === '/purchases/import-sealed') return reply(await importSealed(db, body?.sealed));
     if (url.pathname === '/purchases/coverage') {
       await ensurePurchases(db);
       return reply({ coverage: await upsertCoverage(db, Array.isArray(body?.coverage) ? body.coverage : [body], Date.now()) });

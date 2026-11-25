@@ -2,8 +2,9 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { inspectCoverBytes } from '../../worker-sync/cover-mirror.js';
-import { isBookProduct } from '../../functions/feed.xml.js';
-import { applyPromoToPrice, webPromoActive } from '../../functions/_shared/web-promo.js';
+import { isBookProduct, isCardDeckProduct } from '../../functions/feed.xml.js';
+import { applyPromoToPrice, applyWebPromoToCatalog, webPromoActive } from '../../functions/_shared/web-promo.js';
+import { applyLiquidationToCatalog } from '../../functions/_shared/liquidacion.js';
 import { inspectProductImages } from '../../shared/product-image-audit.js';
 
 const DEFAULT_BASE_URL = 'https://www.amadolibros.com';
@@ -56,9 +57,16 @@ export function expectedFeedPrice(catalogPrice, { now = new Date(), env = {} } =
   return webPromoActive(now, env) ? applyPromoToPrice(price) : price;
 }
 
-export function auditFeed(catalog, feedItems, { canonicalHost = 'www.amadolibros.com', now = new Date(), env = {} } = {}) {
+export function auditFeed(catalog, feedItems, { canonicalHost = 'www.amadolibros.com', now = new Date(), env = {}, liquidationData } = {}) {
   const catalogItems = Array.isArray(catalog?.items) ? catalog.items : [];
   const byId = new Map(catalogItems.map(item => [String(item.id), item]));
+  // Precio que la web debe mostrar ahora: el mismo cálculo que hace la lectura del catálogo (promo web y
+  // precio de liquidación, desde el 10/11/2026). Se usa la misma función de la web para que la auditoría y
+  // la web no puedan diferir; antes sólo conocía la promo web y marcaba como error cada libro en liquidación.
+  const effectiveById = new Map(
+    (applyLiquidationToCatalog(applyWebPromoToCatalog(catalog, { now, env }), { now, env, ...(liquidationData ? { data: liquidationData } : {}) })?.items ?? catalogItems)
+      .map(item => [String(item.id), item]),
+  );
   const issues = [];
   const seen = new Set();
 
@@ -75,18 +83,19 @@ export function auditFeed(catalog, feedItems, { canonicalHost = 'www.amadolibros
     if (source.status !== 'active' || !(Number(source.available_quantity) > 0)) {
       issues.push(issue('critical', 'FEED_STOCK_MISMATCH', 'Oferta no activa o sin stock en el catálogo.', { id: row.id }));
     }
-    if (!isBookProduct(source)) {
+    // Mazos, tarot, oráculos, cartas y barajas entran al feed por decisión de Seba (8/11/2026): no son error.
+    if (!isBookProduct(source) && !isCardDeckProduct(source)) {
       issues.push(issue('critical', 'FEED_NON_BOOK', 'Producto sin identidad bibliográfica enviado como libro.', { id: row.id, title: row.title }));
     }
     const price = parsePrice(row.price);
     if (!price || price.currency !== 'UYU') {
       issues.push(issue('critical', 'FEED_PRICE_INVALID', 'Precio o moneda inválidos.', { id: row.id, price: row.price }));
-    } else if (price.amount !== expectedFeedPrice(source.price, { now, env })) {
+    } else if (price.amount !== Number((effectiveById.get(row.id) ?? source).price)) {
       issues.push(issue('critical', 'FEED_PRICE_MISMATCH', 'Precio del feed distinto al esperado según el catálogo y la promo vigente.', {
         id: row.id,
         feed_price: price.amount,
         catalog_price: Number(source.price),
-        expected_price: expectedFeedPrice(source.price, { now, env }),
+        expected_price: Number((effectiveById.get(row.id) ?? source).price),
         promo_active: webPromoActive(now, env),
       }));
     }

@@ -57,6 +57,7 @@ import { streamCoverManifest } from './_shared/cover-manifest-stream.js';
 
 import { slugify } from './_shared/slug.js';
 import { fetchCatalog } from './_shared/catalog.js';
+import { liquidationIds, LIQUIDACION } from './_shared/liquidacion.js';
 import { normalizeCategoryPaths } from './_shared/category-paths.js';
 // FICHAS-QUALITY-GUARD-1: misma definición de autoría genérica que la ficha.
 import { realAuthor } from './_shared/generic-author.js';
@@ -64,6 +65,7 @@ import {
     applyBookEnrichment,
     getBookEnrichmentByIsbn,
 } from './_shared/book-enrichment-registry.js';
+import { getTarotShortDescription } from './_shared/tarot-short-descriptions.js';
 
 const CANONICAL_BASE_URL = "https://www.amadolibros.com";
 const SITE_TITLE = "Amado Libros";
@@ -90,6 +92,20 @@ const MAX_MERCHANT_DESCRIPTION_CHARS = 5000;
 // de Merchant viendo si esa causa baja a cero después de la próxima lectura
 // del feed.
 const GOOGLE_PRODUCT_CATEGORY_BOOKS = '784';
+// Categorías oficiales de la taxonomía de Google (IDs verificados en
+// google.com/basepages/producttype/taxonomy-with-ids.en-US.txt):
+//   499711 = Religious & Ceremonial > Religious Items > Tarot Cards
+//   1247   = Toys & Games > Games > Card Games
+const GOOGLE_PRODUCT_CATEGORY_TAROT = '499711';
+const GOOGLE_PRODUCT_CATEGORY_CARD_GAMES = '1247';
+
+/** Categoría de Google del ítem: libros por defecto; mazos y barajas en la suya. */
+export function googleProductCategory(item) {
+    if (!isCardDeckProduct(item)) return GOOGLE_PRODUCT_CATEGORY_BOOKS;
+    return /TAROT_CARDS/.test(String(item?.domain_id || '').toUpperCase())
+        ? GOOGLE_PRODUCT_CATEGORY_TAROT
+        : GOOGLE_PRODUCT_CATEGORY_CARD_GAMES;
+}
 
 export async function onRequest(context) {
     try {
@@ -131,9 +147,14 @@ export async function onRequest(context) {
             a.id < b.id ? -1 : a.id > b.id ? 1 : 0
         );
 
+        // Promo Liquidación Amado: etiqueta para la campaña de Shopping que
+        // muestra solo esos libros. Si falla, el feed sale igual sin etiqueta.
+        let liquidation = new Set();
+        try { liquidation = liquidationIds(sortedItems, { env: context.env }); } catch { /* sin etiqueta */ }
+
         let feedItems = '';
         for (const item of sortedItems) {
-            feedItems += renderFeedItem(item, coverManifest, categoryData, requireImageQuality);
+            feedItems += renderFeedItem(item, coverManifest, categoryData, requireImageQuality, liquidation);
         }
 
         const feed = `<?xml version="1.0" encoding="UTF-8"?>
@@ -151,6 +172,7 @@ export async function onRequest(context) {
                 "cache-control": 'public, max-age=60',
                 ...(catalog?.updated_at ? { 'x-amado-catalog-updated-at': String(catalog.updated_at) } : {}),
                 "x-amado-feed-cover-pending": String(pendingCovers),
+                "x-amado-feed-liquidacion": String(liquidation.size),
             },
         });
 
@@ -173,9 +195,20 @@ export async function onRequest(context) {
  * permalink. No excluye por condición: los usados (`condition: 'used'`)
  * siguen publicándose con su condición real.
  */
+/**
+ * Merchant no admite libros digitales en Shopping. Un libro físico "+ Ebook" o
+ * "+ Digital Pack" se rechaza por ese motivo (hoy 16 productos), así que no se
+ * publica en el feed. La página y la venta por WhatsApp no cambian.
+ * Coincide con la palabra completa: "Coursebook" o "Poebooks" no cuentan.
+ */
+export function hasDigitalTitle(item) {
+    return /(?:^|[^a-z0-9])(?:e-?book|digital\s+pack)(?:$|[^a-z0-9])/i.test(String(item?.title || ''));
+}
+
 export function isEligibleForFeed(item) {
     if (!item || !item.id || !item.permalink) return false;
     if (!/^MLU\d+$/.test(String(item.id))) return false;
+    if (hasDigitalTitle(item)) return false;
     if (item.status !== 'active') return false;
     if (!(Number(item.available_quantity) > 0)) return false;
     if (!(Number(item.price) > 0)) return false;
@@ -183,8 +216,56 @@ export function isEligibleForFeed(item) {
     // No se infiere moneda: un precio sin currency_id es ambiguo y Merchant
     // no debe recibirlo como UYU por defecto.
     if (currency !== 'UYU') return false;
-    if (!isBookProduct(item)) return false;
+    if (!isBookProduct(item) && !isCardDeckProduct(item)) return false;
     return true;
+}
+
+// Mazos de tarot y oráculos, y barajas: Mercado Libre los clasifica en estos
+// dominios. Cerca del 95 % trae un código de barras real (ISBN, EAN o UPC) en el
+// campo isbn; ese código se manda como GTIN. Los que no tienen ninguno válido
+// entran igual, declarados sin código (identifier_exists=no) y con la marca real
+// cuando existe: no se inventa ningún código.
+// Decisión de Seba (8/11/2026): que aparezcan mazos, tarot, oráculo, cartas y baraja.
+const CARD_DECK_DOMAIN = /(?:^|[-_])(?:TAROT_CARDS|BOARD_AND_CARD_GAMES)(?:$|[-_])/;
+
+/**
+ * Mazo o baraja publicable en el feed. Es una regla SOLO del feed: la ficha del
+ * producto sigue sin declararlo libro (isBookProduct no cambia).
+ */
+export function isCardDeckProduct(item) {
+    const domain = String(item?.domain_id || '').trim().toUpperCase();
+    return CARD_DECK_DOMAIN.test(domain);
+}
+
+function isValidGtinCheckDigit(digits) {
+    if (!/^\d+$/.test(digits) || ![8, 12, 13, 14].includes(digits.length)) return false;
+    const nums = digits.split('').map(Number);
+    const check = nums.pop();
+    const sum = nums.reverse().reduce((acc, n, i) => acc + n * (i % 2 === 0 ? 3 : 1), 0);
+    return (10 - (sum % 10)) % 10 === check;
+}
+
+/**
+ * GTIN que se manda al feed. Para libros es el ISBN. Para mazos y barajas se
+ * acepta además un EAN/UPC con dígito verificador correcto. Nunca se inventa
+ * ni se corrige un dígito.
+ */
+export function feedGtin(item) {
+    const isbn = normalizeIsbnToGtin(item?.isbn);
+    if (isbn.valid) return isbn;
+    if (isCardDeckProduct(item)) {
+        const cleaned = cleanIsbnRaw(item?.isbn);
+        if (isValidGtinCheckDigit(cleaned)) return { gtin: cleaned, hadValue: true, valid: true };
+    }
+    return isbn;
+}
+
+// Marca de un mazo sin código de barras: solo si es una editorial real.
+function deckBrand(item) {
+    if (!isCardDeckProduct(item)) return null;
+    const p = String(item?.publisher || '').trim();
+    if (!p || /^(gen[eé]rica|amado libros)$/i.test(p)) return null;
+    return p;
 }
 
 /**
@@ -315,7 +396,7 @@ export function dedupeByGtinAndCondition(eligibleItems) {
     const groups = new Map();
 
     for (const item of eligibleItems) {
-        const gtinResult = normalizeIsbnToGtin(item.isbn);
+        const gtinResult = feedGtin(item);
         if (!gtinResult.valid) {
             noGtinItems.push(item);
             continue;
@@ -372,8 +453,11 @@ export function buildFeedDescription(item) {
         item.description && item.description.trim() && item.description.trim() !== title
     );
     let sentence;
+    const tarotShort = hasRealDescription ? null : getTarotShortDescription(item.isbn);
     if (hasRealDescription) {
         sentence = item.description.trim();
+    } else if (tarotShort) {
+        sentence = tarotShort;
     } else {
         const parts = [title ? `Libro "${title}"` : 'Libro'];
         // FICHAS-QUALITY-GUARD-1: nunca 'de Desconocido' en g:description.
@@ -535,7 +619,7 @@ async function readMerchantCoverManifest(context, productIds) {
 // Render de un <item>
 // ---------------------------------------------------------------------------
 
-export function renderFeedItem(item, coverManifest = null, categoryData = null, requireImageQuality = false) {
+export function renderFeedItem(item, coverManifest = null, categoryData = null, requireImageQuality = false, liquidation = null) {
     item = applyBookEnrichment(item);
     const stock = Number(item.available_quantity) || 0;
     const currency = String(item.currency || item.currency_id || '').trim().toUpperCase();
@@ -551,7 +635,10 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
         .map(link => `\n        <g:additional_image_link>${escapeXml(link)}</g:additional_image_link>`)
         .join('');
 
-    const isbnResult = normalizeIsbnToGtin(item.isbn);
+    const isbnResult = feedGtin(item);
+    const brandTag = !isbnResult.valid && deckBrand(item)
+        ? `\n        <g:brand>${escapeXml(deckBrand(item))}</g:brand>`
+        : '';
     // GTIN válido: se omite identifier_exists (default = yes, según spec de
     // Google). Sin GTIN válido: identifier_exists=no, sin inventar uno.
     const gtinTag = isbnResult.valid
@@ -566,6 +653,14 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
     const productTypeTags = merchantProductTypes(item.id, categoryData)
         .map(productType => `\n        <g:product_type>${escapeXml(productType)}</g:product_type>`)
         .join('');
+    const customLabelTag = liquidation instanceof Set && liquidation.has(String(item.id))
+        ? `\n        <g:custom_label_0>${LIQUIDACION.feedLabel}</g:custom_label_0>`
+        : '';
+    // custom_label_1 = tarot: mazos de tarot y libros de la subcategoría Tarot y oráculos,
+    // para armar el grupo de productos de Shopping sin listar IDs a mano.
+    const esTarot = /TAROT_CARDS/.test(String(item.domain_id || '').toUpperCase())
+        || merchantProductTypes(item.id, categoryData).some(type => /tarot y or[aá]culos/i.test(type));
+    const customLabel1Tag = esTarot ? '\n        <g:custom_label_1>tarot</g:custom_label_1>' : '';
 
     return `
     <item>
@@ -577,7 +672,7 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
         <g:availability>${availability}</g:availability>
         <g:price>${escapeXml(price)}</g:price>
         <g:condition>${escapeXml(cond)}</g:condition>
-        <g:google_product_category>${GOOGLE_PRODUCT_CATEGORY_BOOKS}</g:google_product_category>${gtinTag}${identifierExistsTag}${productTypeTags}
+        <g:google_product_category>${googleProductCategory(item)}</g:google_product_category>${gtinTag}${brandTag}${identifierExistsTag}${productTypeTags}${customLabelTag}${customLabel1Tag}
     </item>`;
 }
 

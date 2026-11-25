@@ -1,0 +1,39 @@
+name: Hermes sondeo (solo lectura)
+
+# Prueba manual: lee unas pocas fichas de catálogo con la API oficial y muestra qué datos trae.
+# No escribe nada en Mercado Libre. Código: hermes-monitor/sondeo.mjs.
+on:
+  workflow_dispatch:
+    inputs:
+      cantidad:
+        description: 'Cuántas fichas probar'
+        default: '3'
+      rama:
+        description: 'Rama con el código a probar (solo lectura)'
+        default: 'main'
+
+permissions:
+  contents: read
+
+jobs:
+  sondeo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.rama }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Leer el Excel
+        run: |
+          pip install -q openpyxl
+          python3 hermes-monitor/leer_excel.py hermes-monitor/data/hermes-top149-17-11.xlsx "$RUNNER_TEMP/fichas.json"
+      - name: Sondear
+        run: node hermes-monitor/sondeo.mjs "$RUNNER_TEMP/fichas.json" "${{ inputs.cantidad }}"

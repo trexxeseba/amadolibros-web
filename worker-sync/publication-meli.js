@@ -1,4 +1,5 @@
 import { getAccessToken, invalidateAccessToken, MeliAuthError } from './meli-auth.js';
+import {ipRisk} from './ip-risk.js';
 import {SELLER_ID,PublicationError,canonicalIsbn,normalizedTitle} from './publication-policy.js';
 import {supplierBookMetadata} from './publication-book-metadata.js';
 import {requireVintagePrice,vintageMinimumFor} from './vintage-pricing.js';
@@ -87,7 +88,17 @@ export function payloadPolicyMismatch(payload,policy){
  if(payload.catalog_listing===true)return policy?.catalogListing==='required_only'&&/^MLU\d+$/.test(payload.catalog_product_id??'')?null:'catalog_payload_not_approved';
  return payload.catalog_listing===false&&payload.catalog_product_id===undefined?null:'payload_policy_mismatch';
 }
-export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>globalThis.fetch(...args),tokenProvider=getAccessToken,tokenInvalidator=invalidateAccessToken,now=Date.now,timeouts={}}={}){
+// trustPreparedMs (sólo el publicador de Vintage en la nube; 0 = como siempre): una publicación
+// preparada hace menos de ese tiempo ya pasó listing_prices y /items/validate en prepare(), así que
+// create() no los repite, y un token cuya cuenta se verificó hace menos de 10 minutos no vuelve a
+// pedir /users/me. El POST /items sigue validando del lado de Mercado Libre.
+// productNotFoundAsMissing (sólo Vintage en la nube; false = como siempre): si la búsqueda por ISBN
+// devuelve una ficha pero /products/{id} responde 404, el libro se trata como sin ficha: alta
+// tradicional con los datos verificados del proveedor y sin ganador para comparar.
+// catalogOnly (Vintage en la nube, decisión de Seba 08/11/2026): sin ficha de catálogo no se publica.
+// Las altas tradicionales usaban la foto y los datos de SBS y generaron cientos de moderaciones.
+export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>globalThis.fetch(...args),tokenProvider=getAccessToken,tokenInvalidator=invalidateAccessToken,now=Date.now,timeouts={},trustPreparedMs=0,productNotFoundAsMissing=false,catalogOnly=false}={}){
+ const verifiedTokens=new Map();
  if(!['440298103','2341378249'].includes(sellerId))throw new PublicationError('unsupported_seller',403);
  if(sellerId!==SELLER_ID&&tokenProvider===getAccessToken)throw new PublicationError('seller_token_provider_required',503);
  const requestTimeout=timeouts.request??12000,createTimeout=timeouts.create??30000;
@@ -259,21 +270,39 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
   const seller=await account(env);
   const found=await call(env,'/products/search?'+new URLSearchParams({site_id:'MLU',status:'active',product_identifier:row.isbn}));
   if(!Array.isArray(found.results))throw new PublicationError('product_search_invalid',502);
-  const missing=found.results.length===0&&(found.paging?.total===undefined||found.paging.total===0);
+  let missing=found.results.length===0&&(found.paging?.total===undefined||found.paging.total===0),fellBack=false;
   if(!missing&&((typeof found.paging?.total==='number'&&found.paging.total!==1)||found.results.length!==1))throw new PublicationError('ambiguous_product_metadata',422);
   let product,productId=null;
+  if(missing&&catalogOnly)throw new PublicationError('catalog_required_no_product',422);
   if(missing)product=await supplierBookMetadata(row,{fetcher});
-  else{productId=found.results[0].id;if(!/^MLU\d+$/.test(productId))throw new PublicationError('product_id_invalid',422);product=await call(env,`/products/${productId}`);}
+  else{
+   productId=found.results[0].id;if(!/^MLU\d+$/.test(productId))throw new PublicationError('product_id_invalid',422);
+   try{product=await call(env,`/products/${productId}`);}
+   catch(error){
+    if(!productNotFoundAsMissing||!(error instanceof MercadoLibreError)||error.status!==404)throw error;
+    // La ficha que dio la búsqueda no existe: alta tradicional con los datos del proveedor.
+    if(catalogOnly)throw new PublicationError('catalog_required_no_product',422);
+    productId=null;missing=true;fellBack=true;product=await supplierBookMetadata(row,{fetcher});
+   }
+  }
   // The detail endpoint can omit GTIN even when the exact-identifier search returns it.
   const detailIsbn=itemIsbns(product),searchIsbn=found.results[0]?itemIsbns(found.results[0]):null;
   if(product.domain_id!=='MLU-BOOKS'||(detailIsbn&&detailIsbn!==row.isbn)||(searchIsbn&&searchIsbn!==row.isbn)||(!detailIsbn&&!searchIsbn))throw new PublicationError('product_identity_mismatch',422);
-  const strategy=product.settings?.listing_strategy??found.results[0]?.settings?.listing_strategy??null;
+  const strategy=fellBack?null:product.settings?.listing_strategy??found.results[0]?.settings?.listing_strategy??null;
   const catalogRequired=strategy==='catalog_required';
   let catalogProductId=null;
   if(catalogRequired){
    if(policy.catalogListing!=='required_only')throw new PublicationError('catalog_required_needs_review',422);
    const resolved=await resolveCatalogProduct(env,row,productId,product);
    catalogProductId=resolved.id;product=resolved.product;
+  }
+  // Vintage: en catálogo el título que se muestra es el de la ficha, no el de SBS ("Dieci A1" en SBS
+  // era "Dieci A1 - Libro + Ebook Interattivo" en la ficha). El filtro de propiedad intelectual
+  // revisa también el nombre de la ficha y su editorial antes de asociarse.
+  if(sellerId==='2341378249'){
+   const publisherAttr=(product.attributes??[]).find(a=>['BOOK_PUBLISHER','PUBLISHER'].includes(a.id))?.value_name;
+   const risk=ipRisk([product.name,product.family_name,found.results[0]?.name].filter(Boolean).join(' '),publisherAttr);
+   if(risk)throw new PublicationError('ip_risk_'+risk,422);
   }
   const binding=/(?:-|–)\s*(HB|PB)\s*$/i.exec(row.title)?.[1]?.toUpperCase();
   const cover=String((product.attributes??[]).find(a=>a.id==='BOOK_COVER')?.value_name??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
@@ -304,7 +333,8 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
    sale_terms:policy.availabilityDays?[{id:'MANUFACTURING_TIME',value_name:`${policy.availabilityDays} días`}]:[]};
   if(seller.tags?.includes('user_product_seller'))payload.family_name=title;else payload.title=title;
   await verifyFees(env,payload,policy);
-  return resolveShipping(env,payload,trace);
+  const ready=await resolveShipping(env,payload,trace);
+  return trustPreparedMs>0?{...ready,prepared_at:now()}:ready;
  }
  // Exactly prepare() on one supplier row, reporting which shipping variant
  // /items/validate accepted or every attempt when none did. Nothing is stored.
@@ -321,13 +351,17 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
  async function create(env,payload,policy){
   // Revalidate the prepared payload and fees immediately before the single create.
   // Validation warnings kept for review never travel to Mercado Libre.
-  const {diagnostic,...body}=payload;
+  const {diagnostic,prepared_at,...body}=payload;
   if(sellerId==='2341378249')requireVintagePrice(body,vintageMinimumFor(policy));
   const mismatch=payloadPolicyMismatch(body,policy);if(mismatch)throw new PublicationError(mismatch,422);
-  await verifyFees(env,body,policy);await validateItem(env,body);
+  const fresh=trustPreparedMs>0&&Number.isFinite(prepared_at)&&now()-prepared_at>=0&&now()-prepared_at<trustPreparedMs;
+  if(!fresh){await verifyFees(env,body,policy);await validateItem(env,body);}
   const pinnedToken=await token(env);
-  const identity=await call(env,'/users/me',{pinnedToken});
-  if(String(identity.id)!==sellerId||identity.site_id!=='MLU')throw new PublicationError('seller_mismatch',403);
+  if(!(trustPreparedMs>0&&now()-(verifiedTokens.get(pinnedToken)??-Infinity)<600000)){
+   const identity=await call(env,'/users/me',{pinnedToken});
+   if(String(identity.id)!==sellerId||identity.site_id!=='MLU')throw new PublicationError('seller_mismatch',403);
+   if(trustPreparedMs>0)verifiedTokens.set(pinnedToken,now());
+  }
   const result=await call(env,'/items',{method:'POST',body,pinnedToken});
   if(!/^MLU\d+$/.test(result?.id??'')||String(result.seller_id)!==sellerId)throw new MercadoLibreError('create_outcome_unknown',502);
   return result;
@@ -370,7 +404,9 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
   if(found.results.length===0)return {price:null,at:now(),days:null};
   if(found.results.length!==1||(typeof found.paging?.total==='number'&&found.paging.total!==1))throw new PublicationError('ambiguous_product_metadata',422);
   const productId=found.results[0].id;if(!/^MLU\d+$/.test(productId??''))throw new PublicationError('product_id_invalid',422);
-  const product=await call(env,`/products/${productId}`);
+  let product;
+  try{product=await call(env,`/products/${productId}`);}
+  catch(error){if(productNotFoundAsMissing&&error instanceof MercadoLibreError&&error.status===404)return {price:null,at:now(),days:null};throw error;}
   const valid=x=>typeof x==='number'&&Number.isFinite(x)&&x>0;
   const win=product.buy_box_winner;
   if(win&&String(win.seller_id??'')===sellerId)return {price:null,at:now(),days:null};
@@ -383,7 +419,11 @@ export function createPublicationMeli({sellerId=SELLER_ID,fetcher=(...args)=>glo
    const items=await call(env,`/products/${productId}/items`);
    const list=Array.isArray(items.results)?items.results:Array.isArray(items)?items:[];
    for(const i of list)if(String(i.seller_id??'')!==sellerId&&(i.currency_id===undefined||i.currency_id==='UYU'))add(Number(i.price),i.item_id??i.id);
-  }catch(error){if(!candidates.length)throw error;}
+  }catch(error){
+   // 404 en /products/{id}/items: nadie vende esa ficha (mismo criterio que el panel de competencia).
+   const nobodySells=productNotFoundAsMissing&&error instanceof MercadoLibreError&&error.status===404;
+   if(!nobodySells&&!candidates.length)throw error;
+  }
   if(!candidates.length)return {price:null,at:now(),days:null};
   candidates.sort((x,y)=>x.price-y.price);
   for(const c of candidates.slice(0,MAX_RIVALS_CHECKED)){

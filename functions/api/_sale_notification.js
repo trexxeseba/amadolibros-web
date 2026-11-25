@@ -78,8 +78,9 @@ export function buildSaleEmail({ order, items, payment }) {
     'Libros:',
     ...itemLines.map(line => `- ${line}`),
     '',
-    `Productos: ${formatMoney(order.products_total_uyu)}`,
+    `Productos: ${formatMoney(Number(order.products_total_uyu) + (Number(order.premio_discount_uyu) || 0))}`,
     `Descuento por retiro: ${formatMoney(order.pickup_discount_uyu)}`,
+    ...(order.premio_code ? [`Premio ${order.premio_code}: −${formatMoney(order.premio_discount_uyu)}`] : []),
     `Envío: ${formatMoney(order.shipping_cost_uyu)}`,
     `Total pagado: ${formatMoney(order.payable_total_uyu)} UYU`,
     `Mercado Pago: aprobado (pago ${payment.id})`,
@@ -116,8 +117,9 @@ export function buildSaleEmail({ order, items, payment }) {
       <tbody>${itemRows}</tbody>
     </table>
     <p>
-      Productos: ${escapeHtml(formatMoney(order.products_total_uyu))}<br>
+      Productos: ${escapeHtml(formatMoney(Number(order.products_total_uyu) + (Number(order.premio_discount_uyu) || 0)))}<br>
       Descuento por retiro: ${escapeHtml(formatMoney(order.pickup_discount_uyu))}<br>
+      ${order.premio_code ? `<strong>Premio ${escapeHtml(order.premio_code)}: −${escapeHtml(formatMoney(order.premio_discount_uyu))}</strong><br>` : ''}
       Envío: ${escapeHtml(formatMoney(order.shipping_cost_uyu))}<br>
       <strong>Total pagado: ${escapeHtml(formatMoney(order.payable_total_uyu))} UYU</strong><br>
       Mercado Pago: aprobado (pago ${escapeHtml(payment.id)})

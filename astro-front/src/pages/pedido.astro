@@ -111,6 +111,10 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
 
       function applyFinalState(paymentStatus, data) {
         if (paymentStatus === 'approved') {
+          // El premio de la Rueda o el Acertijo quedó usado en este pago.
+          if (data && data.order && Number(data.order.premio_discount_uyu) > 0) {
+            try { localStorage.removeItem('amado_premio'); } catch (_) {}
+          }
           if (iconEl) iconEl.textContent = '✓';
           if (h1El)   h1El.textContent   = 'Pago confirmado';
           // PICKUP-CX-1: con retiro el mensaje es especifico -- nada de

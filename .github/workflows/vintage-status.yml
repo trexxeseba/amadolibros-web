@@ -2,11 +2,10 @@ name: Vintage status (read-only)
 
 # Estado de la campaña de Amado Vintage leído de D1 de producción, donde la PC
 # reserva y confirma cada alta. Sólo SELECT: no escribe en D1 ni llama a Mercado Libre.
-# Sirve para ver el progreso sin acceso a la PC (manual o cada 3 horas).
+# Sirve para ver el progreso sin acceso a la PC. Sólo manual desde el 11/11/2026 (Seba): el cron de cada
+# 3 horas alimentaba el panel de la campaña, que está desactivado.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '41 */3 * * *'
 
 permissions:
   contents: read

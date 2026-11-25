@@ -117,12 +117,12 @@ test('no se acepta un token manipulado: ni la firma, ni la fecha, ni el formato'
   }
 });
 
-test('la cookie de sesión viaja HttpOnly, Secure, SameSite=Strict y acotada a /panel', async () => {
+test('la cookie de sesión viaja HttpOnly, Secure, SameSite=Lax y acotada a /panel', async () => {
   const header = sessionCookieHeader(await createSessionToken(SECRET));
   assert.match(header, /^amado_panel_session=/);
   assert.match(header, /HttpOnly/);
   assert.match(header, /Secure/);
-  assert.match(header, /SameSite=Strict/);
+  assert.match(header, /SameSite=Lax/);
   assert.match(header, /Path=\/panel/);
 
   const cleared = clearedSessionCookieHeader();

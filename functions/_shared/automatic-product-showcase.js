@@ -367,12 +367,9 @@ function buildLinks(item, classificationTags = [], categoryTrail = []) {
       label: `Ver otros libros de ${author}`,
     });
   }
-  if (genre) {
-    links.push({
-      href: `/catalogo?q=${encodeURIComponent(genre)}`,
-      label: `Explorar libros de ${genre}`,
-    });
-  }
+  // No se enlaza el género a una búsqueda: el buscador mira título, autor e ISBN, no el
+  // género, así que ese enlace caía siempre en "sin resultados" (era más de la mitad de
+  // lo que registraba search_misses). La categoría ya tiene su propia página arriba.
   if (links.length === 0) {
     links.push({
       href: '/catalogo',

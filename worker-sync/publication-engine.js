@@ -2,8 +2,9 @@ import {APP_ID,SELLER_ID,PublicationError,canonicalIsbn,hasSupplierStock,normali
 import {PublicationStore} from './publication-store.js';
 import {createPublicationMeli,MercadoLibreError,payloadPolicyMismatch} from './publication-meli.js';
 import {enqueuePublicationWork} from './publication-queue.js';
+import {ipRisk} from './ip-risk.js';
 const idOk=id=>typeof id==='string'&&/^[a-f0-9-]{36}$/.test(id);
-const IDENTITY_SKIP=new Set(['catalog_required_needs_review','ambiguous_product_metadata','product_identity_mismatch','catalog_product_id_mismatch','catalog_product_inactive','catalog_product_children_unresolved','book_identifier_required','missing_verified_book_metadata','ambiguous_supplier_book_metadata','supplier_book_identity_mismatch','book_binding_mismatch']);
+const IDENTITY_SKIP=new Set(['catalog_required_needs_review','catalog_required_no_product','ambiguous_product_metadata','product_identity_mismatch','catalog_product_id_mismatch','catalog_product_inactive','catalog_product_children_unresolved','book_identifier_required','missing_verified_book_metadata','ambiguous_supplier_book_metadata','supplier_book_identity_mismatch','book_binding_mismatch']);
 const CATEGORY_SKIP=new Set(['missing_book_category','ambiguous_book_category','category_not_leaf_or_not_allowed']);
 const STOCK_SKIP=new Set(['supplier_stock_conflict']);
 const ML_REQUIREMENT_SKIP=new Set(['ml_http_400','shipping_not_validated','isbn_attribute_missing','missing_verified_cover','incomplete_supplier_book_metadata']);
@@ -13,6 +14,7 @@ export function candidateSkipState(error){
  if(CATEGORY_SKIP.has(code))return 'skipped_category';
  if(STOCK_SKIP.has(code))return 'skipped_stock_uncertain';
  if(ML_REQUIREMENT_SKIP.has(code))return 'skipped_ml_requirement';
+ if(/^ip_risk_[a-z_]+$/.test(code))return 'skipped_ip_risk';
  return null;
 }
 // Sobrescrituras de precio competitivo para un lote clonado: forman parte de la
@@ -52,7 +54,7 @@ export function clonePreflightJob(job){
 }
 const runFingerprint=run=>run?JSON.stringify({feed_id:run.feed_id,policy_json:run.policy_json,policy_hash:run.policy_hash,approved_hash:run.approved_hash??null,daily_cap:run.daily_cap,preflight_limit:run.preflight_limit}):null;
 
-export function createPublicationService({sellerId=SELLER_ID,api=createPublicationMeli({sellerId}),storeFactory=env=>new PublicationStore(env.ORDERS_DB,{sellerId}),now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),attachWaitMs=25000,approvedPayloadGuard=null,maxJobsPerTick=10,maxIndexSlicesPerTick=20,stockMaxHours=24}={}){
+export function createPublicationService({sellerId=SELLER_ID,api=createPublicationMeli({sellerId}),storeFactory=env=>new PublicationStore(env.ORDERS_DB,{sellerId}),now=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),attachWaitMs=25000,approvedPayloadGuard=null,maxJobsPerTick=10,maxIndexSlicesPerTick=20,stockMaxHours=24,ipFilter=sellerId==='2341378249'}={}){
  const initialized=new WeakSet();
  if(!['440298103','2341378249'].includes(sellerId))throw new PublicationError('unsupported_seller',403);
  function store(env){if(String(env.USER_ID)!==sellerId||String(env.APP_ID)!==APP_ID)throw new PublicationError('seller_configuration_mismatch',503);return storeFactory(env);}
@@ -125,6 +127,8 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
      if(receipt){const own=receipt.run_id===run.id;if(receipt.state==='published'){await mark(row.isbn,own?'published':'skipped_duplicate',{itemId:receipt.item_id,errorCode:own?null:'existing_published_receipt'});}else await mark(row.isbn,'uncertain',{itemId:receipt.item_id,errorCode:'existing_create_receipt'});continue;}
      const duplicate=await s.existing(run.id,row.isbn,row.title);
      if(duplicate){await mark(row.isbn,'skipped_duplicate',{itemId:duplicate.item_id,errorCode:duplicate.isbn===row.isbn?null:'possible_title_duplicate'});continue;}
+     // Propiedad intelectual (Vintage, 08/11/2026): con una palabra de riesgo no se publica nunca.
+     if(ipFilter){const risk=ipRisk(row.title,row.publisher);if(risk){await mark(row.isbn,'skipped_ip_risk',{errorCode:'ip_risk_'+risk});continue;}}
      const bySku=await api.skuItems(env,row.isbn);
      if(bySku.length){await mark(row.isbn,'skipped_duplicate',{itemId:bySku[0]});continue;}
      // Precio competitivo: se mira una sola vez al ganador de la ficha y se guarda en el
@@ -352,7 +356,49 @@ export function createPublicationService({sellerId=SELLER_ID,api=createPublicati
    await s.approve(args.run_id,args.policy_hash);await enqueuePublicationWork(env,args.run_id);return s.summary(args.run_id);
   }
  }
- return {command,tick};
+ // Clasificador (Amado Vintage en la nube): deja un candidato pendiente como 'validated' con su
+ // publicación preparada, o en su estado de descarte, sin lease, sin reservar y sin crear nada.
+ // Mismos controles y en el mismo orden que tick hasta api.prepare. Cuando el publicador toma un
+ // 'validated' con el mismo precio, reusa el payload y sólo vuelve a mirar SKU, reserva y crea.
+ // Escribe sólo si el trabajo sigue pendiente: nunca pisa lo que el publicador ya hizo con él.
+ async function classify(env,runId,isbn){
+  const s=store(env);
+  const write=(state,options={})=>s.jobIfOpen(runId,isbn,state,{...options,now:now()});
+  const run=await s.run(runId);if(!run)return {state:'no_run'};
+  const feed=await s.feed(run.feed_id);
+  if(feed?.state!=='ready'||!stockIsFresh(feed.source_date,now(),stockMaxHours))return {state:'stock_stale'};
+  const policy=validPolicy(JSON.parse(run.policy_json));
+  const row=await s.stock(run.feed_id,isbn);
+  if(!row||!hasSupplierStock(row.stock)){await write('skipped_stock_uncertain');return {state:'skipped_stock_uncertain'};}
+  normalizeSupplierRow(row);
+  try{
+   const receipt=await s.receipt(sellerId,row.isbn);
+   if(receipt){const own=receipt.run_id===run.id,state=receipt.state==='published'?(own?'published':'skipped_duplicate'):'uncertain';await write(state,{itemId:receipt.item_id,errorCode:receipt.state==='published'?(own?null:'existing_published_receipt'):'existing_create_receipt'});return {state};}
+   const duplicate=await s.existing(run.id,row.isbn,row.title);
+   if(duplicate){await write('skipped_duplicate',{itemId:duplicate.item_id,errorCode:duplicate.isbn===row.isbn?null:'possible_title_duplicate'});return {state:'skipped_duplicate'};}
+   if(ipFilter){const risk=ipRisk(row.title,row.publisher);if(risk){await write('skipped_ip_risk',{errorCode:'ip_risk_'+risk});return {state:'skipped_ip_risk',error:'ip_risk_'+risk};}}
+   const bySku=await api.skuItems(env,row.isbn);
+   if(bySku.length){await write('skipped_duplicate',{itemId:bySku[0]});return {state:'skipped_duplicate'};}
+   if(policy.competitive&&row.competitor===undefined){
+    const competitor=await api.competitorPrice(env,row.isbn);
+    await s.setCompetitor(run.feed_id,row.isbn,competitor);
+    row.competitor=competitor;
+   }
+   const quote=quoteMercadoLibre(row,policy);
+   if(quote.skip){await write('skipped_not_competitive',{errorCode:quote.skip});return {state:'skipped_not_competitive'};}
+   const payload=await api.prepare(env,row,policy,quote.price);
+   await write('validated',{payload});return {state:'validated'};
+  }catch(error){
+   const auth=error instanceof MercadoLibreError&&(error.status===401||error.status===403&&error.stage!=='metadata');
+   const transient=error instanceof MercadoLibreError&&(error.status===429||error.status>=500);
+   // Lo pasajero y la autorización no cuentan como descarte: el candidato queda pendiente.
+   if(auth||transient)return {state:auth?'auth_error':'transient',status:error.status,retryAfter:error.retryAfter??0,error:safeCode(error)};
+   const skipState=candidateSkipState(error);
+   await write(skipState??'review',{errorCode:safeCode(error),attempt:true,...(error instanceof MercadoLibreError&&error.stage?{payload:{diagnostic:{stage:error.stage,validation_codes:error.validationCodes??[]}}}:{})});
+   return {state:skipState??'review',error:safeCode(error)};
+  }
+ }
+ return {command,tick,classify};
 }
 
 export const publicationService=createPublicationService();

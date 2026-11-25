@@ -59,7 +59,7 @@ test('el contador del registry suma sólo los ISBN nuevos, no los fusionados', (
   // 1.656 + 121 del lote B12 01 (196 menos 75 fusionados) + 13 del lote 02
   // (31 menos 18 fusionados) + 88 del lote 04 (294 menos 206 fusionados)
   // + 1 del lote 05 (2 menos 1 fusionado).
-  assert.equal(listBookEnrichments().length, 1879);
+  assert.equal(listBookEnrichments().length, 1882);
 });
 
 test('el enriquecimiento no toca datos comerciales de la ficha', () => {

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { loadBi, abc, priceRaises } from '../_shared/panel-bi.js';
+import { loadBi, abc, priceRaises, withUnsoldBooks, brujulaDigest, constantesEnRiesgo, stockObjetivo, detalleReposicion, comprasTexto, mercadoCorto, competidoresSinStock, loadRepuestos, ventasPorMes, loadAgotadosHoy } from '../_shared/panel-bi.js';
 import { renderBi, createBiPanel } from '../panel/inteligencia.js';
 import { SALES_SCHEMA } from '../../worker-sync/ml-sales.js';
 import { importPurchases } from '../../worker-sync/purchases.js';
@@ -74,7 +74,33 @@ test('inteligencia: KPIs, tendencia, ABC, inventario, compras y editoriales con 
   assert.equal(bi.inventario.data.aSinStock[0].mercado.estado, 'sin_dato');
   assert.equal(bi.inventario.data.aSinStock[0].compra.supplier, 'CELESA');
   assert.equal(bi.competencia.ok, false, 'sin tablas de competencia en el entorno de prueba el bloque falla solo');
+  // Lentos pero constantes: B vendió 5 propias en 12 meses (el encargo SBS no
+  // cuenta), 1 cada 73 días, queda 1: alcanza 73 días, menos que 75 → pedir 1.
+  // A está agotado y es constante: entra con cobertura 0 y la compra reciente
+  // a Celesa (hace 40 días, 4 u.) como aviso. C vendió 1: no es constante.
+  const cons = bi.inventario.data.constantes;
+  assert.deepEqual(cons.lista.map(b => b.isbn), [B, A], 'primero el que todavía tiene un ejemplar, después el agotado');
+  assert.deepEqual([cons.total, cons.conStock, cons.agotadosRecientes, cons.agotadosViejos], [2, 1, 1, 0]);
+  assert.equal(cons.lista[0].u365p, 5);
+  assert.equal(cons.lista[0].ritmo, 73);
+  assert.equal(cons.lista[0].cobertura, 73);
+  assert.equal(cons.lista[0].pedir, 1);
+  assert.equal(cons.lista[0].mercado.estado, 'sin_dato', 'sin tablas de competencia no se inventa stock inmediato');
+  assert.equal(cons.lista[1].stock, 0);
+  assert.equal(cons.lista[1].compras.ultima.dias, 40);
+  assert.equal(cons.lista[1].compras.ultima.cantidad, 4);
+  assert.equal(cons.lista[1].compras.ultima.proveedor, 'CELESA');
+  assert.equal(cons.lista[1].compras.ultima.vendidasDesde, 28, 'A: 14 ventas de 2 u. desde la compra de hace 40 días');
+  assert.deepEqual(bi.inventario.data.faltanCompras, ['CELESA', 'ARNOIA', 'CASASSA_Y_LORENZO', 'AMAZON_COM'], 'sin cobertura cargada faltan todos los proveedores obligatorios');
+  const sinStockA = bi.inventario.data.aSinStock[0];
+  assert.equal(sinStockA.u30p, 20); assert.equal(sinStockA.pedir, 3, "ritmo 1 cada 8 días y 40 vendidas en 90: objetivo 3 con stock 0");
+  assert.equal(sinStockA.compras.ultima.vendidasDesde, 28);
+  assert.deepEqual(sinStockA.ventasMes, [0, 0, 0, 0, 20, 20], 'A: 10 ventas de 2 u. en cada uno de los 2 meses más recientes (de 30 días)');
+  assert.deepEqual(cons.lista[0].ventasMes, [0, 0, 0, 0, 2, 3], 'B: 3 ventas en el último mes y 2 en el anterior; el encargo SBS no cuenta');
+  assert.deepEqual([...(await ventasPorMes(db, ['9780000000000'], NOW)).values()], [[0, 0, 0, 0, 0, 0]], 'sin ventas: seis ceros');
   const html = renderBi(bi);
+  assert.match(html, /Lentos pero constantes/);
+  assert.match(html, /1 cada 73 d/);
   for (const h of ['Cómo va el negocio', 'Tendencia semanal', 'Qué libros hacen la plata', 'Dónde se pierde plata', 'Cómo rinden las compras', 'Editoriales', 'competencia', 'conviene reponer', '1 en 12 meses', 'subirles el precio']) assert.match(html, new RegExp(h));
   assert.match(html, /No se pudo calcular este bloque/);
   assert.ok(!/<script/i.test(html));
@@ -156,22 +182,74 @@ test('precios: lista los libros muy por debajo del más barato, sugiere 2% debaj
 
 test('brujulaDigest: toma lo accionable de cada bloque y nada si no hay nada', async () => {
   const { brujulaDigest } = await import('../_shared/panel-bi.js');
+  const NOW = Date.parse('2026-11-18T15:00:00Z');
+  const sinStock = (isbn, title, extra = {}) => ({ isbn, title, now: NOW, stock: 0, u30p: 3, u90p: 8, u90: 8, u365p: 21, ritmo: 17, pedir: 3, avgPrice: 1250, lastMs: Date.parse('2026-11-12T15:00:00Z'), lastOwnMs: Date.parse('2026-11-12T15:00:00Z'),
+    compras: { enCamino: 0, sinIsbn: 0, ultima: { fecha: '2026-09-02', dias: 77, cantidad: 4, proveedor: 'CELESA', vendidasDesde: 11 } }, ...extra });
   const bi = {
-    inventario: { ok: true, data: { aSinStock: [
-      { isbn: 'a', title: 'A', u90: 6, mercado: { estado: 'sostenible', margenAlMin: 1100 } },
-      { isbn: 'b', title: 'B', u90: 5, mercado: { estado: 'no_conviene' } },
-      { isbn: 'c', title: 'C', u90: 4, mercado: { estado: 'solo' } },
-    ], coberturaBaja: [{ isbn: 'd', title: 'D', stock: 1, dias: 13 }] } },
+    inventario: { ok: true, data: { faltanCompras: [], aSinStock: [
+      sinStock('a', 'A', { mercado: { estado: 'sostenible', nacionales: 1, min: 1100, vendedor: 'Librería Pocho', margenAlMin: 1100 } }),
+      sinStock('b', 'B', { mercado: { estado: 'no_conviene' } }),
+      sinStock('c', 'C', { mercado: { estado: 'solo', aPedido: 1 }, compras: { enCamino: 4, sinIsbn: 0, ultima: { fecha: '2026-11-10', dias: 8, cantidad: 4, proveedor: 'CELESA', vendidasDesde: 0 } } }),
+      sinStock('z', 'Z sólo encargo', { mercado: { estado: 'solo' }, u365p: 0, u90p: 0 }),
+    ], coberturaBaja: [{ isbn: 'd', title: 'D', stock: 1, dias: 13 }, { isbn: 'k', title: 'Klein', stock: 1, dias: 12 }],
+    constantes: { total: 2, enCamino: 0, faltan: ['ARNOIA'], now: NOW, lista: [
+      sinStock('a', 'A', { mercado: { estado: 'solo' } }),
+      sinStock('k', 'Klein', { stock: 1, cobertura: 61, u30p: 0, u90p: 1, u90: 1, u365p: 6, ritmo: 61, pedir: 1, avgPrice: 1700, mercado: { estado: 'con_stock', nacionales: 2, min: 1600, vendedor: 'Librería Pocho' },
+        compras: { enCamino: 0, sinIsbn: 0, ultima: { fecha: '2026-10-29', dias: 20, cantidad: 2, proveedor: 'CELESA', vendidasDesde: 1 } } }),
+    ] } } },
     precios: { ok: true, data: { lista: [{ isbn: 'e', title: 'E', agotado: true, actual: 600, sugerido: 2000, subaPct: 233, min: 2050 }, { isbn: 'f', title: 'F', agotado: false, actual: 900, sugerido: 1170, subaPct: 30, min: 1200 }] } },
     margen: { ok: true, data: { peores: [{ isbn: 'g', title: 'G', margin: -387, price: 1809, cost: 2196 }, { isbn: 'h', title: 'H', margin: 17, price: 596, cost: 579 }] } },
   };
   const d = brujulaDigest(bi);
-  assert.deepEqual(d.reponer.map(r => r.isbn), ['a', 'c']);
-  assert.match(d.reponer[0].detalle, /ganás \$ 1\.100/);
+  assert.deepEqual(d.reponer.map(r => r.isbn), ['a'], 'C ya está pedido, B no conviene y Z sólo vende por encargo');
+  assert.equal(d.reponer[0].detalle, 'Sin stock: última venta el 12/11/26 (hace 6 días). Vendiste 3 en 30 días, 8 en 90 y 21 en 12 meses (1 cada 17 días), a $ 1.250. Pedí 3. Última compra: 4 u. el 02/09/26 (Celesa), hace 77 días; desde entonces vendiste 11: se vendió todo lo que entró. 1 lo tiene con entrega inmediata en Uruguay (Librería Pocho a $ 1.100); a ese precio ganás $ 1.100 por libro.');
+  assert.deepEqual(d.pedidos.map(r => r.isbn), ['c']);
+  assert.match(d.pedidos[0].detalle, /YA PEDIDO: compraste 4 u\. el 10\/11\/26 \(Celesa\), hace 8 días; puede estar en camino/);
+  assert.match(d.pedidos[0].detalle, /Nadie más lo tiene con entrega inmediata en Uruguay \(1 lo venden a pedido\)/);
   assert.deepEqual(d.subir.map(r => r.isbn), ['f'], 'sólo los que tienen stock: se puede subir hoy');
   assert.match(d.agotan[0].detalle, /13 días/);
+  assert.deepEqual(d.agotan.map(r => r.isbn), ['d'], 'Klein ya tiene su línea completa en "Último ejemplar": no sale también como "se agota"');
   assert.deepEqual(d.perdida.map(r => r.isbn), ['g']);
+  assert.deepEqual(d.ultimo.map(r => r.isbn), ['k'], 'A ya salió en "Conviene reponer": no se repite');
+  assert.equal(d.ultimo[0].detalle, 'Queda 1, alcanza unos 61 días; última venta el 12/11/26. Vendiste 0 en 30 días, 1 en 90 y 6 en 12 meses (1 cada 61 días), a $ 1.700. Pedí 1. Última compra: 2 u. el 29/10/26 (Celesa), hace 20 días; desde entonces vendiste 1. 2 lo tienen con entrega inmediata en Uruguay (Librería Pocho a $ 1.600).');
+  assert.equal(d.ultimoTotal, 1);
   assert.equal(brujulaDigest({}), null);
+  const soloUltimo = brujulaDigest({ inventario: { ok: true, data: { aSinStock: [], coberturaBaja: [], constantes: { now: NOW, faltan: ['CELESA', 'AMAZON_COM'], agotadosRecientes: 3, agotadosViejos: 5, lista: [sinStock('z', 'Z', { reciente: true, u30p: 0, u90p: 0, u90: 0, u365p: 6, ritmo: 61, pedir: 2, avgPrice: null, lastOwnMs: null, lastMs: null, mercado: { estado: 'sin_dato' }, compras: { enCamino: 0, sinIsbn: 1, ultima: null } })] } } } });
+  assert.deepEqual(soloUltimo.ultimo, [], 'un agotado no es un "último ejemplar"');
+  assert.equal(soloUltimo.agotadosTotal, 3); assert.equal(soloUltimo.agotadosViejos, 5);
+  assert.equal(soloUltimo.agotados[0].detalle, 'Sin stock. Vendiste 0 en 30 días, 0 en 90 y 6 en 12 meses (1 cada 61 días). Pedí 2. Sin compras registradas (faltan cargar las de Celesa, Amazon.com: confirmá que no esté pedido). Hay 1 compra sin ISBN que podría ser este libro. Sin dato de competencia en Mercado Libre.');
+});
+
+test('comprasTexto: no afirma "no hay compras" sin avisar qué proveedores faltan cargar, ni da por llegado lo que no se sabe', () => {
+  assert.match(comprasTexto(undefined), /No pude consultar las compras/);
+  assert.equal(comprasTexto({ enCamino: 0, sinIsbn: 0, ultima: null }, []), 'Sin compras registradas en los últimos 12 meses');
+  assert.match(comprasTexto({ enCamino: 0, sinIsbn: 0, ultima: { fecha: '2026-11-01', dias: 17, cantidad: 3, proveedor: 'ARNOIA', vendidasDesde: 1 } }, [], 0), /desde entonces vendiste 1: faltarían 2 por vender, revisá si llegaron/);
+  assert.doesNotMatch(comprasTexto({ enCamino: 0, sinIsbn: 0, ultima: { fecha: '2026-11-01', dias: 17, cantidad: 3, proveedor: 'ARNOIA', vendidasDesde: 1 } }, [], 2), /faltarían/, 'con stock el resto está en la góndola');
+  assert.equal(mercadoCorto({ estado: 'solo', aPedido: 0 }), 'nadie más lo tiene con entrega inmediata en Uruguay');
+});
+
+test('lentos pero constantes: 2+ ventas propias al año y stock para 75 días o menos; 1 cada 60 días con el último ejemplar avisa, 1 cada 120 no', () => {
+  const books = [
+    { isbn: 'bleichmar', title: 'Fundación', u365p: 6, u90p: 1, stock: 1, avgPrice: 2650 }, // 1 cada 61 días, queda 1 → 61 ≤ 75: avisa
+    { isbn: 'lento', title: 'Lento', u365p: 3, u90p: 0, stock: 1, avgPrice: 900 }, // 1 cada 122 días, queda 1 → 122: no avisa (se repone al venderse)
+    { isbn: 'rapido', title: 'Rápido', u365p: 24, u90p: 6, stock: 2, avgPrice: 500 }, // 1 cada 15, quedan 2 → 30 días: avisa y el objetivo es 3
+    { isbn: 'agotado', title: 'Agotado', u365p: 4, u90p: 1, stock: 0, avgPrice: 1000 }, // sin stock y constante: primero
+    { isbn: 'unico', title: 'Una venta', u365p: 1, u90p: 1, stock: 0, avgPrice: 1000 }, // una sola venta: no es constante
+    { isbn: 'cubierto', title: 'Cubierto', u365p: 12, u90p: 3, stock: 4, avgPrice: 1000 }, // 1 cada 30, quedan 4 → 120 días: tranquilo
+    { isbn: 'dos', title: 'Dos ejemplares', u365p: 9, u90p: 2, stock: 2, avgPrice: 800 }, // 1 cada 41, quedan 2 → 82 días: con el aviso a 90 días ya sale
+  ];
+  const r = constantesEnRiesgo(books);
+  assert.deepEqual(r.map(b => b.isbn), ['rapido', 'bleichmar', 'dos', 'agotado'], 'primero los que aún tienen un ejemplar (menos días de venta primero), después los agotados');
+  const dos = r.find(x => x.isbn === 'dos');
+  assert.equal(dos.cobertura, 82); assert.equal(dos.pedir, 1);
+  const b = r.find(x => x.isbn === 'bleichmar');
+  assert.equal(b.ritmo, 61); assert.equal(b.cobertura, 61); assert.equal(b.objetivo, 2); assert.equal(b.pedir, 1);
+  const rap = r.find(x => x.isbn === 'rapido');
+  assert.equal(rap.objetivo, 3); assert.equal(rap.pedir, 1);
+  const ag = r.find(x => x.isbn === 'agotado');
+  assert.equal(ag.cobertura, 0); assert.equal(ag.ritmo, 91); assert.equal(ag.pedir, 1, 'ritmo 91: objetivo 1 y mínimo 1');
+  assert.equal(stockObjetivo(10, 5), 3); assert.equal(stockObjetivo(10, 2), 2); assert.equal(stockObjetivo(60), 2); assert.equal(stockObjetivo(75), 2); assert.equal(stockObjetivo(76), 1);
+  assert.match(detalleReposicion({ ...b, now: Date.parse('2026-11-18T15:00:00Z'), mercado: { estado: 'solo' }, compras: undefined }), /^Queda 1, alcanza unos 61 días\. Vendiste 0 en 30 días, 1 en 90 y 6 en 12 meses \(1 cada 61 días\), a \$ 2\.650\. Pedí 1\. No pude consultar las compras: confirmá que no esté pedido\. Nadie más/);
 });
 
 test('precios: si sos el único con entrega inmediata, el sugerido sale de los que venden a pedido', () => {
@@ -181,4 +259,171 @@ test('precios: si sos el único con entrega inmediata, el sugerido sale de los q
   assert.equal(r.lista[0].aPedido, true);
   assert.equal(r.lista[0].sugerido, 4900);
   assert.equal(r.solosTotal, 0);
+});
+
+test('libros vigilados sin ventas en 12 meses: entran a "muy barato" con el stock del catálogo y el correo dice cuántos son', () => {
+  const facts = new Map([
+    // Vendido: nadie más inmediato, a pedido desde 5.000.
+    ['A', { tu_precio: 2000, competidores_comparables: 0, competidores_inmediatos: 0, competidores_a_pedido: 1, precio_minimo_a_pedido: 5000 }],
+    // Sin ventas, con stock: único inmediato a 1.395, a pedido desde 1.890.
+    ['B', { tu_precio: 1395, competidores_comparables: 0, competidores_inmediatos: 0, competidores_a_pedido: 2, precio_minimo_a_pedido: 1890 }],
+    // Sin ventas y sin stock en el catálogo: no entra.
+    ['C', { tu_precio: 500, competidores_comparables: 0, competidores_inmediatos: 0, competidores_a_pedido: 1, precio_minimo_a_pedido: 2000 }],
+  ]);
+  const table = {
+    books: [{ isbn: 'A', title: 'Vendido', u90: 3, stock: 1 }],
+    meta: new Map([['B', { title: 'Cola larga' }], ['C', { title: 'Agotado' }]]),
+    stock: new Map([['B', { stock_propio: 2 }], ['C', { stock_propio: 0 }]]),
+  };
+  const books = withUnsoldBooks(facts, table);
+  assert.deepEqual(books.map(b => b.isbn), ['A', 'B']);
+  const r = priceRaises(facts, books);
+  assert.deepEqual(r.lista.map(b => b.isbn), ['A', 'B'], 'primero lo que más deja por mes');
+  const b = r.lista[1];
+  assert.equal(b.title, 'Cola larga');
+  assert.equal(b.sugerido, 1850);
+  assert.equal(b.subaPct, 33);
+  assert.equal(b.ganaMes, 0);
+  assert.equal(b.aPedido, true);
+  assert.equal(r.conStock, 2);
+  const digest = brujulaDigest({ precios: { ok: true, data: r } });
+  assert.equal(digest.subirTotal, 2);
+  assert.match(digest.subir[1].detalle, /de \$ 1\.395 a \$ 1\.850 \(\+33%; sos el único con entrega inmediata/);
+  assert.equal(withUnsoldBooks(null, table), table.books);
+});
+
+test('detalleReposicion suma el costo de la última compra, las ventas por mes y el competidor que se quedó sin stock', () => {
+  const d = detalleReposicion({ now: Date.parse('2026-11-18T15:00:00Z'), stock: 0, u30p: 2, u90p: 5, u365p: 20, u90: 5, ritmo: 18, pedir: 2, avgPrice: 1500,
+    lastOwnMs: Date.parse('2026-11-14T15:00:00Z'), costo: 1100, costoProveedor: 'CELESA', ventasMes: [1, 2, 0, 3, 4, 5], compras: undefined,
+    mercado: { estado: 'solo', aPedido: 0, salieron: ['Librería Pocho dejó de ofrecer este libro en el catálogo (probablemente lo vendió).'] } });
+  assert.match(d, /Últimos 6 meses, del más viejo al más nuevo: 1, 2, 0, 3, 4, 5\./);
+  assert.match(d, /Pedí 2\. Costo de la última compra: \$ 1\.100 \(Celesa, al cambio de hoy\)\./);
+  assert.match(d, /Nadie más lo tiene con entrega inmediata en Uruguay\. Ojo: Librería Pocho dejó de ofrecer este libro en el catálogo \(probablemente lo vendió\)\.$/);
+  const sin = detalleReposicion({ now: Date.parse('2026-11-18T15:00:00Z'), stock: 0, u30p: 0, u90p: 0, u365p: 3, u90: 0, ritmo: 122, pedir: 1, avgPrice: null, lastOwnMs: null, compras: undefined, mercado: { estado: 'sin_dato' } });
+  assert.doesNotMatch(sin, /Últimos 6 meses|Costo de la última compra/, 'sin dato no inventa renglones');
+});
+
+test('competidores que se quedaron sin stock: primero los libros que vos tenés, con lo que tenés', () => {
+  const evento = (isbn, tipo = 'competidor_sin_stock') => ({ isbn, tipo, texto: `Pocho dejó de ofrecer ${isbn} (probablemente lo vendió).` });
+  const r = competidoresSinStock([evento(A), evento(B), evento(B), evento(C, 'precio_arriba')], catalog);
+  assert.deepEqual(r.map(x => x.isbn), [B, A], 'B (tenés 1) antes que A (sin stock); C no es de este tipo; B no se repite');
+  assert.equal(r[0].title, 'Libro B');
+  assert.match(r[0].detalle, /Vos tenés 1: te quedás con esa demanda, no lo dejes agotar\./);
+  assert.match(r[1].detalle, /Hoy vos no tenés stock: reponerlo es la oportunidad\./);
+  assert.deepEqual(competidoresSinStock([], catalog), []);
+});
+
+test('repuestos: libros agotados que volvieron a tener stock, con para cuántos días de venta alcanzan', async t => {
+  const db = await seed(t);
+  db.sqlite.exec('CREATE TABLE catalog_sync_log (id TEXT PRIMARY KEY, synced_at TEXT NOT NULL, samples_json TEXT)');
+  const log = db.sqlite.prepare('INSERT INTO catalog_sync_log VALUES (?,?,?)');
+  log.run('sync:1', new Date(NOW - 4 * 3600000).toISOString(), JSON.stringify({ back_in_stock: [{ id: 'MLU1', title: 'Libro A', isbn: A, qty: 2 }, { id: 'MLU9', title: 'Libro A (catálogo)', isbn: A, qty: 2 }, { id: 'MLU3', title: 'Libro C', isbn: C, qty: 1 }, { id: 'MLUX', title: 'Sin ISBN', isbn: null, qty: 1 }] }));
+  log.run('sync:viejo', new Date(NOW - 3 * 86400000).toISOString(), JSON.stringify({ back_in_stock: [{ id: 'MLU4', title: 'Viejo', isbn: D, qty: 9 }] }));
+  const r = await loadRepuestos(db, NOW);
+  assert.deepEqual(r.map(x => x.title), ['Libro A', 'Libro C', 'Sin ISBN'], 'A una sola vez aunque la publicación esté duplicada; el sync de hace 3 días no entra');
+  assert.equal(r[0].detalle, 'Ahora hay 2 ejemplares: alcanzan para unos 16 días de venta al ritmo de los últimos 12 meses (1 cada 8 días, 45 vendidos).');
+  assert.equal(r[1].detalle, 'Ahora hay 1 ejemplar: alcanzan para unos 365 días de venta al ritmo de los últimos 12 meses (1 cada 365 días, 1 vendidos).');
+  assert.equal(r[2].detalle, 'Ahora hay 1 ejemplar: no tuvo ventas propias en los últimos 12 meses.');
+  db.sqlite.exec('DELETE FROM catalog_sync_log');
+  assert.deepEqual(await loadRepuestos(db, NOW), []);
+});
+
+test('constantes: con cientos de libros no falla la lectura de compras (máximo 50 por consulta) y lo agotado hace meses no tapa a lo que se puede salvar', async t => {
+  const db = await seed(t);
+  const books = [];
+  for (let i = 0; i < 120; i++) books.push({ isbn: String(9780000000000 + i), title: `Agotado viejo ${i}`, u365p: 6, u90p: 0, u30p: 0, u90: 0, stock: 0, avgPrice: 1000, lastOwnMs: NOW - 200 * 864e5, lastMs: NOW - 200 * 864e5 });
+  for (let i = 0; i < 5; i++) books.push({ isbn: String(9781000000000 + i), title: `Agotado reciente ${i}`, u365p: 4 + i, u90p: 1, u30p: 0, u90: 1, stock: 0, avgPrice: 900, lastOwnMs: NOW - (10 + i) * 864e5, lastMs: NOW - (10 + i) * 864e5 });
+  books.push({ isbn: A, title: 'Con el último ejemplar', u365p: 6, u90p: 1, u30p: 0, u90: 1, stock: 1, avgPrice: 2650, lastOwnMs: NOW - 20 * 864e5, lastMs: NOW - 20 * 864e5 });
+  books.push({ isbn: B, title: 'Con stock pero sin ventas hace meses', u365p: 6, u90p: 0, u30p: 0, u90: 0, stock: 1, avgPrice: 1000, lastOwnMs: NOW - 150 * 864e5, lastMs: NOW - 150 * 864e5 });
+  const { loadConstantesEnRiesgo, comprasDe } = await import('../_shared/panel-bi.js');
+  const r = await loadConstantesEnRiesgo(db, books, NOW);
+  assert.deepEqual([r.total, r.conStock, r.sinMovimiento, r.agotadosRecientes, r.agotadosViejos], [127, 1, 1, 5, 120]);
+  assert.deepEqual(r.lista.map(b => b.title), ['Con el último ejemplar', 'Agotado reciente 0', 'Agotado reciente 1', 'Agotado reciente 2', 'Agotado reciente 3', 'Agotado reciente 4'],
+    'primero el que tiene un ejemplar; después los agotados, el que se agotó más recién primero; el viejo y el sin movimiento no se listan');
+  assert.ok(r.lista.every(b => b.compras !== undefined), 'las compras se leyeron');
+  assert.equal(r.lista[0].compras.ultima.cantidad, 4, 'A tiene la compra de Celesa de hace 40 días');
+  assert.match(comprasTexto(r.lista[1].compras, r.faltan, 0), /^Sin compras registradas \(faltan cargar las de /);
+  // comprasDe en tandas: 120 libros juntos antes fallaban con "isbns_1_to_50".
+  const many = await comprasDe(db, Array.from({ length: 120 }, (_, i) => String(9780000000000 + i)), NOW);
+  assert.ok(many.byIsbn instanceof Map);
+});
+
+test('si no se pueden leer las compras, la línea lo dice en vez de afirmar que no hay', async t => {
+  const db = await seed(t);
+  db.sqlite.exec('DROP TABLE purchase_items');
+  const { loadConstantesEnRiesgo } = await import('../_shared/panel-bi.js');
+  const r = await loadConstantesEnRiesgo(db, [{ isbn: A, title: 'A', u365p: 6, u90p: 1, u30p: 0, u90: 1, stock: 0, avgPrice: 1000, lastOwnMs: NOW - 5 * 864e5, lastMs: NOW - 5 * 864e5 }], NOW);
+  assert.equal(r.lista[0].compras, undefined);
+  assert.match(detalleReposicion({ ...r.lista[0], now: NOW }), /No pude consultar las compras: confirmá que no esté pedido/);
+});
+
+test('una venta de hoy dice "hoy" y no "hace 0 días"', () => {
+  const base = { now: Date.parse('2026-11-18T15:00:00Z'), stock: 0, u30p: 1, u90p: 1, u365p: 3, u90: 1, ritmo: 122, pedir: 1, avgPrice: 2518, compras: undefined, mercado: { estado: 'sin_dato' } };
+  assert.match(detalleReposicion({ ...base, lastOwnMs: Date.parse('2026-11-18T12:00:00Z') }), /^Sin stock: última venta el 18\/11\/26 \(hoy\)\./);
+  assert.match(detalleReposicion({ ...base, lastOwnMs: Date.parse('2026-11-17T12:00:00Z') }), /^Sin stock: última venta el 17\/11\/26 \(hace 1 día\)\./);
+});
+
+test('agotados de las últimas 48 horas: todo lo que Administrado avisa, aunque haya vendido una sola vez o la venta no tenga ISBN', async t => {
+  const db = database(t);
+  await db.batch(SALES_SCHEMA.map(sql => db.prepare(sql)));
+  const E = '9780131103627', F = '9780262033848', G = '9780201633610';
+  const cat = { updated_at: '2026-10-24T10:00:00Z', items: [
+    { id: 'MLUE', isbn: E, title: 'Libro E con una sola venta', status: 'active', available_quantity: 0 },
+    { id: 'MLUF', isbn: F, title: 'Libro F con stock', status: 'active', available_quantity: 2 },
+    { id: 'MLUG', isbn: G, title: 'Libro G viejo', status: 'active', available_quantity: 0 },
+    { id: 'MLUS', title: 'Libro S sin ISBN', status: 'active', available_quantity: 0 },
+  ] };
+  let n = 100;
+  const sale = (item, isbn, hoursAgo, sku = null) => {
+    n++;
+    db.sqlite.prepare('INSERT INTO ml_sales_orders(order_id,seller_id,status,date_created,date_created_ms,last_updated_ms,fetched_at) VALUES(?,?,?,?,?,?,0)').run(String(n), '440298103', 'paid', new Date(NOW - hoursAgo * 36e5).toISOString(), NOW - hoursAgo * 36e5, NOW);
+    db.sqlite.prepare('INSERT INTO ml_sales_items(order_id,line_key,item_id,title,quantity,unit_price,currency_id,isbn,seller_sku,updated_at) VALUES(?,?,?,?,?,?,?,?,?,0)').run(String(n), 'a', item, 'x', 1, 1500, 'UYU', isbn, sku);
+  };
+  sale('MLUE', E, 5);            // vendió una sola vez, hace 5 horas, sin stock: tiene que salir
+  sale('MLUF', F, 3);            // vendió pero le queda stock: no sale
+  sale('MLUG', G, 100);          // hace más de 48 horas: no sale
+  sale('MLUS', null, 8);         // sin ISBN: sale, avisando que no se puede cruzar
+  sale('MLUE2', E, 30, `AMADO-AR-${E}`); // encargo SBS: no consume ejemplares propios
+  const books = [{ isbn: E, u365p: 1, u90p: 1, u30p: 1, u90: 1, avgPrice: 1500 }];
+  const r = await loadAgotadosHoy(db, cat, NOW, null, books);
+  assert.deepEqual(r.lista.map(b => b.title), ['Libro E con una sola venta', 'Libro S sin ISBN'], 'ordenados por el más recién vendido');
+  assert.equal(r.total, 2);
+  const e = r.lista[0];
+  assert.equal(e.noConstante, true);
+  assert.equal(e.pedir, 1);
+  assert.match(detalleReposicion(e, r.faltan), /Con 1 venta en 12 meses no entra en el aviso automático: decidí vos si lo querés reponer\./);
+  const s = r.lista[1];
+  assert.equal(s.sinIdentidad, true);
+  assert.match(detalleReposicion(s), /La venta no tiene ISBN identificado: no puedo cruzar compras ni competencia/);
+  // En el correo: sale en su bloque, y lo que ya salió en otro bloque no se repite.
+  const digest = brujulaDigest({ inventario: { ok: true, data: { aSinStock: [], coberturaBaja: [], hoy: { ...r, lista: [...r.lista, { ...e, isbn: '9780000000000', title: 'Ya salió arriba' }] } } } });
+  assert.deepEqual(digest.hoy.map(x => x.title), ['Libro E con una sola venta', 'Libro S sin ISBN', 'Ya salió arriba']);
+  assert.equal(digest.hoyTotal, 3);
+});
+
+test('la competencia que viene de la foto de ayer lo dice en la línea del correo', () => {
+  assert.equal(mercadoCorto({ estado: 'solo', aPedido: 0, fotoVieja: true }), 'nadie más lo tiene con entrega inmediata en Uruguay (dato de ayer: la foto de hoy no llegó a completarse)');
+  assert.equal(mercadoCorto({ estado: 'con_stock', nacionales: 1, min: 900, vendedor: 'Pocho', fotoVieja: false }), '1 lo tiene con entrega inmediata en Uruguay (Pocho a $ 900)');
+});
+
+test('los días se cuentan por calendario de Montevideo: una venta de ayer a la tarde no es "hoy"', async () => {
+  const { diasCalendario, datosReposicion } = await import('../_shared/panel-bi.js');
+  const now = Date.parse('2026-11-23T11:03:00Z'); // lunes 08:03 en Montevideo
+  assert.equal(diasCalendario(now, Date.parse('2026-11-22T20:00:00Z')), 1, 'domingo 17:00: menos de 24 horas, pero fue ayer');
+  assert.equal(diasCalendario(now, Date.parse('2026-11-23T04:00:00Z')), 0, 'lunes 01:00: hoy');
+  assert.equal(diasCalendario(now, Date.parse('2026-11-23T02:00:00Z')), 1, 'domingo 23:00 de Montevideo: ayer aunque en UTC ya sea lunes');
+  const b = { now, stock: 0, u30p: 2, u90p: 8, u365p: 19, u90: 8, ritmo: 19, pedir: 3, lastOwnMs: Date.parse('2026-11-22T20:00:00Z') };
+  assert.match(detalleReposicion({ ...b, mercado: { estado: 'solo' }, compras: { enCamino: 0, sinIsbn: 0, ultima: null } }), /última venta el 22\/11\/26 \(hace 1 día\)/);
+  const d = (compras, mercado, faltan = []) => datosReposicion({ ...b, compras, mercado }, faltan);
+  const comprada = { enCamino: 0, sinIsbn: 0, ultima: { fecha: '2026-09-08', dias: 75, cantidad: 2, proveedor: 'CELESA', vendidasDesde: 6 } };
+  assert.deepEqual([d(comprada, { estado: 'solo' }).pedido, d(comprada, { estado: 'solo' }).competencia], ['no', 'no']);
+  assert.equal(d({ ...comprada, enCamino: 3 }, { estado: 'solo' }).pedido, 'si');
+  assert.equal(d(undefined, { estado: 'solo' }).pedido, 'sin_verificar', 'no se pudieron leer las compras');
+  assert.equal(d({ enCamino: 0, sinIsbn: 0, ultima: null }, { estado: 'solo' }, ['CASASSA']).pedido, 'sin_verificar', 'sin compras y faltan proveedores por cargar');
+  assert.equal(d({ enCamino: 0, sinIsbn: 0, ultima: null }, { estado: 'solo' }, []).pedido, 'no');
+  assert.equal(d({ ...comprada, sinIsbn: 1 }, { estado: 'solo' }).pedido, 'sin_verificar', 'una compra sin ISBN podría ser este libro');
+  assert.equal(d(comprada, { estado: 'sostenible', nacionales: 1, min: 750 }).competencia, 'si');
+  assert.equal(d(comprada, { estado: 'sostenible', nacionales: 1, min: 750 }).competidorMin, 750);
+  assert.equal(d(comprada, { estado: 'sin_dato' }).competencia, 'sin_dato');
+  assert.doesNotMatch(d({ enCamino: 0, sinIsbn: 0, ultima: null }, { estado: 'solo' }, ['CASASSA']).compra, /faltan cargar/, 'la nota va una sola vez en el correo');
 });

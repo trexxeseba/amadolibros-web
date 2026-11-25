@@ -1,0 +1,176 @@
+# Precio Ganador (Amado Libros y Amado Vintage)
+
+Baja automáticamente al precio ganador las publicaciones que Mercado Libre marca
+como perdedoras y las vuelve a subir cuando dejan de estar marcadas.
+
+| | Amado Libros (440298103) | Amado Vintage (2341378249) |
+|---|---|---|
+| Baja si la diferencia con el precio para ganar es | cualquiera (sin freno de pesos desde el 12/11/2026) | menor o igual a 400 |
+| Precio nuevo | el precio para ganar | el 99 % del precio para ganar, hacia abajo al peso |
+| Contra qué ganadores | cualquiera | sólo a demanda: si el ganador entrega de inmediato, o no se pudo leer su plazo, no se toca |
+| Tope de porcentaje | sin tope (desde el 12/11/2026) | sin tope |
+| Piso | nunca menos de UYU 500 (y el de `pisos/libros.json`, si existe) | nunca menos de UYU 1.200 |
+| Stock | no se toca | a demanda: stock 5 al bajar, se restaura al revertir |
+| Freno de cambios por corrida | 400 | 5.000 |
+
+El plazo del ganador se lee por `/items/{id}/shipping_options` (destino Cordón), con
+la misma lectura que el panel de competencia (`worker-sync/ml-competition.js`).
+Una publicación que el sistema bajó sigue al ganador a demanda al 99 %; si el
+ganador de hoy entrega de inmediato, vuelve hacia su precio original. Las subidas
+se limitan al 99 % del competidor a demanda más barato y sólo se hacen si el salto
+es de 10 pesos o más.
+
+Vintage corre acá desde el 05/11/2026 porque el motor de la PC no está andando.
+Si el motor se vuelve a prender hay que apagar uno de los dos: se pisarían.
+
+## Qué hace en cada corrida
+
+1. Lee todas las publicaciones activas. Esta lectura no cambia nada.
+2. Consulta la competencia de cada una:
+   - **Con catálogo**: `GET /items/{id}/price_to_win?version=v2`. Está marcada
+     ("Precio para ganar") si el estado es `competing` y el precio para ganar es
+     menor al suyo.
+   - **Sin catálogo**: `GET /suggestions/items/{id}/details`. Está marcada
+     ("Precio alto") si el estado contiene `high` y el precio sugerido es menor.
+3. Qué hace con cada marcada:
+   - si la diferencia es menor a 360 y la baja no pasa el 30 %, baja al precio
+     ganador, redondeado hacia abajo al peso;
+   - si la diferencia es de 360 o más, o la baja pasa el 30 %, no la toca;
+   - si tiene una promoción activa (`/seller-promotions/items/{id}`), la saltea;
+   - si no puede confirmar si tiene promoción, también la saltea;
+   - si tiene variaciones o el precio no está en pesos, la saltea.
+4. Qué hace con las que el sistema bajó antes:
+   - si siguen marcadas, sigue al ganador, sin pasar nunca el precio original;
+   - si el ganador quedó 360 o más (o más del 30 %) por debajo del original, la deja donde está;
+   - si dejaron de estar marcadas, las sube hasta un peso por debajo del competidor
+     más barato, o hasta el original si no hay competidor más barato;
+   - si alguien les cambió el precio a mano, las saca del sistema y no las vuelve a tocar.
+5. Las publicaciones que el sistema nunca tocó no se modifican nunca. El stock de
+   Libros no se toca nunca.
+
+Piso opcional por publicación: `pisos/libros.json`, con el formato `{ "MLU123": 900 }`.
+
+## Horarios
+
+Libros cada 2 horas, de 09:00 a 21:00 de Montevideo: 09, 11, 13, 15, 17, 19 y 21 (Seba, 06/11/2026).
+Vintage sólo a las 09:00 y a las 21:00 (Seba, 11/11/2026): Mercado Libre lo tiene restringido para ganar
+en catálogo ("vendedor no confiable"), no hay precios para bajar y una pasada por las 28.000 publicaciones
+cada 2 horas es consulta de más. Cuando se levante la restricción se vuelve a las dos cuentas en todas las
+franjas (`CRONS_VINTAGE` en el Worker y la matriz de `precio-ganador.yml`). Las dispara el Worker (`worker-sync/precio-ganador-trigger.js`); el cron
+de GitHub queda de respaldo y se saltea si ya hubo una corrida en la última hora. El mail de
+resumen del día sale a undiaes@gmail.com con la corrida de las 21:00. Si un día no llega,
+algo se rompió. Si una corrida falla entera, GitHub manda su mail de falla.
+
+## Estado
+
+Está en el repo **privado** `trexxeseba/amadolibros-privado`, rama `estado/precio-ganador` (desde el 08/11/2026; antes estaba en una rama pública de este repo). El workflow entra con el secreto `ESTADO_TOKEN`, un token fine-grained con Contents read/write sólo sobre ese repo. Si el token vence, la corrida falla al traer el estado y llega la alarma: hay que generar uno nuevo y reemplazar el secreto.
+
+- `state/libros.json`: por cada publicación bajada, el precio original, el precio
+  aplicado y las fechas. Se graba después de cada cambio.
+- `state/diario/`: los contadores de cada corrida del día.
+- `ultima/`: el detalle de la última corrida.
+- `pruebas/`: las corridas de prueba (DRY_RUN previo a la activación).
+
+## Lo que no cubre
+
+"Precio alto" (publicaciones sin catálogo): el endpoint de precios de referencia
+(`/suggestions/items/{id}/details`) responde 404 para toda la cuenta en Mercado Libre Uruguay.
+Hoy el sistema actúa sólo sobre las de catálogo ("Precio para ganar").
+
+## Secretos que usa (solo nombres)
+
+- `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ADMIN_API_TOKEN` y `CLOUDFLARE_API_TOKEN`:
+  para leer de D1 (`ml_oauth`) el token de Mercado Libre que mantiene el Worker.
+- `RESEND_API_KEY`: para el mail.
+- `ESTADO_TOKEN`: acceso al repo privado del estado (vence; renovarlo una vez por año).
+
+El token **nunca se renueva desde acá**. Lo renueva el Worker cada 5 minutos, y un
+segundo renovador le rompería la conexión. Si el token no está vigente, la corrida
+espera 8 minutos y después falla.
+
+## Cómo pausarlo
+
+- `precio-ganador/modo.json`: `"real"` cambia precios; cualquier otro valor solo informa.
+- Variable del repo `PRECIO_GANADOR_DRY_RUN` = `true`: pausa sin tocar código (solo informa).
+- También se puede desactivar el workflow **Precio Ganador** en Actions.
+
+## Cambiar un precio a mano
+
+Cuando Seba pide un precio puntual ("subí Mafalda a 1500, bajá Riso a 1100"): en Actions,
+**Precio manual**, *Run workflow*, con `cuenta`, `cambios` (`MLU123=1500,MLU456=1100`, hasta 50)
+y `prueba=true` primero (sólo lista). Misma conexión y mismos frenos que el motor: no toca
+publicaciones pausadas, con promoción, con descuento a la vista, administradas por ML o con
+variaciones; respeta el piso de la cuenta; escribe, relee y verifica; el stock no se toca.
+Si la publicación estaba en el estado del motor, el motor la saca solo en la próxima corrida
+(precio cambiado a mano). Código: `src/precio-manual.mjs`.
+
+## Cómo volver todo al precio original
+
+En Actions, **Precio Ganador**, *Run workflow*, con acción `restaurar`:
+
+- en modo real, devuelve cada publicación del estado a su `precio_original`;
+- solo toca las publicaciones que siguen con el precio que puso el sistema;
+- en DRY_RUN solo lista lo que haría.
+
+Desde una PC: `node precio-ganador/src/restaurar.mjs --cuenta libros --estado <carpeta>`,
+agregando `--real` para que aplique los cambios.
+
+## Auditoría independiente
+
+Después de cada corrida, `src/auditoria.mjs` revisa lo hecho sin usar el código del
+motor (recalcula la regla desde cero). Sólo lee:
+
+1. 10 publicaciones de catálogo al azar: relee el estado en la ficha y las ofertas de
+   los otros vendedores, y confirma si gana o pierde y contra quién.
+2. Todas las que el sistema bajó: el precio en ML es el registrado, nunca supera el
+   original y nunca bajó 360 o más ni más del 30 %.
+3. Todas las marcadas de la corrida: la regla recalculada da la misma acción.
+
+Resultado en `ultima/<cuenta>-auditoria.md` de la rama de estado. Cualquier
+discrepancia se avisa por mail con los IDs. El job falla sólo si es serio: más de
+2 de la muestra de 10, una decisión que no coincide con la regla, más de 10
+publicaciones del estado con otro precio, o errores de aplicación por encima del
+2 % de los intentos (mínimo 3). El vigía (`precio-ganador-vigia.yml`, cada 3 horas)
+distingue "no corrió" de "corrió con avisos" y lo dice en el mail. Para correrla sola,
+sin tocar precios: Run workflow con acción `auditar`.
+
+## Modo sombra de Vintage (desde el 21/11/2026, una semana)
+
+Aprobado por Seba: calcular y registrar, **sin escribir ningún precio**, qué haría una regla nueva
+para Vintage antes de decidir si se adopta. La regla real no cambia (los $400 siguen).
+
+- Regla actual: baja si la diferencia con el precio para ganar es de hasta $400.
+- Regla nueva: baja al 99 % del precio para ganar si queda al menos 18 % sobre costo
+  (costo del libro puesto en Uruguay con la lista diaria de SBS, comisión 17 % sin IVA).
+- Las dos comparten: ganador a demanda, sin POCHOLIB, piso de 1.200.
+- Frenos que se prueban sobre las dos:
+  - misma edición que el ganador: ISBN, encuadernación, editorial y páginas (tolerancia 10 %).
+    Si algún dato no coincide no se propone bajar; si falta el dato, no frena pero queda anotado;
+  - el precio bajo del rival tiene que verse en 2 corridas seguidas;
+  - como máximo una bajada por día por publicación.
+
+Corre como paso aparte después de cada corrida real de Vintage (09:00 y 21:00), sobre sus filas
+(`ultima/vintage-filas.json`). Sólo lee de Mercado Libre (atributos de las dos publicaciones) y de D1
+(el costo). Si falla, no frena la corrida. Se apaga solo a los 7 días (`sombra.dias` en `config.mjs`).
+También se puede correr a mano: acción `sombra`.
+
+En la rama de estado del repo privado:
+- `sombra/vintage-semana.md`: una fila por corrida (cuántas bajaría cada regla, con y sin frenos,
+  y por qué freno quedaron afuera) y el detalle de la última.
+- `sombra/vintage-revisar.md`: las 100 bajas más grandes de la regla nueva en la semana, con costo,
+  margen, edición y ganador, y una columna para la revisión a mano.
+- `sombra/vintage/<fecha>-<hora>h.json`: cada publicación que pierde la ficha con el motivo de cada regla.
+- `state/vintage-sombra.json`: la memoria de la sombra (rachas y bajadas del día).
+
+Para las publicaciones que el sistema ya bajó, la sombra mide contra el precio de hoy (el sistema real
+mide los $400 contra el original), por eso "actual" puede dar un poco más que lo que hizo el sistema real.
+
+## Frenos
+
+- Después de cada cambio vuelve a leer la publicación y verifica el precio.
+
+- Más de 400 cambios en una corrida: no aplica nada y falla.
+- El token tiene que ser de la cuenta 440298103.
+- Ante 429 o 5xx reintenta con espera. Una publicación que falla no frena a las demás.
+
+Tests: `node --test precio-ganador/test/*.test.mjs`

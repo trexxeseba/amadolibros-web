@@ -8,7 +8,7 @@
 //  - nunca se cierra ni se borra una publicación, nunca se toca un ítem cuyo
 //    vendedor o SKU no coincidan, y una lista sospechosamente incompleta
 //    (más de maxMissingPct de faltantes) no pausa nada;
-//  - en modo pause_and_reactivate, además ajusta el precio (sube o baja) al que da la
+//  - en modo pause_and_reactivate (no en stock_only), además ajusta el precio (sube o baja) al que da la
 //    política aprobada con el precio de lista de hoy, nunca por debajo del mínimo, y no
 //    toca un precio que se mueva más del doble o a menos de la mitad (dato sospechoso).
 // Lee el estado real en /items/bulk antes de cada PUT y registra lo aplicado en
@@ -27,14 +27,25 @@ import {vintageMinimumFor} from '../../worker-sync/vintage-pricing.js';
 // 'correct': pasada con tiempo limitado que mira al ganador de la ficha de cada libro ya
 // publicado (el más viejo sin mirar primero) y le pone el precio competitivo. Es el 30 % del
 // día que el autorun le dedica a corregir lo subido; no pausa ni reactiva nada.
-export const MODES=['report','pause_only','pause_and_reactivate','correct'];
+// 'stock_only': pausa y reactiva como pause_and_reactivate pero nunca toca precios. Es el modo de
+// la nube: los precios de Vintage los maneja Precio Ganador (precio-ganador/) y no hay que pisarlos.
+export const MODES=['report','pause_only','pause_and_reactivate','stock_only','correct'];
 export const ITEM_FIELDS='id,seller_id,status,available_quantity,seller_custom_field,price,currency_id';
 export const MAX_PRICE_RATIO=2;
 const SCHEMA=`CREATE TABLE IF NOT EXISTS vintage_stock_sync (isbn TEXT PRIMARY KEY,item_id TEXT NOT NULL,desired_status TEXT,applied_status TEXT,missing_since INTEGER NOT NULL DEFAULT 0,feed_id TEXT,attempts INTEGER NOT NULL DEFAULT 0,next_at INTEGER NOT NULL DEFAULT 0,last_error TEXT,updated_at INTEGER NOT NULL DEFAULT 0)`;
 const TRANSIENT_MS=300000,LONG_MS=86400000;
+// Publicaciones pausadas por riesgo de propiedad intelectual (09/11/2026): esta sincronización
+// nunca las reactiva, aunque el proveedor vuelva a tener el ISBN con stock.
+export const PAUSADAS_IP_FILE=new URL('../vintage-cloud/pausar-2026-11-09.txt',import.meta.url);
+let pausadasIp=null;
+export async function pausadasIpSet(extra=null){
+ if(!pausadasIp){const text=await fs.readFile(PAUSADAS_IP_FILE,'utf8');pausadasIp=new Set(text.split('\n').map(l=>l.trim()).filter(l=>/^MLU\d+$/.test(l)));}
+ if(extra)for(const id of extra)pausadasIp.add(String(id));
+ return pausadasIp;
+}
 function competitorOf(row){try{const value=JSON.parse(row?.competitor_json??'null');return value&&typeof value==='object'?value:null;}catch{return null;}}
 
-export async function syncStock({connection,excel,directory,mode='pause_and_reactivate',graceHours=0,maxMissingPct=30,batch=500,budgetMs=18*60000,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,now=Date.now,onStatus=()=>{}}){
+export async function syncStock({connection,excel,directory,mode='pause_and_reactivate',graceHours=0,maxMissingPct=30,batch=500,budgetMs=18*60000,intervalMs=2000,blockedIds=null,apiFactory=createPublicationMeli,brokerFactory=makeBroker,readWorkbook=inspectWorkbook,now=Date.now,onStatus=()=>{}}){
  if(!MODES.includes(mode))throw new Error('invalid_stock_sync_mode');
  const c=JSON.parse(await fs.readFile(connection,'utf8')),policy=checkConfiguration(c,now());
  const input=await readWorkbook(excel);
@@ -43,11 +54,15 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
  await fs.mkdir(directory,{recursive:true});
  const db=openDatabase(path.join(directory,'publisher.sqlite')),stmt=(sql,...args)=>db.prepare(sql).bind(...args);
  const env={ORDERS_DB:db,USER_ID:SELLER,APP_ID:c.app_id};
- const broker=brokerFactory(c),limited=createVintageBulkFetch();
+ const broker=brokerFactory(c),limited=createVintageBulkFetch({intervalMs});
  let tokenCache=null;
  const api=apiFactory({sellerId:SELLER,timeouts:{request:60000,create:60000},tokenProvider:async()=>{if(!tokenCache||tokenCache.expires_at<now()+15000)tokenCache=await broker('token');return tokenCache.access_token;},tokenInvalidator:async(e,token)=>{tokenCache=null;await broker('invalidate',{access_token:token});},fetcher:(url,options)=>limited(env,url,options)});
  try{
   await stmt(SCHEMA).run();
+  // Reloj de pedidos a Mercado Libre: en una base nueva (la nube) todavía no existe, y sin él
+  // cada lectura falla. En la PC lo creaba antes el motor.
+  await stmt('CREATE TABLE IF NOT EXISTS ml_vintage_bulk_rate (id INTEGER PRIMARY KEY CHECK(id=1),next_at INTEGER NOT NULL DEFAULT 0,cooldown INTEGER NOT NULL DEFAULT 0,strikes INTEGER NOT NULL DEFAULT 0)').run();
+  await stmt('INSERT OR IGNORE INTO ml_vintage_bulk_rate(id) VALUES(1)').run();
   const columns=(await stmt('PRAGMA table_info(vintage_stock_sync)').all()).results.map(x=>x.name);
   if(!columns.includes('applied_price'))await stmt('ALTER TABLE vintage_stock_sync ADD COLUMN applied_price INTEGER').run();
   if(!columns.includes('competitor_json'))await stmt('ALTER TABLE vintage_stock_sync ADD COLUMN competitor_json TEXT').run();
@@ -71,11 +86,13 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
    const since=prev?.missing_since||feedTime;
    updates.push({isbn:r.isbn,item_id:r.item_id,desired:feedTime-since>=graceMs?'paused':(prev?.desired_status??null),missing_since:since});
   }
-  for(const u of updates)await stmt('INSERT INTO vintage_stock_sync(isbn,item_id,desired_status,missing_since,feed_id,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(isbn) DO UPDATE SET item_id=excluded.item_id,desired_status=excluded.desired_status,missing_since=excluded.missing_since,feed_id=excluded.feed_id,updated_at=excluded.updated_at',u.isbn,u.item_id,u.desired,u.missing_since,c.feed_id,now()).run();
+  // updated_at sólo cambia si cambió algo de verdad: la nube guarda en D1 únicamente esas filas.
+  for(const u of updates)await stmt('INSERT INTO vintage_stock_sync(isbn,item_id,desired_status,missing_since,feed_id,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(isbn) DO UPDATE SET updated_at=CASE WHEN item_id IS NOT excluded.item_id OR desired_status IS NOT excluded.desired_status OR missing_since IS NOT excluded.missing_since THEN excluded.updated_at ELSE updated_at END,item_id=excluded.item_id,desired_status=excluded.desired_status,missing_since=excluded.missing_since,feed_id=excluded.feed_id',u.isbn,u.item_id,u.desired,u.missing_since,c.feed_id,now()).run();
   const summary={state:'synced',mode,feed_id:c.feed_id,source_date:input.source_date,published:rows.length,in_stock:rows.length-missing,missing,suspicious_feed:suspicious,paused:0,activated:0,unchanged:0,skipped:0,errors:0};
   if(mode==='report')return finish({...summary,state:'report'});
   const wanted=mode==='pause_only'?['paused']:['paused','active'];
-  const due=(await stmt(`SELECT * FROM vintage_stock_sync WHERE desired_status IN (${wanted.map(()=>'?').join(',')}) AND (applied_status IS NULL OR applied_status<>desired_status) AND next_at<=? ORDER BY updated_at,isbn LIMIT ?`,...wanted,now(),batch).all()).results;
+  // Primero las pausas: un libro que SBS ya no tiene no puede esperar detrás de miles de lecturas.
+  const due=(await stmt(`SELECT * FROM vintage_stock_sync WHERE desired_status IN (${wanted.map(()=>'?').join(',')}) AND (applied_status IS NULL OR applied_status<>desired_status) AND next_at<=? ORDER BY CASE desired_status WHEN 'paused' THEN 0 ELSE 1 END,updated_at,isbn LIMIT ?`,...wanted,now(),batch).all()).results;
   const applied=(row,status)=>stmt('UPDATE vintage_stock_sync SET applied_status=?,attempts=0,next_at=0,last_error=NULL,updated_at=? WHERE isbn=?',status,now(),row.isbn).run();
   const failed=(row,code,backoffMs)=>stmt('UPDATE vintage_stock_sync SET attempts=attempts+1,next_at=?,last_error=?,updated_at=? WHERE isbn=?',now()+Math.min(LONG_MS,backoffMs*2**Math.min(8,row.attempts)),code,now(),row.isbn).run();
   const deferAll=async(group,error)=>{for(const row of group)await failed(row,safeCode(error),Math.max(TRANSIENT_MS,(error.retryAfter||0)*1000));summary.errors+=group.length;};
@@ -93,6 +110,7 @@ export async function syncStock({connection,excel,directory,mode='pause_and_reac
     if(!['active','paused'].includes(item.status)){await failed(row,`item_status_${/^[a-z_]{1,30}$/.test(String(item.status))?item.status:'unknown'}`,LONG_MS);summary.skipped++;continue;}
     const quantity=Number(item.available_quantity);
     if(item.status===row.desired_status&&(row.desired_status==='paused'||quantity>0)){await applied(row,item.status);summary.unchanged++;continue;}
+    if(row.desired_status==='active'&&(await pausadasIpSet(blockedIds)).has(String(row.item_id))){await failed(row,'pausada_por_propiedad_intelectual',LONG_MS);summary.skipped++;continue;}
     if(row.desired_status==='active'&&item.status==='paused'&&row.applied_status!=='paused'&&quantity!==0){await failed(row,'paused_externally',LONG_MS);summary.skipped++;continue;}
     const body=row.desired_status==='paused'?{status:'paused'}:{status:'active',available_quantity:1};
     try{await api.call(env,`/items/${row.item_id}`,{method:'PUT',body});}

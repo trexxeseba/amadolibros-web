@@ -17,6 +17,7 @@ import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_02 } from './bo
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_04 } from './book-enrichment-facts-b12-lote-04.js';
 import { BOOK_FACT_ENRICHMENTS as BOOK_FACT_ENRICHMENTS_B12_LOTE_05 } from './book-enrichment-facts-b12-lote-05.js';
 import { BOOK_EDITORIAL_UPGRADES } from './book-editorial-upgrades.js';
+import { BOOK_TAROT_ENRICHMENTS } from './book-tarot-enrichments.js';
 import { isGenericAuthor, normalizeValidIsbn } from './showcase-ranking.js';
 
 const SOURCE_TYPES = new Set([
@@ -659,6 +660,29 @@ for (const record of BOOK_EDITORIAL_UPGRADES) {
     throw new Error(`La mejora editorial debe corresponder a un ISBN ya investigado: ${record.isbn}.`);
   }
   ENRICHMENT_BY_ISBN.set(record.isbn, record);
+}
+
+// TAROT-FICHAS-1: mazos de catálogo sin descripción en ML. Aporta el copy
+// editorial; si la edición ya tenía hechos verificados, se conservan (gana el
+// dato anterior) y se acumula la procedencia.
+for (const record of BOOK_TAROT_ENRICHMENTS) {
+  if (!validateBookEnrichment(record)) {
+    throw new Error(`Ficha de tarot inválida para ${record?.isbn || 'ISBN desconocido'}.`);
+  }
+  const existing = ENRICHMENT_BY_ISBN.get(record.isbn);
+  if (existing?.editorial) {
+    throw new Error(`La ficha de tarot pisaría un copy editorial existente: ${record.isbn}.`);
+  }
+  if (!existing) {
+    ENRICHMENT_BY_ISBN.set(record.isbn, record);
+    continue;
+  }
+  const merged = mergeFactEnrichment(existing, record);
+  ENRICHMENT_BY_ISBN.set(record.isbn, {
+    ...record,
+    facts: merged.facts,
+    provenance: merged.provenance,
+  });
 }
 
 export function getBookEnrichmentByIsbn(value) {

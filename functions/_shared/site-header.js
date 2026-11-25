@@ -16,6 +16,8 @@ import { BRAND } from './brand.js';
 export const SITE_HEADER_NAV = Object.freeze([
     { id: 'libros', label: 'Libros', href: '/catalogo' },
     { id: 'temas', label: 'Temas', href: '/temas' },
+    { id: 'regalos', label: 'Regalos', href: '/regalos', highlight: true },
+    { id: 'liquidacion', label: 'Liquidación', href: '/liquidacion', highlight: true },
     { id: 'pedir', label: 'Pedir un libro', href: '/pedir-libro/?tipo=exacto', highlight: true },
     { id: 'nosotros', label: 'Nosotros', href: '/quienes-somos/' },
 ]);
