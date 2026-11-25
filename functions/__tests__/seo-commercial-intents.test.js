@@ -100,7 +100,7 @@ test('la consulta rápida valida y entrega los campos completos a WhatsApp sin i
   const message = navigations[0].searchParams.get('text');
   assert.ok(message.includes('Libro o tema: Edición Ñ & apéndice <texto>'));
   assert.ok(message.includes('Autor o editorial: Editorial Águila +'));
-  assert.deepEqual({ ...events[0] }, { ctaLocation: 'encargo_rapido', topic: 'agotado' });
+  assert.deepEqual({ ...events[0] }, { ctaLocation: 'agotados_hero', topic: 'libros_agotados_importados' });
 
   // La entrega sigue funcionando si no carga la medición.
   delete window.AmadoAnalytics;

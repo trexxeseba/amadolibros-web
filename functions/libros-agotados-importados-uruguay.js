@@ -333,7 +333,7 @@ export async function onRequest({ request } = {}) {
         <noscript><p class="handoff">Escribinos por WhatsApp con el dato que tengas. El equipo de Amado recibe tu mensaje ahí.</p></noscript>
         <div class="request-alternatives">
           <a class="inline-link" href="/pedir-libro/?tipo=agotado">Usar el formulario completo</a>
-          <a class="inline-link" href="${CHAT_PATH}" data-whatsapp-cta="encargo_chat_directo" rel="noreferrer">Abrir chat directo</a>
+          <a class="inline-link" href="${CHAT_PATH}" data-whatsapp-cta="agotados_hero" data-cta-location="agotados_hero" data-topic="libros_agotados_importados" rel="noreferrer">Abrir chat directo</a>
         </div>
       </div>
     </section>
@@ -430,7 +430,7 @@ export async function onRequest({ request } = {}) {
       <p class="kicker">Amado Libros</p>
       <h2 id="cierre">¿Tenés una foto de la tapa?</h2>
       <p>Mandánosla por WhatsApp. Gracias por confiar en nosotros para buscar tu libro.</p>
-      <a class="primary" href="${CHAT_PATH}" data-whatsapp-cta="encargo_foto" rel="noreferrer">Escribir por WhatsApp <span aria-hidden="true">↗</span></a>
+      <a class="primary" href="${CHAT_PATH}" data-whatsapp-cta="agotados_cierre" data-cta-location="agotados_cierre" data-topic="libros_agotados_importados" rel="noreferrer">Escribir por WhatsApp <span aria-hidden="true">↗</span></a>
     </section>
   </main>
 
@@ -466,7 +466,7 @@ export async function onRequest({ request } = {}) {
       const author = document.getElementById('encargo-autor');
 
       function trackOpening(location) {
-        window.AmadoAnalytics?.trackWhatsApp({ ctaLocation: location, topic: 'agotado' });
+        window.AmadoAnalytics?.trackWhatsApp({ ctaLocation: location, topic: 'libros_agotados_importados' });
       }
 
       for (const link of document.querySelectorAll('[data-whatsapp-cta]')) {
@@ -497,7 +497,7 @@ export async function onRequest({ request } = {}) {
         const url = '${WHATSAPP_CHAT}?text=' + encodeURIComponent(lines.join('\\n'));
 
         try {
-          trackOpening('encargo_rapido');
+          trackOpening('agotados_hero');
         } finally {
           window.location.assign(url);
         }
