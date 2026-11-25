@@ -119,7 +119,7 @@ test('stock_waitlist_created se emite sólo tras un alta nueva confirmada', () =
   });
   assert.equal(typeof mutationCallback, 'function');
 
-  status.textContent = 'Ya teníamos registrado este correo para este libro.';
+  status.textContent = 'Ya teníamos registrado este contacto para este libro.';
   mutationCallback();
   assert.equal(window.dataLayer.filter(entry => Array.from(entry)[1] === 'stock_waitlist_created').length, 0);
 
@@ -136,10 +136,11 @@ test('stock_waitlist_created se emite sólo tras un alta nueva confirmada', () =
   });
 });
 
-test('el contrato UI diferencia alta nueva de correo ya registrado', () => {
-  assert.match(productPage, /Ya teníamos registrado este correo para este libro\./);
+test('el contrato UI diferencia alta nueva de contacto ya registrado', () => {
+  assert.match(productPage, /Ya teníamos registrado este contacto para este libro\./);
   assert.match(productPage, /Pronto\. Te avisaremos cuando vuelva a estar disponible\./);
   assert.match(analytics, /stock_waitlist_created/);
   assert.match(analytics, /availability_type/);
   assert.match(analytics, /\^Ya teníamos registrado/i);
 });
+

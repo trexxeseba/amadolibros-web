@@ -17,7 +17,7 @@ El navegador inspecciona miniaturas con dos cargas simultáneas como máximo, de
 
 ## Evidencia local — 25/11/2026
 
-38 pruebas focalizadas aprobadas:
+42 pruebas focalizadas aprobadas:
 - Clic real del controlador de carrito sobre los datos generados por Regalos, precio/unidades y segundo clic.
 - Formulario con contacto inválido, corrección y envío simulado; rechazo equivalente en la API.
 - 35 imágenes originales revisadas visualmente: 14 carteles y 21 fotos/tapas/contratapas/material del libro. Cada una se prueba original, JPEG de 96 px/calidad 35 y JPEG de 240 px/calidad 75: 105 casos, sin falsos positivos ni carteles omitidos en esta muestra.
