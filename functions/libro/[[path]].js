@@ -1,5 +1,6 @@
+import { cleanBookDescription, cleanBookFormat } from '../_shared/book-display-cleanup.js';
 import { coverSources } from '../book-cover/[[path]].js';
-import { googleReadyImage, googleFutureReadyImage } from '../_shared/image-source-policy.js';
+import { googleReadyImage, googleFutureReadyImage, mlImageIdentity } from '../_shared/image-source-policy.js';
 import { findPreviewCover } from '../_shared/preview-cover.js';
 /**
  * functions/libro/[[path]].js
@@ -94,13 +95,17 @@ function httpsImg(url) {
 const NON_BOOK_IMAGE_HASHES = new Set([
     'eed924a9ecbe503f14c34dc6626aeff509374511ffcf20f06f522172f9797590',
     '1965d41c371323ff00e38f74b691e0249ed0a941d279f99dadd4b2d016219152',
+    '2d52adbf9ce271d33c85b132334ce6f8e90a82bab65ebf9288294d47a54620c9',
+    '16f5d2a6eef31eaf1896c3d5dc5d81e2186b4abed238060423afae080fbb305f',
+    '0d03a12400a13808be27f64ab1ac5843adbb745628249007ddf59684dab040fa',
 ]);
 
 function isBookGalleryImage(source) {
     const path = String(source || '').split('?')[0];
     const hash = path.split('/').pop().split('.')[0];
     // Preview puede servir estas mismas imágenes verificadas sin copia por hash.
-    const verifiedLogoRoute = /\/book-cover\/MLU640785075\/cover-[45]\.jpg$/.test(path);
+    const verifiedLogoRoute = /\/book-cover\/MLU640785075\/cover-[45]\.jpg$/.test(path) ||
+        /\/book-cover\/MLU633445690\/cover-[567]\.jpg$/.test(path);
     return !NON_BOOK_IMAGE_HASHES.has(hash) && !verifiedLogoRoute;
 }
 
@@ -108,15 +113,30 @@ export function normalizeImages(item, previewCoverSrc = '') {
     const NON_BOOK_IMAGE_ASSETS = new Set([
         'D_768794-MLU78243849622_082024-O.jpg',
         'D_823347-MLU78243898758_082024-O.jpg',
+        // Carteles de entrega, embalaje y logo verificados el 25/11/2026.
+        'D_884143-MLU71032024881_082023-O.jpg',
+        'D_838339-MLU70995270338_082023-O.jpg',
+        'D_779639-MLU70995173764_082023-O.jpg',
     ]);
     const pictures = [];
+    // Dos copias visualmente idénticas de portada/interior, con otros IDs ML.
+    // Se excluyen solo en esta ficha; no se eliminan fotos de otros libros.
+    const duplicates = item.id === 'MLU633445690' ? new Set([
+        'D_NQ_NP_952436-MLA99508947388_112025-F.jpg',
+        'D_NQ_NP_785404-MLA99992928035_112025-F.jpg',
+    ]) : new Set();
+    const seenAssets = new Set();
 
     if (Array.isArray(item.pictures)) {
         for (const picture of item.pictures) {
             if (typeof picture !== 'string') continue;
             const normalized = httpsImg(picture);
             const asset = normalized.split('/').pop()?.split('?')[0] || '';
-            if (!NON_BOOK_IMAGE_ASSETS.has(asset)) pictures.push(normalized);
+            const identity = mlImageIdentity(normalized) || normalized;
+            if (!NON_BOOK_IMAGE_ASSETS.has(asset) && !duplicates.has(asset) && !seenAssets.has(identity)) {
+                seenAssets.add(identity);
+                pictures.push(normalized);
+            }
         }
     }
 
@@ -503,7 +523,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         ? item.bibliographic
         : {};
     const editorialHtml = renderEditorialEnrichment(editorial);
-    const rawDescription = item.description ? String(item.description).trim() : '';
+    const rawDescription = cleanBookDescription(item.description);
     const description = item.id === 'MLU640785075'
         ? rawDescription.replace('universidadá Morrieá Schwartz', 'universidad, Morrie Schwartz')
             .replace(/\bdespues\b/g, 'después').replace(/\btraves\b/g, 'través')
@@ -541,7 +561,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         displayAuthor ? detailRow('Autor', displayAuthor) : '',
         detailRow('ISBN', item.isbn),
         detailRow('Idioma', bibliographic.language),
-        detailRow('Formato', bibliographic.format),
+        detailRow('Formato', cleanBookFormat(bibliographic.format)),
         detailRow('Condición', condition),
     ].filter(Boolean).join('\n');
     const essentialHtml = essentialRows ? `<dl class="details book-essentials" aria-label="Datos del libro">${essentialRows}</dl>` : '';
@@ -671,8 +691,8 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     if (bibliographic.language) {
         schemaProduct.inLanguage = bibliographic.language;
     }
-    if (bibliographic.format) {
-        schemaProduct.bookFormat = bibliographic.format;
+    if (cleanBookFormat(bibliographic.format)) {
+        schemaProduct.bookFormat = cleanBookFormat(bibliographic.format);
     }
     if (bibliographic.edition) {
         schemaProduct.bookEdition = bibliographic.edition;
@@ -962,6 +982,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .buy-bar-btn{flex:0 0 auto;min-height:46px;padding:.7rem 1.1rem;border:0;border-radius:.6rem;
                  background:#b4442a;color:#fff;font:inherit;font-size:.95rem;font-weight:800;cursor:pointer}
     body.has-buy-bar{padding-bottom:78px}
+    body.has-buy-bar #amado-consent{bottom:calc(88px + env(safe-area-inset-bottom,0px))!important}
     body.has-buy-bar .wa-float{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
     .btn-ml{background:#fff;color:#7a6a1f;border:1.5px solid #e8dfa0;
             font-size:.82rem;font-weight:600;padding:.65rem 1.25rem}

@@ -16,7 +16,7 @@ export const PREMIO_STORAGE_KEY = 'amado_premio';
 
 export const PREMIO_STYLES = `
     .premio-banner{border:2px solid #1a7a3c;border-radius:1rem;background:#eef8f1;color:#123d24;padding:1rem;margin:1rem 0;display:grid;gap:.35rem}
-    .premio-banner strong.monto{font-size:1.35rem}
+    .premio-banner[hidden]{display:none}\n    .premio-banner strong.monto{font-size:1.35rem}
     .premio-banner .reloj{font-weight:700}
     .premio-banner .cod{font-size:.85rem;color:#3d5a47}
     .premio-banner .cod b{letter-spacing:.08em}
@@ -83,7 +83,7 @@ export const PREMIO_LIQ_SCRIPT = `<script>
     banner.appendChild(linea('Tenés un premio de '+P.pesos(p.monto_uyu)+' para usar en la web','monto'));
     var f=P.faltan(p.expires_at);
     if(f) banner.appendChild(linea('Vence en '+f+'.','reloj'));
-    banner.appendChild(linea('Se descuenta automáticamente cuando pagás en la web desde este dispositivo: elegí tu libro, tocá «Ver ficha» y sumalo al carrito.'+(p.umbral_uyu?' Lo aprovechás entero en cualquier libro desde '+P.pesos(p.umbral_uyu)+'.':'')));
+    banner.appendChild(linea('Se descuenta automáticamente cuando pagás en la web desde este dispositivo: elegí tu libro y tocá «Agregar al carrito».'+(p.umbral_uyu?' Lo aprovechás entero en cualquier libro desde '+P.pesos(p.umbral_uyu)+'.':'')));
     var c=document.createElement('p'); c.className='cod'; c.appendChild(document.createTextNode('Tu código: ')); var b=document.createElement('b'); b.textContent=p.code; c.appendChild(b); banner.appendChild(c);
     banner.hidden=false;
     document.querySelectorAll('.rc-card[data-precio]').forEach(function(card){
