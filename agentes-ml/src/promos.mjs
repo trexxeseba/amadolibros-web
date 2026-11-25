@@ -17,7 +17,7 @@ import { CUENTA, SITE_ID, fechaMontevideo, fechaCorrida } from './config.mjs';
 import { crearCliente } from './ml.mjs';
 import { texto, elegir, detalleError } from './sanear.mjs';
 import { modoDeEscritura, evaluarEscritura, aplicarPedidoSeba, verificarPostEscritura, cuponVigente, evaluarGastoAds, LIMITES } from './guardas.mjs';
-import { buscarPromo, entradaEnPromo, precioObjetivo, cuerpoPost, cuponesVigentes, unidadesPorItem, armarSeleccion, gastoDelMes, primerDiaDelMes, bucketPct, TIPOS_ESCRIBIBLES, TIPOS_PROHIBIDOS, evaluarCambioPrecio } from './promos-logica.mjs';
+import { buscarPromo, entradaEnPromo, precioObjetivo, cuerpoPost, cuponesVigentes, unidadesPorItem, armarSeleccion, gastoDelMes, primerDiaDelMes, bucketPct, TIPOS_ESCRIBIBLES, TIPOS_PROHIBIDOS, evaluarCambioPrecio, TOPE_CAMBIO_PRECIO_PCT } from './promos-logica.mjs';
 import { fuenteTokenD1 } from '../../precio-ganador/src/token.mjs';
 import { bulkItemsPath, bulkEntryItem } from '../../worker-sync/meli-bulk.js';
 
@@ -209,6 +209,7 @@ async function sacar() {
 
 // Cambia el precio de un título que ya está en la promo (solo hacia abajo). Guarda el precio anterior
 // en el registro, relee y, si la lectura no coincide o el visible pasa del tope, vuelve al anterior.
+const descuentoPctLocal = (regular, precio) => { const r = Number(regular), p = Number(precio); return r > 0 && p >= 0 && Number.isFinite(r) && Number.isFinite(p) ? Math.round((1 - p / r) * 10000) / 100 : null; };
 async function cambiarPrecio() {
   if (!ID_RE.test(ITEM)) return fallo("item_invalido");
   if (!(PRECIO > 0)) return fallo("falta_precio");
@@ -237,7 +238,9 @@ async function cambiarPrecio() {
     if (coincide) break;
   }
   venta2 = await leerSalePrice(ITEM);
-  const check = verificarPostEscritura(venta2 ?? {});
+  // El visible se juzga contra el freno de este camino (50 %), no contra el 16 % de las promos comunes.
+  const visible = descuentoPctLocal(venta2?.regular_amount, venta2?.amount);
+  const check = venta2?.amount == null ? { ok: false, visiblePct: null, motivo: "no se pudo releer sale_price" } : { ok: visible === null || visible <= TOPE_CAMBIO_PRECIO_PCT, visiblePct: visible };
   imprimir("verificacion", { respuesta: elegir(r ?? {}, ["id", "status", "price", "original_price", "message"]), entrada: resumenEntrada(despues), relectura: check, coincide });
   // Dentro de una promo Mercado Libre no deja subir el precio (NEW_FINAL_PRICE_GREATER_THAN_CURRENT,
   // observado el 24/11/2026): no se intenta volver con PUT. Si el visible pasa del tope se saca el
