@@ -198,7 +198,9 @@ async function sacar() {
   imprimir('guardas', { permitido: r.permitido, fallas: r.fallas.map(x => ({ guarda: x.guarda, tipo: x.tipo, motivo: x.motivo })) });
   if (!r.permitido) { imprimir('resultado', { ok: false, modo, frenado_por: r.fallas.map(x => x.guarda) }); if (r.alerta) process.exitCode = 1; return; }
   let del;
-  try { del = await ml.delete(`/seller-promotions/items/${ITEM}?promotion_type=${encodeURIComponent(promo.type)}&promotion_id=${encodeURIComponent(promo.id)}&${V2}`); }
+  // SMART y SMART_LIGHTNING piden además el offer_id (HTTP 400 "Offer id is required", observado el 25/11/2026).
+  const oferta = ['SMART', 'SMART_LIGHTNING'].includes(promo.type) && entrada?.offer_id ? `&offer_id=${encodeURIComponent(entrada.offer_id)}` : '';
+  try { del = await ml.delete(`/seller-promotions/items/${ITEM}?promotion_type=${encodeURIComponent(promo.type)}&promotion_id=${encodeURIComponent(promo.id)}${oferta}&${V2}`); }
   catch (e) { return fallo('delete_fallo', { detalle: detalleError(e) }); }
   await sleep(5000);
   const despues = entradaEnPromo(await leerPromosItem(ITEM), promo);
