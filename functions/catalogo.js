@@ -279,13 +279,14 @@ async function fetchActiveCategories(ctx) {
     }
 }
 
-function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, rawQ, safeQ, selectedCategory }) {
+function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, orden, rawQ, safeQ, selectedCategory }) {
+    const sortInput = orden ? `<input type="hidden" name="orden" value="${escapeHtml(orden)}">` : '';
     const availabilityInput = disponibilidad
         ? `<input type="hidden" name="disponibilidad" value="${escapeHtml(disponibilidad)}">`
         : '';
     if (!categories || categories.length === 0) {
         return `<form class="filters-bar" action="/catalogo" method="get">
-    ${availabilityInput}
+    ${availabilityInput}${sortInput}
     <input type="search" name="q" value="${safeQ}" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros" autocomplete="off" data-search-autocomplete>
     <button type="submit">Buscar</button>
   </form>`;
@@ -318,6 +319,7 @@ function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, r
         categoria: '',
         subcategoria: '',
         disponibilidad,
+        orden,
         page: 1,
     });
     const clearLink = hasAnyFilter && (categoria || subcategoria)
@@ -325,7 +327,7 @@ function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, r
         : '';
 
     return `<form class="filters-bar" action="/catalogo" method="get">
-    ${availabilityInput}
+    ${availabilityInput}${sortInput}
     <input type="search" name="q" value="${safeQ}" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros" autocomplete="off" data-search-autocomplete>
     <label class="cat-select-wrap">
       <span class="sr-only">Categoría</span>
@@ -339,7 +341,7 @@ function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, r
   ${clearLink}`;
 }
 
-function availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, availableCount, orderCount }) {
+function availabilityTabsHtml({ disponibilidad, orden, rawQ, categoria, subcategoria, availableCount, orderCount }) {
     const options = [
         { value: '', label: 'Todos', count: availableCount + orderCount },
         { value: 'disponibles', label: 'Disponibles ahora', count: availableCount },
@@ -347,7 +349,7 @@ function availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, a
     ];
     const links = options.map(option => {
         const current = option.value === disponibilidad;
-        const href = catalogPath({
+        const href = catalogPath({ orden,
             q: rawQ,
             categoria,
             subcategoria,
@@ -374,7 +376,7 @@ const CAT_SELECT_STYLES = `
     .clear-filters{display:inline-block;margin-bottom:1.25rem;font-size:.82rem;
                     color:#a94e3d;text-decoration:none;font-weight:600}
     .clear-filters:hover{text-decoration:underline}
-    .active-filters{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem}
+    .active-filters a{min-height:32px;display:inline-flex;align-items:center}.active-filters a:focus-visible{outline:3px solid #86422a;outline-offset:3px}.active-filters{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem}
     .filter-chip{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .65rem;
                  background:#efe6db;border-radius:999px;font-size:.75rem;color:#4a3d30;font-weight:600}
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
@@ -395,9 +397,9 @@ const CAT_SELECT_STYLES = `
        formulario y conservan la categoría al buscar). Así el primer libro
        aparece en la primera pantalla. */
     @media (max-width: 700px){
-      .filters-bar{flex-wrap:nowrap}
+      .filters-bar{flex-wrap:wrap}
       .filters-bar input[type=search]{min-width:0}
-      .filters-bar .cat-select-wrap{display:none}
+      .filters-bar .cat-select-wrap{display:flex;flex:1 1 45%;min-width:0;order:2}.filters-bar .cat-select-wrap select{width:100%;min-width:0}.filters-bar .clear-filters{order:3}
       .availability-tab{min-height:40px;padding:.4rem .5rem;font-size:.74rem}
     }
 `;
@@ -454,7 +456,7 @@ function catalogPath({ q, categoria, subcategoria, disponibilidad, orden, page }
 // subtemas. Antes quedaban escondidos dentro del desplegable «Todos».
 // Los más grandes a la vista; el resto, a un toque en /temas.
 const TOPIC_NAV_LIMIT = 12;
-export function topicNavHtml({ categories = [], categoria = '', subcategoria = '', disponibilidad = '' }) {
+export function topicNavHtml({ categories = [], categoria = '', subcategoria = '', disponibilidad = '', q = '', orden = '' }) {
     if (!categories.length) return '';
     if (!categoria) {
         const topics = categories
@@ -464,20 +466,20 @@ export function topicNavHtml({ categories = [], categoria = '', subcategoria = '
             .slice(0, TOPIC_NAV_LIMIT);
         if (!topics.length) return '';
         const links = topics.map(c =>
-            `<a class="topic-chip" href="${escapeHtml(catalogPath({ categoria: c.id, disponibilidad }))}">${escapeHtml(c.name)}</a>`
+            `<a class="topic-chip" href="${escapeHtml(catalogPath({ q, orden, categoria: c.id, disponibilidad }))}">${escapeHtml(c.name)}</a>`
         ).join('');
         return `<nav class="topic-nav" aria-label="Explorar por tema">
     <p class="topic-nav-title">Explorá por tema</p>
-    <div class="topic-chips">${links}<a class="topic-chip topic-chip-all" href="/temas">Todos los temas →</a></div>
+    <div class="topic-chips">${links}<a class="topic-chip topic-chip-all" href="#cat-select">Todos los temas →</a></div>
   </nav>`;
     }
     const selected = categories.find(c => c.id === categoria);
     const subs = (selected?.subcategories || []).filter(s => Number(s.count) > 0);
-    const back = `<a class="topic-chip topic-chip-back" href="${escapeHtml(catalogPath({ disponibilidad }))}">← Todos los temas</a>`;
-    const all = `<a class="topic-chip${subcategoria ? '' : ' is-current'}" href="${escapeHtml(catalogPath({ categoria, disponibilidad }))}"${subcategoria ? '' : ' aria-current="page"'}>Todo ${escapeHtml(selected?.name || '')}</a>`;
+    const back = `<a class="topic-chip topic-chip-back" href="${escapeHtml(catalogPath({ q, orden, disponibilidad }))}">← Todos los temas</a>`;
+    const all = `<a class="topic-chip${subcategoria ? '' : ' is-current'}" href="${escapeHtml(catalogPath({ q, orden, categoria, disponibilidad }))}"${subcategoria ? '' : ' aria-current="page"'}>Todo ${escapeHtml(selected?.name || '')}</a>`;
     const subLinks = subs.map(sub => {
         const current = sub.id === subcategoria;
-        return `<a class="topic-chip${current ? ' is-current' : ''}" href="${escapeHtml(catalogPath({ categoria, subcategoria: sub.id, disponibilidad }))}"${current ? ' aria-current="page"' : ''}>${escapeHtml(sub.name)}</a>`;
+        return `<a class="topic-chip${current ? ' is-current' : ''}" href="${escapeHtml(catalogPath({ q, orden, categoria, subcategoria: sub.id, disponibilidad }))}"${current ? ' aria-current="page"' : ''}>${escapeHtml(sub.name)}</a>`;
     }).join('');
     return `<nav class="topic-nav" aria-label="Subtemas">
     <div class="topic-chips">${back}${all}${subLinks}</div>
@@ -982,10 +984,10 @@ export async function onRequest(ctx) {
 
     // Chips de filtros activos — visibilidad clara de qué está aplicado.
     const chips = [];
-    if (rawQ) chips.push(`<span class="filter-chip">“${safeQ}”</span>`);
-    if (categoria) chips.push(`<span class="filter-chip">${escapeHtml(selectedCategory.name)}</span>`);
-    if (subcategoria) chips.push(`<span class="filter-chip">${escapeHtml(selectedSubcategoryName)}</span>`);
-    if (availabilityLabel) chips.push(`<span class="filter-chip">${availabilityLabel}</span>`);
+    if (rawQ) chips.push(`<a class="filter-chip" href="${escapeHtml(catalogPath({ categoria, subcategoria, disponibilidad, orden }))}" aria-label="Quitar búsqueda">“${safeQ}” ×</a>`);
+    if (categoria) chips.push(`<a class="filter-chip" href="${escapeHtml(catalogPath({ q: rawQ, disponibilidad, orden }))}" aria-label="Quitar categoría">${escapeHtml(selectedCategory.name)} ×</a>`);
+    if (subcategoria) chips.push(`<a class="filter-chip" href="${escapeHtml(catalogPath({ q: rawQ, categoria, disponibilidad, orden }))}" aria-label="Quitar subcategoría">${escapeHtml(selectedSubcategoryName)} ×</a>`);
+    if (availabilityLabel) chips.push(`<a class="filter-chip" href="${escapeHtml(catalogPath({ q: rawQ, categoria, subcategoria, orden }))}" aria-label="Quitar disponibilidad">${availabilityLabel} ×</a>`);
     const chipsHtml = chips.length > 0 ? `<div class="active-filters">${chips.join('')}</div>` : '';
 
     // Sin filtro: página de índice, indexable, con metadatos/JSON-LD ricos
@@ -1099,7 +1101,7 @@ export async function onRequest(ctx) {
                justify-content:center;font-size:2.5rem;color:#c4b9ad}
     .rc-body{padding:.875rem 1rem;display:flex;flex-direction:column;gap:.45rem;flex:1}
     .rc-card .delivery-today{padding:.2rem .5rem;font-size:.72rem;border-radius:.4rem}
-    .rc-card .delivery-today span{display:none}
+    .rc-card .delivery-today span{display:block;font-size:.875rem;line-height:1.3}
     .rc-title{font-size:.95rem;font-weight:700;color:#18120e;line-height:1.25;
               display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
     .rc-title-link{text-decoration:none;color:inherit}
@@ -1149,9 +1151,9 @@ export async function onRequest(ctx) {
 <body>
 ${siteHeaderHtml({ current: 'libros', showSearch: false })}
 <div class="wrap">
-  ${topicNavHtml({ categories, categoria, subcategoria, disponibilidad })}
-  ${filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, rawQ, safeQ, selectedCategory })}
-  ${availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, availableCount, orderCount })}
+  ${topicNavHtml({ categories, categoria, subcategoria, disponibilidad, q: rawQ, orden })}
+  ${filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, orden, rawQ, safeQ, selectedCategory })}
+  ${availabilityTabsHtml({ disponibilidad, orden, rawQ, categoria, subcategoria, availableCount, orderCount })}
   ${chipsHtml}
   <h1>${heading}</h1>
   <div class="results-bar">

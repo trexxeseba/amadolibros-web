@@ -5,7 +5,7 @@
   inputs.forEach((input, index) => {
     const list = document.createElement('datalist');
     list.id = `amado-search-suggestions-${index + 1}`;
-    document.body.appendChild(list);
+    input.parentNode.appendChild(list);
     input.setAttribute('list', list.id);
     input.setAttribute('autocomplete', 'off');
     input.setAttribute('aria-autocomplete', 'list');

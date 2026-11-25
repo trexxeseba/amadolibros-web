@@ -176,7 +176,7 @@ test('la landing de mazos unifica tarot y oráculos sin guía ni agrupaciones', 
     assert.equal(response.status, 200);
     assert.match(html, /Mazos de tarot y oráculos en Uruguay/);
     assert.match(html, /Libro de prueba Mazos de tarot y oráculos/);
-    assert.match(html, /Te llega hoy/);
+    assert.match(html, /Entrega en el día/);
     assert.match(html, /Ordenar por/);
     assert.doesNotMatch(html, /Cómo elegir un mazo|tarot-module|tarot-finder/);
 });

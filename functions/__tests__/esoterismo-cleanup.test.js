@@ -117,7 +117,7 @@ test('las cartas se muestran juntas y los libros conservan sus destinos', async 
       const html = await response.text();
       assert.equal(response.status, 200, path);
       for (const id of sampleIds) assert.equal(html.includes(`/libro/${id}/`), expectedId.includes(id), `${path}: ${id}`);
-      assert.match(html, /Te llega hoy/);
+      assert.match(html, /Entrega en el día/);
     }
   } finally { globalThis.caches = originalCaches; }
 });

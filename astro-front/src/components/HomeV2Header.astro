@@ -6,7 +6,7 @@ import CartIcon from './CartIcon.astro';
   <div class="v2-topline-track">
     <span>Envío gratis desde $1.500</span>
     <span aria-hidden="true">✦</span>
-    <span>Entrega en el día en Montevideo</span>
+    <span>Montevideo: entrega en el día a coordinar</span>
     <span aria-hidden="true">✦</span>
     <span>Libros difíciles y búsquedas por encargo</span>
   </div>
@@ -80,7 +80,7 @@ import CartIcon from './CartIcon.astro';
     justify-content: center;
     gap: 0.8rem;
     white-space: nowrap;
-    font-size: 0.72rem;
+    font-size: 0.875rem;
     font-weight: 800;
     letter-spacing: 0.025em;
   }
@@ -164,7 +164,7 @@ import CartIcon from './CartIcon.astro';
   .v2-nav .v2-nav-highlight {
     color: #b4442a;
     font-family: var(--font-ui);
-    font-size: 0.73rem;
+    font-size: 0.875rem;
     font-weight: 800;
     letter-spacing: 0.02em;
     text-transform: uppercase;
@@ -216,13 +216,16 @@ import CartIcon from './CartIcon.astro';
   .v2-mobile-nav::-webkit-scrollbar { display: none; }
 
   .v2-mobile-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     flex: 0 0 auto;
     padding: 0.48rem 0.7rem;
     border: 1px solid #ded5c8;
     border-radius: 999px;
     background: #fff;
     color: #332d28;
-    font-size: 0.68rem;
+    font-size: 0.875rem;
     font-weight: 800;
     line-height: 1;
   }
@@ -238,7 +241,7 @@ import CartIcon from './CartIcon.astro';
     .v2-brand small { display: none; }
   }
 
-  @media (min-width: 960px) {
+  @media (min-width: 1200px) {
     .v2-header-main { min-height: 88px; padding: 0 2rem; }
     .v2-brand img { width: 54px; height: 54px; }
     .v2-brand strong { font-size: 1.15rem; }

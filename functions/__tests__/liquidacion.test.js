@@ -283,7 +283,7 @@ test('la home tiene Liquidación en el menú (escritorio y celular), en el pie y
     assert.match(footer, /href="\/liquidacion"/);
     assert.ok(FOOTER_LINKS.some(l => l.href === '/liquidacion'));
     const home = readFileSync('astro-front/src/pages/index.astro', 'utf8');
-    assert.match(home, /<HomeV2Hero \/>\s*<HomeV2Liquidacion \/>/);
+    assert.match(home, /<HomeV2Hero \/>[\s\S]*<HomeV2Shelf \/>[\s\S]*<HomeV2Liquidacion \/>/);
     const band = readFileSync('astro-front/src/components/HomeV2Liquidacion.astro', 'utf8');
     assert.match(band, /href="\/liquidacion"/);
     assert.doesNotMatch(band, /\d+ ?%/, 'la franja no promete porcentajes');
