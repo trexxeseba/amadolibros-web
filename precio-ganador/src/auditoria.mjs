@@ -63,9 +63,12 @@ if (process.env.PRECIO_GANADOR_SOLO_IMPORTAR) { /* tests */ }
 const ml = process.env.PRECIO_GANADOR_SOLO_IMPORTAR ? null : crearCliente(fuenteTokenD1(cuenta), { concurrencia: 3 });
 const discrepancias = [], muestra = [], controlEstado = [], controlRegla = [];
 
-async function ofertas(pid) {
-  try { const d = await ml.get(`/products/${pid}/items?limit=50`); return Array.isArray(d?.results) ? d.results : []; }
-  catch (e) { if (e.status === 404) return []; throw e; }
+// Desde el 23/11/2026 Mercado Libre responde 403 (PolicyAgent) en /products/{id}/items. Un 403 ahí
+// no es un error de la corrida: las ofertas de la ficha quedan sin leer (null) y la muestra sigue
+// con price_to_win, que sí responde.
+export async function ofertas(pid, cliente = ml) {
+  try { const d = await cliente.get(`/products/${pid}/items?limit=50`); return Array.isArray(d?.results) ? d.results : []; }
+  catch (e) { if (e.status === 404) return []; if (e.status === 403) return null; throw e; }
 }
 
 async function main() {
@@ -79,12 +82,13 @@ async function main() {
   for (let i = catalogo.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [catalogo[i], catalogo[j]] = [catalogo[j], catalogo[i]]; }
   for (const it of catalogo.slice(0, N)) {
     const p = await ml.get(`/items/${it.id}/price_to_win?version=v2`);
-    const otras = (await ofertas(it.catalog_product_id)).filter(o => String(o.seller_id) !== cuenta.sellerId);
+    const leidas = await ofertas(it.catalog_product_id);
+    const otras = (leidas ?? []).filter(o => String(o.seller_id) !== cuenta.sellerId);
     const masBarata = otras.reduce((m, o) => (m === null || Number(o.price) < m ? Number(o.price) : m), null);
     const ganadorEsMio = p?.winner?.item_id === it.id;
     let conclusion, ok = true;
     if (p?.status === 'winning') {
-      conclusion = !ganadorEsMio ? 'ML dice que gana pero el ganador es otra publicación' : masBarata === null ? 'Gana: no hay otros vendedores' : masBarata >= it.price ? `Gana: el competidor más barato está en ${masBarata}` : `Gana aunque hay uno más barato (${masBarata}): ML pesa envío y reputación`;
+      conclusion = !ganadorEsMio ? 'ML dice que gana pero el ganador es otra publicación' : leidas === null ? 'Gana (ofertas de la ficha sin leer: ML responde 403)' : masBarata === null ? 'Gana: no hay otros vendedores' : masBarata >= it.price ? `Gana: el competidor más barato está en ${masBarata}` : `Gana aunque hay uno más barato (${masBarata}): ML pesa envío y reputación`;
       ok = ganadorEsMio;
     } else if (p?.status === 'sharing_first_place') conclusion = `Comparte el primer lugar (${p.competitors_sharing_first_place ?? '?'} más)`;
     else if (p?.status === 'competing') {
@@ -93,7 +97,7 @@ async function main() {
       ok = Number.isFinite(g) ? g <= it.price : true;
     } else conclusion = `Estado ${p?.status ?? 'desconocido'} (no compite)`;
     const oportunidades = (p?.boosts ?? []).filter(b => b.status === 'opportunity').map(b => b.description ?? b.id);
-    muestra.push({ id: it.id, titulo: it.title.slice(0, 60), precio: it.price, estado: p?.status, precio_para_ganar: p?.price_to_win ?? null, competidor_mas_barato: masBarata, otras_ofertas: otras.length, sugerencias_ml: oportunidades, conclusion, ok });
+    muestra.push({ id: it.id, titulo: it.title.slice(0, 60), precio: it.price, estado: p?.status, precio_para_ganar: p?.price_to_win ?? null, competidor_mas_barato: masBarata, otras_ofertas: leidas === null ? null : otras.length, sugerencias_ml: oportunidades, conclusion, ok });
     if (!ok) discrepancias.push({ tipo: 'muestra', id: it.id, detalle: conclusion });
   }
 
