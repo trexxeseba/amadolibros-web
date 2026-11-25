@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { runInNewContext } from 'node:vm';
 import { DatabaseSync } from 'node:sqlite';
 import { buildSales, onRequest } from '../api/prueba-social.js';
 import {
@@ -76,4 +77,11 @@ test('script: es JS válido, no inventa nombres y evita pantallas de pago', () =
   assert.ok(/carrito\|checkout\|pago/.test(pruebaSocialScript()));
   assert.ok(!/ld\+json|aggregateRating/i.test(html));
   assert.ok(!/únicamente|sólo/i.test(html));
+});
+
+test('las fichas, los pedidos por encargo y el pago no crean avisos ni consultan ventas', () => {
+    for (const pathname of ['/libro/MLU1/un-libro', '/pedir-libro', '/carrito', '/checkout', '/pago']) {
+        // Si el script continúa necesitaría document, fetch o temporizadores.
+        assert.doesNotThrow(() => runInNewContext(pruebaSocialScript(), { location: { pathname } }), pathname);
+    }
 });
