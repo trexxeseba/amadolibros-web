@@ -4,8 +4,10 @@ import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 
 import {
-    createBookRequestHandler, validateBookRequest, generateRequestCode, RATE_LIMIT, REQUEST_TYPES,
+    createBookRequestHandler, validateBookRequest, generateRequestCode, RATE_LIMIT, REQUEST_TYPES, normalizeReplyContact,
 } from '../api/_book_request_handler.js';
+
+import { buildBookRequestEmail, createBookRequestNotifier } from '../api/_book_request_email.js';
 
 const NOW = new Date('2026-11-10T15:00:00.000Z');
 
@@ -13,8 +15,19 @@ const NOW = new Date('2026-11-10T15:00:00.000Z');
 function d1() {
     const db = new DatabaseSync(':memory:');
     db.exec(readFileSync('migrations/0016_book_requests.sql', 'utf8'));
+    db.exec(readFileSync('migrations/0023_book_request_contacts.sql', 'utf8'));
+    db.exec('PRAGMA foreign_keys=ON');
     return {
         raw: db,
+        async batch(statements) {
+            db.exec('BEGIN');
+            try {
+                const results = [];
+                for (const stmt of statements) results.push(await stmt.run());
+                db.exec('COMMIT');
+                return results;
+            } catch (error) { db.exec('ROLLBACK'); throw error; }
+        },
         prepare(sql) {
             const stmt = db.prepare(sql);
             const bound = (...args) => ({
@@ -150,4 +163,87 @@ test('el mensaje de WhatsApp lleva el código y el texto de privacidad dice la v
 test('ruta y migración', () => {
     assert.match(readFileSync('functions/api/book-request.js', 'utf8'), /createBookRequestHandler\(\)/);
     assert.match(readFileSync('migrations/0016_book_requests.sql', 'utf8'), /CREATE TABLE IF NOT EXISTS book_requests/);
+});
+
+test('contacto: acepta correo o WhatsApp y rechaza datos incompletos o cabeceras inyectadas', () => {
+    assert.deepEqual(normalizeReplyContact(' CLIENTE@example.test '), { type: 'email', value: 'cliente@example.test' });
+    assert.deepEqual(normalizeReplyContact('099 123 456'), { type: 'whatsapp', value: '099 123 456' });
+    for (const value of ['', '123', 'cliente@', 'a@example.test\nBcc: x@example.test', '<script>099123456</script>']) {
+        assert.equal(normalizeReplyContact(value), null);
+        assert.equal(validateBookRequest({ ...VALID, reply_contact: value }).ok, false);
+    }
+});
+
+test('la solicitud con contacto se guarda y se confirma después de avisar al equipo', async () => {
+    const db = d1();
+    let notified = 0;
+    const notify = async ({ value, code, requestId }) => {
+        const stored = db.raw.prepare('SELECT * FROM book_request_contacts WHERE request_id=?').get(requestId);
+        assert.equal(stored.contact_value, 'cliente@example.test');
+        assert.equal(value.reply_contact.type, 'email');
+        assert.match(code, /^PL-/);
+        notified++;
+        return { ok: true };
+    };
+    const res = await handler({ notify })({ request: post({ ...VALID, reply_contact: 'cliente@example.test' }), env: { ORDERS_DB: db } });
+    assert.equal(res.status, 201);
+    const data = await res.json();
+    assert.equal(data.notification_sent, true);
+    assert.equal(notified, 1);
+    assert.equal(JSON.stringify(data).includes('cliente@example.test'), false);
+    assert.equal(db.raw.prepare('SELECT notification_sent_at FROM book_request_contacts').get().notification_sent_at, NOW.toISOString());
+});
+
+test('si falla el aviso, conserva la solicitud pero informa el problema sin confirmar el envío', async () => {
+    const db = d1();
+    const res = await handler({ notify: async () => ({ ok: false }) })({
+        request: post({ ...VALID, reply_contact: '099 123 456' }), env: { ORDERS_DB: db },
+    });
+    assert.equal(res.status, 202);
+    const data = await res.json();
+    assert.equal(data.notification_sent, false);
+    assert.match(data.error, /no pudimos avisar/);
+    assert.match(data.request_code, /^PL-/);
+    assert.equal(db.raw.prepare('SELECT COUNT(*) n FROM book_request_contacts').get().n, 1);
+});
+
+test('pedido y contacto se guardan juntos: un fallo revierte ambos y no envía correo', async () => {
+    const db = d1();
+    db.raw.exec('DROP TABLE book_request_contacts');
+    let notified = false;
+    const res = await handler({ notify: async () => { notified = true; return { ok: true }; } })({
+        request: post({ ...VALID, reply_contact: 'cliente@example.test' }), env: { ORDERS_DB: db },
+    });
+    assert.equal(res.status, 503);
+    assert.equal(db.raw.prepare('SELECT COUNT(*) n FROM book_requests').get().n, 0);
+    assert.equal(notified, false);
+});
+
+test('el aviso interno incluye datos útiles y permite responder al correo del cliente', async () => {
+    const value = validateBookRequest({ ...VALID, query: 'Libro <A>', reply_contact: 'cliente@example.test' }).value;
+    const email = buildBookRequestEmail({ value, code: 'PL-261125-ABCD' });
+    assert.match(email.html, /Libro &lt;A&gt;/);
+    assert.doesNotMatch(email.html, /Libro <A>/);
+    assert.equal(email.reply_to, 'cliente@example.test');
+    let payload;
+    const notify = createBookRequestNotifier({ fetchFn: async (url, options) => {
+        assert.equal(url, 'https://api.resend.com/emails');
+        assert.equal(options.headers['Idempotency-Key'], 'book-request-test-id');
+        payload = JSON.parse(options.body);
+        return Response.json({ id: 'email-id' });
+    } });
+    const result = await notify({ env: { RESEND_API_KEY: 'fake-key', SALES_NOTIFICATION_FROM: 'test@example.test', SALES_NOTIFICATION_TO: 'ops@example.test' },
+        value, code: 'PL-261125-ABCD', requestId: 'test-id' });
+    assert.equal(result.ok, true);
+    assert.deepEqual(payload.to, ['ops@example.test']);
+    assert.equal(payload.reply_to, 'cliente@example.test');
+});
+
+test('configuración ausente o rechazo de correo no produce un aviso exitoso', async () => {
+    const value = validateBookRequest({ ...VALID, reply_contact: '099 123 456' }).value;
+    const input = { value, code: 'PL-261125-ABCD', requestId: 'test-id' };
+    const notify = createBookRequestNotifier({ fetchFn: async () => Response.json({ error: 'rechazo' }, { status: 500 }) });
+    assert.equal((await notify({ ...input, env: {} })).ok, false);
+    assert.equal((await notify({ ...input, env: { RESEND_API_KEY: 'fake', SALES_NOTIFICATION_FROM: 'test@example.test', SALES_NOTIFICATION_TO: 'ops@example.test' } })).ok, false);
+    assert.equal(buildBookRequestEmail({ value, code: input.code }).reply_to, undefined);
 });
