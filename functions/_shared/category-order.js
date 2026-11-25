@@ -41,10 +41,11 @@ export function orderCategoryItems(items, order) {
     });
 }
 
-export function categoryOrderHtml(categoryId, selected) {
+export function categoryOrderHtml(categoryId, selected, availability = '') {
     const options = CATEGORY_ORDER_OPTIONS.map(([value, label]) =>
-        `<option value="${value}"${value === selected ? ' selected' : ''}>${label}</option>`).join('');
+        `<option value="${value}"${value === selected ? ' selected' : ''}>${availability && value === 'mezclados' ? 'Por título' : label}</option>`).join('');
     return `<form class="category-order" action="/libros/${categoryId}" method="get">
+      ${['disponibles', 'encargo'].includes(availability) ? `<input type="hidden" name="disponibilidad" value="${availability}">` : ''}
       <label for="category-order">Ordenar por</label>
       <select id="category-order" name="orden">${options}</select>
       <button type="submit">Ordenar</button>

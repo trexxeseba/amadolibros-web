@@ -55,10 +55,11 @@ function parsePageParam(raw) {
     return { present: true, valid: true, page: Number(trimmed) };
 }
 
-function categoryPath(categoryId, page = 1, order = '') {
+function categoryPath(categoryId, page = 1, order = '', availability = '') {
     const query = new URLSearchParams();
     if (page > 1) query.set('page', String(page));
     if (order) query.set('orden', order);
+    if (availability) query.set('disponibilidad', availability);
     return `/libros/${categoryId}${query.size ? '?' + query : ''}`;
 }
 
@@ -77,9 +78,9 @@ function paginationWindow(page, totalPages) {
     return cells;
 }
 
-function paginationHtml({ categoryId, page, totalPages, order }) {
+function paginationHtml({ categoryId, page, totalPages, order, availability }) {
     if (totalPages <= 1) return '';
-    const hrefFor = target => categoryPath(categoryId, target, order);
+    const hrefFor = target => categoryPath(categoryId, target, order, availability);
     const prev = page > 1
         ? `<a class="pg-ctl" rel="prev" href="${escapeHtml(hrefFor(page - 1))}">‹ Anterior</a>`
         : '<span class="pg-ctl is-off" aria-disabled="true">‹ Anterior</span>';
@@ -393,9 +394,9 @@ export function editorialGuideHtml(category) {
   </section>`;
 }
 
-function renderPage({ category, categoryData, items, isPreview, hasUnexpectedParameters, navigationBase, page, pageSize, totalPages, order }) {
+function renderPage({ category, categoryData, items, isPreview, hasUnexpectedParameters, navigationBase, page, pageSize, totalPages, order, availability, availabilityCounts }) {
     const simple = isSimpleCategory(category);
-    const canonical = `${BASE}${categoryPath(category.id, page)}`;
+    const canonical = `${BASE}${categoryPath(category.id, availability ? 1 : page)}`;
     const offset = (page - 1) * pageSize;
     const visibleItems = items.slice(offset, offset + pageSize);
     const itemList = visibleItems.slice(0, 20).map((item, index) => ({
@@ -459,16 +460,22 @@ function renderPage({ category, categoryData, items, isPreview, hasUnexpectedPar
             ? `Mostrando ${rangeFrom}–${rangeTo} de ${items.length} ${productNoun}s`
             : `${items.length} ${productNoun}${items.length === 1 ? '' : 's'}`;
     const cards = visibleItems.map((item, index) => cardHtml(item, index, navigationBase)).join('\n');
-    const robots = isPreview || hasUnexpectedParameters || Boolean(order) || items.length === 0
+    const robots = isPreview || hasUnexpectedParameters || Boolean(order) || Boolean(availability) || items.length === 0
         ? 'noindex, follow'
         : 'index, follow';
     const pageTitle = page > 1 ? `${category.title} — Página ${page}` : category.title;
     const pageDescription = page > 1 ? `${category.description} Página ${page} de ${totalPages}.` : category.description;
-    const pagination = paginationHtml({ categoryId: category.id, page, totalPages, order });
+    const pagination = paginationHtml({ categoryId: category.id, page, totalPages, order, availability });
     // Contar la colección visible después de deduplicar, con ambos estados.
-    const availableCount = items.filter(item => item.status === 'active' && Number(item.available_quantity) > 0).length;
-    const byRequestCount = items.filter(item => item.status === 'paused').length;
-    const scopeText = `<strong>${items.length} ${productNoun}${items.length === 1 ? '' : 's'}</strong> · ${availableCount} disponible${availableCount === 1 ? '' : 's'} · ${byRequestCount} por encargo`;
+    const { total, available: availableCount, byRequest: byRequestCount } = availabilityCounts;
+    const scopeText = `<strong>${total} ${productNoun}${total === 1 ? '' : 's'}</strong>${availability ? ' en esta colección' : ''} · ${availableCount} disponible${availableCount === 1 ? '' : 's'} · ${byRequestCount} por encargo`;
+    const availabilityTabs = [
+        ['', 'Todos', total],
+        ['disponibles', 'Disponibles ahora', availableCount],
+        ['encargo', 'Por encargo', byRequestCount],
+    ].map(([value, label, count]) => `<a href="${escapeHtml(categoryPath(category.id, 1, order, value))}"${availability === value ? ' aria-current="page"' : ''}>${label} <span>${count}</span></a>`).join('');
+    const resultsHeading = availability === 'disponibles' ? 'Disponibles ahora'
+        : availability === 'encargo' ? 'Por encargo' : simple ? 'Todos los productos' : 'Todos los libros';
     const waMessage = buildWhatsAppMessage({
         greeting: 'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran 😊',
         motive: 'Consultar por un libro de esta categoría',
@@ -500,6 +507,7 @@ function renderPage({ category, categoryData, items, isPreview, hasUnexpectedPar
   <style>
     *{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,system-ui,-apple-system,sans-serif;background:#f8f5ef;color:#18120e;line-height:1.55}a{color:inherit}.breadcrumbs{max-width:1120px;margin:0 auto;padding:1rem;font-size:.82rem;color:#6b6157}.breadcrumbs a{color:#8f493b}.category-main{max-width:1120px;margin:0 auto;padding:0 1rem 3rem}.intro{padding:clamp(1.25rem,3vw,2rem);background:#fff;border:1px solid #e2dbd0;border-radius:1rem}.intro h1{font-family:Georgia,serif;font-size:clamp(1.75rem,5vw,2.6rem);line-height:1.12;margin-bottom:.8rem}.intro p{max-width:78ch;color:#5f554c}.category-scope{margin-top:1rem;padding:.75rem .9rem;border-left:4px solid #e49982;background:#f8f5ef;border-radius:.35rem;color:#50463e;font-size:.88rem}.benefits{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}.benefits span{padding:.35rem .65rem;border-radius:999px;background:#f5f0ea;color:#50463e;font-size:.75rem;font-weight:700}.bible-pathways,.bible-guide,.bible-delivery{margin-top:1.25rem;border:1px solid #e2dbd0;border-radius:1rem;background:#fff;padding:clamp(1rem,3vw,1.5rem)}.bible-pathways h2,.bible-guide h2,.bible-delivery h2{font-family:Georgia,serif;font-size:1.35rem}.bible-pathways>p,.bible-guide-head p,.bible-delivery p{max-width:75ch;margin-top:.4rem;color:#5f554c}.bible-pathway-grid,.bible-guide-grid{display:grid;gap:.75rem;margin-top:1rem}.bible-pathway-grid a,.bible-guide-grid article{display:flex;flex-direction:column;gap:.25rem;border:1px solid #e2dbd0;border-radius:.75rem;background:#f8f5ef;padding:1rem;text-decoration:none}.bible-pathway-grid a:hover{border-color:#e49982}.bible-pathway-grid span,.bible-guide-grid p{color:#6b6157;font-size:.84rem}.bible-guide-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}.bible-eyebrow{color:#a94e3d!important;font-size:.72rem;font-weight:850;letter-spacing:.07em;text-transform:uppercase}.bible-cross-link{flex:none;display:inline-flex;min-height:44px;align-items:center;border-radius:999px;background:#18120e;color:#fff;padding:.6rem .9rem;text-decoration:none;font-size:.8rem;font-weight:800}.bible-delivery{background:#18120e;color:#fff;border-color:#18120e}.bible-delivery p{color:rgba(255,255,255,.78)}.bible-delivery .bible-delivery-note{font-size:.78rem;color:rgba(255,255,255,.6)}.buyer-guide{margin:1.5rem 0;padding:clamp(1rem,2.5vw,1.5rem);background:#fff;border:1px solid #e2dbd0;border-radius:1rem}.buyer-guide-head{max-width:78ch}.buyer-guide-head h2{font-family:Georgia,serif;font-size:clamp(1.3rem,3vw,1.75rem);line-height:1.2;margin-bottom:.45rem}.buyer-guide-head p{color:#5f554c}.buyer-guide-grid{display:grid;grid-template-columns:1fr;gap:.7rem;margin-top:1rem}.buyer-guide-card{padding:.85rem;background:#f8f5ef;border:1px solid #eee5da;border-radius:.65rem}.buyer-guide-card h3{font-size:.92rem;margin-bottom:.25rem}.buyer-guide-card p{font-size:.82rem;color:#5f554c}.buyer-guide-service{margin-top:1rem;padding:.75rem .85rem;border-left:4px solid #e49982;background:#fff8f4;color:#50463e;font-size:.84rem}.results-head{display:flex;align-items:end;justify-content:space-between;gap:1rem;margin:2rem 0 1rem}.results-head h2{font-size:1.15rem}.results-head p{color:#6b6157;font-size:.84rem}.books-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}.book-card{display:flex;flex-direction:column;min-width:0;background:#fff;border:1px solid #e2dbd0;border-radius:.8rem;overflow:hidden}.book-image{display:grid;place-items:center;aspect-ratio:3/4;background:#eee7de;overflow:hidden}.book-image img{width:100%;height:100%;object-fit:cover;transition:transform .2s}.book-card:hover .book-image img{transform:scale(1.025)}.book-placeholder{font-size:2.5rem}.book-body{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:.4rem;padding:.8rem}.stock-badge{padding:.16rem .48rem;border-radius:999px;background:#eaf7ee;color:#267a42;font-size:.64rem;font-weight:800;text-transform:uppercase}.book-body h2{font-size:.86rem;line-height:1.3}.book-body h2 a{text-decoration:none}.book-author{width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6b6157;font-size:.75rem}.book-prices{display:flex;flex-direction:column;gap:.15rem;margin-top:.2rem;font-size:.72rem}.book-prices strong{font-size:.9rem}.book-prices .transfer{color:#a94e3d;font-weight:700}.book-cta{margin-top:auto;padding:.38rem .7rem;border-radius:999px;background:#18120e;color:#fff;text-decoration:none;font-size:.73rem;font-weight:700}.category-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin-top:2.5rem;padding:1rem;background:#fff;border:1px solid #e2dbd0;border-radius:1rem}.category-nav a{padding:.55rem .7rem;border-radius:.55rem;background:#f8f5ef;text-decoration:none;font-size:.78rem}.category-nav a[aria-current="page"]{background:#18120e;color:#fff}.empty{margin-top:1.5rem;padding:1.5rem;background:#fff;border:1px solid #e2dbd0;border-radius:.8rem}${SITE_HEADER_STYLES}${CARD_COVER_FRAMING_STYLES}${DELIVERY_BADGE_STYLES}${PAGINATION_STYLES}${FOOTER_STYLES}${WA_FLOAT_STYLES}${CATEGORY_ORDER_STYLES}${CATEGORY_PRODUCT_STYLES}@media(min-width:640px){.books-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.category-nav{grid-template-columns:repeat(4,minmax(0,1fr))}.buyer-guide-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.bible-pathway-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.bible-guide-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(min-width:900px){.books-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.bible-guide-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:620px){.bible-guide-head{flex-direction:column}.bible-cross-link{width:100%;justify-content:center}}
     .book-image{padding:.35rem}.book-image img{object-fit:contain}
+    .category-availability{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem;margin:1.2rem 0 .6rem}.category-availability a{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:.3rem;min-height:44px;padding:.55rem .4rem;border:1px solid #d8cfc2;border-radius:.6rem;background:#fff;text-decoration:none;text-align:center;font-size:.85rem;font-weight:700}.category-availability a[aria-current]{background:#18120e;color:#fff}.category-availability span{font-size:.75rem;font-weight:500}.category-availability a:focus-visible{outline:3px solid #a94e3d;outline-offset:2px}
   </style>
 </head>
 <body>
@@ -516,9 +524,10 @@ ${categoryBreadcrumbHtml(category)}
   ${psychologyPathwaysHtml(category)}
   ${simple ? '' : subcategoryLinksHtml(category, categoryData)}
   ${simple ? categoryProductTabsHtml(category) : editorialGuideHtml(category)}
-  ${categoryOrderHtml(category.id, order || 'mezclados')}
-  <div class="results-head"><h2>${simple ? 'Todos los productos' : 'Todos los libros'}</h2><p>${resultText}</p></div>
-  ${items.length > 0 ? `<section class="books-grid" aria-label="${escapeHtml(category.h1)}">${cards}</section>${pagination}` : '<p class="empty">No hay títulos publicados en esta categoría en este momento. Consultanos por WhatsApp y lo buscamos por encargo.</p>'}
+  <nav class="category-availability" aria-label="Filtrar por disponibilidad">${availabilityTabs}</nav>
+  ${categoryOrderHtml(category.id, order || 'mezclados', availability)}
+  <div class="results-head"><h2>${resultsHeading}</h2><p>${resultText}</p></div>
+  ${items.length > 0 ? `<section class="books-grid" aria-label="${escapeHtml(category.h1)}">${cards}</section>${pagination}` : availability ? `<p class="empty">No hay libros para este filtro. <a href="${escapeHtml(categoryPath(category.id, 1, order))}">Ver toda la colección</a>.</p>` : '<p class="empty">No hay títulos publicados en esta categoría en este momento. Consultanos por WhatsApp y lo buscamos por encargo.</p>'}
   ${categoryNavHtml(category.id)}
 </main>
 ${footerHtml(undefined, canonical)}
@@ -541,7 +550,7 @@ export async function onRequest(ctx) {
     if (requestedId === 'esoterismo-tarot/oraculos') {
         const url = new URL(ctx.request.url);
         const order = url.searchParams.get('orden');
-        return new Response(null, { status: 301, headers: { Location: categoryPath(TAROT_DECKS_CATEGORY_ID, 1, order ? parseCategoryOrder(order) : '') } });
+        return new Response(null, { status: 301, headers: { Location: categoryPath(TAROT_DECKS_CATEGORY_ID, 1, order ? parseCategoryOrder(order) : '', ['disponibles', 'encargo'].includes(url.searchParams.get('disponibilidad')) ? url.searchParams.get('disponibilidad') : '') } });
     }
     const category = findSeoCategory(requestedId);
     if (!category) {
@@ -559,8 +568,11 @@ export async function onRequest(ctx) {
         });
     }
     const order = requestUrl.searchParams.has('orden') ? parseCategoryOrder(requestUrl.searchParams.get('orden')) : '';
-    const hasUnexpectedParameters = [...requestUrl.searchParams.keys()].some(key => key !== 'page' && key !== 'orden')
-        || requestUrl.searchParams.getAll('page').length > 1 || requestUrl.searchParams.getAll('orden').length > 1;
+    const rawAvailability = requestUrl.searchParams.get('disponibilidad') || '';
+    const availability = ['disponibles', 'encargo'].includes(rawAvailability) ? rawAvailability : '';
+    const hasUnexpectedParameters = [...requestUrl.searchParams.keys()].some(key => !['page', 'orden', 'disponibilidad'].includes(key))
+        || ['page', 'orden', 'disponibilidad'].some(key => requestUrl.searchParams.getAll(key).length > 1)
+        || rawAvailability !== availability;
 
     const [categoryData, activeIndex, pausedIndex] = await Promise.all([
         fetchCategoryData(ctx),
@@ -618,6 +630,13 @@ export async function onRequest(ctx) {
             return price || String(a.id).localeCompare(String(b.id));
         });
     let items = dedupeCategoryResults(categoryItems);
+    const availabilityCounts = {
+        total: items.length,
+        available: items.filter(item => item.status === 'active' && Number(item.available_quantity) > 0).length,
+        byRequest: items.filter(item => item.status === 'paused').length,
+    };
+    if (availability === 'disponibles') items = items.filter(item => item.status === 'active' && Number(item.available_quantity) > 0);
+    if (availability === 'encargo') items = items.filter(item => item.status === 'paused');
     const selectedOrder = order || 'mezclados';
     if (['recientes', 'antiguos'].includes(selectedOrder) && items.some(item => !item.start_time)) {
         // El índice ligero conserva stock/precio actuales, pero no fechas.
@@ -644,6 +663,8 @@ export async function onRequest(ctx) {
         pageSize,
         totalPages,
         order,
+        availability,
+        availabilityCounts,
     });
 
     return new Response(html, {
