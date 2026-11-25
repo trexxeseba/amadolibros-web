@@ -144,8 +144,8 @@ export async function estado({ api = checklyApi() } = {}) {
   ]);
   const statusById = new Map((Array.isArray(statuses) ? statuses : []).map(s => [s.checkId, s]));
   log('plan', { plan: plan.plan, limites: (plan.entitlements || [])
-    .filter(e => /check|run|alert|monitor|location|frequency/i.test(`${e.key} ${e.name || ''}`))
-    .map(e => ({ clave: e.key, habilitado: e.enabled, cantidad: e.quantity ?? null })) });
+    .filter(e => e.enabled && e.quantity != null && /check|run|alert|monitor/i.test(String(e.key)))
+    .map(e => `${e.key}=${e.quantity}`).join(' ') });
   for (const c of checks) {
     const s = statusById.get(c.id) || {};
     log('control', { nombre: c.name, tipo: c.checkType, activo: c.activated, silenciado: c.muted, cada_min: c.frequency,
