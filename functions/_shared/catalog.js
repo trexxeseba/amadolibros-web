@@ -1,6 +1,7 @@
 import { perfNow, recordPerf } from './perf.js';
 import { applyWebPromoToCatalog, applyWebPromoToItems } from './web-promo.js';
 import { applyLiquidationPrices, applyLiquidationToCatalog } from './liquidacion.js';
+import { normalizeStoreCatalog, normalizeStorePrices } from './store-price.js';
 
 export const R2_BASE = 'https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev';
 export const CATALOG_URL = `${R2_BASE}/catalog.json`;
@@ -122,12 +123,12 @@ export async function fetchCatalogRaw(ctx) {
 // desde el 10/11/2026, el precio de liquidación (tope de 25 %, descuentos.js).
 export async function fetchCatalog(ctx) {
     const catalog = await fetchCatalogRaw(ctx);
-    return applyLiquidationToCatalog(applyWebPromoToCatalog(catalog, { env: ctx?.env }), { env: ctx?.env });
+    return normalizeStoreCatalog(applyLiquidationToCatalog(applyWebPromoToCatalog(catalog, { env: ctx?.env }), { env: ctx?.env }));
 }
 
 // Mismos precios de cara al cliente para el índice activo (carrito y cobro).
 function storeItems(items, ctx) {
-    return applyLiquidationPrices(applyWebPromoToItems(items, { env: ctx?.env }), { env: ctx?.env });
+    return normalizeStorePrices(applyLiquidationPrices(applyWebPromoToItems(items, { env: ctx?.env }), { env: ctx?.env }));
 }
 
 // CF-R2-2-BRIDGE: única fuente de verdad de "qué manifest le corresponde a

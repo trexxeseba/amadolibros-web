@@ -108,6 +108,9 @@ export const SITE_HEADER_STYLES = `
     .site-nav-link:hover{background:#f0e8dc;color:#b4442a}
     .site-nav-link[aria-current="page"]{background:#1b1714;color:#fff8f0}
     .site-nav-link.is-highlight{color:#b4442a}
+    @media(max-width:760px),(max-height:600px){
+      .site-header{position:relative}
+    }
     @media(max-width:760px){
       .site-header .header-inner{grid-template-columns:minmax(0,1fr) auto;gap:.5rem .75rem;padding:.5rem .85rem .3rem}
       .site-header .brand-logo{width:40px;height:39px}

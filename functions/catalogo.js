@@ -41,7 +41,7 @@ import { slugify } from './_shared/slug.js';
 import { promoAwareCacheControl, promoWasHtml } from './_shared/web-promo.js';
 import { transferDisplayPrice } from './_shared/descuentos.js';
 // GLOBAL-SHELL-1: mismo favicon que el resto del sitio.
-import { faviconHeadHtml } from './_shared/brand.js';
+import { faviconHeadHtml, footerHtml, FOOTER_STYLES } from './_shared/brand.js';
 import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_HEADER_SCRIPT, SITE_FONTS_HEAD } from './_shared/site-header.js';
 import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../shared/delivery-badge.js';
 import { CARD_COVER_FRAMING_STYLES, cardCoverImageOptions } from '../shared/card-cover-framing.js';
@@ -1140,17 +1140,14 @@ export async function onRequest(ctx) {
     .manual-request-actions a{display:inline-flex;min-height:46px;align-items:center;justify-content:center;padding:.7rem 1rem;border-radius:.65rem;font-weight:800;text-decoration:none}
     .manual-request-primary{background:#e49982;color:#fff}
     .manual-request-actions .wa-link{border:1px solid #b9dfc7;background:#effaf3;color:#117a37}
-    footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid #e2e8f0;
-           font-size:.78rem;color:#94a3b8}
-    footer a{color:#cbd5e1;text-decoration:none}
-    footer a:hover{text-decoration:underline}
+    ${FOOTER_STYLES}
     ${CAT_SELECT_STYLES}
     ${PAGINATION_STYLES}
   </style>
 </head>
 <body>
 ${siteHeaderHtml({ current: 'libros', showSearch: false })}
-<div class="wrap">
+<main class="wrap">
   ${topicNavHtml({ categories, categoria, subcategoria, disponibilidad, q: rawQ, orden })}
   ${filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, orden, rawQ, safeQ, selectedCategory })}
   ${availabilityTabsHtml({ disponibilidad, orden, rawQ, categoria, subcategoria, availableCount, orderCount })}
@@ -1164,11 +1161,8 @@ ${siteHeaderHtml({ current: 'libros', showSearch: false })}
     ? `<div class="grid">\n${cards}\n</div>\n${paginationBlock}`
     : `<div class="empty">${emptyMessage}</div>`
   }
-  <footer>
-    <a href="/">Inicio</a> · <a href="/libros-agotados-importados-uruguay">Libros agotados e importados</a> · <a href="/politicas/">Políticas</a> ·
-    &copy; 2026 Amado Libros
-  </footer>
-</div>
+</main>
+${footerHtml(undefined, ctx.request.url)}
 <script src="/search-autocomplete.js" defer></script>
 ${SITE_HEADER_SCRIPT}
 </body>

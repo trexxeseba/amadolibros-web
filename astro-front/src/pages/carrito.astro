@@ -4,6 +4,8 @@ import { purchaseTrustHtml } from '../../../shared/purchase-trust.js';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import WAFloat from '../components/WAFloat.astro';
+import { createContactValidation } from '../../../shared/contact-validation.js';
+const contactValidationScript = `window.AmadoContactValidation = (${createContactValidation.toString()})();`;
 
 const checkoutEnabled = import.meta.env.PUBLIC_CHECKOUT_ENABLED === 'true';
 
@@ -72,7 +74,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
             <details id="cart-summary-panel" class="cart-summary-panel">
               <summary class="cart-summary-toggle">
                 <span class="cart-summary-toggle-text">
-                  🛒 Tu compra · <span id="cart-summary-count">0</span> libro(s) · <span id="cart-summary-total">$&nbsp;0</span>
+                  🛒 Tu compra · <span id="cart-summary-count">0 libros</span> · <span id="cart-summary-total">$&nbsp;0</span>
                 </span>
                 <span class="cart-summary-chevron" aria-hidden="true">Ver resumen</span>
               </summary>
@@ -259,7 +261,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
                   autocomplete="tel"
                   inputmode="tel"
                   aria-describedby="buyer-phone-help err-buyer-phone">
-                <span class="field-help" id="buyer-phone-help">Lo usamos únicamente para coordinar tu pedido y la entrega.</span>
+                <span class="field-help" id="buyer-phone-help">Lo usamos para coordinar tu pedido y la entrega.</span>
                 <span class="field-error" id="err-buyer-phone" role="alert" hidden></span>
               </div>
               <div class="form-field">
@@ -352,8 +354,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
                 </p>
                 <p class="checkout-policy-links">
                   Al continuar aceptás los <a href="/terminos" target="_blank">términos de compra</a>.
-                  Consultá <a href="/envios" target="_blank">envíos</a> y
-                  <a href="/devoluciones" target="_blank">devoluciones</a>.
+                  Consultá <a href="/envios" target="_blank">envíos</a> y <a href="/devoluciones" target="_blank">devoluciones</a>.
                 </p>
                 <p class="checkout-personal-note">
                   ¿Necesitás ayuda para completar la compra? Escribinos por WhatsApp.
@@ -374,8 +375,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
                 </p>
                 <p class="checkout-policy-links">
                   Al enviar el pedido aceptás los <a href="/terminos" target="_blank">términos de compra</a>.
-                  Consultá <a href="/envios" target="_blank">envíos</a> y
-                  <a href="/devoluciones" target="_blank">devoluciones</a>.
+                  Consultá <a href="/envios" target="_blank">envíos</a> y <a href="/devoluciones" target="_blank">devoluciones</a>.
                 </p>
               </>
             )}
@@ -1206,7 +1206,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
   /* ── Items creados por JS ──────────────────────── */
   :global(.cart-item) {
     display: grid;
-    grid-template-columns: 56px 1fr auto;
+    grid-template-columns: 56px minmax(0, 1fr) auto;
     grid-template-rows: auto auto;
     column-gap: 0.875rem;
     row-gap: 0.4rem;
@@ -1253,6 +1253,17 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
   :global(.cart-item-unit-price) {
     font-size: 0.75rem;
     color: var(--ink-2);
+  }
+
+  :global(.cart-item-promo-was) {
+    grid-column: 2 / -1;
+    min-width: 0;
+    margin: 0;
+    font-size: .82rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #9a3412;
+    overflow-wrap: anywhere;
   }
 
   :global(.cart-item-controls) {
@@ -1311,7 +1322,9 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
     cursor: pointer;
     font-size: 0.75rem;
     color: var(--ink-2);
-    padding: 0;
+    padding: .5rem;
+    min-width: 44px;
+    min-height: 44px;
     text-decoration: underline;
     text-underline-offset: 2px;
     transition: color 0.1s;
@@ -1583,7 +1596,8 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
     }
   }
   /* CUENTA-1 · bloque opcional de cuenta */
-  .cuenta-bloque { margin: 0 0 1.25rem; padding: .9rem 1rem; border: 1px solid #dfe3e8;
+  #cuenta-boton-google { width: 100%; min-width: 0; }
+  .cuenta-bloque { min-width: 0; margin: 0 0 1.25rem; padding: .9rem 1rem; border: 1px solid #dfe3e8;
     border-radius: .5rem; background: #fafbfc; }
   .cuenta-nota { margin: 0 0 .6rem; font-size: .93rem; color: #444; }
   .cuenta-acciones { display: flex; flex-wrap: wrap; gap: .5rem; }
@@ -1595,6 +1609,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
   .cuenta-aviso { margin: .6rem 0 0; font-size: .9rem; color: #1c3f60; min-height: 1.2rem; }
 </style>
 
+<script is:inline set:html={contactValidationScript} />
 <script is:inline define:vars={{ turnstileSiteKey, turnstileAllowedHosts, googleClientId }}>
   // ── Turnstile ────────────────────────────────────────────────────────────
   var onlineCheckoutEnabled = document.querySelector('.cart-page')?.dataset.onlineCheckout === 'enabled';
@@ -1783,12 +1798,13 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       var invalids = document.querySelectorAll('[aria-invalid="true"]');
       for (var j = 0; j < invalids.length; j++) { invalids[j].removeAttribute('aria-invalid'); }
     }
-    function showFieldError(fieldId, message) {
+    function showFieldError(fieldId, message, focus = true) {
       var field = document.getElementById(fieldId);
       var errEl = document.getElementById('err-' + fieldId);
       if (errEl) { errEl.textContent = message; errEl.hidden = false; }
       if (field) {
         field.setAttribute('aria-invalid', 'true');
+        if (!focus) return;
         if (typeof field.scrollIntoView === 'function') {
           field.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
@@ -1895,73 +1911,72 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       return !!(radio && radio.disabled);
     }
 
-    // V1.1 REDESIGN (corrección de revisión #3): único punto que decide
-    // a qué falta el CTA neutro debe llevar, siguiendo el mismo orden del
-    // flujo aprobado (Entrega → Nombre → WhatsApp/Teléfono → Email →
-    // [envío: Dirección/Barrio/Departamento] → Medio de pago). No duplica la
-    // validación de submit real de createTransferOrder()/btnPrepare (esas
-    // siguen intactas y se ejecutan recién al confirmar con un medio ya
-    // elegido) — esto sólo decide, antes de eso, cuál es el primer requisito
-    // incompleto para guiar foco+scroll+error inline hacia él.
-    function focusFirstMissingRequirement() {
-      if (!requireDeliveryType()) return false;
+    // One validation path for guidance, transfer and Mercado Pago. Errors
+    // follow the visible form: delivery/address, buyer, then payment.
+    function checkoutFieldErrors(includePayment) {
+      var errors = [];
       var deliveryType = getDeliveryType();
-
-      // Corrección de revisión (ronda final): la aceptación de retiro
-      // va inmediatamente después de Entrega — mismo mensaje/foco/scroll que
-      // ya usan createTransferOrder()/btnPrepare al confirmar, para no
-      // mandar al comprador a elegir Pago y recién ahí hacerlo volver acá.
+      function value(id) { return ((document.getElementById(id) || {}).value || '').trim(); }
+      function missing(id, message) { if (!value(id)) errors.push({ field: id, message: message }); }
+      if (!deliveryType) errors.push({ field: 'delivery', message: 'Elegí envío o retiro para continuar.' });
       if (deliveryType === 'pickup' && !isPickupAccepted()) {
-        if (pickupAckErr) {
-          pickupAckErr.textContent = 'Necesitamos que confirmes esto antes de seguir.';
-          pickupAckErr.hidden = false;
-        }
-        if (pickupAck) {
-          pickupAck.setAttribute('aria-invalid', 'true');
-          pickupAck.focus();
-          pickupAck.scrollIntoView({ block: 'center' });
-        }
-        return false;
+        errors.push({ field: 'pickup-ack', message: 'Necesitamos que confirmes esto antes de seguir.' });
       }
-
-      var name  = ((document.getElementById('buyer-name')  || {}).value || '').trim();
-      var phone = ((document.getElementById('buyer-phone') || {}).value || '').trim();
-      var email = ((document.getElementById('buyer-email') || {}).value || '').trim();
-
-      if (!name) {
-        showFieldError('buyer-name', 'Por favor ingresá tu nombre.');
-        return false;
-      }
-      if (!phone) {
-        showFieldError('buyer-phone', 'Por favor ingresá tu teléfono o WhatsApp.');
-        return false;
-      }
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showFieldError('buyer-email', 'Ingresá un correo válido para recibir la confirmación.');
-        return false;
-      }
-
       if (deliveryType === 'shipping') {
-        var address       = ((document.getElementById('delivery-address')     || {}).value || '').trim();
-        var barrio        = ((document.getElementById('delivery-barrio')       || {}).value || '').trim();
-        var departamento  = ((document.getElementById('delivery-departamento') || {}).value || '').trim();
-        if (!address) {
-          showFieldError('delivery-address', 'Por favor ingresá la dirección de entrega.');
-          return false;
-        }
-        if (!barrio) {
-          showFieldError('delivery-barrio', 'Por favor ingresá la localidad.');
-          return false;
-        }
-        if (!departamento) {
-          showFieldError('delivery-departamento', 'Por favor seleccioná el departamento.');
-          return false;
+        missing('delivery-address', 'Por favor ingresá la dirección de entrega.');
+        missing('delivery-barrio', 'Por favor ingresá la localidad.');
+        missing('delivery-departamento', 'Por favor seleccioná el departamento.');
+      }
+      missing('buyer-name', 'Por favor ingresá tu nombre.');
+      if (!window.AmadoContactValidation.validPhone(value('buyer-phone'))) {
+        errors.push({ field: 'buyer-phone', message: 'Ingresá un teléfono o WhatsApp válido. Si es del exterior, agregá el código de país.' });
+      }
+      if (!window.AmadoContactValidation.validEmail(value('buyer-email'))) {
+        errors.push({ field: 'buyer-email', message: 'Ingresá un correo válido para recibir la confirmación.' });
+      }
+      if (includePayment && !getPaymentMethod()) errors.push({ field: 'payment-method', message: 'Elegí cómo querés pagar.' });
+      return errors;
+    }
+
+    function validateCheckoutFields(includePayment = false) {
+      clearFieldErrors();
+      var errors = checkoutFieldErrors(includePayment);
+      errors.forEach(function (error) { showFieldError(error.field, error.message, false); });
+      if (errors.length) {
+        var first = document.getElementById(errors[0].field) ||
+          document.querySelector('input[name="' + errors[0].field + '"]');
+        if (first) {
+          first.setAttribute('aria-invalid', 'true');
+          first.focus();
+          first.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }
-
-      if (!requirePaymentMethod()) return false;
-      return true;
+      return errors.length === 0;
     }
+    window.__amadoCheckoutValidate = validateCheckoutFields;
+
+    function focusFirstMissingRequirement() {
+      return validateCheckoutFields(true);
+    }
+
+    function clearCorrectedFieldErrors() {
+      var invalid = new Set(checkoutFieldErrors(true).map(function (e) { return e.field; }));
+      document.querySelectorAll('.field-error').forEach(function (error) {
+        var id = error.id.replace(/^err-/, '');
+        if (invalid.has(id)) return;
+        error.hidden = true;
+        error.textContent = '';
+        var field = document.getElementById(id);
+        if (field) field.removeAttribute('aria-invalid');
+        document.querySelectorAll('input[name="' + id + '"]').forEach(function (radio) {
+          radio.removeAttribute('aria-invalid');
+        });
+      });
+    }
+    document.querySelectorAll('#checkout-edit-step input, #checkout-edit-step select, #checkout-edit-step textarea').forEach(function (field) {
+      field.addEventListener('input', clearCorrectedFieldErrors);
+      field.addEventListener('change', clearCorrectedFieldErrors);
+    });
 
     // ── Persistencia de la etapa y los datos mínimos ─────────────────────
     // sessionStorage sobrevive a recargas y al salto a WhatsApp, pero
@@ -2316,7 +2331,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
               contenedor.innerHTML = '';
               window.google.accounts.id.renderButton(contenedor, {
                 type: 'standard', theme: 'outline', size: 'large',
-                text: 'continue_with', locale: 'es', width: 260,
+                text: 'continue_with', locale: 'es', width: Math.max(200, Math.min(260, Math.floor(contenedor.getBoundingClientRect().width))),
               });
             }
           })
@@ -3046,7 +3061,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       if (item.original_price && item.original_price > item.price) {
         var promoEl = document.createElement('p');
         promoEl.className = 'cart-item-promo-was';
-        promoEl.style.cssText = 'margin:0;font-size:.82rem;font-weight:700;color:#9a3412';
+
         promoEl.appendChild(document.createTextNode('Precio promocional. Precio habitual: '));
         var wasEl = document.createElement('s');
         wasEl.textContent = fmt.format(item.original_price);
@@ -3235,7 +3250,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       }
       if (cartSummaryCountEl) {
         var totalQty = cart.items.reduce(function (s, it) { return s + (it.quantity || 0); }, 0);
-        cartSummaryCountEl.textContent = String(totalQty);
+        cartSummaryCountEl.textContent = totalQty + (totalQty === 1 ? ' libro' : ' libros');
       }
 
       updateTotals();
@@ -3741,31 +3756,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       var email = ((document.getElementById('buyer-email') || {}).value || '').trim();
 
       clearCheckoutError();
-      clearFieldErrors();
-      if (!deliveryType) { requireDeliveryType(); return null; }
-      if (!name) { showFieldError('buyer-name', 'Por favor ingresá tu nombre.'); return null; }
-      if (!phone) { showFieldError('buyer-phone', 'Por favor ingresá tu teléfono o WhatsApp.'); return null; }
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showFieldError('buyer-email', 'Ingresá un correo válido para recibir la confirmación.');
-        return null;
-      }
-      if (deliveryType === 'shipping') {
-        if (!address) { showFieldError('delivery-address', 'Por favor ingresá la dirección de entrega.'); return null; }
-        if (!locality) { showFieldError('delivery-barrio', 'Por favor ingresá la localidad.'); return null; }
-        if (!department) { showFieldError('delivery-departamento', 'Por favor seleccioná el departamento.'); return null; }
-      }
-      if (deliveryType === 'pickup' && !isPickupAccepted()) {
-        if (pickupAckErr) {
-          pickupAckErr.textContent = 'Necesitamos que confirmes esto antes de seguir.';
-          pickupAckErr.hidden = false;
-        }
-        if (pickupAck) {
-          pickupAck.setAttribute('aria-invalid', 'true');
-          pickupAck.focus();
-          pickupAck.scrollIntoView({ block: 'center' });
-        }
-        return null;
-      }
+      if (!validateCheckoutFields()) return null;
 
       btnTransfer.disabled = true;
       btnTransfer.setAttribute('aria-busy', 'true');
@@ -3938,30 +3929,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
         var prepPhone    = ((document.getElementById('buyer-phone')           || {}).value || '').trim();
         var prepEmail    = ((document.getElementById('buyer-email')           || {}).value || '').trim();
 
-        if (!deliveryType) {
-          requireDeliveryType();
-          return;
-        }
-
-        // Primer campo inválido gana — mismo orden que antes, ahora con
-        // error inline debajo del campo en vez de un alert() bloqueante.
-        if (!prepName) {
-          showFieldError('buyer-name', 'Por favor ingresá tu nombre.');
-          return;
-        }
-        if (!prepPhone) {
-          showFieldError('buyer-phone', 'Por favor ingresá tu teléfono o WhatsApp.');
-          return;
-        }
-        if (!prepEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(prepEmail)) {
-          showFieldError('buyer-email', 'Ingresá un correo válido para recibir la confirmación.');
-          return;
-        }
-        if (deliveryType === 'shipping') {
-          if (!prepAddress) { showFieldError('delivery-address', 'Por favor ingresá la dirección de entrega.'); return; }
-          if (!prepBarrio)  { showFieldError('delivery-barrio', 'Por favor ingresá la localidad.'); return; }
-          if (!prepDepto)   { showFieldError('delivery-departamento', 'Por favor seleccioná el departamento.'); return; }
-        }
+        if (!validateCheckoutFields()) return;
 
         btnPrepare.disabled = true;
         btnPrepare.setAttribute('aria-busy', 'true');

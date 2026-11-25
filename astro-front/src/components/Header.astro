@@ -189,6 +189,10 @@ const nav = [
   .site-nav-link[aria-current='page'] { background: #1b1714; border-color: #1b1714; color: #fff8f0; }
   .site-nav-link.is-highlight { color: #b4442a; }
 
+  @media (max-width: 767px), (max-height: 600px) {
+    .site-header { position: relative; }
+  }
+
   @media (min-width: 768px) {
     .header-inner { padding: 0.6rem 1.5rem 0.35rem; }
     .brand-logo { height: 48px; }

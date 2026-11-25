@@ -163,8 +163,9 @@ const jsonLd = {
         <div class="field field-wide">
           <label for="reply-contact">Tu correo o WhatsApp</label>
           <input id="reply-contact" name="reply_contact" type="text" required maxlength="254"
-            autocomplete="email" placeholder="tu@email.com o 099 123 456" aria-describedby="contact-help">
+            autocomplete="email" placeholder="tu@email.com o 099 123 456" aria-describedby="contact-help contact-error">
           <small id="contact-help">Lo usamos para responderte sobre esta búsqueda.</small>
+          <small id="contact-error" class="contact-error" role="alert" hidden></small>
         </div>
 
         <div class="form-actions field-wide">
@@ -191,6 +192,7 @@ const jsonLd = {
 </BaseLayout>
 
 <script>
+  import { contactValidation } from '../../../shared/contact-validation.js';
   const WA_NUMBER = '59899841325';
   const typeLabels = {
     exacto: 'Título, autor o ISBN concreto',
@@ -266,6 +268,25 @@ const jsonLd = {
 
   const submitButton = document.getElementById('request-submit');
   let submitting = false;
+  const contactField = document.getElementById('reply-contact');
+  const contactError = document.getElementById('contact-error');
+  function validateContact(showError = true) {
+    const valid = contactValidation.replyContact(contactField?.value || '');
+    const message = valid ? '' : 'Dejanos un correo o un WhatsApp válido para poder responderte.';
+    if (contactField) {
+      contactField.setCustomValidity(message);
+      if (valid) contactField.removeAttribute('aria-invalid');
+      else if (showError) contactField.setAttribute('aria-invalid', 'true');
+    }
+    if (contactError && (showError || valid)) {
+      contactError.textContent = message;
+      contactError.hidden = Boolean(valid);
+    }
+    return Boolean(valid);
+  }
+  contactField?.addEventListener('input', () => validateContact(contactField.hasAttribute('aria-invalid')));
+  contactField?.addEventListener('blur', () => { if (contactField.value.trim()) validateContact(); });
+  contactField?.addEventListener('invalid', () => validateContact());
 
   // La conversión requiere registro y aviso al equipo confirmados.
   // Un error queda visible y ofrece WhatsApp sin sacar al cliente de la web.
@@ -308,6 +329,7 @@ const jsonLd = {
 
   form.addEventListener('submit', async event => {
     event.preventDefault();
+    if (!validateContact()) { contactField?.focus(); contactField?.reportValidity(); return; }
     if (!form.reportValidity() || submitting) return;
     submitting = true;
     if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Registrando tu pedido…'; }
@@ -375,6 +397,9 @@ const jsonLd = {
 </script>
 
 <style>
+  .contact-error { color: #a52a20; font-weight: 600; }
+  .contact-error[hidden] { display: none; }
+  #reply-contact[aria-invalid="true"] { border-color: #a52a20; }
   .request-options { border: 1px solid var(--border, #d8d1c7); border-radius: 12px; padding: .9rem 1rem; }
   .request-options summary { cursor: pointer; font-weight: 700; min-height: 28px; padding: .25rem 0; }
   .request-options summary:focus-visible { outline: 3px solid #b4442a; outline-offset: 4px; }

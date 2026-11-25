@@ -4,6 +4,7 @@
  * El contacto no se incluye en analítica, respuestas públicas ni logs.
  */
 import { notifyBookRequest } from './_book_request_email.js';
+import { contactValidation } from '../../shared/contact-validation.js';
 
 export const MAX_BODY_BYTES = 8 * 1024;
 export const RATE_LIMIT = Object.freeze({ max: 5, windowMinutes: 10 });
@@ -44,12 +45,7 @@ CREATE TABLE IF NOT EXISTS book_request_contacts (
 )`;
 
 export function normalizeReplyContact(value) {
-    const raw = typeof value === 'string' ? value.trim() : '';
-    if (!raw || raw.length > 254 || /[\r\n]/.test(raw)) return null;
-    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) return { type: 'email', value: raw.toLowerCase() };
-    const digits = raw.replace(/[\s()+.-]/g, '');
-    if (/^[+\d\s().-]+$/.test(raw) && /^\d{8,15}$/.test(digits)) return { type: 'whatsapp', value: raw };
-    return null;
+    return contactValidation.replyContact(value);
 }
 
 function json(data, status = 200, extra = {}) {
