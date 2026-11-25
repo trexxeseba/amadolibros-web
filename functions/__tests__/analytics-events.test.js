@@ -21,7 +21,7 @@ test('el evento cubre enlaces y aperturas programáticas de WhatsApp', () => {
   assert.match(analytics, /'wa\.me'/);
   assert.match(analytics, /'api\.whatsapp\.com'/);
   assert.match(analytics, /'web\.whatsapp\.com'/);
-  assert.match(bookRequest, /trackWhatsApp\(\{[\s\S]*book_request_form/);
+  assert.match(bookRequest, /id="request-wa"[\s\S]*?data-cta-location="book_request_form"/);
   assert.match(cart, /trackWhatsApp\(\{ ctaLocation: 'checkout_order' \}\)/);
   assert.match(searchOverlay, /trackWhatsApp\(\{ ctaLocation: 'search_overlay' \}\)/);
 });
