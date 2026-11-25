@@ -226,16 +226,25 @@ async function cambiarPrecio() {
   let r;
   try { r = await ml.put(`/seller-promotions/items/${ITEM}?${V2}`, body); }
   catch (e) { return fallo("put_fallo", { detalle: detalleError(e), body, antes: ev.antes }); }
-  await sleep(8000);
-  const despues = entradaEnPromo(await leerPromosItem(ITEM), promo);
-  const venta2 = await leerSalePrice(ITEM);
-  const check = verificarPostEscritura(venta2 ?? {});
-  const coincide = Number(despues?.price) === ev.despues;
-  imprimir("verificacion", { respuesta: elegir(r ?? {}, ["id", "status", "price", "original_price", "message"]), entrada: resumenEntrada(despues), relectura: check, coincide });
-  if (!coincide || !check.ok) {
-    let volver; try { volver = await ml.put(`/seller-promotions/items/${ITEM}?${V2}`, cuerpoPost(promo, ev.antes, entrada)); } catch (e) { volver = { error: detalleError(e) }; }
-    return fallo("verificacion_fallo_se_volvio_al_anterior", { antes: ev.antes, intentado: ev.despues, volver });
+  // Mercado Libre tarda en reflejar el cambio: se relee hasta 4 veces antes de juzgar.
+  let despues = null, venta2 = null, coincide = false;
+  for (const ms of [8000, 12000, 20000, 30000]) {
+    await sleep(ms);
+    despues = entradaEnPromo(await leerPromosItem(ITEM), promo);
+    coincide = Number(despues?.price) === ev.despues;
+    if (coincide) break;
   }
+  venta2 = await leerSalePrice(ITEM);
+  const check = verificarPostEscritura(venta2 ?? {});
+  imprimir("verificacion", { respuesta: elegir(r ?? {}, ["id", "status", "price", "original_price", "message"]), entrada: resumenEntrada(despues), relectura: check, coincide });
+  // Dentro de una promo Mercado Libre no deja subir el precio (NEW_FINAL_PRICE_GREATER_THAN_CURRENT,
+  // observado el 24/11/2026): no se intenta volver con PUT. Si el visible pasa del tope se saca el
+  // título de la promo; si la lectura no coincide se avisa con el precio anterior para deshacer a mano.
+  if (!check.ok) {
+    let del; try { del = await ml.delete(`/seller-promotions/items/${ITEM}?promotion_type=${encodeURIComponent(promo.type)}&promotion_id=${encodeURIComponent(promo.id)}&${V2}`); } catch (e) { del = { error: detalleError(e) }; }
+    return fallo("visible_alto_se_saco_de_la_promo", { antes: ev.antes, intentado: ev.despues, relectura: check, delete: elegir(del ?? {}, ["status", "message", "error"]) });
+  }
+  if (!coincide) return fallo("relectura_no_coincide", { antes: ev.antes, intentado: ev.despues, leido: despues?.price ?? null });
   resumen(`| ${ITEM} | ${texto(f.item?.title ?? "")} | antes ${ev.antes} | despues ${ev.despues} | ${ev.pct}% |`);
   imprimir("resultado", { ok: true, modo, accion: ACCION, item: ITEM, antes: ev.antes, despues: ev.despues, pct: ev.pct });
 }
