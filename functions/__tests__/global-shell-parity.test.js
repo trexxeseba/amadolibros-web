@@ -175,8 +175,8 @@ test('15. el logo de la ficha existe, es el webp y tiene alt', () => {
 
 // ── 5. WhatsApp flotante ────────────────────────────────────────────────────
 
-test('16. la ficha incluye la burbuja flotante con mensaje contextual', () => {
-    assert.match(FICHA, /\$\{waFloatHtml\(waMessage, canonicalUrl\)\}/);
+test('16. la ficha reserva la burbuja para consultas por encargo', () => {
+    assert.match(FICHA, /\$\{sellableInCheckout \? '' : waFloatHtml\(waMessage, canonicalUrl\)\}/);
 });
 
 test('17. el mensaje del flotante viaja codificado', () => {
@@ -195,8 +195,8 @@ test('18. el flotante es accesible y respeta el safe area', () => {
 });
 
 test('19. el CTA de WhatsApp dentro de la ficha sigue existiendo', () => {
-    // El flotante no reemplaza al CTA in-page: conviven.
-    assert.match(FICHA, /Consultar por WhatsApp|Pedir este libro/);
+    // La ayuda junto al carrito permanece aunque se evite duplicar la burbuja.
+    assert.match(FICHA, /Consultar sobre el libro o la entrega/);
 });
 
 test('20. waHref siempre codifica el mensaje', () => {

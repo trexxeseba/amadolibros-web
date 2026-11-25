@@ -230,7 +230,7 @@ test('la home V2 ofrece consulta rápida y el hub mantiene la landing informativ
 
   assert.match(home, /<HomeV2Hero \/>/);
   assert.match(home, /<HomeV2Ideas \/>/);
-  assert.match(hero, /href="\/libros-agotados-importados-uruguay#consulta"/);
+  assert.match(hero, /href="\/pedir-libro\/\?tipo=exacto"/);
   assert.match(ideas, /href="\/pedir-libro\/\?tipo=exacto"/);
   assert.match(ideas, /La disponibilidad, el precio y el plazo se confirman/i);
   assert.match(hub, /href="\/libros-agotados-importados-uruguay"/);

@@ -33,7 +33,7 @@ test('el primer pantallazo comunica búsqueda por encargo y revisión humana', (
   assert.match(heroAstro, /una persona revisa opciones y lo busca por encargo/);
   assert.match(heroAstro, /Título, autor o ISBN/);
   assert.match(heroAstro, /Pedir un libro/);
-  assert.match(heroAstro, /href="\/libros-agotados-importados-uruguay#consulta"/);
+  assert.match(heroAstro, /href="\/pedir-libro\/\?tipo=exacto"/);
   assert.doesNotMatch(heroAstro, /búsqueda humana/i);
 });
 
@@ -50,7 +50,7 @@ test('el recorrido posterior combina temas, tapas grandes, contenido y confianza
   assert.match(topicsAstro, /Todo empieza por una curiosidad\./);
   assert.match(topicsAstro, /Literatura y ficción/);
   assert.match(topicsAstro, /Desarrollo personal/);
-  assert.match(topicsAstro, /href="\/libros-agotados-importados-uruguay">Pedir una búsqueda/);
+  assert.match(topicsAstro, /href="\/pedir-libro\/\?tipo=exacto">Pedir una búsqueda/);
   assert.match(topicsAstro, /href="\/temas">Ver todos los temas/);
   assert.match(shelfAstro, /Libros disponibles para comprar\./);
   assert.match(shelfAstro, /responsiveBookCover/);

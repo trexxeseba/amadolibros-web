@@ -1,5 +1,6 @@
 ---
 import fs from 'node:fs';
+import { selectDistinctHomeBooks } from '../../../shared/home-selection.js';
 import { googleRatingHtml } from '../../../shared/google-reviews.js';
 import path from 'node:path';
 import { responsiveBookCover } from '../lib/cloudflare-images.js';
@@ -19,10 +20,10 @@ let books: Book[] = [];
 try {
   const raw = fs.readFileSync(HOME_JSON, 'utf-8');
   const data = JSON.parse(raw) as { items?: Book[] };
-  books = (data.items || [])
+  books = selectDistinctHomeBooks((data.items || [])
     .filter(book => /^MLU\d+$/.test(book.id || ''))
     .filter(book => book.status === 'active' && Number(book.available_quantity || 0) > 0)
-    .slice(0, 3);
+    , 3);
 } catch (error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   console.warn('[HomeV2Hero] home.json no disponible:', message);
@@ -72,7 +73,7 @@ const heroBooks = books.map((book, index) => ({
 
       <div class="v2-shopping-paths">
         <a href="/catalogo?disponibilidad=disponibles">Ver libros disponibles</a>
-        <a href="/libros-agotados-importados-uruguay#consulta">Pedir un libro</a>
+        <a href="/pedir-libro/?tipo=exacto">Pedir un libro</a>
       </div>
 
       <ul class="v2-trust" aria-label="Señales de confianza">

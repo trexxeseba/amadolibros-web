@@ -72,12 +72,12 @@ export function buildBookWhatsAppMessage({
   const motive = unsupportedCurrency
     ? 'Consultar precio y forma de pago'
     : available
-      ? 'Consultar disponibilidad y precio'
+      ? 'Consulta sobre el libro o la entrega'
       : 'Consultar disponibilidad y precio';
   const closing = unsupportedCurrency
     ? 'Quisiera confirmar el precio en pesos uruguayos y la forma de pago. Gracias.'
     : available
-      ? 'Quisiera confirmar si está disponible y cómo sería la entrega. Gracias.'
+      ? 'Tengo una consulta sobre este libro o la entrega antes de comprar. Gracias.'
       : 'Quisiera saber si pueden conseguirlo y cuánto demoraría. Gracias.';
 
   return buildWhatsAppMessage({
