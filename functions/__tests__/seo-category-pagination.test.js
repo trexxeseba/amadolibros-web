@@ -139,3 +139,30 @@ test('10. preview conserva navegación relativa y permanece noindex', async () =
   assert.match(html, /href="https:\/\/preview\.example\/libro\/MLU\d+\//);
   assert.match(html, /href="\/libros\/psicologia\?page=3"/);
 });
+
+test('disponibilidad filtra la colección antes de paginar y mantiene sus conteos completos', async () => {
+  ITEMS = buildItems().map((item, index) => index < 60 ? item : { ...item, status: 'paused', available_quantity: 0 });
+  const available = await render('?disponibilidad=disponibles');
+  assert.equal(available.response.status, 200);
+  assert.equal(ids(available.html).length, 48);
+  assert.ok(ids(available.html).every(id => Number(id.slice(3)) <= 60));
+  assert.match(available.html, /100 libros<\/strong> en esta colección · 60 disponibles · 40 por encargo/);
+  assert.match(available.html, /Mostrando 1–48 de 60 libros/);
+  assert.match(available.html, /page=2&amp;disponibilidad=disponibles/);
+  assert.match(available.html, /name="disponibilidad" value="disponibles"/);
+  assert.match(available.html, /name="robots" content="noindex, follow"/);
+  const last = await render('?page=2&disponibilidad=disponibles');
+  assert.equal(ids(last.html).length, 12);
+  const requested = await render('?disponibilidad=encargo');
+  assert.equal(ids(requested.html).length, 40);
+  assert.ok(ids(requested.html).every(id => Number(id.slice(3)) > 60));
+  assert.match(requested.html, /disponibilidad=encargo" aria-current="page"/);
+});
+
+test('orden y paginación conservan el filtro sin mezclar estados', async () => {
+  ITEMS = buildItems().map((item, index) => index < 60 ? item : { ...item, status: 'paused', available_quantity: 0 });
+  const { html } = await render('?orden=precio-desc&disponibilidad=disponibles');
+  assert.match(html, /page=2&amp;orden=precio-desc&amp;disponibilidad=disponibles/);
+  assert.equal(ids(html)[0], 'MLU0060');
+  assert.match(html, /orden=precio-desc&amp;disponibilidad=encargo/);
+});

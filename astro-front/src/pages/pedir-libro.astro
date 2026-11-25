@@ -45,7 +45,7 @@ const jsonLd = {
         </p>
         <ul aria-label="Cómo funciona">
           <li><strong>1.</strong> Completás lo que sabés.</li>
-          <li><strong>2.</strong> Se abre WhatsApp con el pedido ordenado.</li>
+          <li><strong>2.</strong> Recibimos tu solicitud y cómo contactarte.</li>
           <li><strong>3.</strong> Nuestro equipo hace la búsqueda y te responde.</li>
         </ul>
       </section>
@@ -155,21 +155,34 @@ const jsonLd = {
         </details>
 
         <p id="photo-note" class="context-note" hidden>
-          Cuando se abra WhatsApp, mandanos la foto de la tapa en el siguiente mensaje.
+          Si tenés una foto de la tapa, podés enviarla por WhatsApp al terminar.
         </p>
 
         <p class="context-note field-wide">Te confirmamos la edición, el estado, el precio y el plazo estimado antes de que decidas reservar.</p>
 
+        <div class="field field-wide">
+          <label for="reply-contact">Tu correo o WhatsApp</label>
+          <input id="reply-contact" name="reply_contact" type="text" required maxlength="254"
+            autocomplete="email" placeholder="tu@email.com o 099 123 456" aria-describedby="contact-help">
+          <small id="contact-help">Lo usamos para responderte sobre esta búsqueda.</small>
+        </div>
+
         <div class="form-actions field-wide">
           <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp-field">
-          <button type="submit" id="request-submit">Enviar pedido por WhatsApp</button>
+          <button type="submit" id="request-submit">Enviar solicitud</button>
           <a id="catalog-search-link" href="/catalogo">Buscar primero en el catálogo</a>
         </div>
 
         <p class="privacy-note field-wide">
-          Guardamos el pedido con un código para seguirlo, sin pedirte datos personales. Al continuar se abre WhatsApp con la información ordenada para que podamos buscarlo.
+          Guardamos el pedido con un código y tu contacto para responder esta consulta. No necesitás abrir WhatsApp para enviarlo. <a href="/privacidad/">Cómo cuidamos tus datos</a>.
         </p>
       </form>
+      <section id="request-result" class="request-result" role="status" aria-live="polite" tabindex="-1" hidden>
+        <p id="request-result-message"></p>
+        <a id="request-wa" href="https://wa.me/59899841325" target="_blank" rel="noopener noreferrer"
+          data-cta-location="book_request_form">Si preferís, continuar por WhatsApp</a>
+        <a id="request-another" href="/pedir-libro/" hidden>Hacer otra consulta</a>
+      </section>
       <Fragment set:html={purchaseTrustHtml()} />
     </div>
   </main>
@@ -254,13 +267,11 @@ const jsonLd = {
   const submitButton = document.getElementById('request-submit');
   let submitting = false;
 
-  // PEDIDO-LIBRO-1: el pedido se registra primero en el servidor. Solo con la
-  // confirmación (201) se dispara book_request_submitted, la conversión que
-  // importa Google Ads. Si el registro falla, el cliente igual sigue a
-  // WhatsApp, sin contar la conversión.
+  // La conversión requiere registro y aviso al equipo confirmados.
+  // Un error queda visible y ofrece WhatsApp sin sacar al cliente de la web.
   async function registerRequest(payload) {
     const controller = typeof AbortController === 'function' ? new AbortController() : null;
-    const timer = controller ? setTimeout(() => controller.abort(), 4000) : null;
+    const timer = controller ? setTimeout(() => controller.abort(), 15000) : null;
     try {
       const response = await fetch('/api/book-request', {
         method: 'POST',
@@ -269,11 +280,13 @@ const jsonLd = {
         signal: controller?.signal,
       });
       const data = await response.json().catch(() => null);
-      return response.status === 201 && data?.received === true && typeof data.request_code === 'string'
-        ? data.request_code
-        : '';
+      return {
+        confirmed: response.status === 201 && data?.received === true && data?.notification_sent === true,
+        code: typeof data?.request_code === 'string' ? data.request_code : '',
+        error: typeof data?.error === 'string' ? data.error : 'No pudimos confirmar el envío. Reintentá o continuá por WhatsApp.',
+      };
     } catch {
-      return '';
+      return { confirmed: false, code: '', error: 'No pudimos confirmar el envío. Reintentá o continuá por WhatsApp.' };
     } finally {
       if (timer) clearTimeout(timer);
     }
@@ -307,8 +320,9 @@ const jsonLd = {
     const budget = String(data.get('budget') || '').trim();
     const details = String(data.get('details') || '').trim();
 
-    const code = await registerRequest({
+    const result = await registerRequest({
       request_type: type,
+      reply_contact: String(data.get('reply_contact') || '').trim(),
       query,
       author_isbn: authorIsbn,
       format: String(data.get('format') || ''),
@@ -319,6 +333,7 @@ const jsonLd = {
       website: String(data.get('website') || ''),
     });
 
+    const code = result.code;
     const lines = [
       'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran.',
       '',
@@ -336,14 +351,24 @@ const jsonLd = {
     if (typeSelect.value === 'tapa') lines.push('Voy a mandar la foto de la tapa en el próximo mensaje.');
     lines.push('', 'Quisiera saber si pueden conseguirlo, el precio y cuánto demoraría. Gracias.');
 
-    if (code) await trackSubmitted(type, code);
-    window.AmadoAnalytics?.trackWhatsApp({
-      ctaLocation: 'book_request_form',
-      topic: type,
-    });
-    window.location.href = wa
+    const resultBox = document.querySelector('#request-result');
+    const resultMessage = document.querySelector('#request-result-message');
+    const assistance = document.querySelector('#request-wa');
+    if (assistance) assistance.href = wa
       ? wa.href(lines.join('\n'))
       : `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`;
+    if (result.confirmed) {
+      if (code) await trackSubmitted(type, code);
+      form.hidden = true;
+      if (resultMessage) resultMessage.textContent = `Recibimos tu solicitud. Código: ${code}. El equipo te responderá al contacto que indicaste para confirmar opciones, precio y plazo.`;
+      const another = document.querySelector('#request-another');
+      if (another) another.hidden = false;
+    } else {
+      if (resultMessage) resultMessage.textContent = `${result.error}${code ? ' Código: ' + code + '.' : ''}`;
+      submitting = false;
+      if (submitButton) { submitButton.disabled = false; submitButton.textContent = 'Enviar solicitud'; }
+    }
+    if (resultBox) { resultBox.hidden = false; resultBox.focus(); }
   });
 
   updateContext();
@@ -541,11 +566,17 @@ const jsonLd = {
 
   .form-actions button {
     border: 0;
-    background: var(--wa);
-    color: #102516;
+    background: #b4442a;
+    color: #fff;
   }
 
-  .form-actions button:hover { background: var(--wa-hover); }
+  .form-actions button:hover { background: #963820; }
+  .form-actions button:disabled { opacity: .65; cursor: wait; }
+  .request-form[hidden], .request-result[hidden] { display: none; }
+  .request-result { margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--border); border-radius: .8rem; background: #fff; }
+  .request-result p { margin-bottom: .6rem; }
+  .request-result a { display: inline-flex; align-items: center; min-height: 44px; margin-right: 1rem; }
+  .request-result a[hidden] { display: none; }
 
   .form-actions a {
     border: 1px solid var(--border);
