@@ -17,6 +17,7 @@ import { findPreviewCover } from '../_shared/preview-cover.js';
  */
 
 import { slugify } from '../_shared/slug.js';
+import { buscarReemplazo, fichaRetiradaResponse, librosParecidos } from '../_shared/ficha-retirada.js';
 import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_FONTS_HEAD } from '../_shared/site-header.js';
 // FICHAS-QUALITY-GUARD-1: fuente única sobre autoría genérica/ausente.
 import { isGenericAuthor, realAuthor, stripGenericAuthorMention } from '../_shared/generic-author.js';
@@ -58,6 +59,8 @@ import {
 } from '../../shared/whatsapp-messages.js';
 import { isPausedProductInSeoCohort } from '../_shared/paused-seo-cohort.js';
 import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../../shared/delivery-badge.js';
+import { googleReviewsHtml } from '../../shared/google-reviews.js';
+import { pruebaSocialHtml } from '../../shared/prueba-social.js';
 
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
 
@@ -709,6 +712,17 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       <span>Podemos intentar conseguirlo por encargo. Consultanos y verificamos disponibilidad, edición y precio.</span>
     </div>`;
 
+    const trustHtml = inStock ? `<section class="trust-box" aria-label="Comprá con confianza">
+      <h2>Comprá con tranquilidad</h2>
+      <ul>
+        <li>Pago protegido con Mercado Pago</li>
+        <li>Somos Mercado Líder en Mercado Libre Uruguay</li>
+        <li>Retiro coordinado en Ciudad Vieja, con confirmación por WhatsApp (<a href="/contacto/">ver cómo llegar</a>)</li>
+        <li>Si no te convence, tenés 5 días hábiles para devolverlo (<a href="/devoluciones/">ver devoluciones</a>)</li>
+        <li>Te contestamos por WhatsApp y armamos el pedido con vos</li>
+      </ul>
+    </section>` : '';
+
     const actionHtml = sellableInCheckout
         ? `<button
         type="button"
@@ -961,6 +975,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .editorial-decision{margin-top:1rem;padding-top:.15rem;border-top:1px solid #e2e8f0}
     .editorial-links{display:flex;flex-wrap:wrap;gap:.65rem 1rem;margin-top:1rem}
     .editorial-links a{font-size:.86rem;font-weight:700;color:#9a3412}
+    .trust-box{margin-top:1rem;padding:.85rem 1rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:.5rem}
+    .trust-box h2{font-size:.9rem;line-height:1.3;color:#0f172a;margin-bottom:.45rem}
+    .trust-box ul{list-style:none;padding:0;margin:0;display:grid;gap:.4rem}
+    .trust-box li{font-size:.84rem;color:#334155;padding-left:1.25rem;position:relative}
+    .trust-box li::before{content:"\\2713";position:absolute;left:0;color:#15803d;font-weight:700}
+    .trust-box a{color:#9a3412;font-weight:600}
     .shipping{font-size:.82rem;color:#64748b;margin-top:1rem;padding:.75rem 1rem;
               background:white;border:1px solid #e2e8f0;border-radius:.5rem}
     .seo-opportunity{margin-top:1rem;padding:1rem;background:#fff7ed;
@@ -1008,6 +1028,8 @@ ${siteHeaderHtml()}
     <div class="cta">
       ${actionHtml}
     </div>
+    ${trustHtml}
+    ${inStock ? googleReviewsHtml({ limit: 3, seed: item.id, columns: 1, title: 'Lo que cuentan quienes ya compraron' }) : ''}
     ${editorialHtml}
     ${!inStock ? moreDetailsHtml : ''}
     ${seoOpportunityHtml}
@@ -1124,7 +1146,7 @@ ${!inStock && waitlistSiteKey ? `
     }
   });
 }());<\/script>` : ''}
-
+${pruebaSocialHtml()}
 </body>
 </html>`;
 }
@@ -1205,7 +1227,21 @@ export async function onRequest(context) {
             headers: { 'content-type': 'text/plain;charset=UTF-8' },
         });
     }
-    if (!item) return notFound();
+    if (!item) {
+        // Publicación finalizada: ni activa ni pausada. Si el mismo libro tiene
+        // otra publicación activa, se redirige; si no, ficha de "se agotó".
+        const items = activeCatalogAvailable ? catalog.items : [];
+        const reemplazo = providedSlug ? buscarReemplazo(items, providedSlug, id) : null;
+        if (reemplazo) {
+            const destination = new URL(`/libro/${reemplazo.id}/${slugify(reemplazo.title)}`, BASE);
+            return Response.redirect(destination.toString(), 301);
+        }
+        return fichaRetiradaResponse({
+            slug: providedSlug,
+            parecidos: providedSlug ? librosParecidos(items, providedSlug) : [],
+            useCloudflareImages: context.env?.APP_ENV === 'production',
+        });
+    }
 
     // El enriquecimiento sólo agrega datos bibliográficos verificados. El
     // título permanece intacto, por lo que el slug/canonical conserva la URL

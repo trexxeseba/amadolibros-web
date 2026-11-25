@@ -193,7 +193,9 @@ async function withCatalog(run) {
   try { return await run(); } finally { globalThis.fetch = original; globalThis.caches = originalCaches; }
 }
 
-test('el tablero muestra ventas ML, Vintage, búsquedas escapadas y el aviso de WhatsApp con stock', async () => {
+test('el tablero muestra ventas ML, Vintage, búsquedas escapadas y el aviso de WhatsApp con stock', async (t) => {
+  // Las ventas de prueba son de octubre de 2026 y el tablero mira los últimos 30 días: sin fijar la fecha, la prueba se rompía sola al pasar el mes (21/11/2026).
+  t.mock.method(Date, 'now', () => NOW);
   const db = seed();
   const html = await withCatalog(async () => (await onRequest({
     request: new Request('https://www.amadolibros.com/panel', { headers: { cookie: await cookie() } }),

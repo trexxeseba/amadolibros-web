@@ -25,9 +25,9 @@ on:
   workflow_dispatch:
     inputs:
       accion:
-        description: 'correr = corrida normal (con auditoría) · auditar = sólo la auditoría, no cambia nada · restaurar = volver al precio original (todo, o sólo los IDs de abajo) · ventas = cruce de ventas, sólo lee · baratos = libros que ganamos muy por debajo del competidor, sólo lee · subir = aplica la lista de subidas aprobada por Seba (con prueba=true sólo lista)'
+        description: 'correr = corrida normal (con auditoría) · auditar = sólo la auditoría, no cambia nada · restaurar = volver al precio original (todo, o sólo los IDs de abajo) · ventas = cruce de ventas, sólo lee · baratos = libros que ganamos muy por debajo del competidor, sólo lee · subir = aplica la lista de subidas aprobada por Seba (con prueba=true sólo lista) · inmediatos = libros más caros que un vendedor con entrega inmediata, sólo lee · cotizar = cotiza una muestra de Vintage con el cotizador (costo y margen), sólo lee · cotizar_todas = cotiza todas las que pierden la ficha, con el perfil de los rivales, sólo lee · sombra = modo sombra de Vintage sobre la última corrida (regla 18 % vs $400 con frenos), sólo lee'
         type: choice
-        options: [correr, auditar, restaurar, diagnosticar, ventas, baratos, subir]
+        options: [correr, auditar, restaurar, diagnosticar, ventas, baratos, subir, inmediatos, cotizar, cotizar_todas, sombra]
         default: correr
       max_marcadas:
         description: 'Cortar al encontrar N marcadas (vacío = todas)'
@@ -108,6 +108,8 @@ jobs:
       ESTADO_RAMA: estado/precio-ganador
       ESTADO_REPO: trexxeseba/amadolibros-privado
       ESTADO_TOKEN: ${{ secrets.ESTADO_TOKEN }}
+      # Costos de proveedores fuera de SBS (Arnoia y Celesa), bajados del portal: rama del repo privado.
+      COSTOS_RAMA: claude/project-thread-70ptmn
     steps:
       - uses: actions/checkout@v4
         with:
@@ -144,6 +146,16 @@ jobs:
             echo "No se pudo consultar la rama de estado"; exit 1
           fi
           mkdir -p estado/state
+          # Costos de Arnoia y Celesa para el cotizador (sólo lectura), fuera de estado/ para no copiarlos a la
+          # rama de estado. Si no se pueden traer, se cotiza sin ellos.
+          mkdir -p costos-proveedores
+          if git fetch -q privado "$COSTOS_RAMA" 2>/dev/null; then
+            for p in arnoia celesa; do
+              git show FETCH_HEAD:costos/$p.json > costos-proveedores/$p.json 2>/dev/null && echo "Costos de $p: $(wc -c < costos-proveedores/$p.json) bytes" || rm -f costos-proveedores/$p.json
+            done
+          else echo "Sin rama de costos: se cotiza sin Arnoia"; fi
+          # Qué publicación de catálogo es de Arnoia (EAN por item_id): rama hermes-datos de este repo.
+          git fetch -q --depth=1 origin hermes-datos 2>/dev/null && git show FETCH_HEAD:publicadas-vintage.json > costos-proveedores/publicadas-vintage.json 2>/dev/null || rm -f costos-proveedores/publicadas-vintage.json
 
       - name: Correr
         id: correr
@@ -182,6 +194,22 @@ jobs:
             node precio-ganador/src/baratos.mjs --cuenta "$CUENTA" --salida estado/ultima
             exit $?
           fi
+          if [ "$IN_ACCION" = "cotizar_todas" ]; then
+            node precio-ganador/src/cotizar.mjs --cuenta "$CUENTA" --estado estado/state --salida "estado/pruebas/$GITHUB_RUN_ID" --todas --filas estado/ultima/vintage-filas.json --costos costos-proveedores
+            exit $?
+          fi
+          if [ "$IN_ACCION" = "cotizar" ]; then
+            node precio-ganador/src/cotizar.mjs --cuenta "$CUENTA" --estado estado/state --salida "estado/pruebas/$GITHUB_RUN_ID" --muestra 10 --costos costos-proveedores
+            exit $?
+          fi
+          if [ "$IN_ACCION" = "sombra" ]; then
+            node precio-ganador/src/sombra.mjs --filas estado/ultima/vintage-filas.json --estado estado/state --salida estado/sombra
+            exit $?
+          fi
+          if [ "$IN_ACCION" = "inmediatos" ]; then
+            node precio-ganador/src/inmediatos.mjs --cuenta "$CUENTA" --salida "estado/pruebas/$GITHUB_RUN_ID"
+            exit $?
+          fi
           if [ "$EVENTO" = "push" ] || [ "$REAL" = "no" ]; then SALIDA="estado/pruebas/$GITHUB_RUN_ID"; else SALIDA="estado/ultima"; fi
           echo "salida=$SALIDA" >> "$GITHUB_OUTPUT"
           if [ "$IN_ACCION" = "auditar" ]; then echo "Sólo auditoría"; exit 0; fi
@@ -194,12 +222,22 @@ jobs:
       # todas las que el sistema bajó y la regla recalculada sobre las marcadas.
       # Si encuentra una discrepancia, el workflow falla y GitHub manda el mail.
       - name: Auditoría
-        if: success() && inputs.accion != 'restaurar' && inputs.accion != 'diagnosticar' && inputs.accion != 'ventas' && inputs.accion != 'baratos' && inputs.accion != 'subir'
+        if: success() && inputs.accion != 'restaurar' && inputs.accion != 'diagnosticar' && inputs.accion != 'ventas' && inputs.accion != 'baratos' && inputs.accion != 'subir' && inputs.accion != 'inmediatos' && inputs.accion != 'cotizar' && inputs.accion != 'cotizar_todas' && inputs.accion != 'sombra'
         shell: bash
         env:
           CUENTA: ${{ matrix.cuenta }}
           SALIDA: ${{ steps.correr.outputs.salida }}
         run: node precio-ganador/src/auditoria.mjs --cuenta "$CUENTA" --estado estado/state --salida "$SALIDA" --muestra 10
+
+      # Modo sombra de Vintage (Seba, 21/11/2026): después de cada corrida real, calcula sin
+      # escribir precios qué haría la regla "queda >= 18 % sobre costo" frente a la actual, con los
+      # frenos de edición, 2 corridas seguidas y una bajada por día. Sólo lee; si falla, la corrida
+      # sigue siendo válida (no frena el guardado del estado ni dispara la alarma).
+      - name: Modo sombra (Vintage, sólo lee)
+        if: success() && matrix.cuenta == 'vintage' && steps.correr.outputs.salida == 'estado/ultima'
+        continue-on-error: true
+        timeout-minutes: 30
+        run: node precio-ganador/src/sombra.mjs --filas estado/ultima/vintage-filas.json --estado estado/state --salida estado/sombra
 
       # Siempre, aunque la corrida haya fallado a mitad: lo que se alcanzó a bajar
       # ya está en state/ y tiene que quedar guardado para poder revertirlo.

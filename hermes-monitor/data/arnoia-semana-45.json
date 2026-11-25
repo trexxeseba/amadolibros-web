@@ -1,0 +1,3562 @@
+{
+"origen": "Arnoia semana 45/2026",
+"cotizacion": "BROU venta 18/11/2026: euro 46,99 y dólar 41,80",
+"plazo_dias": 20,
+"libros": [
+{
+"ean": "9788408328834",
+"titulo": "HORA ANTES DEL ALBA, LA (PREMIO PLANETA 2026)",
+"autor": "ALLENDE, ISABEL",
+"editorial": "PLANETA",
+"precio": 2630,
+"unidades": 21414,
+"peso_g": 500
+},
+{
+"ean": "9788423370504",
+"titulo": "VALLES TRANQUILOS, LOS: TODAS LAS NOCHES, TODAS LAS CIUDADES",
+"autor": "REDONDO, DOLORES",
+"editorial": "DESTINO",
+"precio": 2670,
+"unidades": 7569,
+"peso_g": 500
+},
+{
+"ean": "9791387869380",
+"titulo": "MURDOKU: 80 ACERTIJOS DE LOGICA Y ASESINATOS",
+"autor": "GARAND, MANUEL",
+"editorial": "TEMAS DE HOY",
+"precio": 2080,
+"unidades": 6098,
+"peso_g": 300
+},
+{
+"ean": "9791387846008",
+"titulo": "HIPOTESIS MAS PELIGROSA, LA",
+"autor": "PEREZ-REVERTE, ARTURO",
+"editorial": "ALFAGUARA",
+"precio": 2630,
+"unidades": 5337,
+"peso_g": 500
+},
+{
+"ean": "9788432251436",
+"titulo": "COSAMALA",
+"autor": "S. PORTERO, ALANA",
+"editorial": "SEIX BARRAL",
+"precio": 2500,
+"unidades": 4329,
+"peso_g": 500
+},
+{
+"ean": "9788467083378",
+"titulo": "TODO BAJO CONTROL, MENOS TU",
+"autor": "MAXWELL, MEGAN",
+"editorial": "ESPASA",
+"precio": 2580,
+"unidades": 4278,
+"peso_g": 500
+},
+{
+"ean": "9788408325338",
+"titulo": "UNA CORTE DE ROSAS Y ESPINAS 06: UNA CORTE DE ARMONIA ROTA. CICLO DE LAS VALQUIRIAS: MOVIMIENTO I",
+"autor": "MAAS, SARAH J.",
+"editorial": "CROSS BOOKS",
+"precio": 2460,
+"unidades": 3736,
+"peso_g": 500
+},
+{
+"ean": "9788408328858",
+"titulo": "AÑORANZA, LA (FINALISTA PREMIO PLANETA 2026)",
+"autor": "HERNANDEZ, SERGIO",
+"editorial": "PLANETA",
+"precio": 2630,
+"unidades": 3695,
+"peso_g": 500
+},
+{
+"ean": "9788466686884",
+"titulo": "ABADIA SIN OJOS, LA",
+"autor": "WILD, JORDI",
+"editorial": "EDICIONES B",
+"precio": 2660,
+"unidades": 2996,
+"peso_g": 500
+},
+{
+"ean": "9788410648371",
+"titulo": "INGENIOSO HIDALGO DON QUIJOTE DE LA MANCHA, EL",
+"autor": "DE CERVANTES, MIGUEL",
+"editorial": "HARPERCOLLINS",
+"precio": 4680,
+"unidades": 2955,
+"peso_g": 1100
+},
+{
+"ean": "9788401033797",
+"titulo": "UNA FAMILIA MODERNA",
+"autor": "NAVARRO, JULIA",
+"editorial": "PLAZA & JANES",
+"precio": 2590,
+"unidades": 2367,
+"peso_g": 500
+},
+{
+"ean": "9791388279119",
+"titulo": "MURDOKU: VIAJE AL PASADO. 80 ACERTIJOS DE LOGICA Y ASESINATOS",
+"autor": "GARAND, MANUEL",
+"editorial": "TEMAS DE HOY",
+"precio": 2090,
+"unidades": 2317,
+"peso_g": 300
+},
+{
+"ean": "9791388153068",
+"titulo": "COMO GANAR A LOS FACHAS (LEER ANTES DE VOTAR)",
+"autor": "RUFIAN, GABRIEL",
+"editorial": "NOW BOOKS",
+"precio": 2500,
+"unidades": 2206,
+"peso_g": 500
+},
+{
+"ean": "9788408324751",
+"titulo": "HUERFANOS, LOS",
+"autor": "MOLA, CARMEN",
+"editorial": "PLANETA",
+"precio": 2590,
+"unidades": 2162,
+"peso_g": 500
+},
+{
+"ean": "9791388279386",
+"titulo": "MURDOKU: 80 ACERTIJOS DE LOGICA Y ASESINATOS (EDICION ESPECIAL SORTEO)",
+"autor": "GARAND, MANUEL",
+"editorial": "TEMAS DE HOY",
+"precio": 2090,
+"unidades": 1985,
+"peso_g": 300
+},
+{
+"ean": "9788448049591",
+"titulo": "HOMBRE IDEAL, EL (NO HAY QUE CONFIAR EN NADIE. NI SIQUIERA EN UNA MISMA)",
+"autor": "LA VECINA RUBIA",
+"editorial": "CUPULA",
+"precio": 2540,
+"unidades": 1955,
+"peso_g": 500
+},
+{
+"ean": "9788408318125",
+"titulo": "OSITO TITO: CALENDARIO DE ADVIENTO (¡24 MINILIBROS! ¡UNO DETRAS DE CADA VENTANA!)",
+"autor": "DAVIES, BENJI",
+"editorial": "TIMUN MAS INFANTIL",
+"precio": 2590,
+"unidades": 1820,
+"peso_g": 500
+},
+{
+"ean": "9788410138407",
+"titulo": "BIBLIOTECA DE LA MEDIANOCHE, LA (PREMIO GOODREADS 2020 A LA MEJOR OBRA DE FICCION)",
+"autor": "HAIG, MATT",
+"editorial": "ADN EDITORIAL GRUPO ANAYA",
+"precio": 1660,
+"unidades": 1582,
+"peso_g": 200
+},
+{
+"ean": "9788408326595",
+"titulo": "UN HOMBRE DE HONOR",
+"autor": "SANCHEZ-GARNICA, PALOMA",
+"editorial": "PLANETA",
+"precio": 2630,
+"unidades": 1546,
+"peso_g": 500
+},
+{
+"ean": "9788427255951",
+"titulo": "DIARIO DE GREG 21: MONTANDO UN POLLO",
+"autor": "KINNEY, JEFF",
+"editorial": "MOLINO",
+"precio": 2170,
+"unidades": 1510,
+"peso_g": 500
+},
+{
+"ean": "9788433980830",
+"titulo": "GRATITUDES, LAS",
+"autor": "DE VIGAN, DELPHINE",
+"editorial": "ANAGRAMA",
+"precio": 2460,
+"unidades": 1509,
+"peso_g": 500
+},
+{
+"ean": "9791387869458",
+"titulo": "MURDLE: RESUELVE EL CRIMEN: 100 ACERTIJOS ENDIABLADOS PARA SOLUCIONAR USANDO LA LOGICA Y EL PODER DE LA DEDUCCION",
+"autor": "KARBER, G. T.",
+"editorial": "TEMAS DE HOY",
+"precio": 1670,
+"unidades": 1504,
+"peso_g": 300
+},
+{
+"ean": "9798950291197",
+"titulo": "UN ASESINATO POR NAVIDAD: 49 SOSPECHOSOS / 24 DIAS / UN CULPABLE. CALENDARIO DE ADVIENTO",
+"autor": "SANRIG",
+"editorial": "CORAL HORIZON PUBLISHING",
+"precio": 2020,
+"unidades": 1451,
+"peso_g": 300
+},
+{
+"ean": "9791370224936",
+"titulo": "OBJETIU PAU 2º BACHILLERATO: GEOGRAFIA (LLIBRE CONSULTA + QUADERN + LLIBRETA) (PREPARA'T AMB TUTORIA)",
+"autor": "VARIOS AUTORES",
+"editorial": "VICENS VIVES",
+"precio": 3990,
+"unidades": 1372,
+"peso_g": 800
+},
+{
+"ean": "9788410178595",
+"titulo": "COMERAS FLORES",
+"autor": "SOLLA SOBRAL, LUCIA",
+"editorial": "LIBROS DEL ASTEROIDE",
+"precio": 2460,
+"unidades": 1365,
+"peso_g": 500
+},
+{
+"ean": "9791388279409",
+"titulo": "MURDOKU 02: VIAJE AL PASADO: 80 ACERTIJOS DE LOGICA Y ASESINATOS (EDICION ESPECIAL SORTEO)",
+"autor": "GARAND, MANUEL",
+"editorial": "TEMAS DE HOY",
+"precio": 2090,
+"unidades": 1343,
+"peso_g": 300
+},
+{
+"ean": "9788419981400",
+"titulo": "VIDAS CON NOMBRE",
+"autor": "ARIZA, ALMUDENA",
+"editorial": "SALAMANDRA GRAPHIC",
+"precio": 2820,
+"unidades": 1328,
+"peso_g": 350
+},
+{
+"ean": "9791388002045",
+"titulo": "ERASE UNA VEZ UN CORAZON ROTO 03: LA MALDICION DEL AMOR VERDADERO",
+"autor": "GARBER, STEPHANIE",
+"editorial": "PUCK",
+"precio": 2590,
+"unidades": 1325,
+"peso_g": 500
+},
+{
+"ean": "9788408326847",
+"titulo": "DIA DE LA TRILLA, EL: UN DIA LEGENDARIO. EL VINCULO QUE LO CAMBIA TODO. NO MUERAS (EMPIREO)",
+"autor": "YARROS, REBECCA",
+"editorial": "PLANETA",
+"precio": 2580,
+"unidades": 1218,
+"peso_g": 500
+},
+{
+"ean": "9791388154751",
+"titulo": "CONTENTA",
+"autor": "LORENZO, SANTIAGO",
+"editorial": "BLACKIE BOOKS",
+"precio": 2590,
+"unidades": 1198,
+"peso_g": 500
+},
+{
+"ean": "9788408324683",
+"titulo": "CRIMEN ANTES DE NAVIDAD (NOVELA DE ADVIENTO CON VENTANAS EN LAS SOLAPAS)",
+"autor": "CARTER, ALLY",
+"editorial": "CROSS BOOKS",
+"precio": 2500,
+"unidades": 1191,
+"peso_g": 500
+},
+{
+"ean": "9788412763621",
+"titulo": "DORAYAKI",
+"autor": "SUKEGAWA, DURIAN",
+"editorial": "CHAI EDITORA",
+"precio": 2320,
+"unidades": 1190,
+"peso_g": 500
+},
+{
+"ean": "9791387975340",
+"titulo": "UN DIA EN LA VIDA DE CLARITA",
+"autor": "MONTERO, ROSA",
+"editorial": "ALFAGUARA",
+"precio": 2460,
+"unidades": 1173,
+"peso_g": 500
+},
+{
+"ean": "9791388108389",
+"titulo": "SACIAR A LA BESTIA (EDICION ESPECIAL LIMITADA)",
+"autor": "MOLINA, TAMARA",
+"editorial": "FAERIS EDITORIAL",
+"precio": 2630,
+"unidades": 1166,
+"peso_g": 500
+},
+{
+"ean": "9791388279324",
+"titulo": "MERRY MURDLE: 25 CASOS DE LOGICA PARA EL ADVIENTO MAS CRIMINAL",
+"autor": "KARBER, G. T.",
+"editorial": "TEMAS DE HOY",
+"precio": 1670,
+"unidades": 1146,
+"peso_g": 300
+},
+{
+"ean": "9788425432026",
+"titulo": "HOMBRE EN BUSCA DE SENTIDO, EL",
+"autor": "FRANKL, VIKTOR E.",
+"editorial": "HERDER",
+"precio": 1790,
+"unidades": 1145,
+"peso_g": 350
+},
+{
+"ean": "9788466351935",
+"titulo": "PACIENTE SILENCIOSA, LA",
+"autor": "MICHAELIDES, ALEX",
+"editorial": "DEBOLSILLO",
+"precio": 1630,
+"unidades": 1144,
+"peso_g": 200
+},
+{
+"ean": "9798178198513",
+"titulo": "NAVIDAD, SANGRIENTA NAVIDAD",
+"autor": "VERGEL, DANIEL",
+"editorial": "INDEPENDENTLY PUBLISHED",
+"precio": 2010,
+"unidades": 1099,
+"peso_g": 300
+},
+{
+"ean": "9788408326861",
+"titulo": "DIA DE LA TRILLA, EL: UN DIA LEGENDARIO. EL VINCULO QUE LO CAMBIA TODO. NO MUERAS (EMPIREO) (EDICION LIMITADA CON CANTOS TINTADOS)",
+"autor": "YARROS, REBECCA",
+"editorial": "PLANETA",
+"precio": 2580,
+"unidades": 1076,
+"peso_g": 500
+},
+{
+"ean": "9788416588435",
+"titulo": "INVISIBLE",
+"autor": "MORENO, ELOY",
+"editorial": "NUBE DE TINTA",
+"precio": 2040,
+"unidades": 1044,
+"peso_g": 350
+},
+{
+"ean": "9791387740566",
+"titulo": "HOMBRE QUE SOLO ESCRIBIA EN LOS AVIONES, EL",
+"autor": "ALMODOVAR, PEDRO",
+"editorial": "RESERVOIR BOOKS",
+"precio": 2500,
+"unidades": 1004,
+"peso_g": 500
+},
+{
+"ean": "9788466364003",
+"titulo": "SI LO CREES, LO CREAS",
+"autor": "TRACY, BRIAN",
+"editorial": "DEBOLSILLO",
+"precio": 1620,
+"unidades": 1000,
+"peso_g": 200
+},
+{
+"ean": "9791387512446",
+"titulo": "INQUILINA, LA",
+"autor": "MCFADDEN, FREIDA",
+"editorial": "SUMA DE LETRAS",
+"precio": 2500,
+"unidades": 979,
+"peso_g": 500
+},
+{
+"ean": "9791387574819",
+"titulo": "MURCIELAGOS DE LA REPUBLICA (EDICION LUJO)",
+"autor": "DODSON, ZACHARY THOMAS",
+"editorial": "DUOMO",
+"precio": 3810,
+"unidades": 972,
+"peso_g": 800
+},
+{
+"ean": "9791039582131",
+"titulo": "LIBRO DE SONIDOS: MIS PRIMEROS VILLANCICOS (6 MECANISMOS SONOROS) (MUSICA Y VOZ)",
+"autor": "STOYVA, MEI",
+"editorial": "AUZOU",
+"precio": 1710,
+"unidades": 962,
+"peso_g": 350
+},
+{
+"ean": "9788401031380",
+"titulo": "BAJAMAR",
+"autor": "MARTIN, IBON",
+"editorial": "PLAZA & JANES",
+"precio": 2590,
+"unidades": 959,
+"peso_g": 500
+},
+{
+"ean": "9788415906070",
+"titulo": "PIEDRA OSCURA, LA",
+"autor": "CONEJERO, ALBERTO",
+"editorial": "ANTIGONA EDICIONES",
+"precio": 1990,
+"unidades": 956,
+"peso_g": 350
+},
+{
+"ean": "9788410646797",
+"titulo": "DIBUJA CON ITSPOLI",
+"autor": "ITSPOLI",
+"editorial": "HARPERCOLLINS",
+"precio": 1960,
+"unidades": 945,
+"peso_g": 300
+},
+{
+"ean": "9788432242120",
+"titulo": "MALA COSTUMBRE, LA",
+"autor": "S. PORTERO, ALANA",
+"editorial": "SEIX BARRAL",
+"precio": 2460,
+"unidades": 925,
+"peso_g": 500
+},
+{
+"ean": "9791387740382",
+"titulo": "SIN PIEDAD",
+"autor": "NESBO, JO",
+"editorial": "RESERVOIR BOOKS",
+"precio": 2630,
+"unidades": 925,
+"peso_g": 500
+},
+{
+"ean": "9791388108365",
+"titulo": "SACIAR A LA BESTIA",
+"autor": "MOLINA, TAMARA",
+"editorial": "FAERIS EDITORIAL",
+"precio": 2460,
+"unidades": 913,
+"peso_g": 500
+},
+{
+"ean": "9791388108341",
+"titulo": "MORTAL & INMORTAL: DOS ROMANCES PARANORMALES",
+"autor": "HAZELWOOD, ALI",
+"editorial": "FAERIS EDITORIAL",
+"precio": 2460,
+"unidades": 893,
+"peso_g": 500
+},
+{
+"ean": "9788410346925",
+"titulo": "PRINCIPITO, EL",
+"autor": "DE SAINT-EXUPERY, ANTOINE",
+"editorial": "DUOMO",
+"precio": 1370,
+"unidades": 885,
+"peso_g": 300
+},
+{
+"ean": "9788401040740",
+"titulo": "CRIMEN DE LA NAVIDAD, EL",
+"autor": "GARCIA, MODESTO",
+"editorial": "PLAZA & JANES",
+"precio": 2120,
+"unidades": 868,
+"peso_g": 300
+},
+{
+"ean": "9788419640871",
+"titulo": "EVANGELIO 2027: CON LOS PAPAS LEON XIV, FRANCISCO Y BENEDICTO XVI (CICLO B): EL EVANGELIO DEL DIA / LAS LECTURAS DEL DOMINGO / CALENDARIO LITURGICO / COMENTARIOS DE LOS PAPAS / SANTORAL / JORNADAS / ORACIONES",
+"autor": "ALVAREZ, JORGE LUIS / DEL CERRO, JUAN CARLOS",
+"editorial": "EDIBESA",
+"precio": 1210,
+"unidades": 867,
+"peso_g": 200
+},
+{
+"ean": "9791387809829",
+"titulo": "APRENDE A LEER EN LA ESCUELA DE MONSTRUOS 25: MAGNIFICO Y TERRORIFICO",
+"autor": "RIPPIN, SALLY",
+"editorial": "MONTENA",
+"precio": 1540,
+"unidades": 864,
+"peso_g": 300
+},
+{
+"ean": "9788427257702",
+"titulo": "JUEGOS DEL HAMBRE 05, LOS : AMANECER EN LA COSECHA",
+"autor": "COLLINS, SUZANNE",
+"editorial": "MOLINO",
+"precio": 2890,
+"unidades": 853,
+"peso_g": 500
+},
+{
+"ean": "9788437650098",
+"titulo": "PIEDRA OSCURA, LA / USHUAIA / EN MITAD DE TANTO FUEGO",
+"autor": "CONEJERO, ALBERTO",
+"editorial": "CATEDRA",
+"precio": 1950,
+"unidades": 852,
+"peso_g": 200
+},
+{
+"ean": "9788449345845",
+"titulo": "SIN RESPETO: UNA CRISIS SOCIAL",
+"autor": "HAN, BYUNG-CHUL",
+"editorial": "PAIDOS IBERICA",
+"precio": 2090,
+"unidades": 848,
+"peso_g": 350
+},
+{
+"ean": "9788408324980",
+"titulo": "ADOLESCENCIA: COMPRENDER LOS CAMBIOS FISICOS, EMOCIONALES, CEREBRALES Y SOCIALES EN LA ETAPA MAS INTENSA Y TRANSFORMADORA DE SU VIDA",
+"autor": "GALAN BERTRAND, (LUCIA, MI PEDRIATRA), LUCIA",
+"editorial": "PLANETA",
+"precio": 2610,
+"unidades": 842,
+"peso_g": 500
+},
+{
+"ean": "9788408315247",
+"titulo": "LLEVARA TU NOMBRE (UN DESTINO MARCADO POR LA TRAICION. UNA PASION CAPAZ DE CAMBIARLO TODO)",
+"autor": "ONEGA, SONSOLES",
+"editorial": "PLANETA",
+"precio": 2630,
+"unidades": 842,
+"peso_g": 500
+},
+{
+"ean": "9788408326632",
+"titulo": "HASTA QUE NOS QUEDEMOS SIN ESTRELLAS (EDICION ESPECIAL)",
+"autor": "RUBIALES, INMA",
+"editorial": "PLANETA",
+"precio": 2620,
+"unidades": 840,
+"peso_g": 500
+},
+{
+"ean": "9788417553036",
+"titulo": "VERANO EN QUE MI MADRE TUVO LOS OJOS VERDES, EL",
+"autor": "TIBULEAC, TATIANA",
+"editorial": "IMPEDIMENTA",
+"precio": 2560,
+"unidades": 840,
+"peso_g": 500
+},
+{
+"ean": "9788411584135",
+"titulo": "TICNIKS 04: KATUA",
+"autor": "MARTI, MERITXELL",
+"editorial": "COMBEL",
+"precio": 1950,
+"unidades": 836,
+"peso_g": 300
+},
+{
+"ean": "9788425371745",
+"titulo": "FINALES PERFECTOS NO EXISTEN, LOS",
+"autor": "REED, VIOLETA",
+"editorial": "GRIJALBO",
+"precio": 2540,
+"unidades": 806,
+"peso_g": 500
+},
+{
+"ean": "9788410943872",
+"titulo": "SUCESION",
+"autor": "EYRE, PILAR",
+"editorial": "LA ESFERA DE LOS LIBROS",
+"precio": 2630,
+"unidades": 795,
+"peso_g": 500
+},
+{
+"ean": "9788432251269",
+"titulo": "HIJO DEL OLIGARCA, EL: UN JOVEN IMPOSTOR. UNA TRAGEDIA FAMILIAR. UNA CIUDAD DEVORADA POR LA CORRUPCION",
+"autor": "RADDEN KEEFE, PATRICK",
+"editorial": "SEIX BARRAL",
+"precio": 2630,
+"unidades": 783,
+"peso_g": 500
+},
+{
+"ean": "9791259578853",
+"titulo": "MIS PRIMEROS CUENTOS (CON LETRA MAYUSCULA)",
+"autor": "VARIOS AUTORES",
+"editorial": "MAGAZZINI SALANI",
+"precio": 1280,
+"unidades": 758,
+"peso_g": 300
+},
+{
+"ean": "9788418118036",
+"titulo": "HABITOS ATOMICOS. CAMBIOS PEQUEÑOS, RESULTADOS EXTRAORDINARIOS",
+"autor": "CLEAR, JAMES",
+"editorial": "DIANA",
+"precio": 2540,
+"unidades": 757,
+"peso_g": 500
+},
+{
+"ean": "9788419942319",
+"titulo": "PENINSULA DE LAS CASAS VACIAS, LA",
+"autor": "UCLES, DAVID",
+"editorial": "SIRUELA",
+"precio": 2900,
+"unidades": 750,
+"peso_g": 500
+},
+{
+"ean": "9788466435420",
+"titulo": "MURDOKU: 80 ENIGMES DE LOGICA I ASSASSINATS",
+"autor": "GARAND, MANUEL",
+"editorial": "COLUMNA",
+"precio": 2070,
+"unidades": 750,
+"peso_g": 300
+},
+{
+"ean": "9788467083316",
+"titulo": "MITFORD, LAS",
+"autor": "POSADAS, CARMEN",
+"editorial": "ESPASA",
+"precio": 2640,
+"unidades": 750,
+"peso_g": 500
+},
+{
+"ean": "9788408325536",
+"titulo": "CRIMENES DE FJALLBACKA 12, LOS: EL LLANTO DE LOS MUERTOS",
+"autor": "LACKBERG, CAMILLA",
+"editorial": "PLANETA",
+"precio": 2630,
+"unidades": 742,
+"peso_g": 500
+},
+{
+"ean": "9788408268130",
+"titulo": "PSICOLOGIA DEL DINERO, LA: COMO PIENSAN LOS RICOS. 18 LECCIONES SOBRE RIQUEZA Y FELICIDAD",
+"autor": "HOUSEL, MORGAN",
+"editorial": "BOOKET",
+"precio": 1630,
+"unidades": 740,
+"peso_g": 200
+},
+{
+"ean": "9791388015830",
+"titulo": "CATEDRAL DE LOS MUERTOS, LA",
+"autor": "LUNA, CARLOS",
+"editorial": "NEWTON COMPTON",
+"precio": 1800,
+"unidades": 731,
+"peso_g": 350
+},
+{
+"ean": "9791388015748",
+"titulo": "QUIZ DE NAVIDAD PARA RESOLVER MIENTRAS HACES CACA",
+"autor": "DEFECO, HUMBERTO",
+"editorial": "NEWTON COMPTON",
+"precio": 1460,
+"unidades": 713,
+"peso_g": 300
+},
+{
+"ean": "9788466390217",
+"titulo": "SUSURRO DEL FUEGO, EL",
+"autor": "CASTILLO, JAVIER",
+"editorial": "DEBOLSILLO",
+"precio": 1670,
+"unidades": 707,
+"peso_g": 200
+},
+{
+"ean": "9788498381498",
+"titulo": "PRINCIPITO, EL",
+"autor": "DE SAINT-EXUPERY, ANTOINE",
+"editorial": "SALAMANDRA INFANTIL Y JUVENIL",
+"precio": 1500,
+"unidades": 704,
+"peso_g": 300
+},
+{
+"ean": "9788491294283",
+"titulo": "ASISTENTA, LA",
+"autor": "MCFADDEN, FREIDA",
+"editorial": "SUMA DE LETRAS",
+"precio": 2460,
+"unidades": 694,
+"peso_g": 500
+},
+{
+"ean": "9788408327271",
+"titulo": "ACADEMIA BLOODWING 02: LAZOS DE FUEGO (CUANDO EL DRAGON DESPIERTE, LA DINASTIA CAERA) (EDICION ESPECIAL CON CANTOS TINTADOS)",
+"autor": "BOLEYN, BRIAR",
+"editorial": "PLANETA",
+"precio": 2670,
+"unidades": 685,
+"peso_g": 500
+},
+{
+"ean": "9788431615116",
+"titulo": "CELESTINA, LA",
+"autor": "DE ROJAS, FERNANDO",
+"editorial": "VICENS VIVES",
+"precio": 2110,
+"unidades": 684,
+"peso_g": 350
+},
+{
+"ean": "9788425370700",
+"titulo": "NO TE CREAS TODO LO QUE PIENSAS",
+"autor": "NGUYEN, JOSEPH",
+"editorial": "GRIJALBO",
+"precio": 2450,
+"unidades": 681,
+"peso_g": 500
+},
+{
+"ean": "9788427054622",
+"titulo": "SI FUERAMOS ETERNOS",
+"autor": "GIL, EMMA",
+"editorial": "MARTINEZ ROCA",
+"precio": 2290,
+"unidades": 679,
+"peso_g": 500
+},
+{
+"ean": "9788499890944",
+"titulo": "1984",
+"autor": "ORWELL, GEORGE",
+"editorial": "DEBOLSILLO",
+"precio": 1590,
+"unidades": 667,
+"peso_g": 200
+},
+{
+"ean": "9788466356138",
+"titulo": "EXTRANJERO, EL",
+"autor": "CAMUS, ALBERT",
+"editorial": "DEBOLSILLO",
+"precio": 1680,
+"unidades": 664,
+"peso_g": 200
+},
+{
+"ean": "9788484452065",
+"titulo": "PODER DEL AHORA, EL: UNA GUIA PARA LA ILUMINACION ESPIRITUAL",
+"autor": "TOLLE, ECKHART",
+"editorial": "GAIA",
+"precio": 1670,
+"unidades": 655,
+"peso_g": 350
+},
+{
+"ean": "9791388056215",
+"titulo": "QUE HACEMOS CON LOS DOMINGOS POR LA TARDE: APUNTES SOBRE LA VIDA ADULTA",
+"autor": "PEYRO, IGNACIO",
+"editorial": "LIBROS DEL ASTEROIDE",
+"precio": 2300,
+"unidades": 650,
+"peso_g": 500
+},
+{
+"ean": "9788419357373",
+"titulo": "CHICOS DE TOMMEN 01, LOS: BINDING 13",
+"autor": "WALSH, CHLOE",
+"editorial": "MONTENA",
+"precio": 2460,
+"unidades": 650,
+"peso_g": 500
+},
+{
+"ean": "9788449346033",
+"titulo": "ETERNIDAD Y UN DIA MAS, LA: LA ULTIMA CLASE DE SAMMY SENSEI",
+"autor": "LOPEZ-OTIN, CARLOS",
+"editorial": "PAIDOS IBERICA",
+"precio": 2540,
+"unidades": 649,
+"peso_g": 500
+},
+{
+"ean": "9791387812874",
+"titulo": "HISTORIA DE LA GUERRA CIVIL QUE NO TE CUENTAN, LA: LA VERDAD OCULTADA POR LA MEMORIA DEMOCRATIVA. LA BATALLA CULTURAL POR LA MEMORIA ESPAÑA, PARTE DE UNA HISTORIA QUE UNOS QUIEREN CONTAR... Y OTROS ESCONDER",
+"autor": "CIENTOZERO, RUBEN",
+"editorial": "SEKOTIA",
+"precio": 2450,
+"unidades": 646,
+"peso_g": 500
+},
+{
+"ean": "9788418483189",
+"titulo": "APRENDE A LEER EN LA ESCUELA DE MONSTRUOS 01: LA MASCOTA MAS GRANDOTA",
+"autor": "RIPPIN, SALLY",
+"editorial": "MONTENA",
+"precio": 1540,
+"unidades": 641,
+"peso_g": 300
+},
+{
+"ean": "9788426407184",
+"titulo": "BELLEZA DEL MARIDO, LA",
+"autor": "CARSON, ANNE",
+"editorial": "LUMEN",
+"precio": 2460,
+"unidades": 641,
+"peso_g": 500
+},
+{
+"ean": "9788466685344",
+"titulo": "BUENA MUERTE, LA",
+"autor": "FEIJOO, PEDRO",
+"editorial": "EDICIONES B",
+"precio": 2630,
+"unidades": 636,
+"peso_g": 500
+},
+{
+"ean": "9788466435703",
+"titulo": "LES VALLS TRANQUIL·LES: TOTES LES NITS, TOTES LES CIUTATS",
+"autor": "REDONDO, DOLORES",
+"editorial": "COLUMNA",
+"precio": 2660,
+"unidades": 635,
+"peso_g": 500
+},
+{
+"ean": "9788427055063",
+"titulo": "25 DIAS HASTA NAVIDAD (THRILLER DE ADVIENTO - ABRE UN CAPITULO CADA DIA)",
+"autor": "JACOBSEN, PER",
+"editorial": "MARTINEZ ROCA",
+"precio": 2530,
+"unidades": 631,
+"peso_g": 500
+},
+{
+"ean": "9791388279362",
+"titulo": "MURDOKU: 80 ACERTIJOS DE LOGICA Y ASESINATOS / MURDOKU 02: VIAJE AL PASADO: 80 ACERTIJOS DE LOGICA Y ASESINATOS / LIBRETA DE DEDUCCIONES / 2 NUEVOS CASOS (ESTUCHE)",
+"autor": "GARAND, MANUEL",
+"editorial": "TEMAS DE HOY",
+"precio": 3440,
+"unidades": 628,
+"peso_g": 300
+},
+{
+"ean": "9788466391610",
+"titulo": "NUNCA MIENTAS",
+"autor": "MCFADDEN, FREIDA",
+"editorial": "DEBOLSILLO",
+"precio": 1590,
+"unidades": 621,
+"peso_g": 200
+},
+{
+"ean": "9788412932836",
+"titulo": "SONETOS DEL AMOR OSCURO",
+"autor": "GARCIA LORCA, FEDERICO",
+"editorial": "YA LO DIJO CASIMIRO PARKER",
+"precio": 1630,
+"unidades": 620,
+"peso_g": 350
+},
+{
+"ean": "9788418050350",
+"titulo": "INVISIBLE 02: REDES",
+"autor": "MORENO, ELOY",
+"editorial": "NUBE DE TINTA",
+"precio": 2040,
+"unidades": 616,
+"peso_g": 350
+},
+{
+"ean": "9791387724450",
+"titulo": "UÑAS SUCIAS",
+"autor": "SALANDER, JULIA",
+"editorial": "MONTENA",
+"precio": 2490,
+"unidades": 613,
+"peso_g": 500
+},
+{
+"ean": "9788408326427",
+"titulo": "MAGIC ANIMALS: MISIONES ESPECIALES 02: EL TEMPLO ESCONDIDO",
+"autor": "ISERN, SUSANNA / DALMAU, CARLES / LOPEZ, NIL",
+"editorial": "DESTINO INFANTIL & JUVENIL",
+"precio": 2250,
+"unidades": 605,
+"peso_g": 500
+},
+{
+"ean": "9791388002038",
+"titulo": "BALADA DE NUNCA JAMAS, LA (EDICION ESPECIAL ILUSTRADA)",
+"autor": "GARBER, STEPHANIE",
+"editorial": "PUCK",
+"precio": 2550,
+"unidades": 593,
+"peso_g": 500
+},
+{
+"ean": "9788420433424",
+"titulo": "CADAVER EXQUISITO",
+"autor": "BAZTERRICA, AGUSTINA",
+"editorial": "ALFAGUARA",
+"precio": 2450,
+"unidades": 567,
+"peso_g": 500
+},
+{
+"ean": "9788408271833",
+"titulo": "MAGIC ANIMALS 01: EL PODER DEL AMULETO",
+"autor": "ISERN, SUSANNA",
+"editorial": "DESTINO INFANTIL & JUVENIL",
+"precio": 1740,
+"unidades": 561,
+"peso_g": 300
+},
+{
+"ean": "9788466389747",
+"titulo": "RECLUSO, EL",
+"autor": "MCFADDEN, FREIDA",
+"editorial": "DEBOLSILLO",
+"precio": 1590,
+"unidades": 561,
+"peso_g": 200
+},
+{
+"ean": "9788410466135",
+"titulo": "CARL EL MAZMORRERO",
+"autor": "DINNIMAN, MATT",
+"editorial": "EDICIONES B",
+"precio": 2580,
+"unidades": 552,
+"peso_g": 500
+},
+{
+"ean": "9788410352018",
+"titulo": "HAN CANTADO BINGO",
+"autor": "CORUJO, LANA",
+"editorial": "RESERVOIR BOOKS",
+"precio": 2290,
+"unidades": 549,
+"peso_g": 500
+},
+{
+"ean": "9798165625985",
+"titulo": "MI CALENDARIO DE ADVIENTO: 24 DIAS PARA PREPARARMI CORAZON PARA LA LLEGADA DE JESUS",
+"autor": "MIGA DE PAPEL",
+"editorial": "INDEPENDENTLY PUBLISHED",
+"precio": 1610,
+"unidades": 547,
+"peso_g": 350
+},
+{
+"ean": "9788423355655",
+"titulo": "CUARTO MONO, EL",
+"autor": "BARKER, J. D.",
+"editorial": "BOOKET",
+"precio": 1680,
+"unidades": 543,
+"peso_g": 200
+},
+{
+"ean": "9788425451447",
+"titulo": "SOCIEDAD DEL CANSANCIO, LA",
+"autor": "HAN, BYUNG-CHUL",
+"editorial": "HERDER",
+"precio": 1730,
+"unidades": 542,
+"peso_g": 350
+},
+{
+"ean": "9791387871642",
+"titulo": "JUEGOS DEL HAMBRE 05, LOS : AMANECER EN LA COSECHA",
+"autor": "COLLINS, SUZANNE",
+"editorial": "B DE BOLSILLO",
+"precio": 1680,
+"unidades": 542,
+"peso_g": 200
+},
+{
+"ean": "9791388002021",
+"titulo": "ERASE UNA VEZ UN CORAZON ROTO 02 (EDICION ESPECIAL ILUSTRADA)",
+"autor": "GARBER, STEPHANIE",
+"editorial": "PUCK",
+"precio": 2550,
+"unidades": 535,
+"peso_g": 500
+},
+{
+"ean": "9788499138862",
+"titulo": "MUÑECAS A LA MODA",
+"autor": "VARIOS AUTORES",
+"editorial": "TODOLIBRO",
+"precio": 1490,
+"unidades": 527,
+"peso_g": 350
+},
+{
+"ean": "9791388154676",
+"titulo": "CUADERNO DE INVIERNO 07: CUADERNO DE ACTIVIDADES PARA ADULTOS. EL MEJOR PLAN PARA ESCAPAR DEL MUNDO (EL AUTENTICO E INIMITABLE)",
+"autor": "FORTUNEZ, CRISTOBAL / LOPEZ VALLE, DANIEL",
+"editorial": "BLACKIE BOOKS",
+"precio": 1750,
+"unidades": 524,
+"peso_g": 300
+},
+{
+"ean": "9791387596491",
+"titulo": "TREN DE LA MEDIANOCHE, EL (UN VIAJE QUE CAMBIA LA VIDA. UN AMOR IMPARABLE)",
+"autor": "HAIG, MATT",
+"editorial": "ADN EDITORIAL GRUPO ANAYA",
+"precio": 2590,
+"unidades": 524,
+"peso_g": 500
+},
+{
+"ean": "9791387905309",
+"titulo": "QUE HAGO, ¿ME MATO?",
+"autor": "BIARNES SIERRA (@NOSOLOVIERNES2), MARC",
+"editorial": "ROCA EDITORIAL",
+"precio": 2520,
+"unidades": 523,
+"peso_g": 500
+},
+{
+"ean": "9791387641962",
+"titulo": "CUANDO SEAS FELIZ, GOLPEA TU PRIMERO",
+"autor": "TIBULEAC, TATIANA",
+"editorial": "IMPEDIMENTA",
+"precio": 2530,
+"unidades": 518,
+"peso_g": 500
+},
+{
+"ean": "9788425375118",
+"titulo": "HIJA DEL VENENO, LA",
+"autor": "MASTERSON, SHEILA",
+"editorial": "GRIJALBO",
+"precio": 2670,
+"unidades": 517,
+"peso_g": 500
+},
+{
+"ean": "9791387810962",
+"titulo": "ROSE HILL 02: WILD EYES: MIRADA SALVAJE",
+"autor": "SILVER, ELSIE",
+"editorial": "CONTRALUZ",
+"precio": 2450,
+"unidades": 517,
+"peso_g": 500
+},
+{
+"ean": "9788441440272",
+"titulo": "MEDITACIONES. SABIDURIA ESTOICA PARA EL LECTOR ACTUAL",
+"autor": "MARCO AURELIO",
+"editorial": "EDAF",
+"precio": 1540,
+"unidades": 510,
+"peso_g": 350
+},
+{
+"ean": "9788499087122",
+"titulo": "MONJE QUE VENDIO SU FERRARI, EL",
+"autor": "SHARMA, ROBIN",
+"editorial": "DEBOLSILLO",
+"precio": 1630,
+"unidades": 510,
+"peso_g": 200
+},
+{
+"ean": "9788466682770",
+"titulo": "PROFETA, EL",
+"autor": "ZAVALA, JOSE MARIA",
+"editorial": "EDICIONES B",
+"precio": 2670,
+"unidades": 507,
+"peso_g": 500
+},
+{
+"ean": "9791387924386",
+"titulo": "ALCHEMISED (EDICION COLECCIONISTA LIMITADA)",
+"autor": "SENLINYU",
+"editorial": "MONTENA",
+"precio": 4040,
+"unidades": 501,
+"peso_g": 800
+},
+{
+"ean": "9788466683081",
+"titulo": "MENTIRA",
+"autor": "GOMEZ-JURADO, JUAN",
+"editorial": "EDICIONES B",
+"precio": 2670,
+"unidades": 499,
+"peso_g": 500
+},
+{
+"ean": "9791387788490",
+"titulo": "NO MIENTAS (TODA INFIDELIDAD MERECE UN CASTIGO) (UN THRILLER ORIGINAL, POTENTE Y MAGNETICO)",
+"autor": "DEL BURGO, ARTURO",
+"editorial": "NEWTON COMPTON",
+"precio": 1420,
+"unidades": 498,
+"peso_g": 200
+},
+{
+"ean": "9788419378927",
+"titulo": "ME LLAMO GOA 01: ME LLAMO GOA",
+"autor": "TIRADO, MIRIAM",
+"editorial": "B DE BLOK",
+"precio": 2210,
+"unidades": 498,
+"peso_g": 500
+},
+{
+"ean": "9788423367344",
+"titulo": "MALA HIJA, LA",
+"autor": "MARTI, PEDRO",
+"editorial": "DESTINO",
+"precio": 2580,
+"unidades": 496,
+"peso_g": 500
+},
+{
+"ean": "9791388337000",
+"titulo": "A 55 MILLAS POR HORA",
+"autor": "FESSER, GUILLERMO",
+"editorial": "CONTRALUZ",
+"precio": 2590,
+"unidades": 494,
+"peso_g": 500
+},
+{
+"ean": "9791387928018",
+"titulo": "LAZAR",
+"autor": "BIEDERMANN, NELIO",
+"editorial": "SALAMANDRA",
+"precio": 2550,
+"unidades": 490,
+"peso_g": 500
+},
+{
+"ean": "9791399153828",
+"titulo": "PELAYO: EL REY REBELDE",
+"autor": "SOTO CHICA, JOSE / AGUADO BLAZQUEZ, FRANCISCO",
+"editorial": "DESPERTA FERRO EDICIONES",
+"precio": 2680,
+"unidades": 489,
+"peso_g": 500
+},
+{
+"ean": "9791370206079",
+"titulo": "HIJOS MALDITOS DE LA HISTORIA, LOS: POR QUE LOS JOVENES BUSCAN RESPUESTAS EN LA DERECHA Y EN LA FE. LO QUE AYER FUE TRADICION, HOY PUEDE SER REBELDIA PARA LA GENERACION Z",
+"autor": "DOMINGUEZ (WALL STREET WOLVERINE), VICTOR",
+"editorial": "ALMUZARA",
+"precio": 2110,
+"unidades": 480,
+"peso_g": 350
+},
+{
+"ean": "9788408304579",
+"titulo": "PORTAL DE BELEN, EL: LIBRO POP-UP DE NAVIDAD",
+"autor": "HARDY, SAMARA",
+"editorial": "TIMUN MAS INFANTIL",
+"precio": 1670,
+"unidades": 479,
+"peso_g": 300
+},
+{
+"ean": "9788466332286",
+"titulo": "VERDAD SOBRE EL CASO HARRY QUEBERT, LA",
+"autor": "DICKER, JOEL",
+"editorial": "DEBOLSILLO",
+"precio": 1680,
+"unidades": 479,
+"peso_g": 200
+},
+{
+"ean": "9788419835734",
+"titulo": "ASISTENTA 02, LA: EL SECRETO DE LA ASISTENTA",
+"autor": "MCFADDEN, FREIDA",
+"editorial": "SUMA DE LETRAS",
+"precio": 2500,
+"unidades": 478,
+"peso_g": 500
+},
+{
+"ean": "9788408327370",
+"titulo": "PROTOCOLOS: LA HOJA DE RUTA HACIA EL BIENESTAR",
+"autor": "HUBERMAN, ANDREW",
+"editorial": "PLANETA",
+"precio": 2660,
+"unidades": 477,
+"peso_g": 500
+},
+{
+"ean": "9788410496002",
+"titulo": "MUY CATASTROFICA VISITA AL ZOO, LA",
+"autor": "DICKER, JOEL",
+"editorial": "ALFAGUARA",
+"precio": 2320,
+"unidades": 475,
+"peso_g": 500
+},
+{
+"ean": "9788449333736",
+"titulo": "DESTROZA ESTE DIARIO. AHORA LA REVOLUCION ES A TODO COLOR",
+"autor": "SMITH, KERI",
+"editorial": "PAIDOS IBERICA",
+"precio": 1780,
+"unidades": 472,
+"peso_g": 350
+},
+{
+"ean": "9791387724184",
+"titulo": "APRENDE A LEER EN LA ESCUELA DE MONSTRUOS 24: DOS ARTISTAS MUY SOLISTAS",
+"autor": "RIPPIN, SALLY",
+"editorial": "MONTENA",
+"precio": 1540,
+"unidades": 469,
+"peso_g": 300
+},
+{
+"ean": "9791388015434",
+"titulo": "UN GATO PARA LOS DIAS FELICES: ¿PUEDE UN GATO CAMBIAR TU VIDA EN TRES DIAS?",
+"autor": "SHIGEMATSU, KIYOSHI",
+"editorial": "NEWTON COMPTON",
+"precio": 1540,
+"unidades": 468,
+"peso_g": 350
+},
+{
+"ean": "9788498672220",
+"titulo": "DIARIO DE GREG 01: UN PRINGAO TOTAL",
+"autor": "KINNEY, JEFF",
+"editorial": "MOLINO",
+"precio": 2170,
+"unidades": 467,
+"peso_g": 500
+},
+{
+"ean": "9783912848045",
+"titulo": "CALENDARIO DE ADVIENTO ESCAPE ROOM PARA ADULTOS: EL MISTERIO DEL EXPRESO NOCTURNO. RESUELVE 24 ENIGMAS. ¿CONSEGUIRAS ESCAPAR ANTES DE NAVIDAD?",
+"autor": "FALKNER, NIKLAS",
+"editorial": "RIDDLEHAUS",
+"precio": 1800,
+"unidades": 467,
+"peso_g": 300
+},
+{
+"ean": "9788410647442",
+"titulo": "IMPERIO EN LA TORMENTA, EL (UNA ARMADA QUE NO FUE VENCIDA. UN DESASTRE INGLES OLVIDADO. UN OCEANO QUE SIGUIO SIENDO ESPAÑOL)",
+"autor": "CALVO POYATO, JOSE",
+"editorial": "HARPERCOLLINS",
+"precio": 2670,
+"unidades": 467,
+"peso_g": 500
+},
+{
+"ean": "9791387962821",
+"titulo": "DIARIOS DE LA BOTICARIA  01, LOS (LA NOVELA ORIGINAL)",
+"autor": "HYUGANATSU",
+"editorial": "DISTRITO MANGA",
+"precio": 2130,
+"unidades": 464,
+"peso_g": 350
+},
+{
+"ean": "9791388108327",
+"titulo": "ADVERSARIA DEL VILLANO (CUALQUIER COSA QUE TU PUEDAS HACER. YO PUEDO HACERLO MALVADA)",
+"autor": "MAEHRER, HANNAH NICOLE",
+"editorial": "FAERIS EDITORIAL",
+"precio": 2460,
+"unidades": 459,
+"peso_g": 500
+},
+{
+"ean": "9788419640888",
+"titulo": "EVANGELIO 2027: CON LOS PAPAS LEON XIV, FRANCISCO Y BENEDICTO XVI (CICLO B): EL EVANGELIO DEL DIA / LAS LECTURAS DEL DOMINGO / CALENDARIO LITURGICO / COMENTARIOS DE LOS PAPAS / SANTORAL / JORNADAS / ORACIONES",
+"autor": "ALVAREZ, JORGE LUIS / DEL CERRO, JUAN CARLOS",
+"editorial": "EDIBESA",
+"precio": 1440,
+"unidades": 458,
+"peso_g": 350
+},
+{
+"ean": "9791388015410",
+"titulo": "MISTERIO CON AROMA A CANELA (LOS SECRETOS DE CINNAMON FALLS)",
+"autor": "KILMORE, R. L.",
+"editorial": "NEWTON COMPTON",
+"precio": 1540,
+"unidades": 458,
+"peso_g": 350
+},
+{
+"ean": "9791399114812",
+"titulo": "LUNARIO 2027: CALENDARIO LUNAR PARA EL HUERTO Y EL JARDIN ECOLOGICOS Y PARA TU SALUD",
+"autor": "GROS, MICHEL",
+"editorial": "KAICRON",
+"precio": 1620,
+"unidades": 458,
+"peso_g": 350
+},
+{
+"ean": "9791399059328",
+"titulo": "CALENDARIO ZARAGOZANO 2027: EL FIRMAMENTO",
+"autor": "CASTILLO Y OCSIERO, MARIANO",
+"editorial": "CALENDARIO ZARAGOZANO",
+"precio": 1400,
+"unidades": 456,
+"peso_g": 350
+},
+{
+"ean": "9791388015427",
+"titulo": "ORFANATO DEL LAGO, EL (NINGUN SECRETO PERMANECE ENTERRADO PARA SIEMPRE)",
+"autor": "G. MILLER, DANIEL",
+"editorial": "NEWTON COMPTON",
+"precio": 1540,
+"unidades": 453,
+"peso_g": 350
+},
+{
+"ean": "9788427054479",
+"titulo": "UN AMOR DE DICIEMBRE (UNA NOVELA DE ADVIENTO) (24 CAPITULOS HASTA NAVIDAD)",
+"autor": "ASHER, LAUREN",
+"editorial": "MARTINEZ ROCA",
+"precio": 2290,
+"unidades": 452,
+"peso_g": 500
+},
+{
+"ean": "9788410317994",
+"titulo": "NOCHES BLANCAS",
+"autor": "DOSTOIEVSKI, FIODOR M.",
+"editorial": "GALAXIA GUTENBERG",
+"precio": 1630,
+"unidades": 451,
+"peso_g": 350
+},
+{
+"ean": "9791388289088",
+"titulo": "UN REGALO DE LOS DIOSES: NEUROCIENCIA DE LA LECTURA",
+"autor": "BASANTA, ANTONIO / CASTELLANOS, NAZARETH",
+"editorial": "SIRUELA",
+"precio": 2140,
+"unidades": 449,
+"peso_g": 350
+},
+{
+"ean": "9788408286981",
+"titulo": "BONI VS. MONO: LA BATALLA MAS DIVERTIDA ACABA DE EMPEZAR",
+"autor": "SMART, JAMIE",
+"editorial": "DESTINO INFANTIL & JUVENIL",
+"precio": 1800,
+"unidades": 449,
+"peso_g": 300
+},
+{
+"ean": "9791257741389",
+"titulo": "INFLUIR EN LAS MASAS: LAS TECNICAS PSICOLOGICAS CON LAS QUE UNOS POCOS HAN APRENDIDO A GUIAR A MILES DE MILLONES",
+"autor": "BRENNER, KLAUS",
+"editorial": "ATERNAL",
+"precio": 2470,
+"unidades": 447,
+"peso_g": 500
+},
+{
+"ean": "9788408324706",
+"titulo": "PECADOS 06: REY DE LA GULA (EDICION ESPECIAL CON CANTON TINTADOS)",
+"autor": "HUANG, ANA",
+"editorial": "CROSS BOOKS",
+"precio": 2630,
+"unidades": 444,
+"peso_g": 500
+},
+{
+"ean": "9788432176067",
+"titulo": "CARTA PASTORAL 16.X.2026: (SOBRE LA CONTEMPLACION)",
+"autor": "OCARIZ, FERNANDO",
+"editorial": "RIALP",
+"precio": 1390,
+"unidades": 444,
+"peso_g": 350
+},
+{
+"ean": "9788466435550",
+"titulo": "MURDOKU: 80 ENIGMES DE LOGICA I ASSASSINATS. VIATGE AL PASSAT",
+"autor": "GARAND, MANUEL",
+"editorial": "COLUMNA",
+"precio": 2080,
+"unidades": 443,
+"peso_g": 300
+},
+{
+"ean": "9788401021527",
+"titulo": "MAMA, ¿ME CUENTAS TU HISTORIA?",
+"autor": "VAN VLIET, ELMA",
+"editorial": "PLAZA & JANES",
+"precio": 2040,
+"unidades": 442,
+"peso_g": 350
+},
+{
+"ean": "9788419746993",
+"titulo": "CHICOS DE TOMMEN 02, LOS: KEEPING 13",
+"autor": "WALSH, CHLOE",
+"editorial": "MONTENA",
+"precio": 2450,
+"unidades": 440,
+"peso_g": 500
+},
+{
+"ean": "9788408326342",
+"titulo": "CAOS DE BECA 03, EL: VALE, ESTE NO ERA EL PLAN",
+"autor": "DIAZ REGUERA, RAQUEL",
+"editorial": "DESTINO INFANTIL & JUVENIL",
+"precio": 2160,
+"unidades": 439,
+"peso_g": 500
+},
+{
+"ean": "9788426409836",
+"titulo": "EROS / DULCE Y AMARGO",
+"autor": "CARSON, ANNE",
+"editorial": "LUMEN",
+"precio": 2300,
+"unidades": 438,
+"peso_g": 500
+},
+{
+"ean": "9788429333312",
+"titulo": "BUSCANDO LA LUZ: EXPERIENCIAS CERCANAS A LA MUERTE Y NOSTALGIA DE LA ETERNIDAD",
+"autor": "SANCHEZ ADALID, JESUS",
+"editorial": "SAL TERRAE",
+"precio": 2530,
+"unidades": 438,
+"peso_g": 500
+},
+{
+"ean": "9788417921378",
+"titulo": "AMANDA BLACK 01: UNA HERENCIA PELIGROSA",
+"autor": "GOMEZ-JURADO, JUAN / MONTES, BARBARA",
+"editorial": "B DE BLOK",
+"precio": 2170,
+"unidades": 437,
+"peso_g": 500
+},
+{
+"ean": "9788484644859",
+"titulo": "ANIMALES (DE LA CUNA A LA LUNA)",
+"autor": "RUBIO, ANTONIO",
+"editorial": "KALANDRAKA",
+"precio": 1600,
+"unidades": 435,
+"peso_g": 300
+},
+{
+"ean": "9788408325062",
+"titulo": "HUMANIDAD EN CRISIS, LA: LA SUPRACONCIENCIA ES LA OPORTUNIDAD PARA EL CAMBIO",
+"autor": "SANS SEGARRA, MANUEL",
+"editorial": "PLANETA",
+"precio": 2490,
+"unidades": 434,
+"peso_g": 500
+},
+{
+"ean": "9788408326052",
+"titulo": "TE RECOJO A LAS SEIS",
+"autor": "REUS HUANG, MARIA",
+"editorial": "ESENCIA",
+"precio": 2450,
+"unidades": 433,
+"peso_g": 500
+},
+{
+"ean": "9788410399426",
+"titulo": "EVER AND AFTER 02: LA BODA OSCURA (EDICION CON CANTOS TINTADOS)",
+"autor": "TACK, STELLA",
+"editorial": "INLOV",
+"precio": 2890,
+"unidades": 432,
+"peso_g": 500
+},
+{
+"ean": "9788408223238",
+"titulo": "ANNA KADABRA 01: EL CLUB DE LA LUNA LLENA",
+"autor": "MAÑAS, PEDRO",
+"editorial": "DESTINO INFANTIL & JUVENIL",
+"precio": 1710,
+"unidades": 431,
+"peso_g": 300
+},
+{
+"ean": "9788408326304",
+"titulo": "AVENTURAS DE DANI Y EVAN 16, LAS: FUGA DE DINOSAURIOS",
+"autor": "LAS AVENTURAS DE DANI Y EVAN",
+"editorial": "DESTINO INFANTIL & JUVENIL",
+"precio": 1960,
+"unidades": 429,
+"peso_g": 300
+},
+{
+"ean": "9791388111006",
+"titulo": "PRINCIPIO, MEDIO, FIN",
+"autor": "LUISELLI, VALERIA",
+"editorial": "FELTRINELLI EDITORES",
+"precio": 2540,
+"unidades": 426,
+"peso_g": 500
+},
+{
+"ean": "9788494820694",
+"titulo": "TENGO UN VOLCAN",
+"autor": "TIRADO, MIRIAM",
+"editorial": "CARAMBUCO EDICIONES",
+"precio": 1800,
+"unidades": 426,
+"peso_g": 300
+},
+{
+"ean": "9788427248427",
+"titulo": "JUEGOS DEL HAMBRE 05, LOS : AMANECER EN LA COSECHA",
+"autor": "COLLINS, SUZANNE",
+"editorial": "MOLINO",
+"precio": 2500,
+"unidades": 426,
+"peso_g": 500
+},
+{
+"ean": "9791387810436",
+"titulo": "SERIE MINDF*CK 01: PELIGRO",
+"autor": "ABBY, S. T.",
+"editorial": "CONTRALUZ",
+"precio": 1670,
+"unidades": 422,
+"peso_g": 350
+},
+{
+"ean": "9788499744285",
+"titulo": "DICCIONARIO ILUSTRADO LATIN-ESPAÑOL / ESPAÑOL-LATIN",
+"autor": "VOX EDITORIAL",
+"editorial": "VOX",
+"precio": 2660,
+"unidades": 418,
+"peso_g": 500
+},
+{
+"ean": "9791388108112",
+"titulo": "ASISTENTE DEL VILLANO: SE BUSCA (SOLO LOS BUENOS MUEREN…) (EDICION ESPECIAL LIMITADA)",
+"autor": "MAEHRER, HANNAH NICOLE",
+"editorial": "FAERIS EDITORIAL",
+"precio": 2610,
+"unidades": 417,
+"peso_g": 500
+},
+{
+"ean": "9788468299051",
+"titulo": "MITOS GRIEGOS",
+"autor": "ANGELIDOU, M.",
+"editorial": "VICENS VIVES",
+"precio": 1760,
+"unidades": 414,
+"peso_g": 300
+},
+{
+"ean": "9791388015403",
+"titulo": "UN DESASTRE NAVIDEÑO LLAMADO AMOR: LA CUENTA ATRAS ESTA A PUNTO DE EMPEZAR",
+"autor": "MADI, SILVIA",
+"editorial": "NEWTON COMPTON",
+"precio": 1540,
+"unidades": 414,
+"peso_g": 350
+},
+{
+"ean": "9788466362085",
+"titulo": "CASA DE LOS ESPIRITUS, LA",
+"autor": "ALLENDE, ISABEL",
+"editorial": "DEBOLSILLO",
+"precio": 1670,
+"unidades": 412,
+"peso_g": 200
+},
+{
+"ean": "9788484645641",
+"titulo": "¿A QUE SABE LA LUNA?",
+"autor": "GREJNIEC, MICHAEL",
+"editorial": "KALANDRAKA",
+"precio": 2180,
+"unidades": 410,
+"peso_g": 500
+},
+{
+"ean": "9788410116214",
+"titulo": "COZY LOVE Y CRIMENES NAVIDEÑOS: ROMANCE DE ADVIENTO",
+"autor": "FILIPPINI, ANOUK",
+"editorial": "TBR",
+"precio": 2290,
+"unidades": 407,
+"peso_g": 500
+},
+{
+"ean": "9788410116207",
+"titulo": "UNA NAVIDAD A PUNTO DE NIEVE: ROMANCE DE ADVIENTO",
+"autor": "KAFKA, CYNTHIA",
+"editorial": "TBR",
+"precio": 2290,
+"unidades": 407,
+"peso_g": 500
+},
+{
+"ean": "9788418107801",
+"titulo": "UN DIA SIN MUJERES",
+"autor": "COLOMBANI, LAETITIA",
+"editorial": "SALAMANDRA",
+"precio": 2550,
+"unidades": 406,
+"peso_g": 500
+},
+{
+"ean": "9788408072805",
+"titulo": "PRINCIPE DE LA NIEBLA, EL",
+"autor": "RUIZ ZAFON, CARLOS",
+"editorial": "BOOKET",
+"precio": 1620,
+"unidades": 404,
+"peso_g": 200
+},
+{
+"ean": "9791388056178",
+"titulo": "TIO GRANDE",
+"autor": "BERGARECHE, JACOBO",
+"editorial": "LIBROS DEL ASTEROIDE",
+"precio": 2510,
+"unidades": 401,
+"peso_g": 500
+},
+{
+"ean": "9788466373005",
+"titulo": "PADRE RICO, PADRE POBRE",
+"autor": "KIYOSAKI, ROBERT T.",
+"editorial": "DEBOLSILLO",
+"precio": 1630,
+"unidades": 400,
+"peso_g": 200
+},
+{
+"ean": "9788408324539",
+"titulo": "CIRCULO DE LA FELICIDAD, EL: UN LIBRO LLENO DE MAGIA POR EL ALQUIMISTA DE LAS PALABRAS",
+"autor": "COELHO, PAULO",
+"editorial": "PLANETA",
+"precio": 2450,
+"unidades": 399,
+"peso_g": 500
+},
+{
+"ean": "9788420459547",
+"titulo": "CAZAMISTERIOS 01, LOS : EL CASO DE LAS MASCOTAS DESAPARECIDAS",
+"autor": "GARCIA-ROJO, PATRICIA",
+"editorial": "ALFAGUARA INFANTIL Y JUVENIL",
+"precio": 1670,
+"unidades": 399,
+"peso_g": 300
+},
+{
+"ean": "9788419746979",
+"titulo": "CHICOS DE TOMMEN 03, LOS: SAVING 6",
+"autor": "WALSH, CHLOE",
+"editorial": "MONTENA",
+"precio": 2450,
+"unidades": 398,
+"peso_g": 500
+},
+{
+"ean": "9788499890951",
+"titulo": "REBELION EN LA GRANJA",
+"autor": "ORWELL, GEORGE",
+"editorial": "DEBOLSILLO",
+"precio": 1590,
+"unidades": 397,
+"peso_g": 200
+},
+{
+"ean": "9788425373701",
+"titulo": "LABERINTO DE PIEDRA, EL",
+"autor": "OLIVA, JAVIER",
+"editorial": "GRIJALBO",
+"precio": 2670,
+"unidades": 395,
+"peso_g": 500
+},
+{
+"ean": "9788408326380",
+"titulo": "GUERRA FRIA CONTADA PARA ESCEPTICOS, LA",
+"autor": "ESLAVA GALAN, JUAN",
+"editorial": "PLANETA",
+"precio": 2630,
+"unidades": 393,
+"peso_g": 500
+},
+{
+"ean": "9788466389730",
+"titulo": "TRAS LA PUERTA",
+"autor": "MCFADDEN, FREIDA",
+"editorial": "DEBOLSILLO",
+"precio": 1590,
+"unidades": 393,
+"peso_g": 200
+},
+{
+"ean": "9788419848222",
+"titulo": "CHICOS DE TOMMEN 06, LOS: RELEASING 10",
+"autor": "WALSH, CHLOE",
+"editorial": "MONTENA",
+"precio": 2540,
+"unidades": 392,
+"peso_g": 500
+},
+{
+"ean": "9788494709203",
+"titulo": "ARTE DE LA GUERRA, EL",
+"autor": "SUN TZU",
+"editorial": "DOJO",
+"precio": 1610,
+"unidades": 391,
+"peso_g": 350
+},
+{
+"ean": "9791387839505",
+"titulo": "MOCHILA, LA: VIDA DE MUÑAGORRI",
+"autor": "IZAGIRRE, ANDER",
+"editorial": "LIBROS DEL K.O.",
+"precio": 2630,
+"unidades": 388,
+"peso_g": 500
+},
+{
+"ean": "9788408315759",
+"titulo": "CAOS DE BECA 01, EL: EL PRIMER DIA DE MI NUEVA VIDA",
+"autor": "DIAZ REGUERA, RAQUEL",
+"editorial": "DESTINO INFANTIL & JUVENIL",
+"precio": 2170,
+"unidades": 388,
+"peso_g": 500
+},
+{
+"ean": "9788408319856",
+"titulo": "SUPRACONCIENCIA EXISTE, LA: VIDA DESPUES DE LA VIDA",
+"autor": "SANS SEGARRA, MANUEL / CEBRIAN, JUAN CARLOS",
+"editorial": "BOOKET",
+"precio": 1540,
+"unidades": 387,
+"peso_g": 200
+},
+{
+"ean": "9788466360111",
+"titulo": "DESAPARICION DE STEPHANIE MAILER, LA",
+"autor": "DICKER, JOEL",
+"editorial": "DEBOLSILLO",
+"precio": 1510,
+"unidades": 386,
+"peso_g": 200
+},
+{
+"ean": "9788427055544",
+"titulo": "VACACIONES INFERNALES",
+"autor": "UNZU, IKER",
+"editorial": "MARTINEZ ROCA",
+"precio": 2490,
+"unidades": 385,
+"peso_g": 500
+},
+{
+"ean": "9788410298316",
+"titulo": "CHICOS DE TOMMEN 04, LOS: REDEEMING 6",
+"autor": "WALSH, CHLOE",
+"editorial": "MONTENA",
+"precio": 2540,
+"unidades": 384,
+"peso_g": 500
+},
+{
+"ean": "9788410299498",
+"titulo": "JOTADE",
+"autor": "DIAZ, SANTIAGO",
+"editorial": "ALFAGUARA",
+"precio": 2500,
+"unidades": 382,
+"peso_g": 500
+},
+{
+"ean": "9791387711894",
+"titulo": "EN ESTE REINO SOY INMORTAL (EDICION ESPECIAL LIMITADA CON CANTOS DECORADOS)",
+"autor": "ANDREWS, ILONA",
+"editorial": "HIDRA",
+"precio": 2900,
+"unidades": 379,
+"peso_g": 500
+},
+{
+"ean": "9791387869052",
+"titulo": "MURDLE 02: MAS CRIMENES POR RESOLVER. SACA AL DETECTIVE QUE LLEVAS DENTRO Y DISFRUTA RESOLVIENDO 100 NUEVOS Y ADICTIVOS MISTERIOS",
+"autor": "KARBER, G. T.",
+"editorial": "TEMAS DE HOY",
+"precio": 1670,
+"unidades": 379,
+"peso_g": 300
+},
+{
+"ean": "9788408257103",
+"titulo": "UNA CORTE DE ROSAS Y ESPINAS 01: UNA CORTE DE ROSAS Y ESPINAS",
+"autor": "MAAS, SARAH J.",
+"editorial": "CROSS BOOKS",
+"precio": 2450,
+"unidades": 377,
+"peso_g": 500
+},
+{
+"ean": "9788410298194",
+"titulo": "CHICOS DE TOMMEN 05, LOS: TAMING 7",
+"autor": "WALSH, CHLOE",
+"editorial": "MONTENA",
+"precio": 2450,
+"unidades": 377,
+"peso_g": 500
+},
+{
+"ean": "9788408279990",
+"titulo": "EMPIREO 01: ALAS DE SANGRE",
+"autor": "YARROS, REBECCA",
+"editorial": "PLANETA",
+"precio": 2580,
+"unidades": 374,
+"peso_g": 500
+},
+{
+"ean": "9788418054716",
+"titulo": "PEQUEÑAS MANITAS: EL HILO INVISIBLE",
+"autor": "TIRADO, MIRIAM",
+"editorial": "B DE BLOK",
+"precio": 1950,
+"unidades": 374,
+"peso_g": 300
+},
+{
+"ean": "9788419822178",
+"titulo": "HIPOTESIS DEL AMOR, LA",
+"autor": "HAZELWOOD, ALI",
+"editorial": "CONTRALUZ",
+"precio": 1590,
+"unidades": 373,
+"peso_g": 200
+},
+{
+"ean": "9788432249747",
+"titulo": "INTRIGA DEL FUNERAL INCONVENIENTE, LA",
+"autor": "MENDOZA, EDUARDO",
+"editorial": "SEIX BARRAL",
+"precio": 2500,
+"unidades": 371,
+"peso_g": 500
+},
+{
+"ean": "9788411078375",
+"titulo": "LEOPARDAS, LAS (XXII PREMIO TUSQUETS DE NOVELA 2026)",
+"autor": "BORRAZ, MARTA",
+"editorial": "TUSQUETS",
+"precio": 2460,
+"unidades": 370,
+"peso_g": 500
+},
+{
+"ean": "9788423370450",
+"titulo": "PIEL DE UNA GOTA, LA",
+"autor": "PEREZ GELLIDA, CESAR",
+"editorial": "DESTINO",
+"precio": 2630,
+"unidades": 369,
+"peso_g": 500
+},
+{
+"ean": "9791388019906",
+"titulo": "AMOR, EL",
+"autor": "KALLIFATIDES, THEODOR",
+"editorial": "GALAXIA GUTENBERG",
+"precio": 2120,
+"unidades": 367,
+"peso_g": 350
+},
+{
+"ean": "9788410096547",
+"titulo": "GENIOS CREEN EN DIOS, LOS",
+"autor": "GONZALEZ-HURTADO, JOSE CARLOS",
+"editorial": "ROCA EDITORIAL",
+"precio": 2580,
+"unidades": 365,
+"peso_g": 500
+},
+{
+"ean": "9788430994403",
+"titulo": "CONSTITUCION ESPAÑOLA (INCLUYE LA LEY ORGANICA 2/1979, DE 3 DE OCTUBRE, DEL TRIBUNAL CONSTITUCIONAL",
+"autor": "EDITORIAL TECNOS",
+"editorial": "TECNOS",
+"precio": 1730,
+"unidades": 364,
+"peso_g": 350
+},
+{
+"ean": "9788408178866",
+"titulo": "TRES CERDITOS, LOS / CUENTOS CON MECANISMOS",
+"autor": "VARIOS AUTORES",
+"editorial": "TIMUN MAS INFANTIL",
+"precio": 1630,
+"unidades": 361,
+"peso_g": 350
+},
+{
+"ean": "9781037200083",
+"titulo": "A COURT OF THORNS AND ROSES 06: A COURT OF SPLINTERED HARMONY: THE VALKYRIE CYCLE, MOVEMENT I",
+"autor": "MAAS, SARAH J.",
+"editorial": "BLOOMSBURY PUBLISHING",
+"precio": 2680,
+"unidades": 360,
+"peso_g": 500
+},
+{
+"ean": "9788423369485",
+"titulo": "QUE NO DUERMEN NASH, LAS",
+"autor": "REDONDO, DOLORES",
+"editorial": "BOOKET",
+"precio": 1720,
+"unidades": 359,
+"peso_g": 200
+},
+{
+"ean": "9788419868909",
+"titulo": "PERCY JACKSON Y LOS DIOSES DEL OLIMPO 01: EL LADRON DEL RAYO",
+"autor": "RIORDAN, RICK",
+"editorial": "SALAMANDRA INFANTIL Y JUVENIL",
+"precio": 2090,
+"unidades": 357,
+"peso_g": 350
+},
+{
+"ean": "9791387783051",
+"titulo": "OSSET SISET: CALENDARI D'ADVENT (24 MINILLIBRES! UN DARRERE DE CADA FINESTRA!)",
+"autor": "DAVIES, BENJI",
+"editorial": "ESTRELLA POLAR",
+"precio": 2580,
+"unidades": 356,
+"peso_g": 500
+},
+{
+"ean": "9788418483097",
+"titulo": "APRENDE A LEER EN LA ESCUELA DE MONSTRUOS 02: UNA LIADA DE MERMELADA",
+"autor": "RIPPIN, SALLY",
+"editorial": "MONTENA",
+"precio": 1540,
+"unidades": 354,
+"peso_g": 300
+},
+{
+"ean": "9788411191067",
+"titulo": "ACTO DE CREAR, EL: UNA MANERA DE SER",
+"autor": "RUBIN, RICK",
+"editorial": "DIANA",
+"precio": 2890,
+"unidades": 354,
+"peso_g": 500
+},
+{
+"ean": "9791039543965",
+"titulo": "LIBRO DE SONIDOS: MIS PRIMERAS CANCIONES (6 MECANISMOS SONOROS)",
+"autor": "VARIOS AUTORES",
+"editorial": "AUZOU",
+"precio": 1710,
+"unidades": 352,
+"peso_g": 350
+},
+{
+"ean": "9788432251467",
+"titulo": "RECUERDOS: BREVE HISTORIA DE UN AMOR",
+"autor": "RAMIREZ DE LUCAS, JUAN",
+"editorial": "SEIX BARRAL",
+"precio": 2540,
+"unidades": 352,
+"peso_g": 500
+},
+{
+"ean": "9788408316084",
+"titulo": "EMPIREO 01: ALAS DE SANGRE (EDICION COLECCIONISTA ENRIQUECIDA Y LIMITADA)",
+"autor": "YARROS, REBECCA",
+"editorial": "BOOKET",
+"precio": 1930,
+"unidades": 350,
+"peso_g": 200
+},
+{
+"ean": "9798189882401",
+"titulo": "DIBUJOS MONOCROMATICOS 01: PIXELMANIA: 100 DIBUJOS MONOCROMATICOS (EDICION ANIMALES SALVAJES)",
+"autor": "THE PIXOLOGIST",
+"editorial": "INDEPENDENTLY PUBLISHED",
+"precio": 2060,
+"unidades": 349,
+"peso_g": 350
+},
+{
+"ean": "9791387596415",
+"titulo": "YESTERYEAR",
+"autor": "BURKE, CARO CLAIRE",
+"editorial": "ADN EDITORIAL GRUPO ANAYA",
+"precio": 2540,
+"unidades": 347,
+"peso_g": 500
+},
+{
+"ean": "9788408271840",
+"titulo": "MAGIC ANIMALS 02: LA INVASION DE LAS RANAS GIGANTES",
+"autor": "ISERN, SUSANNA",
+"editorial": "DESTINO INFANTIL & JUVENIL",
+"precio": 1710,
+"unidades": 346,
+"peso_g": 300
+},
+{
+"ean": "9788466392587",
+"titulo": "PROFESORA, LA",
+"autor": "MCFADDEN, FREIDA",
+"editorial": "DEBOLSILLO",
+"precio": 1590,
+"unidades": 345,
+"peso_g": 200
+},
+{
+"ean": "9788432239939",
+"titulo": "RIDICULA IDEA DE NO VOLVER A VERTE, LA",
+"autor": "MONTERO, ROSA",
+"editorial": "BOOKET",
+"precio": 1590,
+"unidades": 344,
+"peso_g": 200
+},
+{
+"ean": "9791387994303",
+"titulo": "ME LLAMO GOA 12",
+"autor": "TIRADO, MIRIAM",
+"editorial": "B DE BLOK",
+"precio": 2210,
+"unidades": 344,
+"peso_g": 500
+},
+{
+"ean": "9791387749330",
+"titulo": "PLACERES MORTALES: UNA HISTORIA DE DESEO Y VENGANZA (EDICION ESPECIAL)",
+"autor": "MARTINEZ, BELEN",
+"editorial": "UMBRIEL",
+"precio": 2880,
+"unidades": 343,
+"peso_g": 500
+},
+{
+"ean": "9788490707180",
+"titulo": "MUCHAS VIDAS, MUCHOS MAESTROS",
+"autor": "WEISS, BRIAN L.",
+"editorial": "B DE BOLSILLO",
+"precio": 1620,
+"unidades": 343,
+"peso_g": 200
+},
+{
+"ean": "9788411732475",
+"titulo": "COM GUANYAR ELS FATXEX (LLEGIR ABANS DE VOTAR)",
+"autor": "RUFIAN, GABRIEL",
+"editorial": "ARA LLIBRES",
+"precio": 2490,
+"unidades": 342,
+"peso_g": 500
+},
+{
+"ean": "9788408326724",
+"titulo": "ESTA LLOVIENDO Y TE QUIERO (UNA IMPACTANTE SAGA FAMILIAR POR UNOS DE LOS AUTORES DE CARMEN MOLA)",
+"autor": "MERCERO, ANTONIO",
+"editorial": "BOOKET",
+"precio": 1640,
+"unidades": 342,
+"peso_g": 200
+},
+{
+"ean": "9788466392570",
+"titulo": "MUJER DE ARRIBA, LA",
+"autor": "MCFADDEN, FREIDA",
+"editorial": "DEBOLSILLO",
+"precio": 1590,
+"unidades": 340,
+"peso_g": 200
+},
+{
+"ean": "9788419522177",
+"titulo": "ME LLAMO GOA 02: ¡QUE FUERTE, GOA!",
+"autor": "TIRADO, MIRIAM",
+"editorial": "B DE BLOK",
+"precio": 2210,
+"unidades": 339,
+"peso_g": 500
+},
+{
+"ean": "9788466356145",
+"titulo": "MITO DE SISIFO, EL",
+"autor": "CAMUS, ALBERT",
+"editorial": "DEBOLSILLO",
+"precio": 1680,
+"unidades": 339,
+"peso_g": 200
+},
+{
+"ean": "9791388108419",
+"titulo": "HECHIZO MAS OSCURO, EL (LA GUERRA HA ACABADO. PERO SU HISTORIA ACABA DE COMENZAR)",
+"autor": "HELLMUND, WANDA",
+"editorial": "FAERIS EDITORIAL",
+"precio": 2620,
+"unidades": 339,
+"peso_g": 500
+},
+{
+"ean": "9788417427535",
+"titulo": "ESCRITURA RUBIO 02",
+"autor": "RUBIO SILVESTRE, RAMON",
+"editorial": "EDICIONES TECNICAS RUBIO",
+"precio": 1270,
+"unidades": 337,
+"peso_g": 300
+},
+{
+"ean": "9788420479279",
+"titulo": "VIAJE DE MI PADRE, EL",
+"autor": "LLAMAZARES, JULIO",
+"editorial": "ALFAGUARA",
+"precio": 2550,
+"unidades": 337,
+"peso_g": 500
+},
+{
+"ean": "9788466685016",
+"titulo": "HIJA DEL JOYERO, LA",
+"autor": "AGUILERA, INMA",
+"editorial": "EDICIONES B",
+"precio": 2670,
+"unidades": 336,
+"peso_g": 500
+},
+{
+"ean": "9788408286127",
+"titulo": "VERITY:  LA SOMBRA DE UN ENGAÑO",
+"autor": "HOOVER, COLLEEN",
+"editorial": "BOOKET",
+"precio": 1590,
+"unidades": 336,
+"peso_g": 200
+},
+{
+"ean": "9788448865207",
+"titulo": "NOS TRATAMOS BIEN",
+"autor": "SERRANO, LUCIA",
+"editorial": "BEASCOA",
+"precio": 2160,
+"unidades": 334,
+"peso_g": 500
+},
+{
+"ean": "9791387846794",
+"titulo": "MI AMOR NO MUERE",
+"autor": "SAVIANO, ROBERTO",
+"editorial": "ALFAGUARA",
+"precio": 2550,
+"unidades": 334,
+"peso_g": 500
+},
+{
+"ean": "9791388042485",
+"titulo": "MENTIRA DE LA ORQUIDEA, LA",
+"autor": "CARRISI, DONATO",
+"editorial": "DUOMO",
+"precio": 2550,
+"unidades": 333,
+"peso_g": 500
+},
+{
+"ean": "9788410396425",
+"titulo": "APRENDER A LEER EN LA ESCUELA DE MONSTRUOS 23: MAGICO Y DRAMATICO",
+"autor": "RIPPIN, SALLY",
+"editorial": "MONTENA",
+"precio": 1540,
+"unidades": 331,
+"peso_g": 300
+},
+{
+"ean": "9788408318682",
+"titulo": "POR SI UN DIA VOLVEMOS",
+"autor": "DUEÑAS, MARIA",
+"editorial": "BOOKET",
+"precio": 1720,
+"unidades": 329,
+"peso_g": 200
+},
+{
+"ean": "9788408326472",
+"titulo": "EMPIREO 02: ALAS DE HIERRO. QUEMALO TODO (EDICION ESPECIAL LIMITADA CON CANTOS DECORADOS)",
+"autor": "YARROS, REBECCA",
+"editorial": "BOOKET",
+"precio": 1920,
+"unidades": 328,
+"peso_g": 200
+},
+{
+"ean": "9788419275851",
+"titulo": "HARRY POTTER 06: HARRY POTTER Y EL MISTERIO DEL PRINCIPE",
+"autor": "ROWLING, J. K.",
+"editorial": "SALAMANDRA INFANTIL Y JUVENIL",
+"precio": 3540,
+"unidades": 328,
+"peso_g": 500
+},
+{
+"ean": "9788418599408",
+"titulo": "TU CUERPO ES TUYO",
+"autor": "SERRANO, LUCIA",
+"editorial": "NUBEOCHO EDICIONES",
+"precio": 1950,
+"unidades": 325,
+"peso_g": 300
+},
+{
+"ean": "9791387845940",
+"titulo": "DIARIOS DE EMMA M. LION 01, LOS",
+"autor": "BROWER, BETH",
+"editorial": "SUMA DE LETRAS",
+"precio": 2000,
+"unidades": 325,
+"peso_g": 350
+},
+{
+"ean": "9791387788452",
+"titulo": "1984",
+"autor": "ORWELL, GEORGE",
+"editorial": "NEWTON COMPTON",
+"precio": 1670,
+"unidades": 325,
+"peso_g": 350
+},
+{
+"ean": "9788417427436",
+"titulo": "ESCRITURA RUBIO 02",
+"autor": "RUBIO SILVESTRE, RAMON",
+"editorial": "EDICIONES TECNICAS RUBIO",
+"precio": 1270,
+"unidades": 323,
+"peso_g": 300
+},
+{
+"ean": "9798575667285",
+"titulo": "ORIGAMI: +30 MODELOS SIMPLES Y FACILES (EDICION NAVIDAD)",
+"autor": "EDICION COLIBRIGAMI",
+"editorial": "INDEPENDENTLY PUBLISHED",
+"precio": 1730,
+"unidades": 320,
+"peso_g": 350
+},
+{
+"ean": "9788420479286",
+"titulo": "JOTADE 02: EL AMO",
+"autor": "DIAZ, SANTIAGO",
+"editorial": "ALFAGUARA",
+"precio": 2490,
+"unidades": 319,
+"peso_g": 500
+},
+{
+"ean": "9788467082647",
+"titulo": "RIETE DE LAS BODAS",
+"autor": "MAXWELL, MEGAN",
+"editorial": "ESPASA",
+"precio": 2580,
+"unidades": 319,
+"peso_g": 500
+},
+{
+"ean": "9788408327134",
+"titulo": "DIA QUE LO FUIMOS TODO, EL (UNA NOVELA)",
+"autor": "MARTIN, ANGEL",
+"editorial": "PLANETA",
+"precio": 2490,
+"unidades": 315,
+"peso_g": 500
+},
+{
+"ean": "9788410257184",
+"titulo": "ASISTENTA 03, LA: LA ASISTENTA TE VIGILA",
+"autor": "MCFADDEN, FREIDA",
+"editorial": "SUMA DE LETRAS",
+"precio": 2490,
+"unidades": 313,
+"peso_g": 500
+},
+{
+"ean": "9788411108911",
+"titulo": "A BOA MORTE",
+"autor": "FEIJOO, PEDRO",
+"editorial": "XERAIS DE GALICIA",
+"precio": 2650,
+"unidades": 313,
+"peso_g": 500
+},
+{
+"ean": "9791387749309",
+"titulo": "DIVINOS Y MISERABLES",
+"autor": "GRACE, ADALYN",
+"editorial": "UMBRIEL",
+"precio": 2630,
+"unidades": 313,
+"peso_g": 500
+},
+{
+"ean": "9788493375973",
+"titulo": "LUNA",
+"autor": "RUBIO, ANTONIO",
+"editorial": "KALANDRAKA",
+"precio": 1600,
+"unidades": 313,
+"peso_g": 300
+},
+{
+"ean": "9788408322764",
+"titulo": "BAILE DE LAS CRIADAS, EL (EN UNA CIUDAD LLENA DE SECRETOS SIEMPRE HAY ALGUIEN QUE TODO LO VE) (PREMIO DE NOVELA FERNANDO LARA 2026)",
+"autor": "PLATEL, MARTA",
+"editorial": "PLANETA",
+"precio": 2630,
+"unidades": 312,
+"peso_g": 500
+},
+{
+"ean": "9791388042225",
+"titulo": "CAMBIAR EL AGUA DE LAS FLORES",
+"autor": "PERRIN, VALERIE",
+"editorial": "DUOMO",
+"precio": 2460,
+"unidades": 311,
+"peso_g": 500
+},
+{
+"ean": "9788417427443",
+"titulo": "ESCRITURA RUBIO 03",
+"autor": "RUBIO SILVESTRE, RAMON",
+"editorial": "EDICIONES TECNICAS RUBIO",
+"precio": 1270,
+"unidades": 310,
+"peso_g": 300
+},
+{
+"ean": "9788466393690",
+"titulo": "HARRY POTTER 01: HARRY POTTER Y LA PIEDRA FILOSOFAL",
+"autor": "ROWLING, J. K.",
+"editorial": "DEBOLSILLO",
+"precio": 1640,
+"unidades": 308,
+"peso_g": 200
+},
+{
+"ean": "9788497778213",
+"titulo": "PIENSE Y HAGASE RICO",
+"autor": "HILL, NAPOLEON",
+"editorial": "OBELISCO",
+"precio": 1530,
+"unidades": 308,
+"peso_g": 350
+},
+{
+"ean": "9788408323167",
+"titulo": "RUSO 04, EL: EL RUSO Y LA ESCUELA DE MAGIA (CONTIENE TINTA MAGICA ¡FROTA Y DESCUBRE!)",
+"autor": "ALESGF",
+"editorial": "DESTINO INFANTIL & JUVENIL",
+"precio": 2290,
+"unidades": 308,
+"peso_g": 500
+},
+{
+"ean": "9791387810566",
+"titulo": "SERIE MINDF*CK 04: MENTIRAS",
+"autor": "ABBY, S.T.",
+"editorial": "CONTRALUZ",
+"precio": 1670,
+"unidades": 308,
+"peso_g": 350
+},
+{
+"ean": "9788420479361",
+"titulo": "FANTASMA",
+"autor": "PEREZ DE LAS HERAS, NEREA",
+"editorial": "ALFAGUARA",
+"precio": 2460,
+"unidades": 307,
+"peso_g": 500
+},
+{
+"ean": "9788491999195",
+"titulo": "HERVIDERO, EL: HISTORIA DE ORIENTE PROXIMO, 1900-2026",
+"autor": "SEBAG MONTEFIORE, SIMON",
+"editorial": "CRITICA",
+"precio": 2900,
+"unidades": 307,
+"peso_g": 500
+},
+{
+"ean": "9788466685238",
+"titulo": "EN LA TIERRA DE LOS ARCES",
+"autor": "LARK, SARAH",
+"editorial": "EDICIONES B",
+"precio": 2680,
+"unidades": 307,
+"peso_g": 500
+},
+{
+"ean": "9788419688361",
+"titulo": "POWERLESS 01: POWERLESS",
+"autor": "ROBERTS, LAUREN",
+"editorial": "ALFAGUARA INFANTIL Y JUVENIL",
+"precio": 2540,
+"unidades": 307,
+"peso_g": 500
+},
+{
+"ean": "9791370090982",
+"titulo": "YO QUE NUNCA SUPE DE LOS HOMBRES",
+"autor": "HARPMAN, JACQUELINE",
+"editorial": "ALIANZA",
+"precio": 2320,
+"unidades": 306,
+"peso_g": 500
+},
+{
+"ean": "9791387972486",
+"titulo": "KISS THE VILLAIN",
+"autor": "KENT, RINA",
+"editorial": "MONTENA",
+"precio": 2500,
+"unidades": 304,
+"peso_g": 500
+},
+{
+"ean": "9788478086085",
+"titulo": "SECRETOS DE LA MENTE MILLONARIA, LOS",
+"autor": "EKER, T. HARV",
+"editorial": "SIRIO",
+"precio": 1790,
+"unidades": 303,
+"peso_g": 350
+},
+{
+"ean": "9788408324294",
+"titulo": "ZODIAC ACADEMY 01: EL DESPERTAR (EDICION ESPECIAL CON CANTOS TINTADOS)",
+"autor": "VALENTI, SUSANNE / PECKHAM, CAROLINE",
+"editorial": "CROSS BOOKS",
+"precio": 2670,
+"unidades": 303,
+"peso_g": 500
+},
+{
+"ean": "9788408324485",
+"titulo": "UNIVERSIDAD SORROWSONG 02: DAYBREAK (LA VENGANZA LOS UNIO, PERO SU AMOR PODRIA DESTRUIRLO TODO)",
+"autor": "WOODS, AUTUMN",
+"editorial": "CROSS BOOKS",
+"precio": 2500,
+"unidades": 302,
+"peso_g": 500
+},
+{
+"ean": "9788408325741",
+"titulo": "EGO Y SUPRACONCIENCIA: BUSCANDO EL SENTIDO DE LA VIDA",
+"autor": "SANS SEGARRA, MANUEL / CEBRIAN, JUAN CARLOS / CLOPES, JOSEP MARIA",
+"editorial": "BOOKET",
+"precio": 1550,
+"unidades": 302,
+"peso_g": 200
+},
+{
+"ean": "9788413621654",
+"titulo": "BIBLIOTECA DE LA MEDIANOCHE, LA",
+"autor": "HAIG, MATT",
+"editorial": "ADN EDITORIAL GRUPO ANAYA",
+"precio": 2620,
+"unidades": 301,
+"peso_g": 500
+},
+{
+"ean": "9791387871079",
+"titulo": "TRILOGIA DE ILLUMBE 03: ENTRE LOS MUERTOS",
+"autor": "SANTIAGO, MIKEL",
+"editorial": "B DE BOLSILLO",
+"precio": 1500,
+"unidades": 301,
+"peso_g": 200
+},
+{
+"ean": "9788401039928",
+"titulo": "CANTO DEL CISNE, EL",
+"autor": "SPENCER, CHARLES",
+"editorial": "PLAZA & JANES",
+"precio": 2630,
+"unidades": 299,
+"peso_g": 500
+},
+{
+"ean": "9788410090200",
+"titulo": "UNA CASA DE POR",
+"autor": "MARTI, MERITXELL",
+"editorial": "FLAMBOYANT",
+"precio": 2250,
+"unidades": 297,
+"peso_g": 500
+},
+{
+"ean": "9791370313463",
+"titulo": "AMANECER ROJO 01 (DELUXE EDITION)",
+"autor": "BROWN, PIERCE",
+"editorial": "RBA",
+"precio": 4010,
+"unidades": 297,
+"peso_g": 800
+},
+{
+"ean": "9788419357885",
+"titulo": "APRENDE A LEER EN LA ESCUELA DE MONSTRUOS 10: DAME HELADO O ME DESHAGO",
+"autor": "RIPPIN, SALLY",
+"editorial": "MONTENA",
+"precio": 1540,
+"unidades": 295,
+"peso_g": 300
+},
+{
+"ean": "9788419522979",
+"titulo": "ME LLAMO GOA 03:  OH MY GOA!",
+"autor": "TIRADO, MIRIAM",
+"editorial": "B DE BLOK",
+"precio": 2210,
+"unidades": 294,
+"peso_g": 500
+},
+{
+"ean": "9791388163258",
+"titulo": "DIARIOS DE EMMA M. LION 05, LOS",
+"autor": "BROWER, BETH",
+"editorial": "SUMA DE LETRAS",
+"precio": 2000,
+"unidades": 294,
+"peso_g": 350
+},
+{
+"ean": "9788419848260",
+"titulo": "CIUDAD DE LOS VIENTOS 01, LA: ROZANDO EL CIELO (MILE HIGH)",
+"autor": "TOMFORDE, LIZ",
+"editorial": "MONTENA",
+"precio": 2460,
+"unidades": 294,
+"peso_g": 500
+},
+{
+"ean": "9791387512835",
+"titulo": "MIENTRAS ESPERO",
+"autor": "BENAVENT, ELISABET",
+"editorial": "SUMA DE LETRAS",
+"precio": 2540,
+"unidades": 293,
+"peso_g": 500
+},
+{
+"ean": "9791370093273",
+"titulo": "ETERNA",
+"autor": "HARROW, ALIX E.",
+"editorial": "ALIANZA",
+"precio": 2590,
+"unidades": 293,
+"peso_g": 500
+},
+{
+"ean": "9788408267324",
+"titulo": "OSITO TITO: UN DIA EN EL COLE",
+"autor": "DAVIES, BENJI",
+"editorial": "TIMUN MAS INFANTIL",
+"precio": 1630,
+"unidades": 292,
+"peso_g": 300
+},
+{
+"ean": "9788410647947",
+"titulo": "CONTRAHISTORIA DEL MUNDO EN 25 MITOS, LA",
+"autor": "DIAZ VILLANUEVA, FERNANDO",
+"editorial": "HARPERCOLLINS",
+"precio": 2480,
+"unidades": 291,
+"peso_g": 500
+},
+{
+"ean": "9798185673669",
+"titulo": "25 HITOS TEÑIDOS DE AZUL: MANZANARES FUTBOL SALA (2001-2026)",
+"autor": "CRIADO NIETO-SANDOVAL, ANTONIO",
+"editorial": "INDEPENDENTLY PUBLISHED",
+"precio": 1350,
+"unidades": 290,
+"peso_g": 350
+},
+{
+"ean": "9788401039560",
+"titulo": "TALISMAN 03, EL: OTROS MUNDOS",
+"autor": "KING, STEPHEN / STRAUB, PETER",
+"editorial": "PLAZA & JANES",
+"precio": 3220,
+"unidades": 289,
+"peso_g": 800
+},
+{
+"ean": "9788479532536",
+"titulo": "CUATRO ACUERDOS, LOS: UN LIBRO DE SABIDURIA TOLTECA",
+"autor": "RUIZ, MIGUEL",
+"editorial": "URANO",
+"precio": 1640,
+"unidades": 287,
+"peso_g": 350
+},
+{
+"ean": "9788410647756",
+"titulo": "CARDADISMO ILUSTRADO, EL: FILOSOFIA PARA SOBREVIVIR A LAS CAIDAS SIN DESPEINARTE",
+"autor": "VAQUERIZO, MARIO",
+"editorial": "HARPERCOLLINS",
+"precio": 2450,
+"unidades": 286,
+"peso_g": 500
+},
+{
+"ean": "9788408326489",
+"titulo": "UNA NAVIDAD MUY FUN, FUN, FUN",
+"autor": "MAXWELL, MEGAN",
+"editorial": "BOOKET",
+"precio": 1500,
+"unidades": 286,
+"peso_g": 200
+},
+{
+"ean": "9788408320715",
+"titulo": "MUJERES DE HIERRO: TRANSFORMA TU PERIMENOPAUSA CON HABITOS ESTRELLA DE ALIMENTACION Y EJERCICIO QUE FUNCIONAN",
+"autor": "BOTICARIA GARCIA / BUTRAGUEÑO, JAVIER",
+"editorial": "PLANETA",
+"precio": 2540,
+"unidades": 286,
+"peso_g": 500
+},
+{
+"ean": "9791387810481",
+"titulo": "SERIE MINDF*CK 02: DISTRACCION",
+"autor": "ABBY, S. T.",
+"editorial": "CONTRALUZ",
+"precio": 1670,
+"unidades": 286,
+"peso_g": 350
+},
+{
+"ean": "9788401036897",
+"titulo": "ESCALONES, LOS",
+"autor": "STALLONE, SYLVESTER",
+"editorial": "PLAZA & JANES",
+"precio": 2580,
+"unidades": 285,
+"peso_g": 500
+},
+{
+"ean": "9788410940840",
+"titulo": "ABIERTO EN CANAL: HISTORIAS INCREIBLES DE UN MEDICO FORENSE",
+"autor": "MORENO, BORJA",
+"editorial": "LA ESFERA DE LOS LIBROS",
+"precio": 2310,
+"unidades": 285,
+"peso_g": 500
+},
+{
+"ean": "9788410466470",
+"titulo": "CARL EL MAZMORRERO 06: EL OJO DE LA NOVIA FRENOPATICA",
+"autor": "DINNIMAN, MATT",
+"editorial": "EDICIONES B",
+"precio": 2890,
+"unidades": 284,
+"peso_g": 500
+},
+{
+"ean": "9788408163435",
+"titulo": "SOMBRA DEL VIENTO, LA",
+"autor": "RUIZ ZAFON, CARLOS",
+"editorial": "BOOKET",
+"precio": 1710,
+"unidades": 283,
+"peso_g": 200
+},
+{
+"ean": "9788433950819",
+"titulo": "PAJARITOS PREÑADOS",
+"autor": "ABREU, ANDREA",
+"editorial": "ANAGRAMA",
+"precio": 2630,
+"unidades": 283,
+"peso_g": 500
+},
+{
+"ean": "9788466389167",
+"titulo": "NIÑO QUE PERDIO LA GUERRA, EL",
+"autor": "NAVARRO, JULIA",
+"editorial": "DEBOLSILLO",
+"precio": 1720,
+"unidades": 282,
+"peso_g": 200
+},
+{
+"ean": "9788410425224",
+"titulo": "KISS ME 01: PROHIBIDO ENAMORARSE",
+"autor": "KENNEDY, ELLE",
+"editorial": "WONDERBOOKS",
+"precio": 1590,
+"unidades": 281,
+"peso_g": 200
+},
+{
+"ean": "9788408317210",
+"titulo": "NEUROCIENCIA PARA LA VIDA REAL: LOS 10 PASOS QUE MEJORAR TU CEREBRO",
+"autor": "IBAÑEZ, ANA",
+"editorial": "PLANETA",
+"precio": 2500,
+"unidades": 280,
+"peso_g": 500
+},
+{
+"ean": "9791387964740",
+"titulo": "PINACOTECA SOÑADA: CAMINANDO ENTRE PINTORES",
+"autor": "ARGULLOL, RAFAEL",
+"editorial": "ACANTILADO",
+"precio": 3310,
+"unidades": 279,
+"peso_g": 800
+},
+{
+"ean": "9788408253105",
+"titulo": "ALQUIMISTA, EL",
+"autor": "COELHO, PAULO",
+"editorial": "BOOKET",
+"precio": 1590,
+"unidades": 277,
+"peso_g": 200
+},
+{
+"ean": "9788417909581",
+"titulo": "EL CINQUE COR",
+"autor": "CANALS, ORIOL",
+"editorial": "ROSA DELS VENTS",
+"precio": 2530,
+"unidades": 276,
+"peso_g": 500
+},
+{
+"ean": "9788408315278",
+"titulo": "HIJAS DE LA CRIADA, LAS (PREMIO PLANETA 2023)",
+"autor": "ONEGA, SONSOLES",
+"editorial": "BOOKET",
+"precio": 1720,
+"unidades": 274,
+"peso_g": 200
+},
+{
+"ean": "9788408004349",
+"titulo": "MARINA",
+"autor": "RUIZ ZAFON, CARLOS",
+"editorial": "BOOKET",
+"precio": 1620,
+"unidades": 273,
+"peso_g": 200
+},
+{
+"ean": "9788408325161",
+"titulo": "VERITY: LA SOMBRA DE UN ENGAÑO (INCLUYE UN CAPITULO EXTRA) (EDICION ESPECIAL CON CANTOS TINTADOS)",
+"autor": "HOOVER, COLLEEN",
+"editorial": "PLANETA",
+"precio": 2620,
+"unidades": 273,
+"peso_g": 500
+},
+{
+"ean": "9788425372469",
+"titulo": "DEJA DE SER TU",
+"autor": "DISPENZA, JOE",
+"editorial": "GRIJALBO",
+"precio": 2500,
+"unidades": 269,
+"peso_g": 500
+},
+{
+"ean": "9788410428515",
+"titulo": "OJALA LO HUBIERA SABIDO ANTES: LAS CLAVES PARA MEJORAR TU VIDA",
+"autor": "ROVIRA, ALEX / MIRALLES, FRANCESC / BOLINCHES, ANTONI",
+"editorial": "KITAERU LIBROS",
+"precio": 2450,
+"unidades": 268,
+"peso_g": 500
+},
+{
+"ean": "9788408292456",
+"titulo": "ARTE DE SER NOSOTROS, EL",
+"autor": "RUBIALES, INMA",
+"editorial": "BOOKET",
+"precio": 1630,
+"unidades": 267,
+"peso_g": 200
+},
+{
+"ean": "9788408312345",
+"titulo": "MAGICO: AGENDA PAULO COELHO 2027",
+"autor": "COELHO, PAULO",
+"editorial": "BOOKET",
+"precio": 1910,
+"unidades": 266,
+"peso_g": 200
+},
+{
+"ean": "9788497594257",
+"titulo": "UN MUNDO FELIZ",
+"autor": "HUXLEY. ALDOUS",
+"editorial": "DEBOLSILLO",
+"precio": 1670,
+"unidades": 264,
+"peso_g": 200
+},
+{
+"ean": "9788449346026",
+"titulo": "DESTROZA ESTE DIARIO: DIVERSION EXTREMA. CON ACTIVIDADES NUEVAS Y SECRETAS",
+"autor": "SMITH, KERI",
+"editorial": "PAIDOS IBERICA",
+"precio": 1800,
+"unidades": 262,
+"peso_g": 350
+},
+{
+"ean": "9788423440078",
+"titulo": "TODOS LOS HOMBRES DE SANCHEZ: COMO SE ORGANIZO LA MAYOR TRAMA DE CORRUPCION DE LA HISTORIA DE LA DEMOCRACIA EN ESPAÑA",
+"autor": "GARAT, KETTY",
+"editorial": "DEUSTO",
+"precio": 2590,
+"unidades": 262,
+"peso_g": 500
+},
+{
+"ean": "9791388279096",
+"titulo": "CUANTA MAS GENTE ME JODE, MAS BUENOS MOMENTOS TENGO",
+"autor": "TORRES, MARUJA",
+"editorial": "TEMAS DE HOY",
+"precio": 2540,
+"unidades": 261,
+"peso_g": 500
+},
+{
+"ean": "9788423357581",
+"titulo": "QUINTA VICTIMA, LA",
+"autor": "BARKER, J. D.",
+"editorial": "BOOKET",
+"precio": 1670,
+"unidades": 261,
+"peso_g": 200
+},
+{
+"ean": "9788430630547",
+"titulo": "EUROPA EN SIETE CAPITULOS Y MEDIO",
+"autor": "GARTON ASH, TIMOTHY",
+"editorial": "TAURUS",
+"precio": 2530,
+"unidades": 259,
+"peso_g": 500
+},
+{
+"ean": "9788466359177",
+"titulo": "CAMPANA DE CRISTAL, LA",
+"autor": "PLATH, SYLVIA",
+"editorial": "DEBOLSILLO",
+"precio": 1680,
+"unidades": 259,
+"peso_g": 200
+},
+{
+"ean": "9788410648401",
+"titulo": "GUERRA SAGRADA DEL MOSSAD, LA (LA BATALLA DE ISRAEL CONTRA EL IRAN NUCLEAR Y LA CAZA DEL AYATOLA)",
+"autor": "FRATTINI ALONSO, ERIC",
+"editorial": "HARPERCOLLINS",
+"precio": 2490,
+"unidades": 259,
+"peso_g": 500
+},
+{
+"ean": "9788411081672",
+"titulo": "MORIR PARA SER YO: MI VIAJE A TRAVES DEL CANCER Y LA MUERTE HASTA EL DESPERTAR Y LA VERDADERA CURACION",
+"autor": "MOORJANI, ANITA",
+"editorial": "GAIA",
+"precio": 1990,
+"unidades": 256,
+"peso_g": 350
+},
+{
+"ean": "9788492917419",
+"titulo": "TU MENTE TE ENGAÑA: COMO EL CEREBRO INVENTA TU REALIDAD",
+"autor": "YON, DANIEL",
+"editorial": "TENDENCIAS",
+"precio": 2300,
+"unidades": 256,
+"peso_g": 500
+},
+{
+"ean": "9788467081480",
+"titulo": "CASTILLO DE LA FELICIDAD, EL",
+"autor": "ROJAS, ENRIQUE",
+"editorial": "ESPASA",
+"precio": 2590,
+"unidades": 256,
+"peso_g": 500
+},
+{
+"ean": "9791387574079",
+"titulo": "THE BOOK: LA GUIA DEFINITIVA PARA RECONSTRUIR LA CIVILIZACION",
+"autor": "HUNGRY MINDS",
+"editorial": "DUOMO",
+"precio": 8770,
+"unidades": 253,
+"peso_g": 1100
+},
+{
+"ean": "9788410425248",
+"titulo": "KISS ME 03: INMUNE A TI",
+"autor": "KENNEDY, ELLE",
+"editorial": "WONDERBOOKS",
+"precio": 1580,
+"unidades": 252,
+"peso_g": 200
+},
+{
+"ean": "9788403526358",
+"titulo": "SI NO CREES EN DIOS, TE DOY SU TELEFONO",
+"autor": "ARANGO, PACO",
+"editorial": "AGUILAR",
+"precio": 2530,
+"unidades": 251,
+"peso_g": 500
+},
+{
+"ean": "9788490322505",
+"titulo": "PENSAR RAPIDO, PENSAR DESPACIO",
+"autor": "KAHNEMAN, DANIEL",
+"editorial": "DEBOLSILLO",
+"precio": 1870,
+"unidades": 251,
+"peso_g": 200
+},
+{
+"ean": "9798173423122",
+"titulo": "VILLAMERLE 01: 75 LIOS. SOPAS DE LETRAS COYZ DE MISTERIO. LIBRO DE ACERTIJOS Y ENIGMAS DE PUEBLO PARA RESOLVER COMO UN DETECTIVE. PASATIEMPOS PARA ADOLESCENTES Y ADULTOS. ¿TE GRADUARAS COMO DETECTIVE? (INCLUYE BONUS EN EL INTERIOR)",
+"autor": "GALDIEZ, AIRIN",
+"editorial": "INDEPENDENTLY PUBLISHED",
+"precio": 1730,
+"unidades": 248,
+"peso_g": 300
+},
+{
+"ean": "9788494248214",
+"titulo": "DEJAR IR: EL CAMINO A LA LIBERACION",
+"autor": "HAWKINS, DAVID R.",
+"editorial": "EL GRANO DE MOSTAZA",
+"precio": 2450,
+"unidades": 248,
+"peso_g": 500
+},
+{
+"ean": "9788499899855",
+"titulo": "SIDDHARTHA",
+"autor": "HESSE, HERMANN",
+"editorial": "DEBOLSILLO",
+"precio": 1630,
+"unidades": 245,
+"peso_g": 200
+},
+{
+"ean": "9788425375811",
+"titulo": "DORMIR CUANDO NO PUEDES DORMIR",
+"autor": "SANTANDREU, RAFAEL",
+"editorial": "GRIJALBO",
+"precio": 2540,
+"unidades": 245,
+"peso_g": 500
+},
+{
+"ean": "9791388147234",
+"titulo": "CUANDO CAIGA LA NIEVE",
+"autor": "GRACE, HANNAH",
+"editorial": "B DE BOLSILLO",
+"precio": 1500,
+"unidades": 245,
+"peso_g": 200
+},
+{
+"ean": "9798188628109",
+"titulo": "TIEMPO PARA LA ESCUELA: UNA PROPUESTA COLECTIVA, VALIENTE Y PROPOSITIVA SOBRE EL DEBATE EDUCATIVO",
+"autor": "JIMENEZ VILA, MONTSERRAT / ORTOLL GRIFOLS, CARME / REGI RODRIGUEZ, CORAL",
+"editorial": "INDEPENDENTLY PUBLISHED",
+"precio": 1390,
+"unidades": 244,
+"peso_g": 350
+},
+{
+"ean": "9788410354739",
+"titulo": "INTELIGENCIA NATURAL: DESCUBRE TU PODER MENTAL. LA CIENCIA OCULTA QUE USAN LOS MENTALISTAS PARA DOMINAR LA PERCEPCION DE LA REALIDAD",
+"autor": "BOTIA, JAVIER",
+"editorial": "ARCO PRESS",
+"precio": 2450,
+"unidades": 244,
+"peso_g": 500
+},
+{
+"ean": "9791388234316",
+"titulo": "ALCASSER: MI VERDAD",
+"autor": "GARCIA, FERNANDO",
+"editorial": "NPQ EDITORES",
+"precio": 2530,
+"unidades": 243,
+"peso_g": 500
+},
+{
+"ean": "9788401041419",
+"titulo": "FUZZY HYGGE: DULCE HOGAR",
+"autor": "TINTA, VIVI",
+"editorial": "PLAZA & JANES",
+"precio": 1700,
+"unidades": 241,
+"peso_g": 350
+},
+{
+"ean": "9788410425231",
+"titulo": "KISS ME 02: OBJETIVO: TU Y YO",
+"autor": "KENNEDY, ELLE",
+"editorial": "WONDERBOOKS",
+"precio": 1590,
+"unidades": 240,
+"peso_g": 200
+},
+{
+"ean": "9788467053302",
+"titulo": "COMO HACER QUE TE PASEN COSAS BUENAS",
+"autor": "ROJAS ESTAPE, MARIAN",
+"editorial": "ESPASA",
+"precio": 2540,
+"unidades": 239,
+"peso_g": 500
+},
+{
+"ean": "9788483933916",
+"titulo": "CONVERSACION CON LA OSCURIDAD: TEORIAS, INSTITUCIONES Y ESCRITURA DEL MIEDO",
+"autor": "ENRIQUEZ, MARIANA",
+"editorial": "PAGINAS DE ESPUMA",
+"precio": 2460,
+"unidades": 238,
+"peso_g": 500
+},
+{
+"ean": "9788413142722",
+"titulo": "MENTIROSO, EL",
+"autor": "SANTIAGO, MIKEL",
+"editorial": "B DE BOLSILLO",
+"precio": 1630,
+"unidades": 238,
+"peso_g": 200
+},
+{
+"ean": "9788429783780",
+"titulo": "HISTORIA DE LES DONES: UNA NOVA HISTORIA DE CATALUNYA",
+"autor": "DUCH, MONTSERRAT",
+"editorial": "EDICIONS 62",
+"precio": 3240,
+"unidades": 234,
+"peso_g": 800
+},
+{
+"ean": "9788408326915",
+"titulo": "DONDE NO PUEDAS ENCONTRARME",
+"autor": "MOLINA (@XTAWIE), TAMARA",
+"editorial": "BOOKET",
+"precio": 1590,
+"unidades": 234,
+"peso_g": 200
+},
+{
+"ean": "9788466373173",
+"titulo": "INDIRA RAMOS 01: EL BUEN PADRE",
+"autor": "DIAZ, SANTIAGO",
+"editorial": "DEBOLSILLO",
+"precio": 1670,
+"unidades": 233,
+"peso_g": 200
+},
+{
+"ean": "9788410080423",
+"titulo": "ENFERMERA DE AUSCHWITZ, LA",
+"autor": "STUART, ANNA",
+"editorial": "NEWTON COMPTON",
+"precio": 1410,
+"unidades": 231,
+"peso_g": 200
+},
+{
+"ean": "9788466395717",
+"titulo": "INSPECTORA ANE CESTERO 01: LA DANZA DE LOS TULIPANES",
+"autor": "MARTIN, IBON",
+"editorial": "DEBOLSILLO",
+"precio": 1510,
+"unidades": 231,
+"peso_g": 200
+},
+{
+"ean": "9791387788193",
+"titulo": "HUERFANA DE AUSCHWITZ, LA",
+"autor": "STUART, ANNA",
+"editorial": "NEWTON COMPTON",
+"precio": 1420,
+"unidades": 230,
+"peso_g": 200
+},
+{
+"ean": "9788401042140",
+"titulo": "CRIMENES ILUSTRADOS: ¿SUICIDIO O ASESINATO?",
+"autor": "GARCIA, MODESTO",
+"editorial": "PLAZA & JANES",
+"precio": 2130,
+"unidades": 230,
+"peso_g": 300
+},
+{
+"ean": "9788411213554",
+"titulo": "VIDA MAS ALLA DE LA VIDA: TRANSFORMACIONES ESPIRITUALES DERIVADAS DE LAS EXPERIENCIAS CERCANAS A LA MUERTE",
+"autor": "MELO, XAVIER / COMAS, LUJAN",
+"editorial": "KAIROS",
+"precio": 2530,
+"unidades": 230,
+"peso_g": 500
+},
+{
+"ean": "9791388396267",
+"titulo": "EMPATHAS: LA VERDADERA NATURALEZA DEL SEXTO SENTIDO. ACTIVA EL PODER DE TU ALTA SENSIBILIDAD",
+"autor": "BOTIA, JAVIER",
+"editorial": "ARCO PRESS",
+"precio": 2490,
+"unidades": 229,
+"peso_g": 500
+},
+{
+"ean": "9788420470078",
+"titulo": "ENVIADO ESPECIAL: UNA BIOGRAFIA DE GUERRA",
+"autor": "PEREZ-REVERTE, ARTURO",
+"editorial": "ALFAGUARA",
+"precio": 2630,
+"unidades": 229,
+"peso_g": 500
+},
+{
+"ean": "9788467065244",
+"titulo": "RATONERA, LA",
+"autor": "CHRISTIE, AGATHA",
+"editorial": "AUSTRAL",
+"precio": 1590,
+"unidades": 228,
+"peso_g": 200
+},
+{
+"ean": "9788423369492",
+"titulo": "ESPERANDO AL DILUVIO",
+"autor": "REDONDO, DOLORES",
+"editorial": "BOOKET",
+"precio": 1720,
+"unidades": 228,
+"peso_g": 200
+},
+{
+"ean": "9798272134844",
+"titulo": "COLOREA POR NUMEROS: VIAJE POR EL MUNDO. NUMEROS Y DESCUBRE LAS IMAGENES",
+"autor": "MORELI, ELENA",
+"editorial": "INDEPENDENTLY PUBLISHED",
+"precio": 1970,
+"unidades": 227,
+"peso_g": 350
+},
+{
+"ean": "9788466394598",
+"titulo": "TRENZA, LA",
+"autor": "COLOMBANI, LAETITIA",
+"editorial": "DEBOLSILLO",
+"precio": 1630,
+"unidades": 227,
+"peso_g": 200
+},
+{
+"ean": "9791388236013",
+"titulo": "NO PUEDES QUEDARTE AQUI ETERNAMENTE",
+"autor": "PORTELA, EDURNE",
+"editorial": "GALAXIA GUTENBERG",
+"precio": 2110,
+"unidades": 227,
+"peso_g": 350
+},
+{
+"ean": "9788408267621",
+"titulo": "HASTA QUE NOS QUEDEMOS SIN ESTRELLAS",
+"autor": "RUBIALES, INMA",
+"editorial": "BOOKET",
+"precio": 1630,
+"unidades": 226,
+"peso_g": 200
+},
+{
+"ean": "9788423356980",
+"titulo": "NADA",
+"autor": "LAFORET, CARMEN",
+"editorial": "AUSTRAL",
+"precio": 1590,
+"unidades": 224,
+"peso_g": 200
+},
+{
+"ean": "9788490661444",
+"titulo": "AL ESTE DEL EDEN",
+"autor": "STEINBECK, JOHN",
+"editorial": "AUSTRAL",
+"precio": 1680,
+"unidades": 224,
+"peso_g": 200
+},
+{
+"ean": "9788408325437",
+"titulo": "CUANDO EL CIELO SE VUELVA AMARILLO",
+"autor": "PASCUAL, (@LANENAHBRUGAL), NEREA",
+"editorial": "BOOKET",
+"precio": 1590,
+"unidades": 221,
+"peso_g": 200
+},
+{
+"ean": "9788466373135",
+"titulo": "CASO ALASKA SANDERS, EL",
+"autor": "DICKER, JOEL",
+"editorial": "DEBOLSILLO",
+"precio": 1680,
+"unidades": 221,
+"peso_g": 200
+},
+{
+"ean": "9788408319757",
+"titulo": "VICTORIA (PREMIO PLANETA 2024)",
+"autor": "SANCHEZ-GARNICA, PALOMA",
+"editorial": "BOOKET",
+"precio": 1720,
+"unidades": 220,
+"peso_g": 200
+},
+{
+"ean": "9791388147494",
+"titulo": "PROYECTO HAIL MARY",
+"autor": "WEIR, ANDY",
+"editorial": "B DE BOLSILLO",
+"precio": 1500,
+"unidades": 215,
+"peso_g": 200
+},
+{
+"ean": "9788413141213",
+"titulo": "MUJERES QUE CORREN CON LOBOS",
+"autor": "ESTES, CLARISSA PINKOLA",
+"editorial": "B DE BOLSILLO",
+"precio": 1880,
+"unidades": 215,
+"peso_g": 200
+},
+{
+"ean": "9788466389808",
+"titulo": "VIUDA, LA",
+"autor": "GRISHAM, JOHN",
+"editorial": "DEBOLSILLO",
+"precio": 1510,
+"unidades": 215,
+"peso_g": 200
+},
+{
+"ean": "9788491050063",
+"titulo": "CRIMEN Y CASTIGO",
+"autor": "DOSTOIEVSKI, FIODOR M.",
+"editorial": "PENGUIN CLASICOS",
+"precio": 1680,
+"unidades": 212,
+"peso_g": 200
+},
+{
+"ean": "9788408274483",
+"titulo": "ULTIMOS DIAS EN BERLIN (FINALISTA PREMIO PLANETA 2021)",
+"autor": "SANCHEZ-GARNICA, PALOMA",
+"editorial": "BOOKET",
+"precio": 1720,
+"unidades": 210,
+"peso_g": 200
+},
+{
+"ean": "9788437622453",
+"titulo": "CASA DE BERNARDA ALBA, LA",
+"autor": "GARCIA LORCA, FEDERICO",
+"editorial": "CATEDRA",
+"precio": 1610,
+"unidades": 207,
+"peso_g": 200
+},
+{
+"ean": "9788423359745",
+"titulo": "SEXTA TRAMPA, LA",
+"autor": "BARKER, J. D.",
+"editorial": "BOOKET",
+"precio": 1670,
+"unidades": 207,
+"peso_g": 200
+},
+{
+"ean": "9788499894454",
+"titulo": "ERAMOS UNOS NIÑOS",
+"autor": "SMITH, PATTI",
+"editorial": "DEBOLSILLO",
+"precio": 1580,
+"unidades": 206,
+"peso_g": 200
+},
+{
+"ean": "9788433977366",
+"titulo": "NADA SE OPONE A LA NOCHE",
+"autor": "DE VIGAN, DELPHINE",
+"editorial": "ANAGRAMA",
+"precio": 1880,
+"unidades": 206,
+"peso_g": 200
+},
+{
+"ean": "9788419822161",
+"titulo": "AMIGOS, AMANTES Y AQUELLO TAN TERRIBLE",
+"autor": "PERRY, MATTHEW",
+"editorial": "CONTRALUZ",
+"precio": 1630,
+"unidades": 206,
+"peso_g": 200
+},
+{
+"ean": "9788466391382",
+"titulo": "LOCO DE DIOS EN EL FIN DEL MUNDO, EL",
+"autor": "CERCAS, JAVIER",
+"editorial": "DEBOLSILLO",
+"precio": 1720,
+"unidades": 204,
+"peso_g": 200
+},
+{
+"ean": "9788408326830",
+"titulo": "ARTE DE SER NOSOTROS, EL (EDICION DE BOLSILLO CON CANTOS DECORADOS)",
+"autor": "RUBIALES, INMA",
+"editorial": "BOOKET",
+"precio": 1920,
+"unidades": 203,
+"peso_g": 200
+},
+{
+"ean": "9788408325451",
+"titulo": "VERITY: LA SOMBRA DE UN ENGAÑO (EDICION TIE-IN)",
+"autor": "HOOVER, COLLEEN",
+"editorial": "BOOKET",
+"precio": 1590,
+"unidades": 201,
+"peso_g": 200
+},
+{
+"ean": "9788448049638",
+"titulo": "MI QUERIDA LUCIA: ¿PODRIA HABER EVITADO SUS MUERTES?",
+"autor": "LA VECINA RUBIA",
+"editorial": "BOOKET",
+"precio": 1510,
+"unidades": 198,
+"peso_g": 200
+},
+{
+"ean": "9788497595698",
+"titulo": "CARRIE",
+"autor": "KING, STEPHEN",
+"editorial": "DEBOLSILLO",
+"precio": 1620,
+"unidades": 194,
+"peso_g": 200
+},
+{
+"ean": "9788408327011",
+"titulo": "TE ESPERO EN EL FIN DEL MUNDO (EDICION ESPECIAL CON CANTOS DECORADOS)",
+"autor": "LONGARELA, ANDREA",
+"editorial": "BOOKET",
+"precio": 1930,
+"unidades": 191,
+"peso_g": 200
+},
+{
+"ean": "9788408316787",
+"titulo": "INSPECTORA ELENA BLANCO 01: LA NOVIA GITANA",
+"autor": "MOLA, CARMEN",
+"editorial": "BOOKET",
+"precio": 1680,
+"unidades": 191,
+"peso_g": 200
+},
+{
+"ean": "9788408323297",
+"titulo": "NUESTRO LARGO ADIOS",
+"autor": "MAXWELL, MEGAN",
+"editorial": "BOOKET",
+"precio": 1640,
+"unidades": 190,
+"peso_g": 200
+},
+{
+"ean": "9788411485166",
+"titulo": "CANCION DE AQUILES, LA",
+"autor": "MILLER, MADELINE",
+"editorial": "ADN EDITORIAL GRUPO ANAYA",
+"precio": 1650,
+"unidades": 189,
+"peso_g": 200
+},
+{
+"ean": "9788497592437",
+"titulo": "CRONICA DE UNA MUERTE ANUNCIADA",
+"autor": "GARCIA MARQUEZ, GABRIEL",
+"editorial": "DEBOLSILLO",
+"precio": 1640,
+"unidades": 189,
+"peso_g": 200
+},
+{
+"ean": "9788411078245",
+"titulo": "LO QUE NO SE VE",
+"autor": "FERNANDEZ CUBAS, CRISTINA",
+"editorial": "MAXI-TUSQUETS",
+"precio": 1590,
+"unidades": 186,
+"peso_g": 200
+},
+{
+"ean": "9788420651361",
+"titulo": "METAMORFOSIS, LA",
+"autor": "KAFKA, FRANZ",
+"editorial": "ALIANZA",
+"precio": 1680,
+"unidades": 183,
+"peso_g": 200
+},
+{
+"ean": "9788413621524",
+"titulo": "CIRCE",
+"autor": "MILLER, MADELINE",
+"editorial": "ADN EDITORIAL GRUPO ANAYA",
+"precio": 1650,
+"unidades": 183,
+"peso_g": 200
+},
+{
+"ean": "9788497592208",
+"titulo": "CIEN AÑOS DE SOLEDAD",
+"autor": "GARCIA MARQUEZ, GABRIEL",
+"editorial": "DEBOLSILLO",
+"precio": 1680,
+"unidades": 181,
+"peso_g": 200
+},
+{
+"ean": "9788490328224",
+"titulo": "BRILLO DE LAS LUCIERNAGAS, EL",
+"autor": "PEN, PAUL",
+"editorial": "DEBOLSILLO",
+"precio": 1630,
+"unidades": 180,
+"peso_g": 200
+},
+{
+"ean": "9788466393102",
+"titulo": "PINTOR DE ALMAS, EL",
+"autor": "FALCONES, ILDEFONSO",
+"editorial": "DEBOLSILLO",
+"precio": 1500,
+"unidades": 179,
+"peso_g": 200
+},
+{
+"ean": "9788491056218",
+"titulo": "MUERTE DE IVAN ILLICH, LA",
+"autor": "TOLSTOI, LEON",
+"editorial": "PENGUIN CLASICOS",
+"precio": 1680,
+"unidades": 178,
+"peso_g": 200
+},
+{
+"ean": "9788415140153",
+"titulo": "MARTES CON MI VIEJO PROFESOR",
+"autor": "ALBOM, MITCH",
+"editorial": "EMBOLSILLO",
+"precio": 1560,
+"unidades": 178,
+"peso_g": 200
+},
+{
+"ean": "9788408304944",
+"titulo": "TODOS LOS LUGARES QUE MANTUVIMOS EN SECRETO",
+"autor": "RUBIALES, INMA",
+"editorial": "BOOKET",
+"precio": 1630,
+"unidades": 178,
+"peso_g": 200
+},
+{
+"ean": "9788432222825",
+"titulo": "UNA HABITACION PROPIA",
+"autor": "WOOLF, VIRGINIA",
+"editorial": "AUSTRAL",
+"precio": 1630,
+"unidades": 175,
+"peso_g": 200
+}
+]
+}

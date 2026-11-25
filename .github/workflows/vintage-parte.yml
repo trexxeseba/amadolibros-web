@@ -1,0 +1,40 @@
+name: Vintage parte corto
+
+# Parte diario de Amado Vintage por mail, sin IA. Reemplaza a la tarea programada de Claude
+# "Parte corto de Vintage" (Seba, 18/11/2026). Sólo lee la API de GitHub: la última corrida del
+# vigía y las últimas del publicador. No llama a Mercado Libre, no publica y no cambia nada.
+# Código: scripts/partes/vintage-parte.mjs. Nunca Amado Libros.
+#
+# 08:47 de Montevideo (UTC-3), el mismo horario que tenía la tarea.
+on:
+  schedule:
+    - cron: '47 11 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: vintage-parte
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  parte:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Armar y mandar el parte
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/partes/vintage-parte.mjs

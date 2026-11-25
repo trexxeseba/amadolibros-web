@@ -8,6 +8,7 @@
  */
 
 import { fmtMoney, fmtNumber } from '../weekly/build-report.mjs';
+import { buildCross } from './cross-sales.mjs';
 
 const DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
@@ -238,7 +239,37 @@ function ordersBlock(d1, periods) {
   ].join('\n');
 }
 
-export function buildActivityReport({ periods, ga4, d1 = {} }) {
+function errorOf(value, fallback = 'sin dato') {
+  return Array.isArray(value) ? '' : String(value?.error || fallback).slice(0, 160);
+}
+
+function crossBlock({ periods, ga4, d1, airtable }) {
+  const webItems = ga4?.weekItems;
+  if (!Array.isArray(webItems)) return `Sin dato de GA4 (${errorOf(webItems, 'no se pudo consultar')}).`;
+  const cross = buildCross({ webItems, mlSales: d1.ml_sales_week, webOrders: d1.web_orders_week, airtable });
+  if (!cross.total) return 'Nadie abrió fichas de libros en la web estos 7 días.';
+  const week = periods.week;
+  const range = week ? `del ${dayLabel(week.startDate)} al ${dayLabel(week.endDate)}` : 'de los últimos 7 días';
+  const missing = [
+    errorOf(d1.ml_sales_week) && `Mercado Libre sin dato (${errorOf(d1.ml_sales_week)})`,
+    errorOf(d1.web_orders_week) && `pedidos web sin dato (${errorOf(d1.web_orders_week)})`,
+    errorOf(airtable) && `WhatsApp/Airtable sin dato (${errorOf(airtable)})`,
+  ].filter(Boolean);
+  return [
+    `Libros que miraron en la web ${range} y qué pasó con ese mismo libro en los otros canales en esos días.`,
+    '',
+    `De ${fmtNumber(cross.total)} libros mirados: **${cross.soldMl} se vendieron en Mercado Libre**, `
+      + `${cross.askedWa} se consultaron por WhatsApp o Instagram (${cross.boughtWa} con compra) y ${cross.orderedWeb} tuvieron pedido en la web.`,
+    '',
+    table(['Libro', 'Vistas web', 'Al carrito', 'Pedido web', 'Mercado Libre', 'WhatsApp / IG (Airtable)'],
+      cross.rows.map(r => [shortTitle(r.title), r.views, r.cart, r.web, r.ml, r.wa])),
+    '',
+    '_Cruce por libro (ID de publicación, ISBN o título), no por persona: que el mismo libro aparezca en dos canales no prueba que sea el mismo cliente._',
+    missing.length ? `\n_Faltó: ${missing.join('; ')}._` : '',
+  ].join('\n').trim();
+}
+
+export function buildActivityReport({ periods, ga4, d1 = {}, airtable }) {
   const ga4Ok = ga4 && !ga4.error && ga4.yesterday && ga4.lastWeek;
   const reason = String(ga4?.error || 'no se pudo consultar').slice(0, 160);
   return [
@@ -254,6 +285,8 @@ export function buildActivityReport({ periods, ga4, d1 = {} }) {
     actionsBlock(ga4Ok ? ga4 : null, d1) + (ga4Ok ? funnelBlock(ga4) : ''),
     '## Pedidos de ayer',
     ordersBlock(d1, periods) + '\n' + pendingBlock(d1),
+    '## Cruce: lo que miraron en la web y dónde terminó',
+    crossBlock({ periods, ga4, d1, airtable }),
     '_GA4 cuenta lo que registra el navegador: quien usa bloqueador de anuncios no aparece. Los pedidos salen de la base y son la cifra real._',
   ].join('\n\n') + '\n';
 }

@@ -55,6 +55,10 @@ export const CUENTAS = {
     umbralInclusivo: true,
     descuento: 0.01,
     soloContraDemanda: true,
+    // Vendedores con los que no se compite (por apodo, sin distinguir mayúsculas).
+    // POCHOLIB: precios muy bajos (Seba, 21/11/2026). Si el ganador de la ficha es uno
+    // de ellos no se baja el precio; las ya bajadas contra él vuelven hacia el original.
+    vendedoresExcluidos: ['pocholib'],
     topePct: null,
     minimo: 1200,
     pisoPorCosto: false,
@@ -62,6 +66,10 @@ export const CUENTAS = {
     maxCambios: 5000,
     // Subir sólo si el salto es de 10 pesos o más: no mover precios por 1 peso.
     pasoMinimoSubida: 10,
+    // Modo sombra (Seba, 21/11/2026): una semana calculando, sin escribir precios, qué haría
+    // la regla "queda >= 18 % sobre costo" frente a la actual, con los frenos de edición,
+    // 2 corridas seguidas y una bajada por día. Ver src/sombra.mjs. No cambia la regla real.
+    sombra: { dias: 7, margen: 18, corridasSeguidas: 2, revisar: 100 },
     habilitada: true,
   },
 };

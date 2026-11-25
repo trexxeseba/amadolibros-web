@@ -48,7 +48,36 @@ export async function competencia(ml, item, opciones) {
   return referencia(ml, item);
 }
 
-async function catalogo(ml, item, { necesitaTecho, sellerId, soloContraDemanda = false, descuento = 0, cache }) {
+// Vendedor del ganador de la ficha (sólo lectura): las ofertas del producto traen el
+// vendedor de cada publicación (/products/{id}/items) y /users/{id} su apodo. Se
+// guardan por producto y por vendedor: son pocos vendedores y muchas fichas.
+export const nuevoCacheVendedores = () => ({ ofertas: new Map(), nombres: new Map() });
+
+export async function nicknameDe(ml, sellerId, cache) {
+  if (!sellerId) return null;
+  if (cache.nombres.has(sellerId)) return cache.nombres.get(sellerId);
+  let n = null;
+  try { const u = await ml.get(`/users/${sellerId}`); n = typeof u?.nickname === 'string' ? u.nickname : null; }
+  catch (e) { if (e?.status === 429) throw e; }
+  cache.nombres.set(sellerId, n);
+  return n;
+}
+
+export async function vendedorDelGanador(ml, productId, itemId, cache) {
+  if (!productId || !itemId) return null;
+  let porItem = cache.ofertas.get(productId);
+  if (!porItem) {
+    porItem = new Map((await ofertasCatalogo(ml, productId)).map(o => [String(o.item_id), String(o.seller_id ?? '')]));
+    cache.ofertas.set(productId, porItem);
+  }
+  const id = porItem.get(String(itemId));
+  if (!id) return null;
+  return { id, nickname: await nicknameDe(ml, id, cache) };
+}
+
+const esExcluido = (nickname, excluirVendedores) => Boolean(nickname) && excluirVendedores?.has(String(nickname).toLowerCase());
+
+async function catalogo(ml, item, { necesitaTecho, sellerId, soloContraDemanda = false, descuento = 0, cache, excluirVendedores = null, cacheVendedores = null }) {
   let p;
   try { p = await ml.get(`/items/${item.id}/price_to_win?version=v2`); }
   catch (e) { return { tipo: 'catalogo', error: codigo(e) }; }
@@ -59,9 +88,17 @@ async function catalogo(ml, item, { necesitaTecho, sellerId, soloContraDemanda =
   const r = { tipo: 'catalogo', estado, ganador, compite, marcada: compite, ganadorItem: p?.winner?.item_id ?? null, motivos: Array.isArray(p?.reason) ? p.reason : [],
     oportunidades: (Array.isArray(p?.boosts) ? p.boosts : []).filter(b => b?.status === 'opportunity').map(b => String(b.id)),
     boosts: Object.fromEntries((Array.isArray(p?.boosts) ? p.boosts : []).filter(b => b?.id).map(b => [String(b.id), String(b.status ?? '')])) };
+  // Vendedores con los que no se compite (Seba, 21/11/2026: POCHOLIB, precios muy bajos):
+  // si el ganador es uno de ellos no se baja el precio. Se anota quién gana en cada ficha.
+  if (cacheVendedores && compite) {
+    const v = await vendedorDelGanador(ml, item.catalog_product_id, r.ganadorItem, cacheVendedores);
+    r.ganadorVendedor = v?.nickname ?? null;
+    r.ganadorVendedorId = v?.id ?? null;
+    if (esExcluido(v?.nickname, excluirVendedores)) { r.bloqueo = 'vendedor_excluido'; r.marcada = false; r.motivo_bloqueo = `el ganador es ${v.nickname}, un vendedor con el que no se compite`; }
+  }
   // Sólo contra ganadores a demanda: si el que gana entrega de inmediato, bajar el
   // precio no sirve (ML lo prefiere igual) y se regalaría margen. Sin dato, no se toca.
-  if (soloContraDemanda && compite) {
+  if (soloContraDemanda && compite && !r.bloqueo) {
     const entrega = await entregaDe(ml, r.ganadorItem, cache);
     r.entrega_ganador = entrega;
     if (entrega === 'inmediato') { r.bloqueo = 'ganador_inmediato'; r.marcada = false; r.motivo_bloqueo = 'el ganador entrega de inmediato'; }
@@ -72,9 +109,15 @@ async function catalogo(ml, item, { necesitaTecho, sellerId, soloContraDemanda =
   // (Vintage), ignorando a los de entrega inmediata.
   if (!r.marcada && necesitaTecho && item.catalog_product_id) {
     try {
-      const otros = (await ofertasCatalogo(ml, item.catalog_product_id))
+      let otros = (await ofertasCatalogo(ml, item.catalog_product_id))
         .filter(o => String(o.seller_id) !== String(sellerId) && o.item_id !== item.id && num(o.price) !== null)
-        .map(o => ({ item_id: o.item_id, price: Number(o.price) })).sort((a, b) => a.price - b.price);
+        .map(o => ({ item_id: o.item_id, seller_id: o.seller_id, price: Number(o.price) })).sort((a, b) => a.price - b.price);
+      // El techo tampoco se mide contra los vendedores con los que no se compite.
+      if (cacheVendedores && excluirVendedores?.size) {
+        const sin = [];
+        for (const o of otros) { if (sin.length >= 12) break; if (!esExcluido(await nicknameDe(ml, String(o.seller_id), cacheVendedores), excluirVendedores)) sin.push(o); }
+        otros = sin;
+      }
       let base = null;
       if (!soloContraDemanda) base = otros[0]?.price ?? null;
       else for (const o of otros.slice(0, 8)) { if ((await entregaDe(ml, o.item_id, cache)) === 'inmediato') continue; base = o.price; break; }

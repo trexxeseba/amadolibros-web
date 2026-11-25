@@ -48,5 +48,5 @@ export function crearCliente(fuente, { fetcher = (...a) => globalThis.fetch(...a
       }
     } finally { soltar(); }
   }
-  return { get: p => pedir(p), put: (p, body) => pedir(p, { method: 'PUT', body }), stats };
+  return { get: p => pedir(p), put: (p, body) => pedir(p, { method: 'PUT', body }), post: (p, body) => pedir(p, { method: 'POST', body }), stats };
 }

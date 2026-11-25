@@ -1,3 +1,4 @@
+import { nextInternalEmailAt } from '../../functions/_shared/internal-email-schedule.js';
 // Avisos por mail del publicador de Vintage en la nube (los manda el workflow después de cada corrida).
 //  - Cierre del día: la primera corrida después de la medianoche de Montevideo manda cuántas altas
 //    hubo el día anterior y el total publicado. Una sola vez por día.
@@ -30,11 +31,11 @@ export function decide({report,failed,now=Date.now()}){
  return out;
 }
 
-export async function sendMail({asunto,texto,fetcher=fetch,env=process.env}){
+export async function sendMail({asunto,texto,prefijo='Vintage nube',fetcher=fetch,env=process.env}){
  const apiKey=env.RESEND_API_KEY,to=String(env.VINTAGE_EMAIL_TO||env.PRECIO_GANADOR_EMAIL_TO||'').split(',').map(s=>s.trim()).filter(Boolean);
  if(!apiKey||!to.length)return 'sin_credenciales';
  const res=await fetcher('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(30000),
-  body:JSON.stringify({from:env.REPORT_EMAIL_FROM||'Amado Libros <web@notificaciones.amadolibros.com>',to,subject:`Vintage nube: ${asunto}`,text:texto})}).catch(()=>null);
+  body:JSON.stringify({ scheduled_at: nextInternalEmailAt(),from:env.REPORT_EMAIL_FROM||'Amado Libros <web@notificaciones.amadolibros.com>',to,subject:`${prefijo}: ${asunto}`,text:texto})}).catch(()=>null);
  return res?.ok?'enviado':'error';
 }
 

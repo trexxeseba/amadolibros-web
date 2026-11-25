@@ -1,0 +1,61 @@
+name: Importar compras
+
+# Entrega a D1 compras a proveedores CIFRADAS con la clave pública del Worker.
+# El repo es público y la entrada de la corrida se ve, pero el texto sellado sólo
+# lo abre el Worker. Acá NUNCA se imprimen títulos, ISBN, precios ni costos:
+# sólo conteos y códigos de error.
+#
+#   accion=clave     muestra la clave pública del Worker (se crea la primera vez).
+#   accion=importar  descifra e importa lo nuevo; lo ya cargado se saltea.
+# Cómo se arma el texto sellado: docs/compras-desde-mails.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: 'importar | clave'
+        type: choice
+        options: [importar, clave]
+        default: importar
+      sellado:
+        description: 'Compras cifradas (lo genera scripts/purchases/preparar.mjs)'
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: importar-compras
+  cancel-in-progress: false
+
+jobs:
+  importar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+    env:
+      WORKER: https://amadolibros-sync.undiaes.workers.dev
+      SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+      ACCION: ${{ inputs.accion }}
+      SELLADO: ${{ inputs.sellado }}
+    steps:
+      - name: Ejecutar
+        run: |
+          set -euo pipefail
+          call() { curl -sS --max-time 90 -H "Authorization: Bearer $SYNC_SECRET" -H 'Content-Type: application/json' "$@"; }
+          if [ "$ACCION" = clave ]; then
+            call -X POST "$WORKER/purchases/key" -d '{}' > clave.json
+            { echo '### Clave pública del Worker'; echo '```json'; jq -c .public_jwk clave.json; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          [ -n "$SELLADO" ] || { echo "Falta el texto sellado"; exit 1; }
+          resp=$(jq -cn --arg s "$SELLADO" '{sealed:$s}' | call -X POST "$WORKER/purchases/import-sealed" --data-binary @- -w '\n%{http_code}')
+          code=$(printf '%s' "$resp" | tail -n1)
+          json=$(printf '%s' "$resp" | sed '$d')
+          echo "HTTP $code"
+          printf '%s' "$json" | jq -c '{imported, skipped_existing, removed, review, errors: ((.errors // []) | map(.error)), error}' | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$code" = 200 ] || exit 1
+          [ "$(printf '%s' "$json" | jq '(.errors // []) | length')" = 0 ] || exit 1

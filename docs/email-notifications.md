@@ -53,3 +53,22 @@ Antes de habilitar en Producción:
 3. hacer una venta real controlada;
 4. verificar el correo recibido y el evento `sale_notification` en D1;
 5. repetir el webhook y confirmar que no llega un segundo correo.
+
+## Informes y alarmas internos: entrega a las 20:00
+
+Desde el 24/11/2026, los emisores de Precio Ganador, Hermes, informes operativos,
+Poda, Vintage nube y el resumen/Brújula del panel incluyen `scheduled_at` de
+Resend, calculado por `functions/_shared/internal-email-schedule.js`.
+Los destinatarios y contenidos se mantienen. La próxima entrega es a las 20:00
+de Montevideo (23:00 UTC); lo generado a partir de esa hora espera al día siguiente.
+Son correos separados, programados para la misma hora; no se fusionan.
+
+Las tareas que revisan stock, precios y fallos conservan su frecuencia. Solo
+la preparación del resumen del panel cambia a las 19:55, con reintento a las 19:58,
+para entregar datos recientes a las 20:00. El control de duplicados diario sigue vigente.
+Una respuesta correcta del proveedor significa que aceptó la programación; si
+la rechaza, se conserva el error y no se reintenta con entrega inmediata.
+
+No incluye confirmaciones a clientes, avisos de venta ni disponibilidad de stock.
+Tampoco controla correos propios de GitHub o Airtable, que se configuran en esas
+plataformas. No cancela mensajes que el proveedor ya hubiera aceptado antes del despliegue.

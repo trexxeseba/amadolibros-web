@@ -60,6 +60,7 @@ export function decide(input) {
   const shared = endsWithAny(path, SHARED);
   if (shared) return `${shared} lo comparten Amado Libros y Vintage: un cambio acá también cambia Amado Libros.`;
   const text = [args.content, args.new_string, args.new_source, ...(args.edits ?? []).map(e => e?.new_string)].join('\n');
+  if (/CUENTAS\s*(\.\s*libros|\[\s*['"]libros)/.test(text)) return 'El cambio usa la cuenta Amado Libros de la configuración (CUENTAS.libros).';
   if (text.includes(SELLER)) return `El cambio menciona el seller de Amado Libros (${SELLER}).`;
   return null;
 }

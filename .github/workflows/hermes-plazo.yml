@@ -1,0 +1,61 @@
+name: Hermes plazo (publicaciones viejas)
+
+# Pone el plazo a demanda de 18 días a las publicaciones de Hermes en Vintage creadas antes de que existiera esa regla (18 y 19/11/2026).
+# El 22/11/2026 una de ellas se vendió con entrega a los tres días. Solo cambia el plazo: no toca precio ni stock.
+# Código: hermes-monitor/ajustar_plazo.mjs (verifica que cada publicación sea de Amado Vintage).
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'leer (solo cuenta) o aplicar'
+        type: choice
+        options: [leer, aplicar]
+        default: leer
+      alcance:
+        description: 'hermes (las viejas de Hermes) o todo (todas las activas con plazo distinto de 18 días)'
+        type: choice
+        options: [hermes, todo]
+        default: hermes
+      extra:
+        description: 'Publicaciones sin plazo a sumar, separadas por coma (solo con alcance todo)'
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hermes-plazo
+  cancel-in-progress: false
+
+jobs:
+  plazo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Armar la lista de todas las activas con otro plazo
+        if: inputs.alcance == 'todo'
+        env:
+          EXTRA: ${{ inputs.extra }}
+        run: node hermes-monitor/ids_plazo_distinto.mjs 18 "$RUNNER_TEMP/ids.json" "$EXTRA"
+      - name: Armar la lista de publicaciones de Hermes
+        if: inputs.alcance != 'todo'
+        run: |
+          git fetch -q origin hermes-datos
+          git show FETCH_HEAD:publicadas-vintage.json > "$RUNNER_TEMP/pv.json"
+          node -e "const d=require(process.argv[1]);const ids=Object.values(d).filter(v=>v&&v.item_id&&(!v.fuente||v.fuente==='hermes')).map(v=>v.item_id);require('fs').writeFileSync(process.argv[2],JSON.stringify(ids));console.log('publicaciones de Hermes:',ids.length)" "$RUNNER_TEMP/pv.json" "$RUNNER_TEMP/ids.json"
+      - name: Ajustar el plazo
+        env:
+          MODO: ${{ inputs.modo }}
+        run: |
+          REAL=""; [ "$MODO" = "aplicar" ] && REAL="--real"
+          node hermes-monitor/ajustar_plazo.mjs "$RUNNER_TEMP/ids.json" 18 $REAL

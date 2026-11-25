@@ -9,13 +9,15 @@
 //  - "Libro Digital Society For The Ib Diploma", "Dieci A1 - Libro + Ebook Interattivo": marcadas por
 //    Mercado Libre como copia no autorizada (08/11/2026).
 //  - "anillado", "encuadernado": marcadas antes por la misma política (suenan a fotocopia).
+// 19/11/2026: "estilo", "tipo" y "pirata" sueltas frenaban libros legítimos (Ediciones del Pirata, "diabetes tipo 2", "estilo de vida"); Mercado Libre
+// las advierte junto a una marca ajena ("tipo Nike"), así que ahora se retienen las MARCAS (incluidas las de lujo) y las frases "edición pirata".
 // Fuentes: política de Mercado Libre de propiedad intelectual (prohíbe descargables y copias de libros
 // como PDF; pide no usar "réplica", "símil", "tipo", "igual a", "idéntico", "estilo" en títulos).
 
 // Cada entrada es una expresión sobre el texto normalizado (minúsculas, sin acentos, sin signos).
 export const IP_RISK_PATTERNS=[
  // Digital, descargable, acceso online
- ['digital','\\bdigital(es)?\\b|\\bdigitale\\b|\\bnumerique\\b|\\bdigitalausgabe\\b'],
+ ['digital','\\bdigital(es)?\\b|\\bdigitaliz\\w*|\\bdigitalis\\w*|\\bdigitale\\b|\\bnumerique\\b|\\bdigitalausgabe\\b'],
  ['ebook','\\be ?books?\\b|\\be ?libro\\b|\\blibro electronico\\b|\\belectronic\\b|\\betext\\b|\\be text\\b'],
  ['formato_archivo','\\bpdf\\b|\\bepub\\b|\\bmobi\\b|\\bkindle\\b|\\bmp3\\b|\\bcd ?rom\\b|\\bdvd\\b|\\bmultirom\\b|\\bcd\\b|\\bdiscos?\\b'],
  ['descarga','\\bdescarga(s|ble|bles)?\\b|\\bdownload(able)?\\b|\\bonline\\b|\\bon line\\b|\\ben linea\\b'],
@@ -35,10 +37,27 @@ export const IP_RISK_PATTERNS=[
  ['material_de_curso','\\bdiploma\\b|\\bib\\b|\\bcourse ?books?\\b|\\bcourse\\b|\\bcurso\\b|\\bstudent s book\\b|\\bstudents book\\b|\\bstudent book\\b|\\bworkbook\\b|\\bwork book\\b|\\bteacher s\\b|\\bteachers\\b|\\bteacher\\b|\\blibro del alumno\\b|\\blibro del profesor\\b|\\bcuaderno de ejercicios\\b|\\bguia docente\\b|\\bexam practice\\b|\\bpractice tests?\\b|\\btest prep\\b|\\bsolucionario\\b|\\bsolutions manual\\b|\\bpearson\\b|\\bkerboodle\\b|\\bmylab\\b'],
  // Marcas de entretenimiento y juguetes que denuncian (Disney y Marvel aparecieron en la moderación
  // de la cuenta el 08/11/2026). Los libros sobre esas marcas también se dejan afuera.
- ['marca','\\bdisney\\b|\\bmarvel\\b|\\bpixar\\b|\\bstar wars\\b|\\bdc comics\\b|\\bbatman\\b|\\bsuperman\\b|\\bspider ?man\\b|\\bavengers\\b|\\bpokemon\\b|\\bnintendo\\b|\\bmario bros\\b|\\blego\\b|\\bbarbie\\b|\\bmattel\\b|\\bhasbro\\b|\\bhello kitty\\b|\\bsanrio\\b|\\bpeppa\\b|\\bpaw patrol\\b|\\bfrozen\\b|\\bminecraft\\b|\\bfortnite\\b|\\broblox\\b|\\bnaruto\\b|\\bdragon ball\\b|\\bone piece\\b|\\bfunko\\b|\\bwarner\\b|\\bnetflix\\b'],
+ ['marca','\\bdisney\\b|\\bmarvel\\b|\\bpixar\\b|\\bstar wars\\b|\\bdc comics\\b|\\bbatman\\b|\\bsuperman\\b|\\bspider ?man\\b|\\bavengers\\b|\\bpokemon\\b|\\bnintendo\\b|\\bmario bros\\b|\\blego\\b|\\bbarbie\\b|\\bmattel\\b|\\bhasbro\\b|\\bhello kitty\\b|\\bsanrio\\b|\\bpeppa\\b|\\bpaw patrol\\b|\\bfrozen\\b|\\bminecraft\\b|\\bfortnite\\b|\\broblox\\b|\\bnaruto\\b|\\bdragon ball\\b|\\bone piece\\b|\\bfunko\\b|\\bwarner\\b|\\bnetflix\\b|\\bchanel\\b|\\bbirkin\\b|\\blouis vuitton\\b|\\bgucci\\b|\\bprada\\b|\\bdior\\b|\\brolex\\b|\\bcartier\\b'],
+ // Casos que Mercado Libre ya dio de baja en cuentas del dueño por copia no autorizada o infracción de propiedad intelectual (correos 2023 a 2026, revisados el 22/11/2026):
+ // "Los secretos de la mente millonaria" (Eker; baja en 3 cuentas), "Never Finished / Libera tu mente y gana la guerra" (Goggins), "Why Men Love Bitches" (Argov),
+ // "Réplicas" (Eltit), "El Eternauta" y "El Códice Neshamá" (reclamo directo de un titular y aviso de Google). Son títulos muy copiados: se dejan afuera.
+ ['reclamado_antes','\\bmente millonaria\\b|\\bmillionaire mind\\b|\\bnever finished\\b|\\blibera tu mente y gana\\b|\\bwhy men love bitches\\b|\\breplicas escritos sobre arte\\b|\\beternauta\\b|\\bcodice nesham'],
+ // Marcas y personajes que aparecieron en bajas y reclamos (Supercell, Red Bull, ZAG/Miraculous, Swarovski, Pandora, Starbucks, Pierre Cardin, McLaren/Bburago, Stitch).
+ ['marca_reclamada','\\bsupercell\\b|\\bbrawl stars\\b|\\bclash royale\\b|\\bclash of clans\\b|\\bred bull\\b|\\bmiraculous\\b|\\bladybug\\b|\\bswarovski\\b|\\bpandora\\b|\\bstarbucks\\b|\\bpierre cardin\\b|\\bmclaren\\b|\\bbburago\\b|\\bstitch\\b|\\blilo\\b'],
+ // 23/11/2026: Aranzadi denunció por propiedad intelectual una publicación de catálogo en Vintage (MLU1543811562) y el vigía frenó todo.
+ // Sale todo el grupo editorial (Aranzadi, Civitas, Lex Nova). "La Ley" no se pone porque es una frase común en títulos.
+ ['editorial_reclamada','\\baranzadi\\b|\\bcivitas\\b|\\blex nova\\b'],
  // Editoriales de texto escolar e idiomas: las cinco infracciones de libros de la campaña fueron de
  // Hodder Education, Alma Edizioni y Eli Edizioni (Arriviamo! 3 no tenía ninguna palabra de riesgo).
  ['editorial_educativa','\\bhodder\\b|\\balma edizioni\\b|\\beli edizioni\\b|\\bloescher\\b|\\bzanichelli\\b|\\bedilingua\\b|\\bedelsa\\b|\\bsgel\\b|\\bdifusion\\b|\\bedinumen\\b|\\banaya ele\\b|\\bhueber\\b|\\bklett\\b|\\bcornelsen\\b|\\bhachette fle\\b|\\bcle international\\b|\\bmaison des langues\\b|\\bcambridge university press\\b|\\bcambridge english\\b|\\boxford university press\\b|\\bmacmillan education\\b|\\bnational geographic learning\\b|\\bcengage\\b|\\bmcgraw\\b|\\bexpress publishing\\b|\\bhelbling\\b|\\bsantillana\\b|\\bedebe\\b|\\bsm ediciones\\b|\\bkapelusz\\b|\\bpuerto de palos\\b|\\btinta fresca\\b|\\bmaipue\\b|\\bwiley\\b|\\belsevier\\b|\\bpanamericana\\b|\\bmarban\\b|\\bharcourt\\b|\\bsavvas\\b|\\bhoughton\\b'],
+ // Alertas de la investigación del 19/11/2026 (planilla de Seba): palabras del filtro público de un integrador de
+ // librerías (Fierro: sexo, kama sutra, prozac, clonazepam) y datos de contacto o desvío de la venta fuera de Mercado Libre
+ // (WhatsApp, Telegram, correos y enlaces), que Mercado Libre prohíbe en título, descripción, fotos y preguntas.
+ // Para la publicación automática son retención para revisión, no una sentencia: un libro puede tratar el tema.
+ ['contacto','\\bwhats ?app\\b|\\bwsp\\b|\\bwa me\\b|\\btelegram\\b|\\bt me\\b|\\bgmail\\b|\\bhotmail\\b|\\bhttps?\\b|\\bwww\\b|\\bcodigo qr\\b|\\bllamanos\\b|\\bpaga por fuera\\b|\\bsin comision\\b'],
+ ['adulto','\\bsexo\\b|\\bkama ?sutra\\b|\\bkamasutra\\b'],
+ ['medicamento','\\bprozac\\b|\\bclonazepam\\b'],
+ ['imitacion','\\bcounterfeit\\b|\\bknockoff\\b|\\bescanead[oa]s?\\b|\\bscanned\\b|\\bidentico a\\b|\\bigual a\\b'],
 ];
 const COMPILED=IP_RISK_PATTERNS.map(([name,re])=>[name,new RegExp(re)]);
 // Nombres cortos de editoriales educativas que también son palabras comunes ("alma", "eli"): sólo se
@@ -52,6 +71,8 @@ export function normalizeText(text){
 // ipRisk(título, editorial): el título y la editorial se revisan juntos; los nombres cortos de
 // editoriales educativas, sólo en la editorial.
 export function ipRisk(title,publisher){
+ // Regla de Seba (20/11/2026): una @ en el título, el autor o la editorial deja el libro fuera, sin limpiar nada.
+ if(/@/.test([title,publisher].filter(Boolean).join(' ')))return 'arroba';
  const text=normalizeText([title,publisher].filter(Boolean).join(' '));
  if(!text)return null;
  for(const [name,re] of COMPILED)if(re.test(text))return name;

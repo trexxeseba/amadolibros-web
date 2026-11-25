@@ -5,9 +5,14 @@ on:
     branches: [main]
     paths:
       - 'worker-sync/**'
+      - 'functions/_shared/internal-email-schedule.js'
       - 'functions/_shared/cover-public-index.js'
       # El sync genera la cohorte de fichas ampliadas con este módulo.
       - 'functions/_shared/showcase-ranking.js'
+      # El correo diario (worker-sync/daily-panel-digest.js) importa la Brújula de acá:
+      # sin esta ruta, un cambio sólo en panel-bi.js no redesplegaba el Worker y el
+      # correo seguía con el código anterior.
+      - 'functions/_shared/panel-bi.js'
       - '.github/workflows/deploy-worker-sync.yml'
   workflow_dispatch:
     inputs:

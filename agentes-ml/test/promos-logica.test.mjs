@@ -103,16 +103,16 @@ test('selección: ventas mandan, visitas desempatan; fuera stock bajo, médicos,
   assert.equal(armarSeleccion({ items, unidades, visitas, limite: 1 }).seleccion.length, 1);
 });
 
-test('gasto de Ads del mes y tope de $20.000: dentro, alerta desde 80 %, superado, no leído', () => {
-  assert.equal(LIMITES.adsMensualMaxUyu, 20000);
+test('gasto de Ads del mes y tope de $60.000: dentro, alerta desde 80 %, superado, no leído', () => {
+  assert.equal(LIMITES.adsMensualMaxUyu, 60000);
   assert.equal(gastoDelMes({ metrics_summary: { cost: 1234.5 }, results: [] }), 1234.5);
   assert.equal(gastoDelMes({ results: [{ metrics: { cost: 100.25 } }, { metrics: { cost: 50 } }, { metrics: {} }] }), 150.25);
   assert.equal(gastoDelMes({ results: [] }), null);
-  assert.deepEqual(evaluarGastoAds(5000), { estado: 'dentro', pct: 25, tope: 20000, restante: 15000 });
-  assert.equal(evaluarGastoAds(16000).estado, 'alerta');
-  assert.equal(evaluarGastoAds(20000.01).estado, 'superado');
+  assert.deepEqual(evaluarGastoAds(5000), { estado: 'dentro', pct: 8.33, tope: 60000, restante: 55000 });
+  assert.equal(evaluarGastoAds(48000).estado, 'alerta');
+  assert.equal(evaluarGastoAds(60000.01).estado, 'superado');
   assert.equal(evaluarGastoAds(null).estado, 'no_leido');
-  assert.equal(evaluarGastoAds(25000, 30000).estado, 'alerta', 'el tope viejo de 30.000 ya no es el default');
+  assert.equal(evaluarGastoAds(25000, 30000).estado, 'alerta', 'un tope explícito se respeta');
   assert.equal(primerDiaDelMes('2026-11-11'), '2026-11-01');
   assert.equal(bucketPct(27.3), '25-30%');
   assert.equal(bucketPct(null), null);

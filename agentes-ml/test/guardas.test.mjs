@@ -211,7 +211,7 @@ test('descuentoPct y los límites quedan como los fijó Seba', () => {
   assert.equal(descuentoPct(2650, 2056.4), 22.4);
   assert.equal(descuentoPct(0, 10), null);
   assert.equal(descuentoPct('x', 10), null);
-  // Tope de Ads: $20.000 por mes calendario (Seba, 11/11/2026; antes 30.000).
-  assert.deepEqual({ ...LIMITES }, { descuentoMaxPct: 15, visibleMaxPct: 16, promoMasCuponMaxUyu: 750, cuponPorDefectoUyu: 500, stockMinimoParaPromo: 3, diasMinimosDesdeAlta: 90, stockMinimoTrasReservar: 3, adsMensualMaxUyu: 20000, adsAlertaPct: 80 });
+  // Tope de Ads: $60.000 por mes calendario (Seba, 24/11/2026; antes 20.000 y 30.000).
+  assert.deepEqual({ ...LIMITES }, { descuentoMaxPct: 15, visibleMaxPct: 16, promoMasCuponMaxUyu: 750, cuponPorDefectoUyu: 500, stockMinimoParaPromo: 3, diasMinimosDesdeAlta: 90, stockMinimoTrasReservar: 3, adsMensualMaxUyu: 60000, adsAlertaPct: 80 });
   assert.throws(() => { 'use strict'; LIMITES.descuentoMaxPct = 99; });
 });

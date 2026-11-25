@@ -15,6 +15,7 @@
  */
 
 const SAMPLE_LIMIT = 10;
+const BACK_IN_STOCK_SAMPLES = 40;
 
 function itemsById(catalog) {
   const items = Array.isArray(catalog?.items) ? catalog.items : [];
@@ -47,7 +48,7 @@ export function buildCatalogDiff(previousCatalog, nextCatalog) {
     previous_total: null,
     added: 0, removed: 0, price_up: 0, price_down: 0, out_of_stock: 0, back_in_stock: 0,
     baseline: false,
-    samples: { added: [], removed: [], price_changes: [] },
+    samples: { added: [], removed: [], price_changes: [], back_in_stock: [] },
   };
   if (!Array.isArray(previousCatalog?.items)) return base;
 
@@ -70,7 +71,11 @@ export function buildCatalogDiff(previousCatalog, nextCatalog) {
       priceChanges.push(sample(item, { from: oldPrice, to: newPrice }));
     }
     if (available(before) && !available(item)) diff.out_of_stock += 1;
-    if (!available(before) && available(item)) diff.back_in_stock += 1;
+    if (!available(before) && available(item)) {
+      diff.back_in_stock += 1;
+      // Para avisar por correo que un libro agotado volvió a tener stock.
+      if (diff.samples.back_in_stock.length < BACK_IN_STOCK_SAMPLES) diff.samples.back_in_stock.push(sample(item, { isbn: String(item.isbn ?? '') || null, qty: Number(item.available_quantity) || 0 }));
+    }
   }
   for (const [id, item] of previous) {
     if (next.has(id)) continue;

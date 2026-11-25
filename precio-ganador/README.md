@@ -94,6 +94,16 @@ espera 8 minutos y después falla.
 - Variable del repo `PRECIO_GANADOR_DRY_RUN` = `true`: pausa sin tocar código (solo informa).
 - También se puede desactivar el workflow **Precio Ganador** en Actions.
 
+## Cambiar un precio a mano
+
+Cuando Seba pide un precio puntual ("subí Mafalda a 1500, bajá Riso a 1100"): en Actions,
+**Precio manual**, *Run workflow*, con `cuenta`, `cambios` (`MLU123=1500,MLU456=1100`, hasta 50)
+y `prueba=true` primero (sólo lista). Misma conexión y mismos frenos que el motor: no toca
+publicaciones pausadas, con promoción, con descuento a la vista, administradas por ML o con
+variaciones; respeta el piso de la cuenta; escribe, relee y verifica; el stock no se toca.
+Si la publicación estaba en el estado del motor, el motor la saca solo en la próxima corrida
+(precio cambiado a mano). Código: `src/precio-manual.mjs`.
+
 ## Cómo volver todo al precio original
 
 En Actions, **Precio Ganador**, *Run workflow*, con acción `restaurar`:
@@ -123,6 +133,37 @@ publicaciones del estado con otro precio, o errores de aplicación por encima de
 2 % de los intentos (mínimo 3). El vigía (`precio-ganador-vigia.yml`, cada 3 horas)
 distingue "no corrió" de "corrió con avisos" y lo dice en el mail. Para correrla sola,
 sin tocar precios: Run workflow con acción `auditar`.
+
+## Modo sombra de Vintage (desde el 21/11/2026, una semana)
+
+Aprobado por Seba: calcular y registrar, **sin escribir ningún precio**, qué haría una regla nueva
+para Vintage antes de decidir si se adopta. La regla real no cambia (los $400 siguen).
+
+- Regla actual: baja si la diferencia con el precio para ganar es de hasta $400.
+- Regla nueva: baja al 99 % del precio para ganar si queda al menos 18 % sobre costo
+  (costo del libro puesto en Uruguay con la lista diaria de SBS, comisión 17 % sin IVA).
+- Las dos comparten: ganador a demanda, sin POCHOLIB, piso de 1.200.
+- Frenos que se prueban sobre las dos:
+  - misma edición que el ganador: ISBN, encuadernación, editorial y páginas (tolerancia 10 %).
+    Si algún dato no coincide no se propone bajar; si falta el dato, no frena pero queda anotado;
+  - el precio bajo del rival tiene que verse en 2 corridas seguidas;
+  - como máximo una bajada por día por publicación.
+
+Corre como paso aparte después de cada corrida real de Vintage (09:00 y 21:00), sobre sus filas
+(`ultima/vintage-filas.json`). Sólo lee de Mercado Libre (atributos de las dos publicaciones) y de D1
+(el costo). Si falla, no frena la corrida. Se apaga solo a los 7 días (`sombra.dias` en `config.mjs`).
+También se puede correr a mano: acción `sombra`.
+
+En la rama de estado del repo privado:
+- `sombra/vintage-semana.md`: una fila por corrida (cuántas bajaría cada regla, con y sin frenos,
+  y por qué freno quedaron afuera) y el detalle de la última.
+- `sombra/vintage-revisar.md`: las 100 bajas más grandes de la regla nueva en la semana, con costo,
+  margen, edición y ganador, y una columna para la revisión a mano.
+- `sombra/vintage/<fecha>-<hora>h.json`: cada publicación que pierde la ficha con el motivo de cada regla.
+- `state/vintage-sombra.json`: la memoria de la sombra (rachas y bajadas del día).
+
+Para las publicaciones que el sistema ya bajó, la sombra mide contra el precio de hoy (el sistema real
+mide los $400 contra el original), por eso "actual" puede dar un poco más que lo que hizo el sistema real.
 
 ## Frenos
 

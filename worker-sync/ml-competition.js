@@ -16,7 +16,7 @@ import { topOwnSalesIsbns, SALES_SELLER_ID } from './ml-sales.js';
 import { bookIsbn } from './isbn.js';
 
 const ML_ORIGIN = 'https://api.mercadolibre.com';
-const PRODUCT_PAGES = 5, PRODUCT_PAGE_SIZE = 50;
+const PRODUCT_PAGES = 5, PRODUCT_PAGE_SIZE = 50, RETRY_MAX = 800, RETRY_FROM = 1e12;
 const DAY_MS = 86400000, LEASE_MS = 240000, MAX_SELLERS = 60, SNAPSHOT_VERSION = 7;
 // Los más vendidos van primero (foto fresca de madrugada); después, el resto del
 // catálogo con stock. El 10/11/2026 eran 3.121 productos distintos con stock.
@@ -270,7 +270,7 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
     const row = await db.prepare('UPDATE comp_state SET lease_until=? WHERE name=? AND lease_until<? RETURNING cursor_json').bind(token_, 'daily', started).first();
     if (!row) return { state: 'busy' };
     let cursor = JSON.parse(row.cursor_json || '{}');
-    const result = { state: 'idle', products: 0, sellers: 0 };
+    const result = { state: 'idle', products: 0, sellers: 0, retried: 0 };
     const date = montevideoDate(started);
     const hasTime = () => calls > 0 && now() - started < deadlineMs;
     try {
@@ -290,7 +290,7 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
           const t = await db.prepare('SELECT * FROM comp_targets ORDER BY priority DESC LIMIT 1 OFFSET ?').bind(cursor.offset).first();
           if (!t) {
             if (!cursor.okToday && cursor.fails) { cursor = { ...cursor, phase: 'done' }; result.state = 'products_endpoint_unavailable'; }
-            else cursor = { ...cursor, phase: 'sellers', offset: 0 };
+            else cursor = { ...cursor, phase: 'retry', retryLast: RETRY_FROM, retries: 0 };
             break;
           }
           const { ok, extraCalls } = await snapProduct(db, token, t, date, caps, cursor);
@@ -301,6 +301,22 @@ export function createMlCompetition({ fetcher = (...a) => globalThis.fetch(...a)
           // no tiene sentido seguir quemando cupo hasta mañana.
           if (!cursor.okToday && cursor.fails >= 3) { cursor = { ...cursor, phase: 'done' }; result.state = 'products_endpoint_unavailable'; break; }
         }
+      }
+      // Un día cuyo recorrido ya terminó con la versión anterior (sin reintento) lo hace una vez.
+      if (cursor.phase === 'done' && cursor.retries === undefined && cursor.okToday > 0) cursor = { ...cursor, phase: 'retry', retryLast: RETRY_FROM, retries: 0 };
+      // Segundo intento, una vez por día, de los productos cuya foto falló o quedó parcial: de los más
+      // vendidos a los menos. Un error de ML suele ser momentáneo y no vale dejar al libro sin dato todo el día.
+      if (cursor.phase === 'retry' && hasTime()) {
+        const token = await tokenProvider(env);
+        while (hasTime() && (cursor.retries ?? 0) < RETRY_MAX) {
+          const t = await db.prepare(`SELECT t.* FROM comp_targets t JOIN comp_product_days d ON d.catalog_product_id=t.catalog_product_id AND d.snap_date=?
+            WHERE (d.status<>'ok' OR d.snapshot_version IS NOT ?) AND t.priority<? ORDER BY t.priority DESC LIMIT 1`).bind(date, SNAPSHOT_VERSION, cursor.retryLast ?? RETRY_FROM).first();
+          if (!t) { cursor = { ...cursor, phase: 'sellers', offset: 0 }; break; }
+          result.state = 'retry';
+          const { extraCalls } = await snapProduct(db, token, t, date, caps, cursor);
+          calls -= (t.own_catalog_item_id ? 2 : 1) + extraCalls; cursor.retryLast = t.priority; cursor.retries = (cursor.retries ?? 0) + 1; result.retried++;
+        }
+        if (cursor.phase === 'retry' && (cursor.retries ?? 0) >= RETRY_MAX) cursor = { ...cursor, phase: 'sellers', offset: 0 };
       }
       if (cursor.phase === 'sellers' && hasTime()) {
         const token = await tokenProvider(env);
@@ -337,7 +353,10 @@ const money = v => v == null ? '—' : `$ ${Math.round(v).toLocaleString('es-UY'
 // Hechos de competencia por ISBN comparando la última foto con la anterior.
 // Pocas consultas en total (json_each), no una por producto: el panel en Pages
 // tiene tope de consultas a D1 por request.
-export async function competitionByIsbn(db, isbns) {
+// opts.tolerarFotoDeAyer: si la foto de hoy de un producto falló o quedó parcial y la de ayer sirve, se
+// usa la de ayer (marcada foto_vieja y sin comparar días). Para decidir una reposición alcanza: lo que
+// hace un competidor no cambia en un día. Los eventos y precios siguen sin tolerarla.
+export async function competitionByIsbn(db, isbns, { tolerarFotoDeAyer = false } = {}) {
   const out = new Map();
   const valid = [...new Set(isbns.filter(Boolean))];
   if (!valid.length) return out;
@@ -370,9 +389,10 @@ export async function competitionByIsbn(db, isbns) {
     // existe y falló o quedó parcial, no hay dato: no se tapa con la de ayer.
     const pdHoy = pdBy.get(`${t.catalog_product_id}|${today}`) ?? null;
     const pdAyer = prev ? pdBy.get(`${t.catalog_product_id}|${prev}`) ?? null : null;
-    const pd = pdHoy ?? pdAyer;
+    let pd = pdHoy ?? pdAyer, fotoVieja = false;
+    if (tolerarFotoDeAyer && pdHoy && !vigente(pdHoy) && vigente(pdAyer)) { pd = pdAyer; fotoVieja = true; }
     if (!vigente(pd)) continue;
-    const dia = pd.snap_date, diaPrev = pdHoy ? prev : null;
+    const dia = pd.snap_date, diaPrev = pdHoy && !fotoVieja ? prev : null;
     const pdPrev = diaPrev ? pdAyer : null;
     const prevOk = vigente(pdPrev);
     // Fotos viejas pueden traer a un vendedor lento como inmediato: se corrige al leer.
@@ -420,10 +440,11 @@ export async function competitionByIsbn(db, isbns) {
     }
     const rel = ownPrice && minPrice ? ownPrice / minPrice : null;
     const ref = `del más barato con entrega inmediata${ownRow ? (Number(ownRow.free_shipping) ? ' con envío gratis' : ' sin envío gratis') : ''}`;
-    if (rel && rel >= 1.15) avisos.push({ tipo: 'precio_arriba', texto: `Tu precio (${money(ownPrice)}) está ${Math.round((rel - 1) * 100)}% arriba ${ref} (${money(minPrice)}).` });
+    const barato = minPrice == null ? null : comparables.find(r => r.price === minPrice);
+    if (rel && rel >= 1.15) avisos.push({ tipo: 'precio_arriba', tuPrecio: ownPrice, minPrecio: minPrice, pct: Math.round((rel - 1) * 100), vendedor: barato ? name(barato.seller_id) : null, texto: `Tu precio (${money(ownPrice)}) está ${Math.round((rel - 1) * 100)}% arriba ${ref} (${money(minPrice)}).` });
     if (rel && rel <= 0.9) avisos.push({ tipo: 'precio_abajo', texto: `Tu precio (${money(ownPrice)}) está ${Math.round((1 - rel) * 100)}% abajo ${ref} (${money(minPrice)}): podrías estar regalando margen.` });
     out.set(t.isbn, {
-      catalog_product_id: t.catalog_product_id, foto: dia, foto_anterior: prevOk ? diaPrev : null,
+      catalog_product_id: t.catalog_product_id, foto: dia, foto_anterior: prevOk ? diaPrev : null, foto_vieja: fotoVieja,
       competidores: sellersHoy.size, competidores_comparables: comparables.length, excluidos_de_precio: excluidos,
       competidores_inmediatos: new Set(inmediatos.map(r => r.seller_id)).size,
       competidores_a_pedido: aPedido.length, precio_minimo_a_pedido: minAPedido,
@@ -437,7 +458,9 @@ export async function competitionByIsbn(db, isbns) {
 }
 
 // Eventos del día en todos los productos vigilados (para el panel, el correo y GPT).
-export async function competitionEvents(db, { limit = 30 } = {}) {
+// `enteros`: tipos de aviso que se devuelven completos (sin el corte de `limit`),
+// para quien necesita todos los de un tipo aunque haya muchos de los otros.
+export async function competitionEvents(db, { limit = 30, enteros = [] } = {}) {
   let targets;
   try { targets = (await db.prepare('SELECT isbn FROM comp_targets ORDER BY priority DESC').all()).results; } catch { return { foto: null, eventos: [], vigilados: 0 }; }
   const facts = await competitionByIsbn(db, targets.map(t => t.isbn));
@@ -451,7 +474,38 @@ export async function competitionEvents(db, { limit = 30 } = {}) {
   eventos.sort((a, b) => order.indexOf(a.tipo) - order.indexOf(b.tipo));
   const foto = [...facts.values()].reduce((m, f) => (f.foto > (m ?? '') ? f.foto : m), null);
   const porTipo = eventos.reduce((m, e) => (m[e.tipo] = (m[e.tipo] ?? 0) + 1, m), {});
-  return { foto, vigilados: targets.length, por_tipo: porTipo, eventos: eventos.slice(0, limit) };
+  return { foto, vigilados: targets.length, por_tipo: porTipo, eventos: eventos.slice(0, limit),
+    enteros: Object.fromEntries(enteros.map(t => [t, eventos.filter(e => e.tipo === t)])) };
+}
+
+// Cobertura de la vigilancia: de los productos vigilados, cuántos tienen una foto
+// utilizable (hoy, o la de ayer si la de hoy todavía no llegó) y cuántos terminan
+// con dato de competencia en el correo. Sirve para saber por qué una línea dice
+// "sin dato de competencia". Sólo conteos: los registros de Actions son públicos.
+export async function competitionCoverage(db) {
+  const targets = (await db.prepare('SELECT isbn,catalog_product_id FROM comp_targets').all()).results;
+  const days = (await db.prepare('SELECT DISTINCT snap_date FROM comp_product_days ORDER BY snap_date DESC LIMIT 2').all()).results.map(r => r.snap_date);
+  const [today, prev] = days;
+  const byDay = new Map();
+  if (days.length) {
+    const rows = (await db.prepare(`SELECT snap_date,catalog_product_id,status,snapshot_version FROM comp_product_days WHERE snap_date IN (${days.map(() => '?').join(',')})`).bind(...days).all()).results;
+    for (const p of rows) byDay.set(`${p.catalog_product_id}|${p.snap_date}`, p);
+  }
+  const vigente = p => p?.status === 'ok' && p.snapshot_version === SNAPSHOT_VERSION;
+  const out = { vigilados: targets.length, dias: days, con_foto_vigente: 0, foto_de_hoy: 0, solo_foto_de_ayer: 0, sin_foto: 0, foto_no_vigente: {}, recuperables_con_foto_de_ayer: 0, con_dato: 0, sin_evidencia: 0 };
+  const conFoto = [];
+  for (const t of targets) {
+    const hoy = byDay.get(`${t.catalog_product_id}|${today}`) ?? null, ayer = prev ? byDay.get(`${t.catalog_product_id}|${prev}`) ?? null : null;
+    const pd = hoy ?? ayer;  // igual que competitionByIsbn: si la de hoy existe y no sirve, no se tapa con la de ayer
+    if (!pd) { out.sin_foto++; continue; }
+    if (!vigente(pd)) { const k = `${pd.status}${pd.snapshot_version === SNAPSHOT_VERSION ? '' : ':version_vieja'}`; out.foto_no_vigente[k] = (out.foto_no_vigente[k] ?? 0) + 1; if (hoy && vigente(ayer)) out.recuperables_con_foto_de_ayer++; continue; }
+    out.con_foto_vigente++;
+    if (hoy) out.foto_de_hoy++; else out.solo_foto_de_ayer++;
+    conFoto.push(t.isbn);
+  }
+  for (let i = 0; i < conFoto.length; i += 400) out.con_dato += (await competitionByIsbn(db, conFoto.slice(i, i + 400))).size;
+  out.sin_evidencia = out.con_foto_vigente - out.con_dato;
+  return out;
 }
 
 export async function competitionStatus(db) {

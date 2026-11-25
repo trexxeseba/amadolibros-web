@@ -45,6 +45,12 @@ export function reglaEsperada(f, { umbral = UMBRAL, inclusivo = INCLUSIVO, descu
   if (f.promo === true || f.promo === null) return { esperado: 'saltear', objetivo };
   return { esperado: 'bajar', objetivo };
 }
+// Con una promoción de ML activa la API muestra el precio de la promo y deja el normal en
+// original_price. La auditoría compara el precio normal: la promo no es un cambio nuestro.
+export function precioNormal(item) {
+  const real = item?.price ?? null, orig = Number(item?.original_price);
+  return Number.isFinite(orig) && real !== null && orig > real ? orig : real;
+}
 export function motivosDeFalla({ porTipo, muestraN, erroresAplicar, intentos }) {
   const m = [];
   if (porTipo.muestra > 2) m.push(`${porTipo.muestra} de ${muestraN} de la muestra no coinciden con ML`);
@@ -95,7 +101,7 @@ async function main() {
   const enEstado = Object.entries(estado);
   const actuales = enEstado.length ? await detalle(ml, enEstado.map(([id]) => id)) : new Map();
   for (const [id, e] of enEstado) {
-    const real = actuales.get(id)?.price ?? null, orig = Number(e.precio_original), apl = Number(e.precio_aplicado);
+    const real = precioNormal(actuales.get(id)), orig = Number(e.precio_original), apl = Number(e.precio_aplicado);
     const problemas = [];
     if (real !== apl) problemas.push(`precio en ML ${real}, registrado ${apl}`);
     if (apl > orig) problemas.push('aplicado mayor al original');

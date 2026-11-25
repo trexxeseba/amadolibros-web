@@ -1,6 +1,6 @@
 import { dispararPrecioGanador, CRONS_PRECIO_GANADOR } from './precio-ganador-trigger.js';
 import { dispararPoda, CRONS_PODA } from './poda-trigger.js';
-import { dispararVintageNube, dispararVintageVigia, CRON_VINTAGE_NUBE, CRON_VINTAGE_VIGIA } from './vintage-nube-trigger.js';
+import { dispararVintageNube, dispararVintageVigia, dispararArnoia, dispararHermes, dispararGuardian, CRON_VINTAGE_NUBE, CRON_VINTAGE_VIGIA, CRON_ARNOIA, CRON_HERMES, CRON_GUARDIAN } from './vintage-nube-trigger.js';
 import { IMAGE_SOURCE_POLICY_VERSION } from '../functions/_shared/image-source-policy.js';
 /**
  * worker-sync/index.js
@@ -71,7 +71,7 @@ import { mlSales, handleSalesRoute } from './ml-sales.js';
 import { handleMoneyRoute } from './money-probe.js';
 import { handlePurchasesRoute } from './purchases.js';
 import { handleReposicionRead, REPOSICION_PATH } from './reposicion-read.js';
-import { mlCompetition, competitionStatus } from './ml-competition.js';
+import { mlCompetition, competitionStatus, competitionCoverage } from './ml-competition.js';
 import { fxRates } from './fx-rates.js';
 import {
   addCompressedIndexes,
@@ -178,6 +178,24 @@ export default {
       }));
       return;
     }
+    if (event?.cron === CRON_ARNOIA) {
+      ctx.waitUntil(dispararArnoia(env).then(result => {
+        console.log('[arnoia vintage]', JSON.stringify(result));
+      }));
+      return;
+    }
+    if (event?.cron === CRON_HERMES) {
+      ctx.waitUntil(dispararHermes(env).then(result => {
+        console.log('[hermes vintage]', JSON.stringify(result));
+      }));
+      return;
+    }
+    if (event?.cron === CRON_GUARDIAN) {
+      ctx.waitUntil(dispararGuardian(env).then(result => {
+        console.log('[guardian vintage]', JSON.stringify(result));
+      }));
+      return;
+    }
     if (event?.cron === CRON_VINTAGE_VIGIA) {
       ctx.waitUntil(dispararVintageVigia(env).then(result => {
         console.log('[vintage vigia]', JSON.stringify(result));
@@ -197,9 +215,9 @@ export default {
       }));
       return;
     }
-    // Correo diario del panel (08:03 Montevideo; el segundo disparo, una hora
-    // después, solo actúa si el primero no llegó a mandarlo).
-    if (event?.cron === '3 11 * * *' || event?.cron === '3 12 * * *') {
+    // Prepara el correo a las 19:55 de Montevideo; Resend lo entrega a las 20:00.
+    // Reintenta a las 19:58 solo si la primera preparación no fue aceptada.
+    if (event?.cron === '55 22 * * *' || event?.cron === '58 22 * * *') {
       ctx.waitUntil(sendDailyPanelDigest(env).then(result => {
         console.log('[panel digest]', JSON.stringify(result));
       }));
@@ -244,6 +262,8 @@ export default {
     if (url.pathname.startsWith('/purchases/')) return handlePurchasesRoute(request, env);
     // Competencia: estado (capacidades de la API, avance del día) y corrida manual.
     if (request.method === 'GET' && url.pathname === '/competition/status') return json(await competitionStatus(env.ORDERS_DB) ?? { state: 'sin_datos' });
+    // Cobertura de la vigilancia: sólo conteos (por qué una línea dice "sin dato de competencia").
+    if (request.method === 'GET' && url.pathname === '/competition/coverage') return json(await competitionCoverage(env.ORDERS_DB));
     if (request.method === 'POST' && url.pathname === '/competition/sync') return json(await mlCompetition.sync(env, { calls: 120, deadlineMs: 25000 }));
     // Lectura de atributos de libros (solo lectura), detrás de SYNC_SECRET.
     if (url.pathname === '/attribute-audit') return handleAttributeAudit(request, env);
