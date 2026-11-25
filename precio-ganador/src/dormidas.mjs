@@ -105,7 +105,8 @@ async function main() {
     con_pocas_visitas: sinVisitas, errores_visitas: erroresVisitas, grupos_de_anuncios: grupos, grupos_sin_leer: gruposSinItem, publicaciones_con_anuncio: conAnuncio.size, dormidas: filas.length, por_grupo: porGrupo, con_anuncio: resumenConAnuncio(conAnuncioDormidas) };
   mkdirSync(salida, { recursive: true });
   writeFileSync(join(salida, `${cuenta.clave}-dormidas.json`), JSON.stringify({ resumen, filas, con_anuncio: conAnuncioDormidas }, null, 1));
-  console.log(JSON.stringify(resumen)); // sólo conteos: el log es público
+  // El log es público: sólo conteos, sin los nombres de las campañas (van al archivo del repo privado).
+  console.log(JSON.stringify({ ...resumen, con_anuncio: { ...resumen.con_anuncio, por_campania: Object.keys(resumen.con_anuncio.por_campania).length } }));
 }
 
 if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file://').href) main().catch(e => { console.error('dormidas:', e?.code ?? e?.message); process.exit(1); });
