@@ -44,7 +44,7 @@ function imprimir(titulo, valor) { salida[titulo] = valor; console.log(`\n## ${t
 function resumen(md) { if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, md + '\n'); console.log(md); }
 const fallo = (code, extra = {}) => { imprimir('resultado', { ok: false, error: code, ...extra }); process.exitCode = 1; };
 
-const escribe = modo === 'real' && ['sumar', 'sumar-lote', 'sacar', 'cambiar-precio'].includes(ACCION);
+const escribe = modo === 'real' && ['sumar', 'sumar-lote', 'sacar', 'cambiar-precio', 'envio-gratis'].includes(ACCION);
 const ml = crearCliente(fuenteTokenD1(CUENTA), { intentos: 4, concurrencia: 4, soloLectura: !escribe });
 const CAMPOS_ITEM = 'id,title,price,base_price,original_price,available_quantity,sold_quantity,status,sub_status,catalog_listing,catalog_product_id,date_created,last_updated,listing_type_id';
 
@@ -254,6 +254,29 @@ async function cambiarPrecio() {
   imprimir("resultado", { ok: true, modo, accion: ACCION, item: ITEM, antes: ev.antes, despues: ev.despues, pct: ev.pct });
 }
 
+// Envío gratis en una publicación (Seba, 25/11/2026: "si bajando no ganamos, probá ponerle envío gratis").
+// PRECIO=0 lo quita (deshacer). Lee el envío actual, lo deja en el registro, escribe sólo free_shipping y relee.
+// No toca precio, modo de envío ni retiro. El costo del envío pasa a cargo nuestro en cada venta.
+async function envioGratis() {
+  if (!ID_RE.test(ITEM)) return fallo("item_invalido");
+  const quiere = !(PRECIO === 0 || String(env.PRECIO ?? "").trim() === "0");
+  const antes = await ml.sonda(`/items/${ITEM}?attributes=id,title,status,shipping`);
+  if (!antes.ok) return fallo("item_no_leido", { http: antes.status });
+  const sh = antes.json?.shipping ?? {};
+  const foto = e => ({ mode: e?.mode ?? null, free_shipping: e?.free_shipping ?? null, local_pick_up: e?.local_pick_up ?? null, logistic_type: e?.logistic_type ?? null });
+  imprimir("lectura", { item: ITEM, titulo: texto(antes.json?.title ?? ""), estado: antes.json?.status ?? null, envio_antes: foto(sh), se_pide: quiere });
+  if (antes.json?.status !== "active") return fallo("no_esta_activa");
+  if (sh.free_shipping === quiere) { imprimir("resultado", { ok: true, ya_estaba: true, free_shipping: quiere }); return; }
+  const body = { shipping: { mode: sh.mode, local_pick_up: sh.local_pick_up === true, free_shipping: quiere } };
+  if (modo !== "real") { imprimir("resultado", { ok: true, modo, accion: ACCION, item: ITEM, haria: body, antes: foto(sh) }); return; }
+  let r; try { r = await ml.put(`/items/${ITEM}`, body); } catch (e) { return fallo("put_fallo", { detalle: detalleError(e), body, antes: foto(sh) }); }
+  await sleep(8000);
+  const despues = await ml.sonda(`/items/${ITEM}?attributes=id,shipping`);
+  const ok = despues.ok && despues.json?.shipping?.free_shipping === quiere;
+  imprimir("resultado", { ok, modo, accion: ACCION, item: ITEM, antes: foto(sh), despues: foto(despues.json?.shipping) });
+  if (!ok) process.exitCode = 1;
+}
+
 async function seleccion() {
   const hoy = fechaMontevideo(), desde = fechaCorrida(-DIAS_VENTAS);
   const ordenes = []; let totalOrdenes = null;
@@ -316,7 +339,7 @@ async function main() {
   console.log(`Promos ${new Date().toISOString()} | accion=${ACCION} modo=${modo} escribe=${escribe} item=${ITEM || '-'} items=${ITEMS.length} promocion="${texto(PROMOCION)}" precio=${PRECIO ?? '-'} pedido_seba=${PEDIDO_SEBA}`);
   const yo = await ml.get('/users/me');
   if (String(yo?.id) !== CUENTA.sellerId) throw Object.assign(new Error('token_de_otra_cuenta'), { fatal: true });
-  const acciones = { estado, sumar, 'sumar-lote': sumarLote, sacar, 'cambiar-precio': cambiarPrecio, seleccion, 'ads-gasto': adsGasto };
+  const acciones = { estado, sumar, 'sumar-lote': sumarLote, sacar, 'cambiar-precio': cambiarPrecio, 'envio-gratis': envioGratis, seleccion, 'ads-gasto': adsGasto };
   if (!acciones[ACCION]) return fallo('accion_desconocida', { acciones: Object.keys(acciones) });
   await acciones[ACCION]();
   imprimir('estadisticas_cliente', ml.stats);
