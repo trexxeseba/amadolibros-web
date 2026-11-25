@@ -5,6 +5,8 @@ import {
   GOOGLE_RATING,
   pickReviews,
   googleReviewsHtml,
+  googleRatingHtml,
+  GOOGLE_REVIEWS_URL,
 } from '../../shared/google-reviews.js';
 
 test('reseñas: hay suficientes y cada una trae nombre abreviado y texto', () => {
@@ -18,7 +20,8 @@ test('reseñas: hay suficientes y cada una trae nombre abreviado y texto', () =>
 
 test('reseñas: puntaje y cantidad declarados', () => {
   assert.equal(GOOGLE_RATING.rating, '4,9');
-  assert.equal(GOOGLE_RATING.count, 82);
+  assert.equal(GOOGLE_RATING.count, 87);
+  assert.equal(GOOGLE_RATING.fiveStarCount, 84);
 });
 
 test('reseñas: pickReviews es estable por semilla y respeta el límite', () => {
@@ -41,4 +44,20 @@ test('reseñas: el HTML escapa texto, enlaza a Google y no usa datos estructurad
 test('reseñas: copy de cara al cliente sin palabras vetadas', () => {
   const html = googleReviewsHtml({ limit: 12 });
   assert.ok(!/únicamente|\bsólo\b/i.test(html));
+});
+
+test('el resumen visible distingue la media de las reseñas de cinco estrellas y enlaza la fuente', () => {
+  for (const dark of [true, false]) {
+    const html = googleRatingHtml({ dark });
+    assert.ok(html.includes('4,9/5 en Google'));
+    assert.ok(html.includes('87 reseñas · 84 de 5 estrellas'));
+    assert.ok(html.includes(`href="${GOOGLE_REVIEWS_URL}"`));
+    assert.doesNotMatch(html, /<script|aggregateRating|5\/5 en Google/i);
+  }
+});
+
+test('las reseñas destacadas se pueden mostrar completas sin JavaScript', () => {
+  const html = googleReviewsHtml({ limit: 3, animate: false });
+  assert.equal((html.match(/<li class="gr-card">/g) || []).length, 3);
+  assert.doesNotMatch(html, /<script>/);
 });

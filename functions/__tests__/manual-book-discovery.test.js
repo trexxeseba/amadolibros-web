@@ -46,7 +46,7 @@ test('los accesos editoriales cubren diferenciales concretos y conducen al formu
   // «Libros agotados» es un servicio, no un tema: tiene llamado propio.
   assert.doesNotMatch(topics, /title: 'Libros agotados'/);
   assert.match(topics, /v2-rare-books/);
-  assert.match(hero, /href="\/pedir-libro\/\?tipo=exacto"/);
+  assert.match(hero, /href="\/libros-agotados-importados-uruguay#consulta"/);
   assert.match(ideas, /href="\/pedir-libro\/\?tipo=exacto"/);
   assert.match(ideas, /No es una respuesta automática/i);
 });

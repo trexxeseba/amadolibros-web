@@ -5,6 +5,7 @@ import {
   classifyBookEnrichmentCoverage,
   verifyBookEnrichmentFeed,
   verifyBookEnrichmentHtml,
+  verifyBookEnrichmentMerchantCoverage,
 } from '../../scripts/seo/book-enrichment-live-check.mjs';
 import { BOOK_FACT_ENRICHMENTS } from '../_shared/book-enrichment-facts-1000.js';
 import { applyBookEnrichment } from '../_shared/book-enrichment-registry.js';
@@ -161,4 +162,55 @@ test('si reaparece una oferta MLU activa el control estricto se reactiva automá
   assert.equal(coverage.status, 'pending');
   assert.equal(coverage.reason, null);
   assert.deepEqual(coverage.candidates.map(candidate => candidate.id), ['MLU333333333']);
+});
+
+
+const eligibleItem = {
+  ...item,
+  price: 1950,
+  currency_id: 'UYU',
+  status: 'active',
+  available_quantity: 2,
+  domain_id: 'MLU-BOOKS',
+  permalink: 'https://articulo.mercadolibre.com.uy/MLU-724888358',
+};
+
+const eligibleFeed = '<item><g:id>MLU724888358</g:id><g:description>La Biblia Palabra de Vida, edición Hispanoamérica de Editorial Verbo Divino.</g:description><g:gtin>9788490739808</g:gtin><g:price>1950 UYU</g:price><g:availability>in stock</g:availability><g:link>https://www.amadolibros.com/libro/MLU724888358</g:link><g:image_link>https://www.amadolibros.com/book-cover/MLU724888358/cover.jpg</g:image_link></item>';
+
+test('una edición excluida por la política de Merchant conserva el control de su ficha', () => {
+  const excluded = { ...eligibleItem, title: 'Wider World 3 Student Book + Ebook + Myenglishlab' };
+  const coverage = classifyBookEnrichmentCoverage([excluded], record);
+  assert.equal(coverage.status, 'pending');
+  assert.equal(coverage.candidates[0].id, excluded.id);
+  assert.deepEqual(verifyBookEnrichmentMerchantCoverage('<rss/>', record, coverage.candidates), {
+    status: 'not_applicable',
+    reason: 'feed_policy_excluded',
+    product_id: null,
+    failures: [],
+  });
+  assert.ok(verifyBookEnrichmentHtml('<div>Ficha incompleta</div>', record, excluded.id, excluded).length > 0);
+});
+
+test('una oferta elegible ausente de Merchant sigue siendo un fallo', () => {
+  const result = verifyBookEnrichmentMerchantCoverage('<rss/>', record, [eligibleItem]);
+  assert.equal(result.status, 'failed');
+  assert.equal(result.reason, null);
+  assert.deepEqual(result.failures, ['ninguna publicación de la edición aparece en Merchant']);
+});
+
+test('una variante excluida no oculta una oferta elegible de la misma edición', () => {
+  const excluded = { ...eligibleItem, id: 'MLU111111111', title: 'Libro + Ebook' };
+  const missing = verifyBookEnrichmentMerchantCoverage('<rss/>', record, [excluded, eligibleItem]);
+  assert.equal(missing.status, 'failed');
+  const result = verifyBookEnrichmentMerchantCoverage(eligibleFeed, record, [excluded, eligibleItem]);
+  assert.equal(result.status, 'verified');
+  assert.equal(result.product_id, eligibleItem.id);
+  assert.deepEqual(result.failures, []);
+});
+
+test('el control de Merchant mantiene los errores de contenido en ofertas elegibles', () => {
+  const feed = eligibleFeed.replace(/<g:price>[\s\S]*?<\/g:price>/, '');
+  const result = verifyBookEnrichmentMerchantCoverage(feed, record, [eligibleItem]);
+  assert.equal(result.status, 'failed');
+  assert.ok(result.failures.includes('Merchant perdió el precio'));
 });

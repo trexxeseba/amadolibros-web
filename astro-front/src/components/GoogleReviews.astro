@@ -1,10 +1,11 @@
 ---
-// Reseñas de Google en la portada: cascada de tarjetas con los comentarios
+// Reseñas de Google en la portada: tres tarjetas visibles con los comentarios
 // reales de clientes. Datos y render en shared/google-reviews.js.
 import { googleReviewsHtml } from '../../../shared/google-reviews.js';
 
 const html = googleReviewsHtml({
-  limit: 12,
+  limit: 3,
+  animate: false,
   columns: 3,
   title: 'Lo que cuentan quienes ya compraron',
 });

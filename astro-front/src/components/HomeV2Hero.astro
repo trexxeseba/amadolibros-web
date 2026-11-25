@@ -1,5 +1,6 @@
 ---
 import fs from 'node:fs';
+import { googleRatingHtml } from '../../../shared/google-reviews.js';
 import path from 'node:path';
 import { responsiveBookCover } from '../lib/cloudflare-images.js';
 
@@ -41,6 +42,7 @@ const heroBooks = books.map((book, index) => ({
   <div class="v2-hero-grid">
     <div class="v2-hero-copy">
       <p class="v2-kicker">Librería online uruguaya · búsqueda por encargo</p>
+      <Fragment set:html={googleRatingHtml({ dark: true })} />
       <h1 id="v2-hero-title">
         Libros difíciles de encontrar.
         <em>Los conseguimos.</em>
@@ -73,7 +75,7 @@ const heroBooks = books.map((book, index) => ({
           <strong>Contanos qué libro buscás.</strong>
           <small>Revisamos personalmente dónde conseguirlo, incluso si está agotado o descatalogado.</small>
         </div>
-        <a href="/pedir-libro/?tipo=exacto">Iniciar búsqueda <span aria-hidden="true">→</span></a>
+        <a href="/libros-agotados-importados-uruguay#consulta">Iniciar búsqueda <span aria-hidden="true">→</span></a>
       </div>
 
       <ul class="v2-trust" aria-label="Señales de confianza">

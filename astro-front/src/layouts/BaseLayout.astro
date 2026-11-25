@@ -7,6 +7,7 @@ interface Props {
   description?: string;
   indexable?: boolean;
   analytics?: boolean;
+  showSocialProof?: boolean;
   canonical?: string;
   image?: string;
   imageAlt?: string;
@@ -19,6 +20,7 @@ const {
   description = 'Libros importados y por encargo en Uruguay. Entrega hoy en Montevideo, envíos a todo el país.',
   indexable: indexableProp,
   analytics: analyticsProp,
+  showSocialProof = true,
   canonical,
   image = 'https://www.amadolibros.com/images/logo-amado.webp',
   imageAlt = 'Amado Libros, librería uruguaya',
@@ -157,6 +159,6 @@ import { pruebaSocialHtml } from '../../../shared/prueba-social.js';
 </head>
 <body>
   <slot />
-  <Fragment set:html={pruebaSocialHtml()} />
+  {showSocialProof && <Fragment set:html={pruebaSocialHtml()} />}
 </body>
 </html>

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { purchaseTrustHtml } from '../../../shared/purchase-trust.js';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import WAFloat from '../components/WAFloat.astro';
@@ -339,6 +340,8 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
                 Enviar pedido por WhatsApp
               </button>
             )}
+
+            <Fragment set:html={purchaseTrustHtml({ compact: true })} />
 
             {checkoutEnabled && (
               <>
