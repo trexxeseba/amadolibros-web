@@ -321,12 +321,13 @@ export async function fetchActiveIndex(ctx) {
     return null;
 }
 
-// Stock y precios de checkout deben seguir el manifiesto vigente (60 s), no
-// una copia independiente de catalog.json. El índice activo es versionado y es
-// la misma fuente que publica el sincronizador para Producción y Preview.
+// Carrito y cobro validan contra el mismo catálogo que la ficha, actualizado
+// por el sync regular y con caché de 60 s. El manifest de pausadas se publica
+// aparte: su índice activo puede tener varios días y omitir altas recientes.
+// Si la fuente vigente falla, no se recupera stock de ese índice histórico.
 export async function fetchCheckoutCatalog(ctx) {
-    const activeIndex = await fetchActiveIndex(ctx);
-    return activeIndex && Array.isArray(activeIndex.items) ? activeIndex : null;
+    const catalog = await fetchCatalog(ctx);
+    return catalog && Array.isArray(catalog.items) ? catalog : null;
 }
 
 export function pausedBlockNumberForId(id, blockCount) {

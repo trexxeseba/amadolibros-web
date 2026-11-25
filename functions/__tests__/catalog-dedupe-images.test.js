@@ -82,3 +82,35 @@ test('las landings de categoría tampoco repiten la misma edición', () => {
   ]);
   assert.deepEqual(result.map(item => item.id), ['MLU1']);
 });
+
+test('la galería no duplica variantes O/F de la misma fotografía de Mercado Libre', () => {
+  const first = 'https://http2.mlstatic.com/D_948503-MLA112165856300_062026-O.jpg';
+  const second = 'https://http2.mlstatic.com/D_641627-MLA112165998696_062026-O.jpg';
+  assert.deepEqual(normalizeImages({ pictures: [
+    first, second,
+    'https://http2.mlstatic.com/D_NQ_NP_948503-MLA112165856300_062026-F.jpg',
+    'https://http2.mlstatic.com/D_NQ_NP_641627-MLA112165998696_062026-F.jpg',
+  ] }), [first, second]);
+});
+
+test('Así fue como llegaste conserva las cuatro fotos y excluye carteles y copias verificadas', () => {
+  const photo = 'https://http2.mlstatic.com/D_915550-MLU71031909183_082023-O.jpg';
+  const duplicate = 'https://http2.mlstatic.com/D_NQ_NP_952436-MLA99508947388_112025-F.jpg';
+  const pictures = [
+    photo, 'https://http2.mlstatic.com/D_758900-MLU70995279962_082023-O.jpg',
+    'https://http2.mlstatic.com/D_841825-MLU70995173748_082023-O.jpg',
+    'https://http2.mlstatic.com/D_853707-MLU70995231562_082023-O.jpg',
+    'https://http2.mlstatic.com/D_884143-MLU71032024881_082023-O.jpg',
+    'https://http2.mlstatic.com/D_838339-MLU70995270338_082023-O.jpg',
+    'https://http2.mlstatic.com/D_779639-MLU70995173764_082023-O.jpg',
+    duplicate, 'https://http2.mlstatic.com/D_NQ_NP_785404-MLA99992928035_112025-F.jpg',
+  ];
+  assert.deepEqual(normalizeImages({ id: 'MLU633445690', pictures }), pictures.slice(0, 4));
+  assert.deepEqual(normalizeImages({ id: 'MLU2', pictures: [duplicate] }), [duplicate]);
+  const html = renderPage({ id: 'MLU633445690', title: 'Así fue como llegaste', pictures,
+    status: 'active', available_quantity: 1, price: 2835,
+    description: 'Formato Libro físico Autor Editorial Biblos Encuadernación Unknown binding Isbn13 9789872605216',
+  }, 'asi-fue-como-llegaste', false, '');
+  assert.doesNotMatch(html, /Unknown binding|cover-[5-9]\.jpg/);
+  assert.match(html, /cover-4\.jpg/);
+});

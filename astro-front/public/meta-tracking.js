@@ -354,8 +354,8 @@
       '<p style="margin:0 0 10px">Usamos cookies de Meta para medir qué anuncios funcionan. ' +
       'No las activamos sin tu permiso. <a href="/privacidad/" style="color:inherit">Más información</a>.</p>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-      '<button type="button" data-consent="denied" style="padding:8px 14px;border:1px solid #bbb;border-radius:8px;background:#fff;cursor:pointer">Rechazar</button>' +
-      '<button type="button" data-consent="granted" style="padding:8px 14px;border:0;border-radius:8px;background:#1f3d2b;color:#fff;cursor:pointer">Aceptar</button>' +
+      '<button type="button" data-consent="denied" style="min-height:44px;padding:8px 14px;border:1px solid #bbb;border-radius:8px;background:#fff;cursor:pointer">Rechazar</button>' +
+      '<button type="button" data-consent="granted" style="min-height:44px;padding:8px 14px;border:0;border-radius:8px;background:#1f3d2b;color:#fff;cursor:pointer">Aceptar</button>' +
       '</div>';
     box.addEventListener('click', function (event) {
       var button = event.target && event.target.closest ? event.target.closest('[data-consent]') : null;
