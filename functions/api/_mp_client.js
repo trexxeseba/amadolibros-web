@@ -87,6 +87,31 @@ export async function createPreference(payload, accessToken, { expectedCollector
   return { ok: true, id: data.id, checkout_url: pickCheckoutUrl(data, checkoutField) };
 }
 
+/**
+ * Vence un link de pago ya creado, para que no se pueda pagar un pedido que
+ * fue reemplazado. No crea ni modifica cobros.
+ */
+export async function expirePreference(prefId, accessToken, now, { fetch: f = globalThis.fetch, timeoutMs = 6000 } = {}) {
+  let resp;
+  try {
+    resp = await fetchMp(
+      `${MP_BASE}/checkout/preferences/${encodeURIComponent(prefId)}`,
+      {
+        method:  'PUT',
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ expires: true, expiration_date_to: now.toISOString() }),
+      },
+      timeoutMs,
+      f
+    );
+  } catch (e) {
+    if (e?.name === 'AbortError') return { ok: false, code: 'MP_TIMEOUT' };
+    return { ok: false, code: 'MP_API_ERROR' };
+  }
+  if (!resp.ok) return { ok: false, code: mpErrorCode(resp.status) };
+  return { ok: true };
+}
+
 export async function getPreference(prefId, accessToken, publicCode, { expectedCollectorId, checkoutField, fetch: f = globalThis.fetch, timeoutMs = 10000 } = {}) {
   let resp;
   try {

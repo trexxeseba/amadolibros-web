@@ -29,7 +29,13 @@ import {
   reduceAvailability,
   stockGuardStatements,
   stockWindows,
+  supersedeStatements,
+  loadOwnOpen,
+  ownOrdersToSupersede,
+  ownPaymentMessage,
+  isLivePreference,
 } from '../_shared/stock-reservations.js';
+import { expirePreference as defaultExpirePreference } from './_mp_client.js';
 
 const EXISTING_ORDER_SELECT =
   'SELECT id, public_code, status, payment_status, delivery_type, ' +
@@ -50,7 +56,12 @@ const PREMIO_RESERVA_SQL =
 const PREMIO_LIBERAR_SQL =
   'UPDATE juego_codigos SET order_id = NULL, reservado_hasta = NULL WHERE code = ? AND order_id = ? AND used_at IS NULL';
 
-export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), verifyTurnstileToken = verifyTurnstile }) {
+export function createOrdersHandler({
+  fetchCatalog,
+  getNow = () => new Date(),
+  verifyTurnstileToken = verifyTurnstile,
+  expirePreference = defaultExpirePreference,
+}) {
   return async function onRequest(context) {
     const { request, env } = context;
 
@@ -164,9 +175,11 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
       const windows = stockWindows({ now, catalogUpdatedAt: catalog.updated_at });
       let firm = new Map();
       let held = new Map();
+      let ownOpen = [];
       try {
         firm = await loadFirmSold(db, productIds, windows);
         held = await loadHeldByOthers(db, productIds, windows, buyerKey);
+        ownOpen = await loadOwnOpen(db, productIds, windows, buyerKey);
       } catch (error) {
         // Sin esta lectura se sigue como antes: el candado del lote de alta
         // igual impide que dos pedidos se lleven el mismo ejemplar.
@@ -176,7 +189,18 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
       const heldTitles = built.errors.length > 0 ? [] : built.snapshot
         .filter(item => item.quantity > item.observed_available_quantity - (held.get(item.product_id) || 0))
         .map(item => item.title);
-      return { ...built, windows, heldTitles };
+      // Pedidos propios que este pedido va a reemplazar porque el ejemplar
+      // no alcanza para los dos.
+      const rawAvailable = new Map(catalog.items
+        .filter(item => item && typeof item.id === 'string')
+        .map(item => [item.id, Number(item.available_quantity)]));
+      const toSupersede = built.errors.length > 0 ? [] : ownOrdersToSupersede({
+        lines: built.snapshot.map(item => ({
+          product_id: item.product_id, quantity: item.quantity, catalog_available: rawAvailable.get(item.product_id),
+        })),
+        firm, heldByOthers: held, ownOpen,
+      });
+      return { ...built, windows, heldTitles, toSupersede };
     };
     const stockResponse = check => {
       if (check.errors.length > 0) {
@@ -196,6 +220,24 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
     const stockBlocked = stockResponse(firstCheck);
     if (stockBlocked) return stockBlocked;
     const { snapshot, windows: stockWindow } = firstCheck;
+
+    // Antes de reemplazar un pedido propio que ya tiene link de pago de
+    // Mercado Pago, se vence ese link. Si no se puede vencer, el pedido nuevo
+    // no se crea: así no quedan dos pedidos cobrables por el mismo ejemplar.
+    const expiredPreferences = [];
+    for (const own of firstCheck.toSupersede.filter(order => isLivePreference(order.preference_id))) {
+      let expired = { ok: false };
+      try {
+        if (env?.MP_ACCESS_TOKEN) expired = await expirePreference(own.preference_id, env.MP_ACCESS_TOKEN, now);
+      } catch (error) {
+        console.error('[orders] expire preference error', safeErrorName(error));
+      }
+      if (!expired?.ok) {
+        await releaseExpiredPreferences(db, expiredPreferences, now);
+        return json({ error: ownPaymentMessage(), code: 'OWN_PAYMENT_IN_PROGRESS' }, 409);
+      }
+      expiredPreferences.push(own);
+    }
     const catalogAvailable = new Map(catalog.items
       .filter(item => item && typeof item.id === 'string')
       .map(item => [item.id, Number(item.available_quantity)]));
@@ -360,19 +402,23 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
 
     try {
       // El candado va último: cuenta también los libros de este pedido.
-      const guardStmts = stockGuardStatements(db, {
-        orderId,
-        createdEventId,
-        createdAt,
-        windows: stockWindow,
-        buyer: buyerKey,
-        lines: snapshot.map(item => ({
-          product_id: item.product_id,
-          catalog_available: catalogAvailable.get(item.product_id),
-        })),
+      const guardLines = snapshot.map(item => ({
+        product_id: item.product_id,
+        catalog_available: catalogAvailable.get(item.product_id),
+      }));
+      // Primero se reemplazan los pedidos propios que compiten por un
+      // ejemplar que no alcanza; después el candado cuenta todo lo que queda.
+      const supersedeStmts = supersedeStatements(db, {
+        orderId, at: createdAt, windows: stockWindow, buyer: buyerKey, lines: guardLines,
       });
-      await db.batch([orderStmt, ...itemStmts, eventStmt, ...guardStmts]);
+      const guardStmts = stockGuardStatements(db, {
+        orderId, createdEventId, createdAt, windows: stockWindow, lines: guardLines,
+      });
+      await db.batch([orderStmt, ...itemStmts, eventStmt, ...supersedeStmts, ...guardStmts]);
     } catch (batchError) {
+      // El pedido nuevo no se creó: los pedidos propios siguen abiertos. A los
+      // que se les venció el link se les borra, para que puedan pedir otro.
+      await releaseExpiredPreferences(db, expiredPreferences, now);
       if (premioAplicado) {
         await db.prepare(PREMIO_LIBERAR_SQL).bind(premio.code, orderId).run().catch(() => {});
       }
@@ -410,6 +456,8 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
       }, 500);
     }
 
+    await expireSupersededPreferences({ db, env, orderId, alreadyExpired: expiredPreferences, expirePreference, now });
+
     return json({
       order: {
         public_code: publicCode,
@@ -428,6 +476,44 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
       ...(premio ? { premio: premioPublico(premio.code, premio.calc) } : {}),
     }, 201);
   };
+}
+
+// Un pedido que sigue abierto con el link de pago ya vencido: se le borra el
+// link para que el próximo intento de pago cree uno nuevo.
+async function releaseExpiredPreferences(db, orders, now) {
+  for (const order of orders) {
+    try {
+      await db.prepare(
+        "UPDATE orders SET payment_preference_id = NULL, updated_at = ? WHERE id = ? AND payment_preference_id = ? AND status = 'open'"
+      ).bind(now.toISOString(), order.id, order.preference_id).run();
+    } catch (error) {
+      console.error('[orders] release preference error', safeErrorName(error));
+    }
+  }
+}
+
+// Después de crear el pedido: si algún pedido reemplazado quedó con un link de
+// pago que no se venció antes (se creó en el mismo instante), se vence ahora.
+async function expireSupersededPreferences({ db, env, orderId, alreadyExpired, expirePreference, now }) {
+  try {
+    const rows = await db.prepare(
+      "SELECT o.id AS id, o.payment_preference_id AS preference_id FROM order_events e JOIN orders o ON o.id = e.order_id " +
+      "WHERE e.event_type = 'superseded' AND e.payload_json = ?"
+    ).bind(JSON.stringify({ replaced_by: orderId })).all();
+    const done = new Set(alreadyExpired.map(order => order.preference_id));
+    for (const row of rows?.results || []) {
+      if (!isLivePreference(row.preference_id) || done.has(row.preference_id)) continue;
+      const result = env?.MP_ACCESS_TOKEN
+        ? await expirePreference(row.preference_id, env.MP_ACCESS_TOKEN, now).catch(() => ({ ok: false }))
+        : { ok: false };
+      await db.prepare(
+        'INSERT OR IGNORE INTO order_events (id,order_id,event_type,payload_json,created_at) VALUES (?,?,?,?,?)'
+      ).bind(`superseded-link:${row.id}`, row.id, result?.ok ? 'superseded_link_expired' : 'superseded_link_not_expired',
+        JSON.stringify({ replaced_by: orderId }), now.toISOString()).run();
+    }
+  } catch (error) {
+    console.error('[orders] superseded preference pass error', safeErrorName(error));
+  }
 }
 
 async function findOrderByIdempotencyKey(db, idempotencyKey) {

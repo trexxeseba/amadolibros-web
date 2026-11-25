@@ -13,9 +13,13 @@
 //                 (una hora). El ejemplar puede volver: no se muestra como
 //                 agotado, se pide reintentar en unos minutos.
 //
-// Los pedidos abiertos de la misma persona (mismo correo o mismo teléfono) no
-// cuentan: quien cambia la entrega o el medio de pago genera un pedido nuevo y
-// no puede quedar bloqueado por su propio pedido anterior.
+// La misma persona (mismo correo o mismo teléfono) no queda bloqueada por su
+// propio pedido anterior: quien cambia la entrega o el medio de pago genera un
+// pedido nuevo. Pero sus pedidos SÍ cuentan para el stock. Si el ejemplar no
+// alcanza para los dos, el pedido nuevo reemplaza al anterior: el anterior se
+// cancela en el mismo lote que crea el nuevo, y su link de pago de Mercado
+// Pago se vence antes. Nunca quedan dos pedidos abiertos de la misma persona
+// por el último ejemplar.
 //
 // No cambia precios, totales ni reglas de envío, y no toca Mercado Libre: una
 // venta hecha en Mercado Libre se sigue viendo recién en la sincronización.
@@ -31,6 +35,20 @@ const NOT_CANCELLED = "o.status <> 'cancelled' AND o.cancelled_at IS NULL";
 const FIRM = "((o.payment_status = 'pending' AND o.updated_at > ?) OR (o.payment_status = 'approved' AND o.paid_at > ?))";
 const HOLD = "(o.status = 'open' AND o.payment_status NOT IN ('approved','pending') AND o.expires_at > ?)";
 const OTHER_BUYER = "(COALESCE(o.buyer_email,'') <> ? AND COALESCE(o.buyer_phone,'') <> ?)";
+const SAME_BUYER = "(COALESCE(o.buyer_email,'') = ? OR COALESCE(o.buyer_phone,'') = ?)";
+// Todo lo comprometido de un producto: ventas firmes y pedidos abiertos de
+// cualquiera, incluida la misma persona. Parámetros: producto, pendingSince,
+// soldSince, nowIso.
+const COMMITTED_SQL =
+  '(SELECT COALESCE(SUM(ci.quantity),0) FROM order_items ci JOIN orders o ON o.id = ci.order_id ' +
+  `WHERE ci.product_id = ? AND ${NOT_CANCELLED} AND (${FIRM} OR ${HOLD}))`;
+// Pedidos abiertos de la misma persona, distintos del nuevo, que llevan el
+// producto. Parámetros: nowIso, pedido nuevo, correo, teléfono, producto.
+const OWN_OPEN_WITH_PRODUCT =
+  `FROM orders o WHERE ${NOT_CANCELLED} AND ${HOLD} AND o.id <> ? AND ${SAME_BUYER} ` +
+  'AND EXISTS (SELECT 1 FROM order_items x WHERE x.order_id = o.id AND x.product_id = ?)';
+
+export const isLivePreference = id => typeof id === 'string' && id.length > 0 && !id.startsWith('creating:');
 
 export function stockWindows({ now, catalogUpdatedAt }) {
   const nowMs = now.getTime();
@@ -77,6 +95,70 @@ export function loadHeldByOthers(db, productIds, windows, buyer) {
     [windows.nowIso, buyer.email || '', buyer.phone || '']);
 }
 
+/**
+ * Pedidos abiertos de la misma persona que llevan alguno de los productos:
+ * una fila por pedido y producto, con el link de pago del pedido si lo tiene.
+ */
+export async function loadOwnOpen(db, productIds, windows, buyer) {
+  const rows = [];
+  for (let i = 0; i < productIds.length; i += 40) {
+    const chunk = productIds.slice(i, i + 40);
+    const result = await db.prepare(
+      'SELECT o.id AS order_id, o.payment_preference_id AS preference_id, oi.product_id AS product_id, SUM(oi.quantity) AS quantity ' +
+      'FROM order_items oi JOIN orders o ON o.id = oi.order_id ' +
+      `WHERE oi.product_id IN (${chunk.map(() => '?').join(',')}) AND ${NOT_CANCELLED} AND ${HOLD} AND ${SAME_BUYER} ` +
+      'GROUP BY o.id, oi.product_id'
+    ).bind(...chunk, windows.nowIso, buyer.email || '', buyer.phone || '').all();
+    for (const row of Array.isArray(result?.results) ? result.results : []) rows.push(row);
+  }
+  return rows;
+}
+
+/**
+ * Pedidos propios que el pedido nuevo va a reemplazar: los que llevan un
+ * producto cuyo stock no alcanza para el pedido nuevo más todo lo ya
+ * comprometido. Es la misma cuenta que hace `supersedeStatements` en la base.
+ */
+export function ownOrdersToSupersede({ lines, firm, heldByOthers, ownOpen }) {
+  const ownByProduct = new Map();
+  for (const row of ownOpen) ownByProduct.set(row.product_id, (ownByProduct.get(row.product_id) || 0) + Number(row.quantity || 0));
+  const tight = new Set(lines.filter(line => Number.isInteger(line.catalog_available) &&
+    line.quantity + (firm.get(line.product_id) || 0) + (heldByOthers.get(line.product_id) || 0) +
+      (ownByProduct.get(line.product_id) || 0) > line.catalog_available).map(line => line.product_id));
+  const orders = new Map();
+  for (const row of ownOpen) {
+    if (tight.has(row.product_id)) orders.set(row.order_id, { id: row.order_id, preference_id: row.preference_id ?? null });
+  }
+  return [...orders.values()];
+}
+
+/**
+ * Reemplazo de los pedidos propios, dentro del lote que crea el pedido nuevo
+ * y antes del candado. Por cada libro: si lo comprometido (contando el pedido
+ * nuevo) supera el stock, los pedidos abiertos de la misma persona que llevan
+ * ese libro quedan anotados como reemplazados y cancelados. Un pedido
+ * cancelado no puede pedir link de pago ni confirmarse por transferencia.
+ */
+export function supersedeStatements(db, { orderId, at, lines, windows, buyer }) {
+  const email = buyer.email || '';
+  const phone = buyer.phone || '';
+  const payload = JSON.stringify({ replaced_by: orderId });
+  const statements = [];
+  for (const line of lines) {
+    const own = [windows.nowIso, orderId, email, phone, line.product_id];
+    const committed = [line.product_id, windows.pendingSince, windows.soldSince, windows.nowIso, line.catalog_available];
+    statements.push(db.prepare(
+      'INSERT OR IGNORE INTO order_events (id,order_id,event_type,payload_json,created_at) ' +
+      `SELECT 'superseded:' || o.id, o.id, 'superseded', ?, ? ${OWN_OPEN_WITH_PRODUCT} AND ${COMMITTED_SQL} > ?`
+    ).bind(payload, at, ...own, ...committed));
+    statements.push(db.prepare(
+      "UPDATE orders SET status = 'cancelled', cancelled_at = ?, updated_at = ? " +
+      `WHERE id IN (SELECT o.id ${OWN_OPEN_WITH_PRODUCT}) AND ${COMMITTED_SQL} > ?`
+    ).bind(at, at, ...own, ...committed));
+  }
+  return statements;
+}
+
 /** Copia del catálogo con el stock descontado en los productos indicados. */
 export function reduceAvailability(catalogItems, soldByProduct) {
   if (!soldByProduct || soldByProduct.size === 0) return catalogItems;
@@ -96,20 +178,27 @@ export function reduceAvailability(catalogItems, soldByProduct) {
  * id del evento «created» que ya está en el lote, falla por clave repetida y
  * la base deshace el lote entero. Así dos altas simultáneas del último
  * ejemplar no pueden pasar las dos.
+ *
+ * Cuenta los pedidos abiertos de cualquiera, también los de la misma persona:
+ * los que había que reemplazar ya los canceló `supersedeStatements`.
  */
-export function stockGuardStatements(db, { orderId, createdEventId, createdAt, lines, windows, buyer }) {
+export function stockGuardStatements(db, { orderId, createdEventId, createdAt, lines, windows }) {
   const sql =
     'INSERT INTO order_events (id,order_id,event_type,payload_json,created_at) ' +
     "SELECT ?,?,'stock_guard',NULL,? WHERE (" +
       'SELECT COALESCE(SUM(oi.quantity),0) FROM order_items oi JOIN orders o ON o.id = oi.order_id ' +
-      `WHERE oi.product_id = ? AND ${NOT_CANCELLED} AND (${FIRM} OR (${HOLD} AND (o.id = ? OR ${OTHER_BUYER})))` +
+      `WHERE oi.product_id = ? AND ${NOT_CANCELLED} AND (${FIRM} OR ${HOLD})` +
     ') > ?';
   return lines.map(line => db.prepare(sql).bind(
     createdEventId, orderId, createdAt,
     line.product_id, windows.pendingSince, windows.soldSince, windows.nowIso,
-    orderId, buyer.email || '', buyer.phone || '',
     line.catalog_available,
   ));
+}
+
+export function ownPaymentMessage() {
+  return 'Ya tenés un pago iniciado por este libro. Podés terminarlo en la pestaña de Mercado Pago ' +
+    'o intentar de nuevo en unos minutos. Si preferís, escribinos por WhatsApp y te ayudamos.';
 }
 
 export function heldMessage(titles) {

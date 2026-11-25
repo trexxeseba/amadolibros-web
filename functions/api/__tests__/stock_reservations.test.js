@@ -9,14 +9,17 @@ import { randomUUID } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { createOrdersHandler } from '../_orders_handler.js';
 import { createCartValidationHandler } from '../_cart_validation_handler.js';
-import { heldMessage, stockWindows, reduceAvailability, PENDING_HOLD_HOURS } from '../../_shared/stock-reservations.js';
+import { heldMessage, ownPaymentMessage, stockWindows, reduceAvailability, PENDING_HOLD_HOURS } from '../../_shared/stock-reservations.js';
+import { createPreferenceHandler } from '../_mp_handler.js';
+import { expirePreference } from '../_mp_client.js';
+import { confirmTransfer, transferBlockedReason } from '../../_shared/panel-transfer.js';
 
 const HOST = 'https://www.amadolibros.com';
 const MIGRATIONS = new URL('../../../migrations/', import.meta.url);
 const ANA = { name: 'Ana', phone: '099111111', email: 'ana@example.test' };
 const BRUNO = { name: 'Bruno', phone: '099222222', email: 'bruno@example.test' };
 
-function world({ stock = 1 } = {}) {
+function world({ stock = 1, realClock = false } = {}) {
   const sqlite = new DatabaseSync(':memory:');
   for (const file of readdirSync(MIGRATIONS).filter(f => f.endsWith('.sql')).sort()) {
     sqlite.exec(readFileSync(new URL(file, MIGRATIONS), 'utf8'));
@@ -41,8 +44,10 @@ function world({ stock = 1 } = {}) {
     },
   };
   const state = {
-    now: new Date('2026-11-25T15:00:00Z'),
-    catalog: { updated_at: '2026-11-25T07:20:55Z', items: [
+    expireOk: true, expired: [], created: 0,
+    // El link de pago usa el reloj real: las pruebas que lo piden también.
+    now: realClock ? new Date() : new Date('2026-11-25T15:00:00Z'),
+    catalog: { updated_at: realClock ? new Date(Date.now() - 8 * 3600000).toISOString() : '2026-11-25T07:20:55Z', items: [
       { id: 'MLU1', title: 'El libro único', price: 2350, available_quantity: stock, status: 'active', currency_id: 'UYU' },
       { id: 'MLU2', title: 'Otro libro', price: 1250, available_quantity: 5, status: 'active', currency_id: 'UYU' },
     ] },
@@ -50,16 +55,36 @@ function world({ stock = 1 } = {}) {
   const env = {
     APP_ENV: 'production', MP_COLLECTOR_ID: '440298103', CANONICAL_ORIGIN: HOST,
     ALLOWED_HOSTS: 'amadolibros.com,www.amadolibros.com', CHECKOUT_ENABLED: 'true',
-    TURNSTILE_SECRET_KEY: 'x', ORDERS_DB: db,
+    TURNSTILE_SECRET_KEY: 'x', ORDERS_DB: db, MP_ACCESS_TOKEN: 'token', MP_WEBHOOK_SECRET: 'secreto',
   };
-  const orders = createOrdersHandler({ fetchCatalog: async () => state.catalog, getNow: () => state.now, verifyTurnstileToken: async () => ({ ok: true }) });
+  const expire = async prefId => {
+    if (state.expireOk === 'throw') throw new Error('network');
+    if (!state.expireOk) return { ok: false, code: 'MP_API_ERROR' };
+    state.expired.push(prefId);
+    return { ok: true };
+  };
+  // Doble de Mercado Pago para el link de pago: un link vencido deja de servir.
+  const preferences = createPreferenceHandler({
+    mpClient: {
+      createPreference: async () => { state.created++; return { ok: true, id: 'pref-' + state.created, checkout_url: 'https://mp.example/pref-' + state.created }; },
+      getPreference: async id => (state.expired.includes(id) ? { ok: false, code: 'MP_API_ERROR' } : { ok: true, id, checkout_url: 'https://mp.example/' + id }),
+      searchPreferenceByRef: async () => ({ ok: false, code: 'NOT_FOUND' }),
+    },
+  });
+  const orders = createOrdersHandler({ fetchCatalog: async () => state.catalog, getNow: () => state.now, verifyTurnstileToken: async () => ({ ok: true }), expirePreference: expire });
   const validate = createCartValidationHandler({ fetchCatalog: async () => state.catalog, getNow: () => state.now });
   const post = async (handler, path, body) => {
     const response = await handler({ request: new Request(HOST + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }), env });
     return { status: response.status, body: await response.json() };
   };
   return {
-    sqlite, state, env,
+    sqlite, state, env, db,
+    payLink: (code, key) => post(preferences, '/api/mp/preferences', { public_code: code, idempotency_key: key }),
+    row: code => sqlite.prepare('SELECT * FROM orders WHERE public_code=?').get(code),
+    open: () => sqlite.prepare("SELECT public_code FROM orders WHERE status='open' ORDER BY created_at, public_code").all().map(r => r.public_code),
+    openUnits: (product = 'MLU1') => sqlite.prepare(
+      "SELECT COALESCE(SUM(oi.quantity),0) n FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE oi.product_id=? AND o.status IN ('open','paid')").get(product).n,
+    events: type => sqlite.prepare('SELECT order_id, payload_json FROM order_events WHERE event_type=?').all(type),
     order: (buyer, { quantity = 1, product = 'MLU1', delivery = 'pickup', key = randomUUID() } = {}) => post(orders, '/api/orders', {
       idempotency_key: key, items: [{ product_id: product, quantity }], delivery_type: delivery,
       pickup_ack: delivery === 'pickup' ? true : undefined, buyer, cf_turnstile_response: 't',
@@ -141,11 +166,15 @@ test('una venta pagada minutos antes de terminar la sincronización se sigue des
   assert.equal((await w.cart()).body.items[0].status, 'sin_stock');
 });
 
-test('la misma persona puede rehacer su pedido: su pedido anterior no la bloquea', async () => {
+test('la misma persona puede rehacer su pedido: el nuevo reemplaza al anterior', async () => {
   const w = world();
-  assert.equal((await w.order(ANA, { delivery: 'pickup' })).status, 201);
+  const first = await w.order(ANA, { delivery: 'pickup' });
+  assert.equal(first.status, 201);
   // Cambia a envío: el navegador genera otra llave y otro pedido.
-  assert.equal((await w.order(ANA, { delivery: 'shipping' })).status, 201);
+  const second = await w.order(ANA, { delivery: 'shipping' });
+  assert.equal(second.status, 201);
+  assert.deepEqual(w.open(), [second.body.order.public_code]);
+  assert.equal(w.row(first.body.order.public_code).status, 'cancelled');
   // Otra persona sigue frenada.
   assert.equal((await w.order(BRUNO)).status, 409);
 });
@@ -275,4 +304,193 @@ test('mensaje al cliente: en positivo, sin emojis ni "sólo" o "únicamente"', (
     assert.match(message, /vuelve a estar disponible/);
   }
   assert.match(heldMessage(['Uno', 'Dos', 'Tres']), /«Uno», «Dos» y «Tres»/);
+});
+
+// ── Hallazgo de la revisión del 25/11: dos pedidos de la misma persona ───────
+//
+// Antes: la misma persona podía tener dos pedidos abiertos por el último
+// ejemplar, y los dos se podían cobrar.
+
+const key = () => randomUUID();
+
+test('misma persona, último ejemplar: nunca quedan dos pedidos abiertos', async () => {
+  const w = world();
+  const first = await w.order(ANA);
+  const second = await w.order(ANA);
+  const third = await w.order(ANA);
+  assert.deepEqual([first.status, second.status, third.status], [201, 201, 201]);
+  assert.deepEqual(w.open(), [third.body.order.public_code]);
+  assert.equal(w.openUnits(), 1);
+  const replaced = w.events('superseded');
+  assert.equal(replaced.length, 2);
+});
+
+test('misma persona, último ejemplar: el pedido reemplazado no puede pedir link de pago', async () => {
+  const w = world({ realClock: true });
+  const k1 = key();
+  const first = await w.order(ANA, { key: k1 });
+  const k2 = key();
+  const second = await w.order(ANA, { key: k2 });
+  const oldLink = await w.payLink(first.body.order.public_code, k1);
+  assert.equal(oldLink.status, 410);
+  assert.equal(oldLink.body.code, 'ORDER_CANCELLED');
+  assert.equal((await w.payLink(second.body.order.public_code, k2)).status, 200);
+  assert.equal(w.state.created, 1);
+});
+
+test('misma persona con link de pago ya creado: se vence ese link antes de crear el pedido nuevo', async () => {
+  const w = world({ realClock: true });
+  const k1 = key();
+  const first = await w.order(ANA, { key: k1 });
+  assert.equal((await w.payLink(first.body.order.public_code, k1)).status, 200);
+  const k2 = key();
+  const second = await w.order(ANA, { key: k2 });
+  assert.equal(second.status, 201);
+  assert.deepEqual(w.state.expired, ['pref-1']);
+  assert.deepEqual(w.open(), [second.body.order.public_code]);
+  // El pedido viejo ya no entrega un link que sirva.
+  assert.equal((await w.payLink(first.body.order.public_code, k1)).status, 410);
+});
+
+for (const failure of [false, 'throw']) {
+  test(`si el link de pago anterior no se puede vencer (${failure === false ? 'Mercado Pago rechaza' : 'sin red'}), el pedido nuevo no se crea`, async () => {
+    const w = world({ realClock: true });
+    const k1 = key();
+    const first = await w.order(ANA, { key: k1 });
+    await w.payLink(first.body.order.public_code, k1);
+    w.state.expireOk = failure;
+    const second = await w.order(ANA);
+    assert.equal(second.status, 409);
+    assert.equal(second.body.code, 'OWN_PAYMENT_IN_PROGRESS');
+    assert.equal(w.count(), 1);
+    assert.deepEqual(w.open(), [first.body.order.public_code]);
+    // El pedido original sigue intacto y con su link.
+    assert.equal(w.row(first.body.order.public_code).payment_preference_id, 'pref-1');
+    assert.equal((await w.payLink(first.body.order.public_code, k1)).status, 200);
+  });
+}
+
+test('sin credencial de Mercado Pago no se puede vencer el link: el pedido nuevo no se crea', async () => {
+  const w = world({ realClock: true });
+  const k1 = key();
+  const first = await w.order(ANA, { key: k1 });
+  await w.payLink(first.body.order.public_code, k1);
+  delete w.env.MP_ACCESS_TOKEN;
+  assert.equal((await w.order(ANA)).status, 409);
+  assert.deepEqual(w.open(), [first.body.order.public_code]);
+});
+
+test('misma persona en el mismo instante por el último ejemplar: queda un solo pedido abierto', async () => {
+  const w = world();
+  const results = await Promise.all([w.order(ANA), w.order(ANA), w.order(ANA, { delivery: 'shipping' })]);
+  assert.ok(results.every(r => r.status === 201 || r.status === 409 || r.status === 422));
+  assert.equal(w.open().length, 1);
+  assert.equal(w.openUnits(), 1);
+});
+
+test('si el stock alcanza para los dos pedidos de la misma persona, no se reemplaza nada', async () => {
+  const w = world({ stock: 2, realClock: true });
+  const k1 = key();
+  const first = await w.order(ANA, { key: k1 });
+  await w.payLink(first.body.order.public_code, k1);
+  const second = await w.order(ANA);
+  assert.equal(second.status, 201);
+  assert.equal(w.open().length, 2);
+  assert.deepEqual(w.state.expired, []);
+  assert.equal(w.events('superseded').length, 0);
+  // El tercero ya no entra sin reemplazar: 3 unidades contra 2 de stock.
+  const third = await w.order(ANA);
+  assert.equal(third.status, 201);
+  assert.equal(w.openUnits(), 1);
+  assert.deepEqual(w.open(), [third.body.order.public_code]);
+});
+
+test('el candado cuenta los pedidos de la misma persona: 2 unidades propias y 1 ajena con stock 2', async () => {
+  const w = world({ stock: 2 });
+  assert.equal((await w.order(ANA)).status, 201);
+  assert.equal((await w.order(BRUNO)).status, 201);
+  // Ana pide otra: reemplaza su pedido anterior, no le saca la unidad a Bruno.
+  const again = await w.order(ANA);
+  assert.equal(again.status, 201);
+  assert.equal(w.openUnits(), 2);
+  // Si Ana pide 2, no alcanza: la unidad de Bruno está reservada.
+  assert.equal((await w.order(ANA, { quantity: 2 })).status, 409);
+  assert.equal(w.openUnits(), 2);
+});
+
+test('un pedido propio con pago pendiente en un local de cobranza no se reemplaza: el libro figura agotado', async () => {
+  const w = world();
+  const first = await w.order(ANA);
+  w.set(first.body.order.public_code, { payment_status: 'pending', updated_at: w.state.now.toISOString() });
+  const second = await w.order(ANA);
+  assert.equal(second.status, 422);
+  assert.equal(w.row(first.body.order.public_code).status, 'open');
+  assert.equal(w.count(), 1);
+});
+
+test('un pedido propio ya pagado no se reemplaza ni se cancela', async () => {
+  const w = world();
+  const first = await w.order(ANA);
+  w.set(first.body.order.public_code, { status: 'paid', payment_status: 'approved', paid_at: w.state.now.toISOString() });
+  assert.equal((await w.order(ANA)).status, 422);
+  assert.equal(w.row(first.body.order.public_code).status, 'paid');
+});
+
+test('el pedido reemplazado no se puede confirmar por transferencia', async () => {
+  const w = world();
+  const first = await w.order(ANA);
+  await w.order(ANA);
+  const old = w.row(first.body.order.public_code);
+  assert.equal(transferBlockedReason(old), 'El pedido está cancelado.');
+  const result = await confirmTransfer({ db: w.db, order: old, now: w.state.now }).catch(error => ({ ok: false, error }));
+  assert.notEqual(w.row(first.body.order.public_code).status, 'paid');
+  assert.ok(result);
+});
+
+test('si el alta nueva falla después de vencer el link, el pedido anterior queda abierto y puede pedir otro link', async () => {
+  const w = world({ realClock: true });
+  const k1 = key();
+  const first = await w.order(ANA, { key: k1 });
+  await w.payLink(first.body.order.public_code, k1);
+  // El lote del pedido nuevo falla (base con problemas al escribir).
+  const realBatch = w.db.batch;
+  w.db.batch = async () => { throw new Error('D1_ERROR'); };
+  const second = await w.order(ANA);
+  w.db.batch = realBatch;
+  assert.equal(second.status, 500);
+  assert.deepEqual(w.open(), [first.body.order.public_code]);
+  assert.equal(w.row(first.body.order.public_code).payment_preference_id, null);
+  const again = await w.payLink(first.body.order.public_code, k1);
+  assert.equal(again.status, 200);
+  assert.equal(w.state.created, 2);
+});
+
+test('reemplazar pedidos propios no toca importes ni pedidos de otras personas', async () => {
+  const w = world({ stock: 2 });
+  const bruno = await w.order(BRUNO);
+  const first = await w.order(ANA);
+  const before = w.row(bruno.body.order.public_code);
+  const second = await w.order(ANA, { quantity: 1 });
+  assert.equal(second.status, 201);
+  assert.deepEqual(w.row(bruno.body.order.public_code), before);
+  assert.equal(second.body.order.payable_total_uyu, first.body.order.payable_total_uyu);
+});
+
+test('expirePreference: pide a Mercado Pago vencer el link y no manda nada más', async () => {
+  const calls = [];
+  const fetch = async (url, opts) => { calls.push({ url, method: opts.method, body: JSON.parse(opts.body) }); return new Response('{}', { status: 200 }); };
+  const now = new Date('2026-11-25T15:00:00Z');
+  assert.deepEqual(await expirePreference('pref-9', 'token', now, { fetch }), { ok: true });
+  assert.equal(calls[0].method, 'PUT');
+  assert.match(calls[0].url, /\/checkout\/preferences\/pref-9$/);
+  assert.deepEqual(calls[0].body, { expires: true, expiration_date_to: '2026-11-25T15:00:00.000Z' });
+  assert.equal((await expirePreference('pref-9', 'token', now, { fetch: async () => new Response('{}', { status: 500 }) })).ok, false);
+  assert.equal((await expirePreference('pref-9', 'token', now, { fetch: async () => { throw new Error('red'); } })).ok, false);
+});
+
+test('mensaje de pago propio en curso: en positivo, sin emojis ni "sólo" o "únicamente"', () => {
+  const message = ownPaymentMessage();
+  assert.equal(/\p{Extended_Pictographic}/u.test(message), false);
+  assert.equal(/s[oó]lo|únicamente/i.test(message), false);
+  assert.match(message, /WhatsApp/);
 });
