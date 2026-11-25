@@ -134,6 +134,19 @@ jobs:
           printf '%s' "$RESEND_API_KEY" |
             npx wrangler@3.114.17 pages secret put RESEND_API_KEY --project-name amadolibros-web
 
+      - name: Sync reconcile signing key to Cloudflare Pages
+        env:
+          RECONCILE_SECRET: ${{ secrets.RECONCILE_SECRET }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$RECONCILE_SECRET" ]; then
+            echo "::warning::Falta RECONCILE_SECRET: la conciliación de pagos responde 503 hasta cargarla."
+            exit 0
+          fi
+          printf '%s' "$RECONCILE_SECRET" |
+            npx wrangler@3.114.17 pages secret put RECONCILE_SECRET --project-name amadolibros-web
+
       - name: Sync GA4 Measurement Protocol secret to Cloudflare Pages
         env:
           GA4_API_SECRET: ${{ secrets.GA4_API_SECRET }}

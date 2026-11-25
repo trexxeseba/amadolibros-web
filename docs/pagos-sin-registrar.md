@@ -71,6 +71,21 @@ la corrida no consulta a Mercado Pago y responde 503. Una corrida que quedó
 colgada libera el turno sola al pasar los 4 minutos. Una vista previa tiene su
 propio turno y no frena a producción.
 
+## Autenticación entre el Worker y Pages
+
+El llamado del Worker va firmado: `X-Amado-Timestamp` y `X-Amado-Signature`
+(HMAC-SHA256 de `marca.POST.ruta` con la clave `RECONCILE_SECRET`; la clave no
+viaja). Pages valida antes de tocar la base: sin firma, con firma ajena,
+alterada, de otra ruta o de hace más de 5 minutos responde 401 y no gasta el
+turno ni consulta a Mercado Pago. Sin `RECONCILE_SECRET` en Pages responde 503
+(falla cerrada); sin ella en el Worker, no llama.
+
+La clave es un secreto de GitHub (`RECONCILE_SECRET`) que los despliegues cargan
+en Pages y en el Worker. Si falta, el despliegue avisa pero no se corta, y la
+conciliación queda apagada hasta cargarla. Para rotarla se cambia el secreto de
+GitHub y se redespliegan Pages y el Worker; entre un despliegue y otro hay unos
+minutos de 401, sin efecto sobre los pedidos.
+
 Consulta de incidentes abiertos:
 
 ```sql

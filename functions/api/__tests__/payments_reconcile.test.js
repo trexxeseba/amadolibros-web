@@ -14,6 +14,7 @@ import { createPaymentsReconcileHandler, needsProcessing } from '../_payments_re
 import { buildIncidentEmail, notifyPendingIncidents, reportIncident } from '../_payment_incidents.js';
 import { searchRecentPayments } from '../_mp_client.js';
 import { confirmTransfer } from '../../_shared/panel-transfer.js';
+import { signServiceRequest } from '../../_shared/service-auth.js';
 
 const COLLECTOR = 440298103;
 const SECRET = 'secreto-de-prueba';
@@ -61,7 +62,7 @@ function world() {
     ALLOWED_HOSTS: 'amadolibros.com,www.amadolibros.com', CHECKOUT_ENABLED: 'true',
     MP_ACCESS_TOKEN: 'token', MP_WEBHOOK_SECRET: SECRET, TURNSTILE_SECRET_KEY: 'x',
     RESEND_API_KEY: 're_x', SALES_NOTIFICATION_FROM: 'Amado <web@example.test>', SALES_NOTIFICATION_TO: 'equipo@example.test',
-    ORDERS_DB: db, AMADO_KV: kv,
+    ORDERS_DB: db, AMADO_KV: kv, RECONCILE_SECRET: 'clave-compartida-de-prueba-0123456789',
   };
   const mpClient = {
     getPayment: async id => { state.getPaymentCalls++; return state.payments.get(String(id)) || { ok: false, code: 'NOT_FOUND' }; },
@@ -89,6 +90,10 @@ function world() {
 
   const call = async (handler, path, body, headers = {}) => {
     const pending = [];
+    if (handler === reconcile && !('X-Amado-Signature' in headers) && !headers.unsigned) {
+      headers = { ...headers, ...(await signServiceRequest(env.RECONCILE_SECRET, { method: 'POST', path, now: state.now.getTime() })) };
+    }
+    delete headers.unsigned;
     const response = await handler({
       request: new Request(HOST + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) }),
       env, waitUntil: p => pending.push(p),
@@ -367,18 +372,24 @@ test('conciliación: sólo POST y host permitido; no depende de KV', async () =>
   const handler = createPaymentsReconcileHandler({ mpClient: { searchRecentPayments: async () => ({ ok: true, results: [] }) } });
   const get = await handler({ request: new Request(HOST + '/api/payments/reconcile'), env: w.env });
   assert.equal(get.status, 405);
-  const otherHost = await handler({ request: new Request('https://evil.example/api/payments/reconcile', { method: 'POST' }), env: w.env });
+  const otherHost = await handler({ request: await signedRequest('https://evil.example/api/payments/reconcile', w.env), env: w.env });
   assert.equal(otherHost.status, 400);
-  const noKv = await handler({ request: new Request(HOST + '/api/payments/reconcile', { method: 'POST' }), env: { ...w.env, AMADO_KV: undefined } });
+  const noKv = await handler({ request: await signedRequest(HOST + '/api/payments/reconcile', w.env), env: { ...w.env, AMADO_KV: undefined } });
   assert.equal(noKv.status, 200);
-  const again = await handler({ request: new Request(HOST + '/api/payments/reconcile', { method: 'POST' }), env: { ...w.env, AMADO_KV: undefined } });
+  const again = await handler({ request: await signedRequest(HOST + '/api/payments/reconcile', w.env), env: { ...w.env, AMADO_KV: undefined } });
   assert.equal((await again.json()).skipped, true);
 });
 
 // ── Hallazgos de la revisión del 25/11: simultaneidad y caída del freno ─────
 
-const post = (handler, env) => handler({ request: new Request(HOST + '/api/payments/reconcile', { method: 'POST' }), env })
-  .then(async r => ({ status: r.status, body: await r.json() }));
+const signedRequest = async (url, env, now = new Date()) => {
+  const u = new URL(url);
+  return new Request(url, { method: 'POST', headers: await signServiceRequest(env.RECONCILE_SECRET, { method: 'POST', path: u.pathname, now: now.getTime() }) });
+};
+const post = async (handler, env, now) => {
+  const r = await handler({ request: await signedRequest(HOST + '/api/payments/reconcile', env, now), env });
+  return { status: r.status, body: await r.json() };
+};
 
 function slowSearch(state) {
   let calls = 0;
@@ -396,7 +407,7 @@ test('llamados simultáneos: de cinco, corre uno solo y Mercado Pago se consulta
   const w = world();
   const mp = slowSearch(w.state);
   const handler = createPaymentsReconcileHandler({ mpClient: mp, getNow: () => w.state.now, notifyPending: async () => ({ sent: 0 }) });
-  const runs = await Promise.all(Array.from({ length: 5 }, () => post(handler, w.env)));
+  const runs = await Promise.all(Array.from({ length: 5 }, () => post(handler, w.env, w.state.now)));
   assert.equal(runs.filter(r => r.body.skipped === true).length, 4);
   assert.equal(runs.filter(r => r.body.skipped === undefined && r.status === 200).length, 1);
   assert.equal(mp.calls(), 1);
@@ -422,7 +433,7 @@ test('KV caído o ausente no afloja el freno: el turno vive en la base', async (
   const handler = createPaymentsReconcileHandler({ mpClient: mp, getNow: () => w.state.now, notifyPending: async () => ({ sent: 0 }) });
   const brokenKv = { get: async () => null, put: async () => { throw new Error('KV_WRITE_FAILURE'); } };
   for (const AMADO_KV of [brokenKv, { get: async () => { throw new Error('KV_READ_FAILURE'); }, put: async () => {} }, undefined]) {
-    await post(handler, { ...w.env, AMADO_KV });
+    await post(handler, { ...w.env, AMADO_KV }, w.state.now);
   }
   assert.equal(mp.calls(), 1);
 });
@@ -433,7 +444,7 @@ test('si el turno no se puede tomar (base caída), responde 503 y no consulta a 
   const handler = createPaymentsReconcileHandler({ mpClient: mp, getNow: () => w.state.now, notifyPending: async () => ({ sent: 0 }) });
   const failingDb = { ...w.db, prepare: sql => (sql.includes('payment_reconcile_runs') ? { bind: () => ({ run: async () => { throw new Error('D1_ERROR'); } }) } : w.db.prepare(sql)) };
   for (let i = 0; i < 3; i++) {
-    const run = await post(handler, { ...w.env, ORDERS_DB: failingDb });
+    const run = await post(handler, { ...w.env, ORDERS_DB: failingDb }, w.state.now);
     assert.equal(run.status, 503);
   }
   assert.equal(mp.calls(), 0);
@@ -444,7 +455,7 @@ test('si la base no confirma el turno (respuesta sin cantidad de filas), no se c
   const mp = slowSearch(w.state);
   const handler = createPaymentsReconcileHandler({ mpClient: mp, getNow: () => w.state.now, notifyPending: async () => ({ sent: 0 }) });
   const vagueDb = { ...w.db, prepare: sql => (sql.includes('INSERT INTO payment_reconcile_runs') ? { bind: () => ({ run: async () => ({}) }) } : w.db.prepare(sql)) };
-  const run = await post(handler, { ...w.env, ORDERS_DB: vagueDb });
+  const run = await post(handler, { ...w.env, ORDERS_DB: vagueDb }, w.state.now);
   assert.equal(run.body.skipped, true);
   assert.equal(mp.calls(), 0);
 });
@@ -454,9 +465,9 @@ test('una corrida en vista previa no le saca el turno a producción', async () =
   const mp = slowSearch(w.state);
   const handler = createPaymentsReconcileHandler({ mpClient: mp, getNow: () => w.state.now, notifyPending: async () => ({ sent: 0 }) });
   const previewEnv = { ...w.env, APP_ENV: 'preview', CANONICAL_ORIGIN: 'https://review.amadolibros-web.pages.dev', MP_COLLECTOR_ID: '200' };
-  const preview = await handler({ request: new Request('https://review.amadolibros-web.pages.dev/api/payments/reconcile', { method: 'POST' }), env: previewEnv });
+  const preview = await handler({ request: await signedRequest('https://review.amadolibros-web.pages.dev/api/payments/reconcile', previewEnv, w.state.now), env: previewEnv });
   assert.equal(preview.status, 200);
-  const prod = await post(handler, w.env);
+  const prod = await post(handler, w.env, w.state.now);
   assert.equal(prod.body.skipped, undefined);
   assert.equal(mp.calls(), 2);
   assert.deepEqual(w.sqlite.prepare('SELECT scope FROM payment_reconcile_runs ORDER BY scope').all().map(r => r.scope), ['preview:200', `production:${COLLECTOR}`]);
@@ -468,6 +479,58 @@ test('una corrida que quedó colgada libera el turno al pasar la ventana', async
   assert.equal((await w.reconcile()).body.skipped, true);
   w.later(5);
   assert.equal((await w.reconcile()).body.skipped, undefined);
+});
+
+// ── Autenticación entre el Worker y Pages ───────────────────────────────────
+
+function authFixture() {
+  const w = world();
+  const mp = slowSearch(w.state);
+  const handler = createPaymentsReconcileHandler({ mpClient: mp, getNow: () => w.state.now, notifyPending: async () => ({ sent: 0 }) });
+  const send = (headers, env = w.env) => handler({ request: new Request(HOST + '/api/payments/reconcile', { method: 'POST', headers }), env })
+    .then(async r => ({ status: r.status, body: await r.json() }));
+  const sign = (secret = w.env.RECONCILE_SECRET, extra = {}) => signServiceRequest(secret, { method: 'POST', path: '/api/payments/reconcile', now: w.state.now.getTime(), ...extra });
+  return { w, mp, send, sign };
+}
+
+test('autenticación: sin firma responde 401, no gasta el turno y no consulta a Mercado Pago', async () => {
+  const { w, mp, send } = authFixture();
+  for (let i = 0; i < 5; i++) assert.equal((await send({})).status, 401);
+  assert.equal(mp.calls(), 0);
+  assert.equal(w.sqlite.prepare('SELECT count(*) n FROM payment_reconcile_runs').get().n, 0);
+});
+
+test('autenticación: firma ajena, alterada, vencida, futura o de otra ruta no pasa', async () => {
+  const { w, mp, send, sign } = authFixture();
+  const good = await sign();
+  const wrongSecret = await sign('otra-clave-distinta-0123456789');
+  const tampered = { ...good, 'X-Amado-Signature': good['X-Amado-Signature'].replace(/.$/, c => (c === '0' ? '1' : '0')) };
+  const old = await sign(undefined, { now: w.state.now.getTime() - 6 * 60 * 1000 });
+  const future = await sign(undefined, { now: w.state.now.getTime() + 2 * 60 * 1000 });
+  const otherPath = await signServiceRequest(w.env.RECONCILE_SECRET, { method: 'POST', path: '/api/otra', now: w.state.now.getTime() });
+  const noTime = { 'X-Amado-Signature': good['X-Amado-Signature'] };
+  const junk = { ...good, 'X-Amado-Signature': 'zz' };
+  for (const headers of [wrongSecret, tampered, old, future, otherPath, noTime, junk]) assert.equal((await send(headers)).status, 401);
+  assert.equal(mp.calls(), 0);
+  assert.equal((await send(good)).status, 200);
+  assert.equal(mp.calls(), 1);
+});
+
+test('autenticación: sin RECONCILE_SECRET (o muy corta) en Pages falla cerrada con 503', async () => {
+  const { w, mp, send, sign } = authFixture();
+  const headers = await sign();
+  assert.equal((await send(headers, { ...w.env, RECONCILE_SECRET: undefined })).status, 503);
+  assert.equal((await send(headers, { ...w.env, RECONCILE_SECRET: '' })).status, 503);
+  assert.equal((await send(await sign('corta'), { ...w.env, RECONCILE_SECRET: 'corta' })).status, 503);
+  assert.equal(mp.calls(), 0);
+});
+
+test('autenticación: un llamado sin firma no le saca el turno al del Worker', async () => {
+  const { mp, send, sign } = authFixture();
+  assert.equal((await send({})).status, 401);
+  const run = await send(await sign());
+  assert.equal(run.body.skipped, undefined);
+  assert.equal(mp.calls(), 1);
 });
 
 // ── Piezas sueltas ──────────────────────────────────────────────────────────

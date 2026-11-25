@@ -12,9 +12,10 @@
 // pago). Lo que no pasa una validación no se marca pagado: queda en
 // payment_incidents y se avisa por correo.
 //
-// Lo dispara el Worker cada 5 minutos. El endpoint es público pero inofensivo:
-// no recibe datos, corre como mucho una vez cada 4 minutos y responde sólo
-// cantidades.
+// Lo dispara el Worker cada 5 minutos con una firma HMAC (RECONCILE_SECRET,
+// ver _shared/service-auth.js). Sin firma válida se responde 401 antes de tocar
+// la base: un llamado de afuera no puede gastar el turno ni consultar a
+// Mercado Pago. Sin la clave configurada en Pages responde 503 (falla cerrada).
 //
 // El turno se toma en la base de pedidos con una sentencia condicional
 // (payment_reconcile_runs): de dos llamados simultáneos pasa uno solo. Si el
@@ -30,6 +31,7 @@ import {
 } from './_mp_client.js';
 import { createPaymentProcessor, isWebOrderReference } from './_mp_webhook_handler.js';
 import { notifyPendingIncidents as defaultNotifyPending } from './_payment_incidents.js';
+import { verifyServiceRequest } from '../_shared/service-auth.js';
 
 const MIN_INTERVAL_MS = 4 * 60 * 1000;
 const PAGE_SIZE = 50;
@@ -111,6 +113,18 @@ export function createPaymentsReconcileHandler({
   return async function onRequest(context) {
     const { request, env } = context;
     if (request.method !== 'POST') return json({ error: 'Método no permitido.' }, 405);
+
+    // Autenticación entre el Worker y Pages: antes de cualquier otra cosa.
+    if (typeof env?.RECONCILE_SECRET !== 'string' || env.RECONCILE_SECRET.length < 16) {
+      return json({ error: 'Servicio no disponible.' }, 503);
+    }
+    const authentic = await verifyServiceRequest(env.RECONCILE_SECRET, {
+      method: 'POST',
+      path: new URL(request.url).pathname,
+      headers: request.headers,
+      now: getNow().getTime(),
+    });
+    if (!authentic) return json({ error: 'No autorizado.' }, 401);
 
     const config = resolveConfig(env);
     if (!config.ok) return json({ error: 'Servicio no disponible.' }, 503);
