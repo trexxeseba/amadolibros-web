@@ -5,6 +5,7 @@ import { inspectCoverBytes } from '../../worker-sync/cover-mirror.js';
 import { isBookProduct, isCardDeckProduct } from '../../functions/feed.xml.js';
 import { applyPromoToPrice, applyWebPromoToCatalog, webPromoActive } from '../../functions/_shared/web-promo.js';
 import { applyLiquidationToCatalog } from '../../functions/_shared/liquidacion.js';
+import { normalizeStoreCatalog } from '../../functions/_shared/store-price.js';
 import { inspectProductImages } from '../../shared/product-image-audit.js';
 
 const DEFAULT_BASE_URL = 'https://www.amadolibros.com';
@@ -54,7 +55,7 @@ function issue(severity, code, message, details = {}) {
 // volver al precio habitual (si no, el control sigue fallando, como corresponde).
 export function expectedFeedPrice(catalogPrice, { now = new Date(), env = {} } = {}) {
   const price = Number(catalogPrice);
-  return webPromoActive(now, env) ? applyPromoToPrice(price) : price;
+  return Math.round(webPromoActive(now, env) ? applyPromoToPrice(price) : price);
 }
 
 export function auditFeed(catalog, feedItems, { canonicalHost = 'www.amadolibros.com', now = new Date(), env = {}, liquidationData } = {}) {
@@ -64,7 +65,7 @@ export function auditFeed(catalog, feedItems, { canonicalHost = 'www.amadolibros
   // precio de liquidación, desde el 10/11/2026). Se usa la misma función de la web para que la auditoría y
   // la web no puedan diferir; antes sólo conocía la promo web y marcaba como error cada libro en liquidación.
   const effectiveById = new Map(
-    (applyLiquidationToCatalog(applyWebPromoToCatalog(catalog, { now, env }), { now, env, ...(liquidationData ? { data: liquidationData } : {}) })?.items ?? catalogItems)
+    (normalizeStoreCatalog(applyLiquidationToCatalog(applyWebPromoToCatalog(catalog, { now, env }), { now, env, ...(liquidationData ? { data: liquidationData } : {}) }))?.items ?? catalogItems)
       .map(item => [String(item.id), item]),
   );
   const issues = [];
@@ -422,3 +423,4 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     process.exitCode = 1;
   });
 }
+

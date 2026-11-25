@@ -181,7 +181,7 @@ test('carrito.astro: expone el hook de error inline en window para que orders-gu
 test('orders-guard.js: usa el hook inline en vez de alert() como primera opción', () => {
   const idx = ordersGuardJs.indexOf("document.addEventListener('click'");
   assert.notEqual(idx, -1);
-  const block = ordersGuardJs.slice(idx, idx + 900);
+  const block = ordersGuardJs.slice(idx, ordersGuardJs.indexOf('}, true);', idx));
   assert.match(block, /window\.__amadoCheckoutShowFieldError/);
   // alert() se conserva solo como respaldo, no como camino principal.
   assert.match(block, /else\s*\{[\s\S]*window\.alert/);
@@ -367,3 +367,4 @@ test('carrito.astro: el borrador se escribe ya al salir, al irse y al pasar a se
     /function saveDraft\(\) \{\s*\n\s*if \(draftSaveTimer !== null\) \{\s*\n\s*clearTimeout\(draftSaveTimer\);/,
   );
 });
+
