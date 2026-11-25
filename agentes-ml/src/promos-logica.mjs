@@ -127,7 +127,10 @@ export const bucketPct = pct => pct === null || pct === undefined ? null : `${Ma
 // Solo baja (nunca sube), nunca bajo el piso, y el descuento sobre el precio regular de la
 // entrada no pasa del tope a cargo nuestro. Devuelve { ok, motivo?, pct, antes, despues }.
 export const PISO_PROMO_UYU = 0; // Seba, 24/11/2026: el piso de 500 se olvida para este camino
-export function evaluarCambioPrecio(entrada, precioNuevo, { piso = PISO_PROMO_UYU } = {}) {
+// Seba, 25/11/2026: "olvidate del 15 %, ganemos todo". Para igualar al ganador ya no rige el tope de 15 % de las
+// promos comunes. Queda un freno contra errores de tipeo: nunca más de 50 % bajo el regular en un solo cambio.
+export const TOPE_CAMBIO_PRECIO_PCT = 50;
+export function evaluarCambioPrecio(entrada, precioNuevo, { piso = PISO_PROMO_UYU, topePct = TOPE_CAMBIO_PRECIO_PCT } = {}) {
   const antes = num(entrada?.price), original = num(entrada?.original_price), nuevo = num(precioNuevo);
   const no = motivo => ({ ok: false, motivo, antes, despues: nuevo, pct: null });
   if (!entrada || String(entrada.status).toLowerCase() !== "started") return no("no_esta_activa_en_la_promo");
@@ -136,6 +139,6 @@ export function evaluarCambioPrecio(entrada, precioNuevo, { piso = PISO_PROMO_UY
   if (nuevo >= antes) return no("no_baja_el_precio");
   if (nuevo <= piso) return no("bajo_el_piso");
   const pct = descuentoPct(original, nuevo);
-  if (pct === null || pct > LIMITES.descuentoMaxPct) return { ok: false, motivo: "descuento_mayor_al_tope", antes, despues: nuevo, pct };
+  if (pct === null || pct > topePct) return { ok: false, motivo: "descuento_mayor_al_tope", antes, despues: nuevo, pct };
   return { ok: true, antes, despues: nuevo, pct };
 }

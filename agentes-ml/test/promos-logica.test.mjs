@@ -122,13 +122,15 @@ test('Product Ads sigue sin escritura por API, también desde el job', () => {
   assert.equal(evaluarEscritura('ads', { modo: 'real' }).permitido, false);
 });
 
-test('cambiar-precio: solo baja, activa, dentro del tope de 15 % sobre el regular', async () => {
+test('cambiar-precio: solo baja, activa, con freno de 50 % contra errores', async () => {
   const { evaluarCambioPrecio } = await import('../src/promos-logica.mjs');
   const entrada = { status: 'started', price: 995.6, original_price: 1048 };
   assert.deepEqual(evaluarCambioPrecio(entrada, 970), { ok: true, antes: 995.6, despues: 970, pct: 7.44 });
   assert.equal(evaluarCambioPrecio(entrada, 1000).motivo, 'no_baja_el_precio');
   assert.equal(evaluarCambioPrecio(entrada, 995.6).motivo, 'no_baja_el_precio');
-  assert.equal(evaluarCambioPrecio(entrada, 880).motivo, 'descuento_mayor_al_tope');
+  assert.equal(evaluarCambioPrecio(entrada, 880).ok, true, 'el 15 % ya no frena (Seba, 25/11/2026)');
+  assert.equal(evaluarCambioPrecio(entrada, 500).motivo, 'descuento_mayor_al_tope', 'freno contra errores: más de 50 %');
+  assert.equal(evaluarCambioPrecio(entrada, 880, { topePct: 15 }).motivo, 'descuento_mayor_al_tope');
   assert.equal(evaluarCambioPrecio({ ...entrada, status: 'pending' }, 970).motivo, 'no_esta_activa_en_la_promo');
   assert.equal(evaluarCambioPrecio({ status: 'started', price: 100 }, 90).motivo, 'entrada_sin_precios');
   assert.equal(evaluarCambioPrecio(null, 90).motivo, 'no_esta_activa_en_la_promo');

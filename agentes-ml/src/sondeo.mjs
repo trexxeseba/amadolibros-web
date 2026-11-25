@@ -271,6 +271,23 @@ async function main() {
     }
     return out;
   });
+  // 10. Ganador de la ficha por /products/{id} (25/11/2026): ¿trae buy_box_winner para nuestras tradicionales con ficha?
+  //     Sólo GET. El log no lleva precios: sólo si vino, qué claves trae y si el ganador somos nosotros.
+  await seccion('buy_box_winner_muestra', async () => {
+    const pids = [...new Set(items.filter(i => i?.catalog_product_id).map(i => i.catalog_product_id))].slice(0, 25);
+    let con = 0, nuestro = 0, conLogistica = 0, error = 0; const claves = new Set(), clavesEnvio = new Set(), codigos = {};
+    for (const pid of pids) {
+      const r = await ml.sonda(`/products/${pid}`);
+      codigos[r.status] = (codigos[r.status] ?? 0) + 1;
+      if (!r.ok) { error++; continue; }
+      const w = r.json?.buy_box_winner;
+      if (!w) continue;
+      con++; Object.keys(w).forEach(k => claves.add(k));
+      if (String(w.seller_id) === CUENTA.sellerId) nuestro++;
+      if (w.shipping) { conLogistica++; Object.keys(w.shipping).forEach(k => clavesEnvio.add(k)); }
+    }
+    return { fichas_probadas: pids.length, http: codigos, con_buy_box_winner: con, ganador_somos_nosotros: nuestro, con_datos_de_envio: conLogistica, errores: error, claves_winner: [...claves], claves_envio: [...clavesEnvio] };
+  });
   imprimir('estadisticas_cliente', ml.stats);
 }
 
