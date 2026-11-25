@@ -1101,7 +1101,7 @@ export async function onRequest(ctx) {
                justify-content:center;font-size:2.5rem;color:#c4b9ad}
     .rc-body{padding:.875rem 1rem;display:flex;flex-direction:column;gap:.45rem;flex:1}
     .rc-card .delivery-today{padding:.2rem .5rem;font-size:.72rem;border-radius:.4rem}
-    .rc-card .delivery-today span{display:none}
+    .rc-card .delivery-today span{display:block;font-size:.875rem;line-height:1.3}
     .rc-title{font-size:.95rem;font-weight:700;color:#18120e;line-height:1.25;
               display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
     .rc-title-link{text-decoration:none;color:inherit}
