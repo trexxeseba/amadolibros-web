@@ -39,11 +39,11 @@ async function savePrefBatch(db, orderId, claimValue, prefId, now, appEnv) {
   const payload = JSON.stringify({ preference_id: prefId, environment: appEnv });
   return db.batch([
     db.prepare(
-      "UPDATE orders SET payment_preference_id = ?, payment_provider = 'mercadopago', updated_at = ? WHERE id = ? AND payment_preference_id = ? AND status = 'open'"
+      "UPDATE orders SET payment_preference_id = ?, payment_provider = 'mercadopago', updated_at = ? WHERE id = ? AND payment_preference_id = ? AND status = 'open' AND cancelled_at IS NULL AND payment_status != 'approved'"
     ).bind(prefId, now.toISOString(), orderId, claimValue),
     db.prepare(
       'INSERT INTO order_events (id, order_id, event_type, payload_json, created_at) ' +
-      'SELECT ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM orders WHERE id = ? AND payment_preference_id = ?)'
+      "SELECT ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM orders WHERE id = ? AND payment_preference_id = ? AND status = 'open' AND cancelled_at IS NULL)"
     ).bind(crypto.randomUUID(), orderId, 'preference_created', payload, now.toISOString(), orderId, prefId),
   ]);
 }
@@ -162,7 +162,7 @@ export function createPreferenceHandler({
     const acquired = await db
       .prepare(
         "UPDATE orders SET payment_preference_id = ?, updated_at = ? " +
-        "WHERE id = ? AND status = 'open' AND payment_status != 'approved' AND (" +
+        "WHERE id = ? AND status = 'open' AND cancelled_at IS NULL AND payment_status != 'approved' AND (" +
         "  payment_preference_id IS NULL " +
         "  OR (payment_preference_id LIKE 'creating:%' AND CAST(substr(payment_preference_id, 10, 10) AS INTEGER) <= ?)" +
         ")"
@@ -213,7 +213,10 @@ export function createPreferenceHandler({
         const search = await mpClient.searchPreferenceByRef(publicCode, token, now, mpOpts);
         if (search.ok) {
           const saved = await savePrefBatch(db, order.id, claimValue, search.id, now, config.appEnv);
-          if (saved[0].meta.changes !== 1 && await isCancelled(db, order.id)) return cancelledResponse();
+          if (saved[0].meta.changes !== 1) {
+            if (await isCancelled(db, order.id)) return cancelledResponse();
+            return json({ error: 'El pedido cambió mientras se preparaba el pago. Volvé al carrito.', code: 'ORDER_CHANGED' }, 409);
+          }
           return json({ checkout_url: search.checkout_url });
         }
         await clearClaim(db, order.id, claimValue, now);

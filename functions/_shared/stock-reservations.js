@@ -36,7 +36,7 @@ export const UNKNOWN_CATALOG_AGE_HOURS = 26;
 
 const NOT_CANCELLED = "o.status <> 'cancelled' AND o.cancelled_at IS NULL";
 const FIRM = "((o.payment_status = 'pending' AND o.updated_at > ?) OR (o.payment_status = 'approved' AND o.paid_at > ?))";
-const HOLD = "(o.status = 'open' AND o.payment_status NOT IN ('approved','pending') AND o.expires_at > ?)";
+const HOLD = "(o.status = 'open' AND o.cancelled_at IS NULL AND o.payment_status NOT IN ('approved','pending') AND o.expires_at > ?)";
 const OTHER_BUYER = "(COALESCE(o.buyer_email,'') <> ? AND COALESCE(o.buyer_phone,'') <> ?)";
 const SAME_BUYER = "(COALESCE(o.buyer_email,'') = ? OR COALESCE(o.buyer_phone,'') = ?)";
 // Todo lo comprometido de un producto: ventas firmes y pedidos abiertos de
@@ -44,7 +44,7 @@ const SAME_BUYER = "(COALESCE(o.buyer_email,'') = ? OR COALESCE(o.buyer_phone,''
 // soldSince, nowIso.
 const COMMITTED_SQL =
   '(SELECT COALESCE(SUM(ci.quantity),0) FROM order_items ci JOIN orders o ON o.id = ci.order_id ' +
-  `WHERE ci.product_id = ? AND ${NOT_CANCELLED} AND (${FIRM} OR ${HOLD}))`;
+  `WHERE ci.product_id = ? AND (${FIRM} OR ${HOLD}))`;
 // Pedidos abiertos de la misma persona, distintos del nuevo, que llevan el
 // producto y no tienen nada en marcha (ni link de pago ni link en generación).
 // Parámetros: nowIso, pedido nuevo, correo, teléfono, producto.
@@ -84,7 +84,7 @@ async function sumByProduct(db, sql, productIds, binds) {
 const SUM_SQL = where =>
   'SELECT oi.product_id AS product_id, SUM(oi.quantity) AS quantity ' +
   'FROM order_items oi JOIN orders o ON o.id = oi.order_id ' +
-  `WHERE oi.product_id IN (__IDS__) AND ${NOT_CANCELLED} AND ${where} GROUP BY oi.product_id`;
+  `WHERE oi.product_id IN (__IDS__) AND ${where} GROUP BY oi.product_id`;
 
 /** Unidades ya vendidas por la web que la foto del catálogo todavía no refleja. */
 export function loadFirmSold(db, productIds, windows) {
@@ -202,7 +202,7 @@ export function stockGuardStatements(db, { orderId, createdEventId, createdAt, l
     'INSERT INTO order_events (id,order_id,event_type,payload_json,created_at) ' +
     "SELECT ?,?,'stock_guard',NULL,? WHERE (" +
       'SELECT COALESCE(SUM(oi.quantity),0) FROM order_items oi JOIN orders o ON o.id = oi.order_id ' +
-      `WHERE oi.product_id = ? AND ${NOT_CANCELLED} AND (${FIRM} OR ${HOLD})` +
+      `WHERE oi.product_id = ? AND (${FIRM} OR ${HOLD})` +
     ') > ?';
   return lines.map(line => db.prepare(sql).bind(
     createdEventId, orderId, createdAt,

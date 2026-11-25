@@ -67,10 +67,13 @@ export function buildSaleEmail({ order, items, payment }) {
     `${item.quantity} × ${item.title} — ${formatMoney(item.line_total_uyu)}`
   );
   const delivery = deliveryLines(order);
-  const subject = `Nueva venta web — ${order.public_code}`;
+  const afterCancellation = order.status === 'cancelled' || Boolean(order.cancelled_at);
+  const warning = afterCancellation ? 'Pago recibido sobre un pedido cancelado: revisar el stock y coordinar con el cliente antes de preparar la entrega.' : '';
+  const subject = `${afterCancellation ? 'Revisar stock — pago de pedido cancelado' : 'Nueva venta web'} — ${order.public_code}`;
 
   const text = [
     `Nueva venta web confirmada: ${order.public_code}`,
+    ...(warning ? [warning] : []),
     '',
     `Cliente: ${order.buyer_name}`,
     `Teléfono: ${order.buyer_phone}`,
@@ -103,6 +106,7 @@ export function buildSaleEmail({ order, items, payment }) {
 <html lang="es">
   <body style="font-family:Arial,sans-serif;color:#222;line-height:1.45">
     <h1 style="font-size:22px">Nueva venta web confirmada</h1>
+    ${warning ? `<p><strong>${escapeHtml(warning)}</strong></p>` : ''}
     <p><strong>Pedido:</strong> ${escapeHtml(order.public_code)}</p>
     <p><strong>Cliente:</strong> ${escapeHtml(order.buyer_name)}<br>
        <strong>Teléfono:</strong> ${escapeHtml(order.buyer_phone)}</p>

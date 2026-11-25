@@ -79,3 +79,20 @@ Mercado Libre: no baja stock ni pausa publicaciones.
 - **Quien quiere cambiar su pedido con link vigente.** Hasta que el link venza (una hora) no puede crear otro por el último ejemplar; se le pide seguir con el que tiene.
 - **Transferencia sobre un pedido reemplazado.** Si la persona transfiere por el pedido anterior, el panel lo muestra cancelado; el pago se asigna a mano al pedido nuevo.
 - Si la lectura de reservas falla, el carrito valida contra el catálogo como antes y el candado del alta sigue actuando.
+
+
+## Pago recibido después de cancelar
+
+Un pago que supera todas las validaciones se registra como dinero recibido: se
+limpia la marca de cancelación y se guarda el evento idempotente
+`payment_after_cancellation` en el mismo lote. El aviso interno pide revisar
+el stock y coordinar con el cliente antes de preparar la entrega. No se
+devuelve dinero automáticamente.
+
+Las ventas firmes se descuentan aunque conserven una marca de cancelación
+residual; esto protege también datos históricos. Los pedidos cancelados sin
+pago no reservan. La prueba `auditoria-reemplazo-y-pago.test.js` usa handlers
+reales, todas las migraciones y SQLite: cubre el pago tardío, su aviso, los
+datos históricos y la creación simultánea del enlace y del pedido nuevo.
+Las dependencias externas están simuladas y la red se bloqueó en la corrida
+local; sigue pendiente la compra completa en Mercado Pago de prueba.
