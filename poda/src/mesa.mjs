@@ -9,6 +9,8 @@ export const ROTULO = 'revisar ficha: precio, foto, título, competencia';
 const peso = v => v === null || v === undefined ? '?' : `$${Math.round(Number(v))}`;
 const mlu = f => (f.item_ids?.length ? f.item_ids.slice(0, 3).join(', ') : f.external_id) ?? f.ad_group_id;
 const linea = f => `- ${String(f.titulo ?? '').slice(0, 70)} | ${mlu(f)} | precio ${peso(f.precio_lista ?? f.precio)} | gasto ${peso(f.gasto)} | ${f.clics} clics | clic ${peso(f.cpc)}${f.tope ? ` | tope ${peso(f.tope)}` : ''}`;
+export const esSoloPromo = f => /promoci[oó]n/i.test(String(f?.motivo ?? '')) && !/baj[oó] el precio/i.test(String(f?.motivo ?? ''));
+const bloqueConMotivo = (titulo, arr, max = 60) => arr.length ? [`${titulo} (${arr.length}):`, ...arr.slice(0, max).map(f => `${linea(f)} | ${String(f.motivo ?? 'sin motivo anotado')}${f.desde ? ` | propuesto el ${f.desde}` : ''}`), ...(arr.length > max ? [`... y ${arr.length - max} más`] : []), ''] : [];
 const bloque = (titulo, arr, extra = '', max = 60) => arr.length ? [`${titulo} (${arr.length}):`, ...arr.slice(0, max).map(f => linea(f) + (extra ? ` | ${extra}` : '')), ...(arr.length > max ? [`... y ${arr.length - max} más`] : []), ''] : [];
 
 export function armarFilaDiaria({ fecha, accion, modo, real, resultado }) {
@@ -20,7 +22,12 @@ export function armarFilaDiaria({ fecha, accion, modo, real, resultado }) {
     real ? 'Modo real: la lista queda en el registro de la nube. El Agente único pausa y reactiva EXACTAMENTE lo que figura abajo, sin calcular ni decidir.' : 'Modo prueba: nada se registró y no hay nada que ejecutar todavía.', '',
     ...bloque(real ? 'A PAUSAR (nuevos)' : 'PAUSARÍA', [...L.pausar, ...(L.pausaria ?? [])], ROTULO),
     ...bloque('A PAUSAR (propuestos antes y todavía sin ejecutar)', L.pendientesPausa, ROTULO),
-    ...bloque('A REACTIVAR', L.reactivar.map(f => ({ ...f })), ''),
+    // Cada reactivación lleva su motivo (Seba, 24/11/2026): una venta es razón fuerte; una baja de precio cambia
+    // la oferta; entrar en una promoción sola es razón floja y va en un bloque aparte para decidir.
+    ...bloqueConMotivo('A REACTIVAR: volvió a venderse (regla 5)', L.reactivar.filter(f => Number(f.regla) === 5)),
+    ...bloqueConMotivo('A REACTIVAR: bajó el precio (regla 6)', L.reactivar.filter(f => Number(f.regla) === 6 && !esSoloPromo(f))),
+    ...bloqueConMotivo('PARA DECIDIR: sólo entró en una promoción (regla 6); no reactivar sin un sí', L.reactivar.filter(f => Number(f.regla) === 6 && esSoloPromo(f))),
+    ...bloqueConMotivo('A REACTIVAR: sin regla anotada', L.reactivar.filter(f => ![5, 6].includes(Number(f.regla)))),
     ...bloque('Clic caro (costo por clic mayor al 4 % del precio; sólo informa)', L.clicCaro),
     ...bloque('En observación (sin venta, con la mitad del tope o más)', L.observar),
     ...bloque('Falta precio (no se poda)', L.faltaPrecio),
