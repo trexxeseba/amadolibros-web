@@ -104,7 +104,7 @@ test('6. El enlace de WhatsApp sigue siendo válido (wa.me + mensaje codificado)
     assert.ok(match, 'la ficha debe incluir un enlace wa.me con mensaje');
     const message = decodeURIComponent(match[1]);
     assert.match(message, /Hola, me interesa este libro que encontré en Amado Libros 😊/);
-    assert.match(message, /Motivo: Consultar disponibilidad y precio/);
+    assert.match(message, /Motivo: Consulta sobre el libro o la entrega/);
     assert.match(message, /Libro: Un Libro & Su Título/);
     assert.match(message, /Autor: Autor De Prueba/);
     assert.match(message, /Situación: Disponible/);
@@ -241,4 +241,17 @@ test('la tapa conserva su proporción: el alto se ajusta solo y nunca se estira'
     assert.match(html, /\.cover-main\{width:auto;height:auto;max-width:100%;max-height:38vh/);
     // Las miniaturas muestran la tapa entera, sin recortarla.
     assert.match(html, /\.thumb-btn img\{width:56px;height:56px;object-fit:contain/);
+});
+
+test('datos básicos visibles fuera del desplegable y una sola ayuda al comprar', () => {
+    const html = renderPage(book({ bibliographic: { language: 'Español', format: 'Tapa blanda' } }), 'un-libro', false, '');
+    const essentials = html.match(/<dl class="details book-essentials"[^>]*>([\s\S]*?)<\/dl>/)?.[1];
+    assert.ok(essentials);
+    for (const label of ['Autor', 'ISBN', 'Idioma', 'Formato', 'Condición']) {
+        assert.ok(essentials.includes('<dt>' + label + '</dt>'));
+    }
+    assert.match(html, /class="purchase-alternatives"/);
+    assert.doesNotMatch(html, /<a[^>]*class="wa-float"/);
+    const paused = renderPage(book({ status: 'paused', available_quantity: 0 }), 'un-libro', false, '');
+    assert.match(paused, /class="wa-float"/);
 });

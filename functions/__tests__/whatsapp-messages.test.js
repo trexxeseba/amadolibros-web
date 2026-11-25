@@ -39,7 +39,9 @@ test('la consulta disponible cambia situación y cierre sin códigos internos', 
     available: true,
   });
   assert.match(message, /Situación: Disponible en Amado Libros/);
-  assert.match(message, /confirmar si está disponible y cómo sería la entrega/);
+  assert.match(message, /Consulta sobre el libro o la entrega/);
+  assert.match(message, /Tengo una consulta sobre este libro o la entrega antes de comprar/);
+  assert.doesNotMatch(message, /confirmar si está disponible/);
   assert.doesNotMatch(message, /Código web|Referencia:/);
 });
 

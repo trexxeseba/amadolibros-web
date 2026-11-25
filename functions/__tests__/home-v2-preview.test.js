@@ -48,7 +48,7 @@ test('HOME-V2: temas, tapas grandes, Amado Lee y servicio humano forman el recor
   assert.match(topics, /Todo empieza por una curiosidad\./);
   assert.match(topics, /Literatura y ficción/);
   assert.match(topics, /Desarrollo personal/);
-  assert.match(topics, /href="\/libros-agotados-importados-uruguay">Pedir una búsqueda/);
+  assert.match(topics, /href="\/pedir-libro\/\?tipo=exacto">Pedir una búsqueda/);
   assert.match(topics, /href="\/temas">Ver todos los temas/);
   assert.match(shelf, /Libros disponibles para comprar\./);
   assert.match(shelf, /responsiveBookCover/);

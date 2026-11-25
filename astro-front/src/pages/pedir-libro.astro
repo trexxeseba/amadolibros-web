@@ -51,27 +51,7 @@ const jsonLd = {
       </section>
 
       <form id="manual-book-request" class="request-form">
-        <aside class="request-guides field-wide" aria-labelledby="request-guides-title">
-          <strong id="request-guides-title">¿Querés verificar los datos antes de enviar?</strong>
-          <p>
-            Consultá <a href="/como-identificar-edicion-correcta-isbn/">cómo distinguir una edición por ISBN</a>
-            o <a href="/libros-agotados-importados-uruguay">cómo funciona un encargo de libro agotado o importado</a>.
-          </p>
-        </aside>
 
-        <div class="field field-wide">
-          <label for="request-type">¿Qué tipo de búsqueda necesitás?</label>
-          <select id="request-type" name="request_type" required>
-            <option value="exacto">Un título, autor o ISBN concreto</option>
-            <option value="agotado">Un libro agotado o descatalogado</option>
-            <option value="novedades-tecnicas">Novedades de una especialidad</option>
-            <option value="digital">Una edición digital</option>
-            <option value="antiguo">Un libro antiguo, facsímil o reedición</option>
-            <option value="tapa">Recuerdo la tapa o parte del título</option>
-            <option value="bibliografia">Bibliografía técnica o de estudio</option>
-            <option value="regalo">Recomendación para un regalo</option>
-          </select>
-        </div>
 
         <div class="field field-wide">
           <label for="main-query">¿Qué estás buscando?</label>
@@ -100,6 +80,22 @@ const jsonLd = {
           >
         </div>
 
+        <details class="request-options field-wide" id="request-options">
+          <summary>Agregar detalles (opcional)</summary>
+          <div class="request-options-grid">
+        <div class="field field-wide">
+          <label for="request-type">¿Qué tipo de búsqueda necesitás?</label>
+          <select id="request-type" name="request_type" required>
+            <option value="exacto">Un título, autor o ISBN concreto</option>
+            <option value="agotado">Un libro agotado o descatalogado</option>
+            <option value="novedades-tecnicas">Novedades de una especialidad</option>
+            <option value="digital">Una edición digital</option>
+            <option value="antiguo">Un libro antiguo, facsímil o reedición</option>
+            <option value="tapa">Recuerdo la tapa o parte del título</option>
+            <option value="bibliografia">Bibliografía técnica o de estudio</option>
+            <option value="regalo">Recomendación para un regalo</option>
+          </select>
+        </div>
         <div class="field">
           <label for="book-format">Formato preferido</label>
           <select id="book-format" name="format">
@@ -147,6 +143,16 @@ const jsonLd = {
             placeholder="Año aproximado, país, edición, para qué lo necesitás o cualquier dato útil"
           ></textarea>
         </div>
+
+        <aside class="request-guides field-wide" aria-labelledby="request-guides-title">
+          <strong id="request-guides-title">¿Querés verificar los datos antes de enviar?</strong>
+          <p>
+            Consultá <a href="/como-identificar-edicion-correcta-isbn/">cómo distinguir una edición por ISBN</a>
+            o <a href="/libros-agotados-importados-uruguay">cómo funciona un encargo de libro agotado o importado</a>.
+          </p>
+        </aside>
+          </div>
+        </details>
 
         <p id="photo-note" class="context-note" hidden>
           Cuando se abra WhatsApp, mandanos la foto de la tapa en el siguiente mensaje.
@@ -208,6 +214,9 @@ const jsonLd = {
     typeSelect.value = normalizedType;
   }
   if (initialQuery) queryInput.value = initialQuery;
+  if (!['exacto', 'sin-resultados'].includes(requestedType)) {
+    document.querySelector('#request-options').open = true;
+  }
 
   function effectiveType() {
     return requestedType === 'sin-resultados' && typeSelect.value === 'exacto'
@@ -222,6 +231,12 @@ const jsonLd = {
     const query = queryInput.value.trim();
     catalogLink.href = query ? `/catalogo?q=${encodeURIComponent(query)}` : '/catalogo';
   }
+
+  // Un campo opcional inválido debe quedar visible para corregirlo.
+  form.addEventListener('invalid', event => {
+    const options = event.target.closest('details');
+    if (options) options.open = true;
+  }, true);
 
   let started = false;
   form.addEventListener('input', () => {
@@ -335,6 +350,12 @@ const jsonLd = {
 </script>
 
 <style>
+  .request-options { border: 1px solid var(--border, #d8d1c7); border-radius: 12px; padding: .9rem 1rem; }
+  .request-options summary { cursor: pointer; font-weight: 700; min-height: 28px; padding: .25rem 0; }
+  .request-options summary:focus-visible { outline: 3px solid #b4442a; outline-offset: 4px; }
+  .request-options-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; padding-top: 1rem; }
+  @media (max-width: 600px) { .request-options-grid { grid-template-columns: minmax(0, 1fr); } }
+
   .hp-field {
     position: absolute;
     left: -9999px;
