@@ -47,7 +47,7 @@ const nav = [
       <button
         type="button"
         class="search-pill"
-        onclick="document.dispatchEvent(new CustomEvent('amado:openCatalogSearch'))"
+        onclick="if(document.getElementById('cso-overlay')){document.dispatchEvent(new CustomEvent('amado:openCatalogSearch'))}else{window.location.assign('/catalogo')}"
         aria-label="Buscar en el catálogo"
       >
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">

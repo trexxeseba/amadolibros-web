@@ -31,11 +31,11 @@ test('la portada ordena búsqueda, temas, libros e ideas en un recorrido coheren
   const ideasPosition = home.indexOf('<HomeV2Ideas />');
 
   assert.ok(heroPosition >= 0, 'falta el buscador principal');
-  assert.ok(topicsPosition > heroPosition, 'los temas deben seguir al hero');
-  assert.ok(booksPosition > topicsPosition, 'la estantería debe seguir a los temas');
+  assert.ok(booksPosition > heroPosition, 'los libros deben seguir al buscador');
+  assert.ok(topicsPosition > booksPosition, 'los temas complementan los libros');
   assert.ok(ideasPosition > booksPosition, 'Amado Lee debe seguir a los libros');
   assert.match(hero, /una persona revisa opciones y lo busca por encargo/);
-  assert.match(shelf, /Tapas que piden que las mires\./);
+  assert.match(shelf, /Libros disponibles para comprar\./);
   assert.match(ideas, /Ideas, guías y caminos entre libros\./);
 });
 

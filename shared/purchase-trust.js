@@ -15,7 +15,8 @@ function signal(icon, title, text, href, label, extra = '') {
   return '<li class="pt-item"><span class="pt-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + icons[icon] + '</svg></span><div><strong class="pt-title">' + title + '</strong>' + extra + '<p class="pt-copy">' + text + '</p><a class="pt-link" href="' + href + '">' + label + '</a></div></li>';
 }
 
-export function purchaseTrustHtml({ compact = false } = {}) {
+export function purchaseTrustHtml({ compact = false, summary = false } = {}) {
+  if (summary) return '<style>' + PURCHASE_TRUST_CSS + '</style><section class="purchase-trust pt-summary" aria-label="Comprá con confianza"><h2>Comprá con tranquilidad</h2><ul><li>Pago seguro con Mercado Pago</li><li>Devoluciones: avisá dentro de los 5 días hábiles desde que lo recibís. <a href="/devoluciones/">Ver condiciones</a></li><li>Atención personal en Montevideo. <a href="/contacto/">Contactanos</a></li></ul></section>';
   return '<style>' + PURCHASE_TRUST_CSS + '</style><section class="purchase-trust' + (compact ? ' pt-compact' : '') + '" aria-label="Comprá con confianza"><h2>Comprá con tranquilidad</h2><ul class="pt-grid">' +
     signal('card', 'Pago seguro', 'Los datos de tu tarjeta se ingresan en Mercado Pago.', '/terminos/', 'Cómo pagás', '<span class="pt-provider">Mercado Pago</span>') +
     signal('returns', 'Si no te convence, podés devolverlo', 'Avisanos dentro de los 5 días hábiles desde que lo recibís.', '/devoluciones/', 'Ver devoluciones y reembolsos') +
@@ -32,11 +33,12 @@ export const PURCHASE_TRUST_CSS = String.raw`
 .purchase-trust .pt-icon{display:flex;align-items:center;justify-content:center;width:38px;height:38px;flex:0 0 38px;border-radius:50%;background:#e5efea;color:#155b43}
 .purchase-trust .pt-title{display:block;font-size:.9rem;line-height:1.3;font-weight:750}
 .purchase-trust .pt-provider{display:block;color:#007ca5;font-size:1.1rem;font-weight:800;line-height:1.4;margin-top:.15rem}
-.purchase-trust .pt-copy{margin:.35rem 0 .4rem;font-size:.8rem;line-height:1.5;color:#554b42}
-.purchase-trust .pt-link,.purchase-trust .pt-conditions a{color:#86422a;text-decoration:underline;text-underline-offset:3px;font-weight:650;font-size:.78rem}
+.purchase-trust .pt-copy{margin:.35rem 0 .4rem;font-size:.875rem;line-height:1.5;color:#554b42}
+.purchase-trust .pt-link,.purchase-trust .pt-conditions a{color:#86422a;text-decoration:underline;text-underline-offset:3px;font-weight:650;font-size:.875rem}
 .purchase-trust a:focus-visible{outline:3px solid #86422a;outline-offset:3px}
-.purchase-trust .pt-conditions{margin:1rem 0 0;font-size:.74rem;line-height:1.5;color:#63574c}
+.purchase-trust .pt-conditions{margin:1rem 0 0;font-size:.875rem;line-height:1.5;color:#63574c}
 .purchase-trust.pt-compact{padding:1rem;margin:1rem 0}
 .purchase-trust.pt-compact .pt-grid{grid-template-columns:1fr;gap:.6rem}
 .purchase-trust.pt-compact .pt-item{padding:.65rem .75rem}
+ .purchase-trust.pt-summary ul{display:flex;flex-wrap:wrap;gap:.75rem 2rem;margin:0;padding-left:1.25rem}.purchase-trust.pt-summary li{flex:1 1 220px}.purchase-trust.pt-summary a{color:#86422a;text-decoration:underline}
 `;

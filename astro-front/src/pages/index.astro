@@ -69,11 +69,11 @@ const jsonLd = {
   <HomeV2Header />
   <main class="home-v2-main">
     <HomeV2Hero />
-    <HomeV2Liquidacion />
-    <div class="home-purchase-trust"><Fragment set:html={purchaseTrustHtml()} /></div>
-    <GoogleReviews />
-    <HomeV2Topics />
     <HomeV2Shelf />
+    <div class="home-purchase-trust"><Fragment set:html={purchaseTrustHtml({ summary: true })} /></div>
+    <HomeV2Liquidacion />
+    <HomeV2Topics />
+    <GoogleReviews />
     <HomeV2Ideas />
   </main>
   <Footer />

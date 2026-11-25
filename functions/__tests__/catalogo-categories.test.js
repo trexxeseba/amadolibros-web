@@ -373,7 +373,7 @@ test('pausada muestra "Disponible por encargo" y CTA "Pedir este libro", nunca "
   const html = await res.text();
   assert.match(html, /Disponible por encargo/);
   assert.match(html, /Pedir este libro/);
-  assert.doesNotMatch(html, /Te llega hoy/);
+  assert.doesNotMatch(html, /Entrega en el día/);
   assert.doesNotMatch(html, /\bpaused\b/i);
   assert.doesNotMatch(html, /\bpausado\b/i);
   assert.doesNotMatch(html, /needsReview/);
@@ -403,7 +403,7 @@ test('a igual relevancia, la activa aparece antes que la pausada', async () => {
   const idxPaused = html.indexOf('Ensayo De Filosofía Moderna'); // MLU10, pausada
   assert.ok(idxActive !== -1 && idxPaused !== -1);
   const activeCard = html.match(/<article class="rc-card">[\s\S]*?Manual De Filosofía Estoica[\s\S]*?<\/article>/)?.[0];
-  assert.match(activeCard || '', /Te llega hoy/);
+  assert.match(activeCard || '', /Entrega en el día/);
   assert.match(activeCard || '', /Montevideo/);
   assert.ok(idxActive < idxPaused, 'la activa debería listarse antes que la pausada en empate de relevancia');
 });
@@ -467,7 +467,7 @@ test('catálogo: encabezado de marca y temas a la vista en vez de «← Amado Li
   assert.ok(index.indexOf('Psicología') < index.indexOf('Historia'), 'los temas más grandes primero');
   assert.match(index, /href="\/catalogo\?categoria=historia&amp;disponibilidad=encargo"/);
   assert.doesNotMatch(index, /Otros libros|Derecho/);
-  assert.match(index, /href="\/temas">Todos los temas/);
+  assert.match(index, /href="#cat-select">Todos los temas/);
   const inside = topicNavHtml({ categories: cats, categoria: 'historia', subcategoria: 'historia-mundial' });
   assert.match(inside, /← Todos los temas/);
   assert.match(inside, /class="topic-chip is-current" href="\/catalogo\?categoria=historia&amp;subcategoria=historia-mundial" aria-current="page">Historia mundial/);
@@ -537,4 +537,20 @@ test('una búsqueda sin resultados se anota normalizada; con resultados, filtro 
   await catalogRequest(robot.ctx);
   await Promise.all(robot.pending);
   assert.equal(robot.writes.filter(w => w.sql.includes('search_misses')).length, 0);
+});
+
+test('topic, subtopic and availability links retain query and sort, resetting pagination', async () => {
+  for (const suffix of ['', '&categoria=esoterismo-tarot', '&categoria=esoterismo-tarot&subcategoria=tarot-oraculos']) {
+    const res = await catalogRequest(context('https://preview.example/catalogo?q=tarot&orden=precio-asc&disponibilidad=disponibles' + suffix));
+    const html = await res.text();
+    const navs = html.match(/<nav class="(?:topic-nav|availability-tabs)"[\s\S]*?<\/nav>/g) || [];
+    assert.equal(navs.length, 2);
+    for (const href of navs.join('').matchAll(/href="([^"]+)"/g)) {
+      if (href[1].startsWith('#')) continue;
+      const url = new URL(href[1].replaceAll('&amp;', '&'), 'https://preview.example');
+      assert.equal(url.searchParams.get('q'), 'tarot');
+      assert.equal(url.searchParams.get('orden'), 'precio-asc');
+      assert.equal(url.searchParams.has('page'), false);
+    }
+  }
 });
