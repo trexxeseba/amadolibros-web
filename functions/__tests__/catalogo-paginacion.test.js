@@ -323,7 +323,7 @@ test('25. con una sola página no se renderiza la navegación', async () => {
 
 test('26. sin resultados no hay paginación ni contador de rango', async () => {
   const { html } = await render(`${BASE_URL}?q=zzzqqxyw123`);
-  assert.match(html, /No encontramos resultados\./);
+  assert.match(html, /No encontramos &ldquo;zzzqqxyw123&rdquo; en el catálogo/);
   assert.doesNotMatch(html, /<nav class="pg"/);
 });
 

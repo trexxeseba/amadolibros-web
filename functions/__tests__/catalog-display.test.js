@@ -322,12 +322,12 @@ test('una búsqueda sin coincidencias reales termina en cero resultados', async 
   );
   const html = await response.text();
 
-  assert.match(html, /No encontramos resultados/);
+  assert.match(html, /No encontramos &ldquo;zzzinexistente999&rdquo; en el catálogo/);
   assert.doesNotMatch(html, /class="rc-card/);
-  assert.match(html, /Que no aparezca acá no significa que no podamos encontrarlo/);
+  assert.match(html, /Lo buscamos por vos, sin compromiso/);
   assert.match(html, /href="\/pedir-libro\/\?tipo=sin-resultados&amp;q=zzzinexistente999"/);
-  assert.match(html, />Pedir que lo busquemos</);
-  assert.match(html, />Ir directo a WhatsApp</);
+  assert.match(html, />Ayudame a encontrarlo</);
+  assert.match(html, />Escribinos por WhatsApp</);
 });
 
 test('el catálogo indexable comunica el umbral real de envío gratis', async () => {
