@@ -15,11 +15,10 @@ on:
         options: [estado, aplicar, simulacro]
         default: estado
   push:
-    branches: [main, agent/alarmas-cobro]
+    branches: [main]
     paths:
       - scripts/monitoring/checkly-cobro.mjs
       - .github/workflows/monitor-cobro.yml
-      - scripts/monitoring/accion-en-rama.txt
 
 permissions:
   contents: read
@@ -44,10 +43,8 @@ jobs:
       - name: Elegir acción
         id: accion
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then accion="${{ inputs.accion }}"
-          elif [ "${{ github.ref_name }}" = "main" ]; then accion="aplicar"
-          else accion="$(tr -d '[:space:]' < scripts/monitoring/accion-en-rama.txt 2>/dev/null || echo estado)"; fi
-          case "$accion" in estado|simulacro) ;; aplicar) [ "${{ github.ref_name }}" = "main" ] || accion="estado" ;; *) accion="estado" ;; esac
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then accion="${{ inputs.accion }}"; else accion="aplicar"; fi
+          case "$accion" in estado|aplicar|simulacro) ;; *) accion="estado" ;; esac
           echo "accion=$accion" >> "$GITHUB_OUTPUT"
       - name: Ejecutar
         run: node scripts/monitoring/checkly-cobro.mjs "${{ steps.accion.outputs.accion }}"
