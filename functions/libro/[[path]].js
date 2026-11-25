@@ -1065,7 +1065,14 @@ ${waFloatHtml(waMessage, canonicalUrl)}
     sync();
   }).observe(main);
   if(mq.addEventListener)mq.addEventListener('change',sync);
-  bar.querySelector('[data-buy-bar]').addEventListener('click',function(){main.click();});
+  var barButton=bar.querySelector('[data-buy-bar]');
+  var initialLabel=barButton.textContent;
+  function syncLabel(){
+    barButton.textContent=main.dataset.goCart?'Ver carrito':initialLabel;
+  }
+  new MutationObserver(syncLabel).observe(main,{attributes:true,attributeFilter:['data-go-cart']});
+  syncLabel();
+  barButton.addEventListener('click',function(){main.click();});
 })();</script>
 <script>(function(){
   function updateBadge(n){

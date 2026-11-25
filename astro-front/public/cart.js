@@ -318,17 +318,44 @@
     }
   });
 
+  function restoreAddButton(btn) {
+    var label = btn.querySelector('[data-cart-label]');
+    if (label && label.dataset.origText !== undefined) {
+      label.textContent = label.dataset.origText;
+      delete label.dataset.origText;
+    }
+    delete btn.dataset.goCart;
+    if (btn.dataset.origAriaLabel !== undefined) {
+      btn.setAttribute('aria-label', btn.dataset.origAriaLabel);
+      delete btn.dataset.origAriaLabel;
+    }
+  }
+
+  function containsProduct(id) {
+    return load().items.some(function (item) { return item.id === id; });
+  }
+
+  // Si se elimina el libro (también desde otra pestaña), vuelve la acción
+  // de agregar. Las cantidades adicionales se eligen en el carrito.
+  document.addEventListener('amado:cart-updated', function () {
+    document.querySelectorAll('[data-action="add-to-cart"][data-go-cart]').forEach(function (btn) {
+      if (!containsProduct(btn.dataset.id)) restoreAddButton(btn);
+    });
+  });
+
   // Delegación de clics para botones data-action="add-to-cart"
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('[data-action="add-to-cart"]');
     if (!btn) return;
 
     // En estado post-agregar: segundo clic navega al carrito
-    if (btn.dataset.goCart) {
+    if (btn.dataset.goCart && containsProduct(btn.dataset.id)) {
       rememberShoppingContext();
       window.location.href = '/carrito';
       return;
     }
+
+    if (btn.dataset.goCart) restoreAddButton(btn);
 
     var rawPrice  = parseFloat(btn.dataset.price);
     var rawMaxQty = parseInt(btn.dataset.maxQty || '0', 10);
@@ -378,14 +405,7 @@
       btn.dataset.origAriaLabel = prevAriaLabel;
       btn.setAttribute('aria-label', 'Ir al carrito');
     }
-    setTimeout(function () {
-      label.textContent = orig;
-      delete btn.dataset.goCart;
-      delete label.dataset.origText;
-      if (btn.dataset.origAriaLabel !== undefined) {
-        btn.setAttribute('aria-label', btn.dataset.origAriaLabel);
-        delete btn.dataset.origAriaLabel;
-      }
-    }, 1500);
+    // La acción "Ver carrito" permanece disponible: no vuelve a sumar
+    // unidades por haber tardado más de un segundo en continuar.
   });
 }());
