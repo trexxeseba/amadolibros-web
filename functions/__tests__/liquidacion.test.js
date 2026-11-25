@@ -11,7 +11,7 @@ import { buildExclusions, renderModule, medicalIds, recentIds } from '../../scri
 import { onRequest as liquidacionPage } from '../liquidacion.js';
 import { FOOTER_LINKS } from '../_shared/brand.js';
 import { renderFeedItem } from '../feed.xml.js';
-import { liquidationTopics, liquidationWhatsAppMessage } from '../liquidacion.js';
+import { cardHtml, liquidationTopics, liquidationWhatsAppMessage } from '../liquidacion.js';
 import { SITE_HEADER_NAV } from '../_shared/site-header.js';
 import { STATIC_SITEMAP_PAGES } from '../sitemap-pages.xml.js';
 
@@ -261,7 +261,7 @@ test('página: con la lista cargada muestra solo lo listado, aunque D1 esté ca�
     }
 });
 
-test('"Lo quiero" lleva id MLU, tema y cta_location para whatsapp_click', () => {
+test('Consultar conserva id MLU, tema y cta_location para whatsapp_click', () => {
     const page = readFileSync('functions/liquidacion.js', 'utf8');
     assert.match(page, /data-cta-location="liquidacion_card" data-mlu="\$\{escapeHtml\(book\.id\)\}"/);
     assert.match(page, /data-topic="\$\{escapeHtml\(topic\)\}"/);
@@ -324,4 +324,24 @@ test('exclusiones desde el motor: gana precio y marcadas de hoy; las fuera del c
 
 test('médicos: cualquier ruta con medicina-salud', () => {
     assert.deepEqual(medicalIds(TOPICS), ['MLU2', 'MLU8']);
+});
+
+test('Liquidación usa el precio vigente y el stock real al agregar al carrito; WhatsApp es secundario', () => {
+    const html = cardHtml(book('MLU1', { title: 'Libro "A" & B', price: 1600, original_price: 1900, available_quantity: 2 }), 0, {}, 'ficcion');
+    const button = html.match(/<button[^>]+data-action="add-to-cart"[\s\S]*?<\/button>/)?.[0];
+    assert.ok(button);
+    assert.match(button, /data-id="MLU1"/);
+    assert.match(button, /data-title="Libro &quot;A&quot; &amp; B"/);
+    assert.match(button, /data-price="1600"/);
+    assert.match(button, /data-max-qty="2"/);
+    assert.match(button, /data-cart-label>Agregar al carrito/);
+    assert.ok(html.indexOf(button) < html.indexOf('class="rc-cta rc-wa"'));
+    assert.match(html, />Consultar<\/a>/);
+    assert.match(html, />Ver ficha<\/a>/);
+});
+
+test('Liquidación no permite agregar moneda no UYU, precio inválido o libros sin stock', () => {
+    for (const extra of [{ currency: 'USD' }, { price: 0 }, { available_quantity: 0 }, { status: 'paused' }]) {
+        assert.doesNotMatch(cardHtml(book('MLU1', extra), 0, {}), /data-action="add-to-cart"/);
+    }
 });

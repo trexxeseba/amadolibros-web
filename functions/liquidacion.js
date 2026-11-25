@@ -10,8 +10,7 @@
  * (con la promo web aplicada cuando hay una activa). Esta página no inventa
  * descuentos propios.
  *
- * Acción principal: "Lo quiero" a WhatsApp con el título precargado, porque el
- * cliente de Amado escribe antes de comprar; la ficha queda como segundo paso.
+ * Compra directa con el mismo carrito de las fichas. WhatsApp queda como ayuda.
  */
 import { BASE, fetchCatalog } from './_shared/catalog.js';
 import { slugify } from './_shared/slug.js';
@@ -103,7 +102,7 @@ export function liquidationWhatsAppMessage(book, href) {
     });
 }
 
-function cardHtml(book, idx, env, topic = '') {
+export function cardHtml(book, idx, env, topic = '') {
     const href = `/libro/${book.id}/${slugify(book.title)}`;
     const source = env?.APP_ENV === 'production'
         ? bookCoverUrl(book.id)
@@ -112,6 +111,9 @@ function cardHtml(book, idx, env, topic = '') {
     const display = deriveBookDisplayTitle(book);
     const title = escapeHtml(display.removedParts.length ? display.title : book.title);
     const price = Number(book.price) || 0;
+    const currency = String(book.currency || 'UYU').toUpperCase();
+    const canAddToCart = book.status === 'active' && Number(book.available_quantity) > 0
+        && Number.isFinite(price) && price > 0 && currency === 'UYU';
     const priceStr = price.toLocaleString('es-UY');
     const transferValue = transferDisplayPrice(book);
     const transfer = transferValue === null ? '' : transferValue.toLocaleString('es-UY');
@@ -134,7 +136,12 @@ function cardHtml(book, idx, env, topic = '') {
       ${price >= FREE_SHIPPING_THRESHOLD_UYU ? '<span class="rc-free-shipping">Envío gratis</span>' : ''}
     </div>
     <div class="rc-actions">
-      <a href="${escapeHtml(wa)}" class="rc-cta rc-wa" target="_blank" rel="noopener noreferrer" data-cta-location="liquidacion_card" data-mlu="${escapeHtml(book.id)}"${topic ? ` data-topic="${escapeHtml(topic)}"` : ''}>Lo quiero</a>
+      ${canAddToCart ? `<button type="button" class="rc-cta rc-cart" data-action="add-to-cart"
+        data-id="${escapeHtml(book.id)}" data-title="${escapeHtml(book.title)}"
+        data-price="${price}" data-thumbnail="${escapeHtml(image.src)}" data-max-qty="${Math.floor(Number(book.available_quantity))}">
+        <span data-cart-label>Agregar al carrito</span>
+      </button>` : ''}
+      <a href="${escapeHtml(wa)}" class="rc-cta rc-wa" target="_blank" rel="noopener noreferrer" data-cta-location="liquidacion_card" data-mlu="${escapeHtml(book.id)}"${topic ? ` data-topic="${escapeHtml(topic)}"` : ''}>Consultar</a>
       <a href="${escapeHtml(href)}" class="rc-cta">Ver ficha</a>
     </div>
   </div>
@@ -201,9 +208,9 @@ export async function onRequest(ctx) {
     const promoOn = webPromoActive(new Date(now), ctx.env);
     const liquidationPriced = liquidation.mode === 'lista' && liquidationPricingActive(new Date(now), ctx.env);
     const lead = liquidationPriced
-        ? `Libros que te esperan en nuestros estantes, en stock y listos para salir hoy, con ${Math.round(LIQUIDACION_PRECIO.discount * 100)}% menos sobre su precio habitual, y ${Math.round(TRANSFER_DISCOUNT * 100)}% más pagando por transferencia.`
+        ? `Libros que te esperan en nuestros estantes, en stock y listos para salir hoy, con ${Math.round(LIQUIDACION_PRECIO.discount * 100)}% menos sobre su precio habitual, y ${Math.round(TRANSFER_DISCOUNT * 100)}% adicional de descuento pagando por transferencia.`
         : promoOn
-        ? `Libros que te esperan en nuestros estantes, listos para salir hoy. Con la ${escapeHtml(WEB_PROMO.name)}, ${WEB_PROMO.percent}% menos hasta el ${escapeHtml(WEB_PROMO.endLabel)}, y 12% más pagando por transferencia.`
+        ? `Libros que te esperan en nuestros estantes, listos para salir hoy. Con la ${escapeHtml(WEB_PROMO.name)}, ${WEB_PROMO.percent}% menos hasta el ${escapeHtml(WEB_PROMO.endLabel)}, y 12% adicional de descuento pagando por transferencia.`
         : 'Libros que te esperan en nuestros estantes, en stock y listos para salir hoy. Pagando por transferencia tenés 12% menos.';
     const heading = temaName ? `${LIQUIDACION.name}: ${escapeHtml(temaName)}` : LIQUIDACION.name;
     const title = `${temaName ? `${temaName} en liquidación` : 'Promo Liquidación Amado: libros en stock'}${page > 1 ? ` — Página ${page}` : ''} | Amado Libros`;
@@ -234,6 +241,7 @@ export async function onRequest(ctx) {
   <meta property="og:image" content="${BASE}/images/logo-amado.webp">
   ${faviconHeadHtml()}
   ${SITE_FONTS_HEAD}
+  <script src="/cart.js" defer></script>
   <script type="application/ld+json">${JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'CollectionPage',
@@ -253,7 +261,7 @@ export async function onRequest(ctx) {
     .liq-eyebrow{color:#e49982;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
     .liq-hero h1{font-family:"Playfair Display",Georgia,serif;font-size:1.6rem;line-height:1.2;margin:.3rem 0 .5rem}
     .liq-hero p{color:rgba(255,248,240,.82);font-size:.95rem;max-width:720px}
-    .liq-hero a{display:inline-flex;margin-top:.9rem;min-height:44px;align-items:center;padding:.6rem 1rem;border-radius:.6rem;background:#25d366;color:#0b2b17;font-weight:800;text-decoration:none}
+    .liq-hero a{display:inline-flex;margin-top:.5rem;min-height:44px;align-items:center;color:#fff8f0;font-weight:600;text-underline-offset:3px}
     .topic-chips{display:flex;gap:.45rem;overflow-x:auto;padding-bottom:.4rem;margin-bottom:.75rem;-webkit-overflow-scrolling:touch}
     @media(min-width:900px){.topic-chips{flex-wrap:wrap;overflow:visible}}
     .topic-chip{flex:0 0 auto;display:inline-flex;align-items:center;min-height:40px;padding:.45rem .85rem;border:1px solid #d1c8be;border-radius:999px;background:#fff;color:#18120e;font-size:.84rem;font-weight:700;text-decoration:none;white-space:nowrap}
@@ -276,8 +284,10 @@ export async function onRequest(ctx) {
     .rc-transfer{font-size:.78rem;color:#a94e3d;font-weight:600}
     .rc-free-shipping{font-size:.78rem;color:#267a42;font-weight:700}
     .rc-actions{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:auto;padding-top:.4rem}
-    .rc-cta{display:inline-flex;align-items:center;min-height:40px;padding:.35rem .85rem;border:1px solid #e2dbd0;border-radius:2rem;font-size:.82rem;font-weight:700;color:#18120e;background:#f5f0ea;text-decoration:none}
-    .rc-cta.rc-wa{color:#fff;border-color:#1a9e4b;background:#1a9e4b}
+    .rc-cta{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:.35rem .85rem;border:1px solid #e2dbd0;border-radius:2rem;font-size:.82rem;font-weight:700;color:#18120e;background:#f5f0ea;text-decoration:none}
+    .rc-cta.rc-cart{width:100%;border-color:#b4442a;border-radius:.6rem;background:#b4442a;color:#fff;font-family:inherit;cursor:pointer}
+    .rc-cta.rc-wa{color:#117a37;border-color:#b7d9c1;background:#fff}
+    .rc-cta:focus-visible{outline:3px solid #18120e;outline-offset:3px}
     .pager{display:flex;justify-content:space-between;align-items:center;gap:.75rem;margin:1.5rem 0 0;font-size:.9rem}
     .pager-link{display:inline-flex;min-height:44px;align-items:center;padding:.5rem .9rem;border:1px solid #d1c8be;border-radius:.6rem;background:#fff;color:#18120e;font-weight:700;text-decoration:none}
     .pager-link.is-disabled{opacity:.4}
@@ -296,14 +306,14 @@ ${siteHeaderHtml({ current: 'liquidacion' })}
     <p>${lead}</p>
     <a href="${escapeHtml(generalWa)}" target="_blank" rel="noopener noreferrer" data-cta-location="liquidacion_hero">Pedinos una recomendación por WhatsApp</a>
   </section>
-  ${premioBannerHtml()}
-  ${ruedaHtml()}
-  ${acertijoHtml()}
   ${topicsHtml(topics, tema, selected.length)}
   <p class="sub">${filtered.length} libros${totalPages > 1 ? ` · página ${page} de ${totalPages}` : ''}</p>
   ${slice.length
         ? `<div class="grid">${slice.map((b, i) => cardHtml(b, i, ctx.env, firstCategory(categoryData, b.id) || tema)).join('\n')}</div>${pagerHtml(page, totalPages, tema)}`
         : '<p class="empty">Estamos preparando la próxima tanda de la liquidación. Mientras tanto, te esperan <a href="/catalogo">todos los libros del catálogo</a>.</p>'}
+  ${premioBannerHtml()}
+  ${ruedaHtml()}
+  ${acertijoHtml()}
 </main>
 ${footerHtml(new Date(now).getFullYear(), pagePath({ tema, page }))}
 ${waFloatHtml(null, pagePath({ tema, page }))}
