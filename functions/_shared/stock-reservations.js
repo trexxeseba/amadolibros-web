@@ -16,10 +16,13 @@
 // La misma persona (mismo correo o mismo teléfono) no queda bloqueada por su
 // propio pedido anterior: quien cambia la entrega o el medio de pago genera un
 // pedido nuevo. Pero sus pedidos SÍ cuentan para el stock. Si el ejemplar no
-// alcanza para los dos, el pedido nuevo reemplaza al anterior: el anterior se
-// cancela en el mismo lote que crea el nuevo, y su link de pago de Mercado
-// Pago se vence antes. Nunca quedan dos pedidos abiertos de la misma persona
-// por el último ejemplar.
+// alcanza para los dos, el pedido nuevo reemplaza al anterior SÓLO cuando el
+// anterior no tiene nada en marcha: sin link de pago, sin link en generación
+// y sin pago pendiente. Si ya se está generando un link, existe uno o hay un
+// pago pendiente, el pedido anterior no se cancela para liberar stock: el
+// pedido nuevo no se crea y se le pide seguir con el anterior. La
+// cancelación y el candado van en el mismo lote atómico, así que un pedido
+// no puede quedar cancelado y con link a la vez.
 //
 // No cambia precios, totales ni reglas de envío, y no toca Mercado Libre: una
 // venta hecha en Mercado Libre se sigue viendo recién en la sincronización.
@@ -43,12 +46,11 @@ const COMMITTED_SQL =
   '(SELECT COALESCE(SUM(ci.quantity),0) FROM order_items ci JOIN orders o ON o.id = ci.order_id ' +
   `WHERE ci.product_id = ? AND ${NOT_CANCELLED} AND (${FIRM} OR ${HOLD}))`;
 // Pedidos abiertos de la misma persona, distintos del nuevo, que llevan el
-// producto. Parámetros: nowIso, pedido nuevo, correo, teléfono, producto.
+// producto y no tienen nada en marcha (ni link de pago ni link en generación).
+// Parámetros: nowIso, pedido nuevo, correo, teléfono, producto.
 const OWN_OPEN_WITH_PRODUCT =
-  `FROM orders o WHERE ${NOT_CANCELLED} AND ${HOLD} AND o.id <> ? AND ${SAME_BUYER} ` +
+  `FROM orders o WHERE ${NOT_CANCELLED} AND ${HOLD} AND o.id <> ? AND ${SAME_BUYER} AND o.payment_preference_id IS NULL ` +
   'AND EXISTS (SELECT 1 FROM order_items x WHERE x.order_id = o.id AND x.product_id = ?)';
-
-export const isLivePreference = id => typeof id === 'string' && id.length > 0 && !id.startsWith('creating:');
 
 export function stockWindows({ now, catalogUpdatedAt }) {
   const nowMs = now.getTime();
@@ -115,29 +117,42 @@ export async function loadOwnOpen(db, productIds, windows, buyer) {
 }
 
 /**
- * Pedidos propios que el pedido nuevo va a reemplazar: los que llevan un
- * producto cuyo stock no alcanza para el pedido nuevo más todo lo ya
- * comprometido. Es la misma cuenta que hace `supersedeStatements` en la base.
+ * Qué hacer con los pedidos propios cuando el ejemplar no alcanza.
+ *   toSupersede  los que se pueden reemplazar: abiertos, sin link de pago ni
+ *                link en generación. Es la misma cuenta que hace
+ *                `supersedeStatements` en la base.
+ *   blocked      hay un libro que sigue sin alcanzar aunque se reemplacen
+ *                esos, porque otro pedido propio ya tiene link, lo está
+ *                generando o tiene el pago pendiente. No se cancela.
  */
 export function ownOrdersToSupersede({ lines, firm, heldByOthers, ownOpen }) {
   const ownByProduct = new Map();
-  for (const row of ownOpen) ownByProduct.set(row.product_id, (ownByProduct.get(row.product_id) || 0) + Number(row.quantity || 0));
-  const tight = new Set(lines.filter(line => Number.isInteger(line.catalog_available) &&
-    line.quantity + (firm.get(line.product_id) || 0) + (heldByOthers.get(line.product_id) || 0) +
-      (ownByProduct.get(line.product_id) || 0) > line.catalog_available).map(line => line.product_id));
+  const lockedByProduct = new Map();
+  for (const row of ownOpen) {
+    const quantity = Number(row.quantity || 0);
+    ownByProduct.set(row.product_id, (ownByProduct.get(row.product_id) || 0) + quantity);
+    if (row.preference_id) lockedByProduct.set(row.product_id, (lockedByProduct.get(row.product_id) || 0) + quantity);
+  }
+  const others = line => line.quantity + (firm.get(line.product_id) || 0) + (heldByOthers.get(line.product_id) || 0);
+  const tooTight = (line, ownUnits) => Number.isInteger(line.catalog_available) && others(line) + ownUnits > line.catalog_available;
+  const tight = new Set(lines.filter(line => tooTight(line, ownByProduct.get(line.product_id) || 0)).map(line => line.product_id));
+  const blocked = lines.some(line => (lockedByProduct.get(line.product_id) || 0) > 0 &&
+    tooTight(line, lockedByProduct.get(line.product_id) || 0));
   const orders = new Map();
   for (const row of ownOpen) {
-    if (tight.has(row.product_id)) orders.set(row.order_id, { id: row.order_id, preference_id: row.preference_id ?? null });
+    if (tight.has(row.product_id) && !row.preference_id) orders.set(row.order_id, { id: row.order_id });
   }
-  return [...orders.values()];
+  return { toSupersede: [...orders.values()], blocked };
 }
 
 /**
  * Reemplazo de los pedidos propios, dentro del lote que crea el pedido nuevo
  * y antes del candado. Por cada libro: si lo comprometido (contando el pedido
  * nuevo) supera el stock, los pedidos abiertos de la misma persona que llevan
- * ese libro quedan anotados como reemplazados y cancelados. Un pedido
- * cancelado no puede pedir link de pago ni confirmarse por transferencia.
+ * ese libro y no tienen link de pago ni link en generación quedan anotados
+ * como reemplazados y cancelados. Los que ya tienen algo en marcha no se
+ * tocan: el candado los cuenta y rechaza el pedido nuevo. Un pedido cancelado
+ * no puede pedir link de pago ni confirmarse por transferencia.
  */
 export function supersedeStatements(db, { orderId, at, lines, windows, buyer }) {
   const email = buyer.email || '';
@@ -197,8 +212,8 @@ export function stockGuardStatements(db, { orderId, createdEventId, createdAt, l
 }
 
 export function ownPaymentMessage() {
-  return 'Ya tenés un pago iniciado por este libro. Podés terminarlo en la pestaña de Mercado Pago ' +
-    'o intentar de nuevo en unos minutos. Si preferís, escribinos por WhatsApp y te ayudamos.';
+  return 'Ya tenés un pedido en curso por este libro. Podés seguir con ese pedido o intentar de nuevo ' +
+    'en unos minutos, cuando se libere. Si preferís, escribinos por WhatsApp y te ayudamos.';
 }
 
 export function heldMessage(titles) {

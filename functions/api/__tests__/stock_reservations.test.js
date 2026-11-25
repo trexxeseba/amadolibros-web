@@ -11,7 +11,6 @@ import { createOrdersHandler } from '../_orders_handler.js';
 import { createCartValidationHandler } from '../_cart_validation_handler.js';
 import { heldMessage, ownPaymentMessage, stockWindows, reduceAvailability, PENDING_HOLD_HOURS } from '../../_shared/stock-reservations.js';
 import { createPreferenceHandler } from '../_mp_handler.js';
-import { expirePreference } from '../_mp_client.js';
 import { confirmTransfer, transferBlockedReason } from '../../_shared/panel-transfer.js';
 
 const HOST = 'https://www.amadolibros.com';
@@ -44,7 +43,7 @@ function world({ stock = 1, realClock = false } = {}) {
     },
   };
   const state = {
-    expireOk: true, expired: [], created: 0,
+    created: 0, gate: null,
     // El link de pago usa el reloj real: las pruebas que lo piden también.
     now: realClock ? new Date() : new Date('2026-11-25T15:00:00Z'),
     catalog: { updated_at: realClock ? new Date(Date.now() - 8 * 3600000).toISOString() : '2026-11-25T07:20:55Z', items: [
@@ -57,21 +56,20 @@ function world({ stock = 1, realClock = false } = {}) {
     ALLOWED_HOSTS: 'amadolibros.com,www.amadolibros.com', CHECKOUT_ENABLED: 'true',
     TURNSTILE_SECRET_KEY: 'x', ORDERS_DB: db, MP_ACCESS_TOKEN: 'token', MP_WEBHOOK_SECRET: 'secreto',
   };
-  const expire = async prefId => {
-    if (state.expireOk === 'throw') throw new Error('network');
-    if (!state.expireOk) return { ok: false, code: 'MP_API_ERROR' };
-    state.expired.push(prefId);
-    return { ok: true };
-  };
   // Doble de Mercado Pago para el link de pago: un link vencido deja de servir.
   const preferences = createPreferenceHandler({
     mpClient: {
-      createPreference: async () => { state.created++; return { ok: true, id: 'pref-' + state.created, checkout_url: 'https://mp.example/pref-' + state.created }; },
-      getPreference: async id => (state.expired.includes(id) ? { ok: false, code: 'MP_API_ERROR' } : { ok: true, id, checkout_url: 'https://mp.example/' + id }),
+      createPreference: async () => {
+        state.created++;
+        const id = 'pref-' + state.created;
+        if (state.gate) await state.gate;
+        return { ok: true, id, checkout_url: 'https://mp.example/' + id };
+      },
+      getPreference: async id => ({ ok: true, id, checkout_url: 'https://mp.example/' + id }),
       searchPreferenceByRef: async () => ({ ok: false, code: 'NOT_FOUND' }),
     },
   });
-  const orders = createOrdersHandler({ fetchCatalog: async () => state.catalog, getNow: () => state.now, verifyTurnstileToken: async () => ({ ok: true }), expirePreference: expire });
+  const orders = createOrdersHandler({ fetchCatalog: async () => state.catalog, getNow: () => state.now, verifyTurnstileToken: async () => ({ ok: true }) });
   const validate = createCartValidationHandler({ fetchCatalog: async () => state.catalog, getNow: () => state.now });
   const post = async (handler, path, body) => {
     const response = await handler({ request: new Request(HOST + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }), env });
@@ -91,6 +89,19 @@ function world({ stock = 1, realClock = false } = {}) {
       shipping: delivery === 'shipping' ? { address: 'Calle 1', locality: 'Montevideo', department: 'Montevideo' } : undefined,
     }),
     cart: (quantity = 1, product = 'MLU1') => post(validate, '/api/cart/validate', { items: [{ product_id: product, quantity, unit_price_uyu: 2350 }] }),
+    // Frena la creación del link en Mercado Pago hasta llamar a release().
+    hold() {
+      let release;
+      state.gate = new Promise(resolve => { release = resolve; });
+      return () => { state.gate = null; release(); };
+    },
+    async untilGenerating(code) {
+      for (let i = 0; i < 200; i++) {
+        if (String(sqlite.prepare('SELECT payment_preference_id p FROM orders WHERE public_code=?').get(code)?.p || '').startsWith('creating:')) return;
+        await new Promise(resolve => setTimeout(resolve, 1));
+      }
+      throw new Error('el link no empezó a generarse');
+    },
     later(minutes) { state.now = new Date(state.now.getTime() + minutes * 60000); },
     set(code, fields) {
       const keys = Object.keys(fields);
@@ -338,46 +349,138 @@ test('misma persona, último ejemplar: el pedido reemplazado no puede pedir link
   assert.equal(w.state.created, 1);
 });
 
-test('misma persona con link de pago ya creado: se vence ese link antes de crear el pedido nuevo', async () => {
+test('misma persona con link de pago ya creado: no se cancela el pedido anterior y el nuevo no se crea', async () => {
   const w = world({ realClock: true });
   const k1 = key();
   const first = await w.order(ANA, { key: k1 });
-  assert.equal((await w.payLink(first.body.order.public_code, k1)).status, 200);
-  const k2 = key();
-  const second = await w.order(ANA, { key: k2 });
-  assert.equal(second.status, 201);
-  assert.deepEqual(w.state.expired, ['pref-1']);
-  assert.deepEqual(w.open(), [second.body.order.public_code]);
-  // El pedido viejo ya no entrega un link que sirva.
-  assert.equal((await w.payLink(first.body.order.public_code, k1)).status, 410);
+  const link = await w.payLink(first.body.order.public_code, k1);
+  assert.equal(link.status, 200);
+  const second = await w.order(ANA);
+  assert.equal(second.status, 409);
+  assert.equal(second.body.code, 'OWN_PAYMENT_IN_PROGRESS');
+  assert.equal(w.count(), 1);
+  assert.deepEqual(w.open(), [first.body.order.public_code]);
+  assert.equal(w.events('superseded').length, 0);
+  // El pedido anterior sigue pagable, con el mismo link, y no se creó otro.
+  const again = await w.payLink(first.body.order.public_code, k1);
+  assert.deepEqual([again.status, again.body.checkout_url], [200, link.body.checkout_url]);
+  assert.equal(w.state.created, 1);
 });
 
-for (const failure of [false, 'throw']) {
-  test(`si el link de pago anterior no se puede vencer (${failure === false ? 'Mercado Pago rechaza' : 'sin red'}), el pedido nuevo no se crea`, async () => {
+test('misma persona con el link en generación: no se cancela el pedido anterior', async () => {
+  const w = world();
+  const first = await w.order(ANA);
+  w.set(first.body.order.public_code, { payment_preference_id: 'creating:1700000000:x' });
+  const second = await w.order(ANA);
+  assert.equal(second.status, 409);
+  assert.equal(second.body.code, 'OWN_PAYMENT_IN_PROGRESS');
+  assert.equal(w.row(first.body.order.public_code).status, 'open');
+  assert.equal(w.count(), 1);
+});
+
+// Fallo reproducido por la revisión: mientras se genera el link del pedido
+// viejo, el nuevo lo cancelaba; después la operación anterior terminaba y
+// devolvía igualmente su link. Quedaban dos links para un ejemplar.
+test('mientras se genera el link del pedido viejo, el pedido nuevo no lo cancela y no quedan dos links', async () => {
+  const w = world({ realClock: true });
+  const k1 = key();
+  const first = await w.order(ANA, { key: k1 });
+  const release = w.hold();
+  const generating = w.payLink(first.body.order.public_code, k1);
+  await w.untilGenerating(first.body.order.public_code);
+  const second = await w.order(ANA);
+  assert.equal(second.status, 409);
+  assert.equal(second.body.code, 'OWN_PAYMENT_IN_PROGRESS');
+  assert.equal(w.row(first.body.order.public_code).status, 'open');
+  release();
+  const link = await generating;
+  assert.equal(link.status, 200);
+  assert.deepEqual(w.open(), [first.body.order.public_code]);
+  assert.equal(w.state.created, 1);
+  assert.equal(w.openUnits(), 1);
+});
+
+test('si cancelan el pedido mientras se genera su link, el link no se entrega ni se guarda', async () => {
+  const w = world({ realClock: true });
+  const k1 = key();
+  const first = await w.order(ANA, { key: k1 });
+  const release = w.hold();
+  const generating = w.payLink(first.body.order.public_code, k1);
+  await w.untilGenerating(first.body.order.public_code);
+  // Cualquier otra vía que cancele el pedido (por ejemplo desde el panel).
+  w.set(first.body.order.public_code, { status: 'cancelled', cancelled_at: w.state.now.toISOString() });
+  release();
+  const link = await generating;
+  assert.equal(link.status, 410);
+  assert.equal(link.body.code, 'ORDER_CANCELLED');
+  assert.equal(link.body.checkout_url, undefined);
+  assert.equal(w.row(first.body.order.public_code).payment_preference_id?.startsWith('creating:'), true);
+  assert.equal(w.events('preference_created').length, 0);
+});
+
+test('pedido nuevo y link del anterior en el mismo instante: nunca hay link y pedido nuevo a la vez', async () => {
+  for (let i = 0; i < 25; i++) {
     const w = world({ realClock: true });
     const k1 = key();
     const first = await w.order(ANA, { key: k1 });
-    await w.payLink(first.body.order.public_code, k1);
-    w.state.expireOk = failure;
-    const second = await w.order(ANA);
-    assert.equal(second.status, 409);
-    assert.equal(second.body.code, 'OWN_PAYMENT_IN_PROGRESS');
-    assert.equal(w.count(), 1);
-    assert.deepEqual(w.open(), [first.body.order.public_code]);
-    // El pedido original sigue intacto y con su link.
-    assert.equal(w.row(first.body.order.public_code).payment_preference_id, 'pref-1');
-    assert.equal((await w.payLink(first.body.order.public_code, k1)).status, 200);
-  });
-}
+    const release = w.hold();
+    const [link, second] = await Promise.all([
+      w.payLink(first.body.order.public_code, k1),
+      (async () => { for (let n = 0; n < i % 4; n++) await Promise.resolve(); const r = await w.order(ANA); release(); return r; })(),
+    ]);
+    release();
+    assert.equal(link.status === 200 && second.status === 201, false, `iteración ${i}: dos cobros posibles`);
+    assert.equal(w.openUnits(), 1, `iteración ${i}: stock comprometido`);
+    const withLink = w.sqlite.prepare("SELECT COUNT(*) n FROM orders WHERE status='open' AND payment_preference_id LIKE 'pref-%'").get().n;
+    assert.ok(withLink <= 1);
+  }
+});
 
-test('sin credencial de Mercado Pago no se puede vencer el link: el pedido nuevo no se crea', async () => {
+test('el link empieza a generarse justo entre la lectura y el alta: el lote no cancela el pedido anterior', async () => {
   const w = world({ realClock: true });
+  const first = await w.order(ANA);
+  const realBatch = w.db.batch;
+  let injected = false;
+  w.db.batch = async list => {
+    if (!injected) {
+      injected = true;
+      w.set(first.body.order.public_code, { payment_preference_id: 'creating:1700000000:x' });
+    }
+    return realBatch(list);
+  };
+  const second = await w.order(ANA);
+  w.db.batch = realBatch;
+  assert.equal(second.status, 409);
+  assert.equal(second.body.code, 'OWN_PAYMENT_IN_PROGRESS');
+  assert.equal(w.row(first.body.order.public_code).status, 'open');
+  assert.equal(w.count(), 1);
+  assert.equal(w.events('superseded').length, 0);
+});
+
+test('con dos pedidos propios, sólo se reemplaza el que no tiene nada en marcha', async () => {
+  const w = world({ stock: 2, realClock: true });
   const k1 = key();
-  const first = await w.order(ANA, { key: k1 });
-  await w.payLink(first.body.order.public_code, k1);
-  delete w.env.MP_ACCESS_TOKEN;
+  const paying = await w.order(ANA, { key: k1 });
+  await w.payLink(paying.body.order.public_code, k1);
+  const idle = await w.order(ANA);
+  assert.equal(idle.status, 201);
+  assert.equal(w.open().length, 2);
+  // Pide una unidad más: 3 contra 2 de stock. Se reemplaza el que no tiene link.
+  const next = await w.order(ANA);
+  assert.equal(next.status, 201);
+  assert.equal(w.row(paying.body.order.public_code).status, 'open');
+  assert.equal(w.row(idle.body.order.public_code).status, 'cancelled');
+  assert.equal(w.openUnits(), 2);
+});
+
+test('el pedido anterior con link vence solo a la hora y entonces el pedido nuevo entra', async () => {
+  const w = world();
+  const first = await w.order(ANA);
+  w.set(first.body.order.public_code, { payment_preference_id: 'pref-1' });
   assert.equal((await w.order(ANA)).status, 409);
-  assert.deepEqual(w.open(), [first.body.order.public_code]);
+  w.later(61);
+  const second = await w.order(ANA);
+  assert.equal(second.status, 201);
 });
 
 test('misma persona en el mismo instante por el último ejemplar: queda un solo pedido abierto', async () => {
@@ -396,13 +499,13 @@ test('si el stock alcanza para los dos pedidos de la misma persona, no se reempl
   const second = await w.order(ANA);
   assert.equal(second.status, 201);
   assert.equal(w.open().length, 2);
-  assert.deepEqual(w.state.expired, []);
   assert.equal(w.events('superseded').length, 0);
-  // El tercero ya no entra sin reemplazar: 3 unidades contra 2 de stock.
+  // El tercero: 3 unidades contra 2 de stock. El primero tiene link y no se
+  // cancela; el segundo, sin nada en marcha, es el que se reemplaza.
   const third = await w.order(ANA);
   assert.equal(third.status, 201);
-  assert.equal(w.openUnits(), 1);
-  assert.deepEqual(w.open(), [third.body.order.public_code]);
+  assert.equal(w.openUnits(), 2);
+  assert.equal(w.row(first.body.order.public_code).status, 'open');
 });
 
 test('el candado cuenta los pedidos de la misma persona: 2 unidades propias y 1 ajena con stock 2', async () => {
@@ -447,22 +550,17 @@ test('el pedido reemplazado no se puede confirmar por transferencia', async () =
   assert.ok(result);
 });
 
-test('si el alta nueva falla después de vencer el link, el pedido anterior queda abierto y puede pedir otro link', async () => {
+test('si el alta nueva falla, el pedido anterior sin nada en marcha queda abierto', async () => {
   const w = world({ realClock: true });
   const k1 = key();
   const first = await w.order(ANA, { key: k1 });
-  await w.payLink(first.body.order.public_code, k1);
-  // El lote del pedido nuevo falla (base con problemas al escribir).
   const realBatch = w.db.batch;
   w.db.batch = async () => { throw new Error('D1_ERROR'); };
   const second = await w.order(ANA);
   w.db.batch = realBatch;
   assert.equal(second.status, 500);
   assert.deepEqual(w.open(), [first.body.order.public_code]);
-  assert.equal(w.row(first.body.order.public_code).payment_preference_id, null);
-  const again = await w.payLink(first.body.order.public_code, k1);
-  assert.equal(again.status, 200);
-  assert.equal(w.state.created, 2);
+  assert.equal((await w.payLink(first.body.order.public_code, k1)).status, 200);
 });
 
 test('reemplazar pedidos propios no toca importes ni pedidos de otras personas', async () => {
@@ -476,21 +574,10 @@ test('reemplazar pedidos propios no toca importes ni pedidos de otras personas',
   assert.equal(second.body.order.payable_total_uyu, first.body.order.payable_total_uyu);
 });
 
-test('expirePreference: pide a Mercado Pago vencer el link y no manda nada más', async () => {
-  const calls = [];
-  const fetch = async (url, opts) => { calls.push({ url, method: opts.method, body: JSON.parse(opts.body) }); return new Response('{}', { status: 200 }); };
-  const now = new Date('2026-11-25T15:00:00Z');
-  assert.deepEqual(await expirePreference('pref-9', 'token', now, { fetch }), { ok: true });
-  assert.equal(calls[0].method, 'PUT');
-  assert.match(calls[0].url, /\/checkout\/preferences\/pref-9$/);
-  assert.deepEqual(calls[0].body, { expires: true, expiration_date_to: '2026-11-25T15:00:00.000Z' });
-  assert.equal((await expirePreference('pref-9', 'token', now, { fetch: async () => new Response('{}', { status: 500 }) })).ok, false);
-  assert.equal((await expirePreference('pref-9', 'token', now, { fetch: async () => { throw new Error('red'); } })).ok, false);
-});
-
 test('mensaje de pago propio en curso: en positivo, sin emojis ni "sólo" o "únicamente"', () => {
   const message = ownPaymentMessage();
   assert.equal(/\p{Extended_Pictographic}/u.test(message), false);
   assert.equal(/s[oó]lo|únicamente/i.test(message), false);
   assert.match(message, /WhatsApp/);
+  assert.match(message, /pedido en curso/);
 });

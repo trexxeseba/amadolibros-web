@@ -33,17 +33,31 @@ async function clearClaim(db, orderId, claimValue, now) {
   } catch { /* best effort */ }
 }
 
+// El link sólo se guarda si el pedido sigue abierto: si lo cancelaron mientras
+// se generaba (por ejemplo, otro pedido lo reemplazó), no se entrega ni se anota.
 async function savePrefBatch(db, orderId, claimValue, prefId, now, appEnv) {
   const payload = JSON.stringify({ preference_id: prefId, environment: appEnv });
   return db.batch([
     db.prepare(
-      "UPDATE orders SET payment_preference_id = ?, payment_provider = 'mercadopago', updated_at = ? WHERE id = ? AND payment_preference_id = ?"
+      "UPDATE orders SET payment_preference_id = ?, payment_provider = 'mercadopago', updated_at = ? WHERE id = ? AND payment_preference_id = ? AND status = 'open'"
     ).bind(prefId, now.toISOString(), orderId, claimValue),
     db.prepare(
-      'INSERT INTO order_events (id, order_id, event_type, payload_json, created_at) VALUES (?, ?, ?, ?, ?)'
-    ).bind(crypto.randomUUID(), orderId, 'preference_created', payload, now.toISOString()),
+      'INSERT INTO order_events (id, order_id, event_type, payload_json, created_at) ' +
+      'SELECT ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM orders WHERE id = ? AND payment_preference_id = ?)'
+    ).bind(crypto.randomUUID(), orderId, 'preference_created', payload, now.toISOString(), orderId, prefId),
   ]);
 }
+
+async function isCancelled(db, orderId) {
+  try {
+    const row = await db.prepare('SELECT status FROM orders WHERE id = ?').bind(orderId).first();
+    return row?.status === 'cancelled';
+  } catch {
+    return false;
+  }
+}
+
+const cancelledResponse = () => json({ error: 'El pedido fue cancelado.', code: 'ORDER_CANCELLED' }, 410);
 
 export function createPreferenceHandler({
   mpClient = {
@@ -162,6 +176,7 @@ export function createPreferenceHandler({
         .bind(order.id)
         .first();
       const curPref = current?.payment_preference_id;
+      if (!curPref && await isCancelled(db, order.id)) return cancelledResponse();
       if (!curPref || curPref.startsWith('creating:')) {
         return json({ error: 'Pago en proceso. Intentá en unos segundos.', code: 'PREFERENCE_CREATING' }, 409);
       }
@@ -197,7 +212,8 @@ export function createPreferenceHandler({
       if (mpResult.code === 'MP_TIMEOUT') {
         const search = await mpClient.searchPreferenceByRef(publicCode, token, now, mpOpts);
         if (search.ok) {
-          await savePrefBatch(db, order.id, claimValue, search.id, now, config.appEnv);
+          const saved = await savePrefBatch(db, order.id, claimValue, search.id, now, config.appEnv);
+          if (saved[0].meta.changes !== 1 && await isCancelled(db, order.id)) return cancelledResponse();
           return json({ checkout_url: search.checkout_url });
         }
         await clearClaim(db, order.id, claimValue, now);
@@ -211,6 +227,7 @@ export function createPreferenceHandler({
     const batchResult = await savePrefBatch(db, order.id, claimValue, mpResult.id, now, config.appEnv);
 
     if (batchResult[0].meta.changes !== 1) {
+      if (await isCancelled(db, order.id)) return cancelledResponse();
       const current2 = await db
         .prepare('SELECT payment_preference_id FROM orders WHERE id = ?')
         .bind(order.id)
