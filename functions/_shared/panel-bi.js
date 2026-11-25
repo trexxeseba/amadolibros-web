@@ -25,6 +25,10 @@ const LEAD_DAYS = 15;
 export const CONSTANTE_MIN_VENTAS_365 = 2;
 export const COBERTURA_AVISO_DIAS = 90;
 const TRAMO_DOS_HASTA = 75; // hasta 1 cada 75 días el objetivo es 2 ejemplares
+// Aviso atrasado (22/11/2026): un libro con stock bajo que sigue sin compra
+// registrada 3 días después de la última venta (la venta que lo dejó en riesgo)
+// sube al principio del correo y lo dice.
+export const ATRASADO_DIAS = 3;
 const COMPRA_RECIENTE_DIAS = 60;
 
 async function rows(db, sql, ...args) {
@@ -185,15 +189,18 @@ export function constantesEnRiesgo(books, now = Date.now()) {
     const cobertura = b.stock > 0 ? b.stock * ritmo : 0;
     if (cobertura > COBERTURA_AVISO_DIAS) continue;
     const objetivo = stockObjetivo(ritmo, b.u90p);
+    const ultimaMs = b.lastOwnMs ?? b.lastMs ?? null;
+    const diasSinPedir = b.stock > 0 && ultimaMs ? Math.max(0, Math.floor((now - ultimaMs) / DAY)) : null;
     out.push({ isbn: b.isbn, title: b.title, clase: b.clase ?? null, u365p: b.u365p, u90p: b.u90p, u30p: b.u30p ?? 0, u90: b.u90 ?? b.u90p, ritmo, stock: b.stock, cobertura, objetivo,
       pedir: Math.max(1, objetivo - b.stock), avgPrice: b.avgPrice ?? null, lastMs: b.lastMs ?? null, lastOwnMs: b.lastOwnMs ?? null,
-      reciente: (b.lastOwnMs ?? b.lastMs) ? now - (b.lastOwnMs ?? b.lastMs) <= AGOTADO_RECIENTE_DIAS * DAY : false });
+      reciente: ultimaMs ? now - ultimaMs <= AGOTADO_RECIENTE_DIAS * DAY : false,
+      diasSinPedir, atrasado: diasSinPedir != null && diasSinPedir >= ATRASADO_DIAS });
   }
   // Primero los que todavía tienen un ejemplar (los que se pueden salvar), del que
   // menos días de venta tiene al que más; después los agotados, el que se agotó
   // más recién primero. En los dos grupos, los que vendieron en los últimos
   // 4 meses van antes que los que llevan meses sin movimiento.
-  return out.sort((a, b) => (b.stock > 0) - (a.stock > 0) || (b.reciente - a.reciente)
+  return out.sort((a, b) => (b.stock > 0) - (a.stock > 0) || (b.atrasado - a.atrasado) || (b.reciente - a.reciente)
     || (a.stock > 0 ? a.cobertura - b.cobertura || b.u365p - a.u365p
       : (b.lastOwnMs ?? b.lastMs ?? 0) - (a.lastOwnMs ?? a.lastMs ?? 0) || b.u365p - a.u365p));
 }
@@ -284,8 +291,12 @@ export function detalleReposicion(b, faltan = []) {
   const prov = supplierLabel(b.costoProveedor ?? b.compra?.supplier);
   const costo = b.costo > 0 ? ` Costo de la última compra: ${pesos(b.costo)}${prov ? ` (${prov}, al cambio de hoy)` : ''}.` : '';
   if (b.sinIdentidad) return `${estado}. ${ventas}. La venta no tiene ISBN identificado: no puedo cruzar compras ni competencia, revisalo en el panel.`;
+  // Atrasado: sólo se afirma "sin pedido" si se pudieron leer las compras (los que vienen en camino no llegan acá).
+  const atrasado = b.atrasado && b.diasSinPedir != null
+    ? ` ATRASADO: hace ${diasTxt(b.diasSinPedir)} que quedó así${b.compras ? ' y no hay pedido registrado' : ': revisá si ya lo pediste'}.`
+    : '';
   const aviso = b.noConstante ? ` Con ${b.u365p} ${b.u365p === 1 ? 'venta' : 'ventas'} en 12 meses no entra en el aviso automático: decidí vos si lo querés reponer.` : '';
-  return `${estado}. ${ventas}.${meses}${aviso} Pedí ${b.pedir}.${costo} ${comprasTexto(b.compras, faltan, b.stock)}. ${mercado.charAt(0).toUpperCase()}${mercado.slice(1)}.`;
+  return `${estado}.${atrasado} ${ventas}.${meses}${aviso} Pedí ${b.pedir}.${costo} ${comprasTexto(b.compras, faltan, b.stock)}. ${mercado.charAt(0).toUpperCase()}${mercado.slice(1)}.`;
 }
 
 // Los mismos datos de detalleReposicion, por separado, para que el correo los
