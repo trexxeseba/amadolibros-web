@@ -431,4 +431,3 @@ test('checkout rejects invalid phone syntax before creating any order', () => {
     assert.equal(validateBody(body), null);
   }
 });
-

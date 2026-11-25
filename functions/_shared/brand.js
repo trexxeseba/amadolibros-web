@@ -231,4 +231,3 @@ function escapeAttr(str) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 }
-

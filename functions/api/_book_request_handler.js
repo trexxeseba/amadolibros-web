@@ -203,4 +203,3 @@ export function createBookRequestHandler({ getNow = () => new Date(), random = (
         }
     };
 }
-

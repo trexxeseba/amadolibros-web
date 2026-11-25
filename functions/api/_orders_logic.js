@@ -487,4 +487,3 @@ export function generatePublicCode(now = new Date()) {
 export function transferProductsTotalForSnapshot(snapshotItems, now = new Date()) {
   return cappedTransferProductsTotal(snapshotItems, now);
 }
-

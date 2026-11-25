@@ -106,8 +106,37 @@ const VERIFIED_SAME_COVER = [
   [
     "3997f672ba94ea0079c3cded7be40710c2663b8e5a321fcc53cdeb71af504aa8",
     "00f841705833de505263123a2953d30c9df2ba1865cafa4d165cc3806b026848"
+  ],
+  [
+    "ece4078548ecde90a84749335494992976fe9f4b7bc0457be5dc28368c357591",
+    "b4484c6327c15054539184d1abacbed2e5e6af3ec638b2e77da76f2623077913"
   ]
 ];
+const VERIFIED_SAME_SOURCE = [
+  [
+    "838985-MLU71032118493_082023",
+    "850409-MLA99449030848_112025"
+  ],
+  [
+    "639753-MLM44230018318_122020",
+    "629997-MLU76969344477_062024",
+    "616721-MLU76763732036_062024",
+    "861723-MLU77522731597_072024"
+  ],
+  [
+    "797423-MLU77952868116_082024",
+    "618901-MLA80075796524_102024"
+  ],
+  [
+    "997506-MLU77952882038_082024",
+    "605329-MLU78886666110_092024"
+  ],
+  [
+    "656822-MLU70995262702_082023",
+    "768872-MLU53150266434_012023"
+  ]
+];
+const sourceIdentity = new Map(VERIFIED_SAME_SOURCE.flatMap(group => group.map(id => [id, group[0]])));
 const coverIdentity = new Map(VERIFIED_SAME_COVER.flatMap(group => group.map(hash => [hash, group[0]])));
 
 export function imageContentHash(source) {
@@ -125,7 +154,7 @@ export function cleanBookGallery(sources = []) {
   return sources.filter(source => {
     if (!source || !isBookGalleryImage(source)) return false;
     const hash = imageContentHash(source);
-    const identity = coverIdentity.get(hash) || hash || mlImageIdentity(source) || source;
+    const identity = coverIdentity.get(hash) || hash || sourceIdentity.get(mlImageIdentity(source)) || mlImageIdentity(source) || source;
     if (seen.has(identity)) return false;
     seen.add(identity);
     return true;

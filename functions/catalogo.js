@@ -1195,4 +1195,3 @@ ${SITE_HEADER_SCRIPT}
         },
     });
 }
-

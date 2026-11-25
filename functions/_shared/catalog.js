@@ -357,4 +357,3 @@ export async function fetchPausedItem(ctx, id) {
     }
     return null;
 }
-

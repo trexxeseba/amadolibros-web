@@ -103,4 +103,3 @@ test('una falla de red no confirma ni cambia de página y deja reintentar', asyn
   await flow.submit();
   assert.equal(flow.calls.length, 2);
 });
-

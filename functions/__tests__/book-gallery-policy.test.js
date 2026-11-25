@@ -25,3 +25,10 @@ test('identical content is deduplicated across positions but unknown interiors a
   const interior = '/book-cover/MLU123/cover-2.jpg';
   assert.deepEqual(cleanBookGallery([front, same, interior]), [front, interior]);
 });
+
+test('verified source aliases also collapse before a cached copy is resolved', () => {
+  const front = 'https://http2.mlstatic.com/D_639753-MLM44230018318_122020-O.jpg';
+  const duplicate = 'https://http2.mlstatic.com/D_NQ_NP_861723-MLU77522731597_072024-F.jpg';
+  const interior = 'https://http2.mlstatic.com/D_999999-MLU99999999999_012023-O.jpg';
+  assert.deepEqual(cleanBookGallery([front, duplicate, interior]), [front, interior]);
+});

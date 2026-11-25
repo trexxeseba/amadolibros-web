@@ -330,4 +330,3 @@ test('25. presentación discreta: no reutiliza la paleta de error ni compite con
   assert.doesNotMatch(cssBlock, /background/, 'debe seguir siendo texto discreto, sin fondo propio');
   assert.match(cssBlock, /color:\s*var\(--ink-2\)/, 'mismo tono secundario que checkout-reassurance/checkout-policy-links');
 });
-

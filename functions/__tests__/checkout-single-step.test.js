@@ -367,4 +367,3 @@ test('carrito.astro: el borrador se escribe ya al salir, al irse y al pasar a se
     /function saveDraft\(\) \{\s*\n\s*if \(draftSaveTimer !== null\) \{\s*\n\s*clearTimeout\(draftSaveTimer\);/,
   );
 });
-

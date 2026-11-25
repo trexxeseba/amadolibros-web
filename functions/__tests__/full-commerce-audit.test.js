@@ -147,4 +147,3 @@ test('fractional supplier prices use the same integer UYU amount in feed, page a
   assert.equal(catalog.items[0].price, 1467.75);
   assert.equal(expectedFeedPrice(1467.75, FUERA_DE_PROMO), 1468);
 });
-

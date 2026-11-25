@@ -29,4 +29,3 @@ test('la política conserva costos, cobertura y condiciones verificables', () =>
   assert.match(policy, /sujeta a disponibilidad, zona, horario y confirmación por WhatsApp/);
   assert.match(policy, /href=\{shippingWhatsApp\}/);
 });
-

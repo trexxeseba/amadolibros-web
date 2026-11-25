@@ -486,4 +486,3 @@ test('30. el respaldo humano se centra en ayudar a completar la compra', () => {
   assert.doesNotMatch(CARRITO, /Te atendemos personalmente\./);
   assert.doesNotMatch(CARRITO, /si algo no funciona como esperabas/i);
 });
-
