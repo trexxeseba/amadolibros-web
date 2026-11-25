@@ -14,7 +14,7 @@ test('resumen: cuenta por estado y por tamaño de brecha', () => {
     { estado: 'a', precio: 1000, sugerido: 950, brecha_pct: 5 }, { estado: 'a', precio: 1000, sugerido: 800, brecha_pct: 20 },
     { estado: 'b', precio: 1000, sugerido: 600, brecha_pct: 40 }, { estado: 'b', precio: 1000, sugerido: 1200, brecha_pct: -20 }, { estado: '', precio: 1000, sugerido: null, brecha_pct: null },
   ]);
-  assert.deepEqual(r, { leidas: 5, por_estado: { a: 2, b: 2, sin_estado: 1 }, con_sugerido: 4, mas_caras_que_el_sugerido: 3, brecha_mediana_pct: 20, brecha_hasta_10: 1, brecha_10_a_25: 1, brecha_mas_de_25: 1 });
+  assert.deepEqual(r, { con_interno: 0, mas_caras_que_el_interno: 0, leidas: 5, por_estado: { a: 2, b: 2, sin_estado: 1 }, con_sugerido: 4, mas_caras_que_el_sugerido: 3, brecha_mediana_pct: 20, brecha_hasta_10: 1, brecha_10_a_25: 1, brecha_mas_de_25: 1 });
 });
 
 test('precio interno y externo por separado: la brecha interna ignora las otras tiendas', () => {
