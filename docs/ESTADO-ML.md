@@ -8,7 +8,7 @@ Reglas de este archivo:
 - Prioridad fija: 1) avisos de riesgo de cuenta, 2) precios, 3) cupones y promos, 4) atributos, 5) reposición, 6) el resto. Un frente por vez.
 - Si un número cambia respecto del informe anterior, se explica en una línea.
 
-Última actualización: 25/11/2026 20:30 (Montevideo).
+Última actualización: 25/11/2026 21:30 (Montevideo).
 
 ## Números del día
 
@@ -16,7 +16,7 @@ Reglas de este archivo:
 |---|---|---|---|
 | Para competir | 6 | Pantalla Publicaciones de ML | Primera medición en este archivo (a la mañana eran 4: entraron 2) |
 | Sin stock | 276 | Pantalla Publicaciones de ML | Primera medición |
-| Fichas con faltantes | 4.134 | Lectura por API del 24/11 | Primera medición; ML muestra 5.936 "objetivos de calidad" (ver frente 4) |
+| Fichas con objetivos de calidad | 3.523 de 3.776 leídas (características: 1.446) | API, acción calidad, 25/11 | Cambia la medida: antes 4.134 contaba atributos faltantes sobre las activas; ML (5.936) cuenta también video, stock, fotos y envío |
 | Gasto de Ads del mes | 40–45 % de 60.000 = entre 24.000 y 27.000 | API, acción ads-gasto, 25/11 | Primera medición |
 
 ## Frentes abiertos
@@ -27,7 +27,7 @@ Reglas de este archivo:
 | 2a | Precios: para competir | 6 en pantalla. Precio Ganador corre solo cada 2 horas en modo real y el paso que cambia precios termina bien. Desde el 24/11 cada corrida figuraba fallida porque la auditoría se caía con el 403 de ML; se arregla para que no la tumbe | Verificar la primera corrida en verde | Claude | 26/11 |
 | 2b | Precios: sin catálogo | Lista de las 400 más vistas armada. Revisadas 20 + 12 (25/11). Hay 380 pendientes; 43 de ellas tienen 10 visitas o más | La rutina F las revisa desde el 26/11 | Claude | 26/11 |
 | 3 | Cupón $400 OFF "Seguidores 400" | ACTIVO por API (estado started, vence 28/11 23:59). Comunicación del canal de difusión "Enviando" desde las 17:00 | Medir vistas, clics y ventas | Claude | 26/11 |
-| 4 | Atributos de fichas | 4.134 con faltantes (edición 3.427, año 2.012, tapa 1.315, páginas 1.245, género 1.031). Plan por ISBN mergeado (#806): 584 con propuesta firme, 18 de aviso único que se cargan por API. Todavía no se cargó ninguna | Construir la carga diaria; desglosar los 5.936 de ML en la pantalla de calidad | Claude | 26/11 |
+| 4 | Atributos de fichas | Desglose por API del 25/11 (`/item/{id}/performance`, acción calidad de Precio Ganador): de 6.816 activas se pudieron leer 3.776 (las otras 3.040 y las 10.516 pausadas responden 400). De las 3.776, 3.523 tienen objetivos: video 3.376, 2 o más unidades de stock 2.196, características principales 1.446, 3 fotos o más 433, envío gratis 122, promoción 120, catálogo 25, anuncio pausado 5, título 3. Lectura anterior del 24/11: 4.134 con faltantes (edición 3.427, año 2.012, tapa 1.315, páginas 1.245, género 1.031). Plan por ISBN mergeado (#806): 584 con propuesta firme, 18 de aviso único que se cargan por API. Todavía no se cargó ninguna | Construir la carga diaria de características (rutina E); averiguar por qué 3.040 activas responden 400 | Claude | 26/11 |
 | 5 | Reposición | 276 sin stock, 189 pausadas que vendieron. Cuenta de Arkano y de los títulos con ventas repetidas sin hacer | Correr el motor de reposición | Claude | 27/11 |
 | 6 | Ads | El código tiene tope 60.000 (`agentes-ml/src/guardas.mjs`), Seba fijó 30.000. Las campañas activas suman 1.561 por día. Decisión de Seba (25/11): mantener hasta el 1/12; noviembre cierra estimado entre 32.000 y 35.000 | Recortar campañas el 1/12 y bajar el tope del código | Claude | 1/12 |
 | 7 | Bloqueo 403 de ML (`/products/{id}/items`) | Sigue: las corridas de Precio Ganador del 25/11 hasta las 19:08 recibieron 403 | Reprobar el 26/11 con una consulta | Claude | 26/11 |
