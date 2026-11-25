@@ -1,0 +1,106 @@
+name: Precios Amado
+
+# Competencia, alertas de catálogo y oportunidades de subida de Amado Libros.
+# Sólo lee Mercado Libre: no cambia precios ni publicaciones.
+#
+# Tres corridas por día en America/Montevideo (UTC-3, sin horario de verano):
+# 08:40, 13:10 y 18:40. Resumen por correo en la primera corrida del día; en las
+# otras, correo sólo si aparece un caso nuevo o un cambio.
+#
+# El repo es público y sus logs también: el script imprime sólo conteos. El
+# reporte y el estado (historial, avisos ya mandados) viven en el bucket privado
+# de R2 amadolibros-reports, nunca como artefacto de Actions.
+on:
+  schedule:
+    - cron: '40 11 * * *'
+    - cron: '10 16 * * *'
+    - cron: '40 21 * * *'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Máximo de publicaciones (vacío = todas)'
+        required: false
+      sin_correo:
+        description: 'No mandar correo'
+        type: boolean
+        default: false
+
+concurrency:
+  group: precios-amado
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PRECIOS_AMADO_HOME: ${{ github.workspace }}/.precios-home
+      PRECIOS_TOKEN_SOURCE: worker
+      BUCKET: amadolibros-reports
+      WRANGLER: npx --yes wrangler@4.107.0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Tests
+        run: node --test precios-amado/test/*.test.mjs
+
+      # Las pruebas desde la rama usan otro prefijo: nunca tocan el estado real.
+      - name: Elegir prefijo de R2
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then echo "PREFIX=precios-amado-pruebas" >> "$GITHUB_ENV"; else echo "PREFIX=precios-amado" >> "$GITHUB_ENV"; fi
+
+      # Distinguir "no hay estado" (primera corrida) de "no se pudo leer": en el
+      # segundo caso se corta acá, antes de pisar el estado con uno vacío.
+      - name: Traer el estado anterior (R2 privado)
+        id: restore
+        shell: bash
+        run: |
+          mkdir -p "$PRECIOS_AMADO_HOME"
+          if out=$($WRANGLER r2 object get "$BUCKET/$PREFIX/state.tgz" --file state.tgz --remote 2>&1); then
+            tar -xzf state.tgz -C "$PRECIOS_AMADO_HOME" && echo "Estado anterior restaurado"
+          elif echo "$out" | grep -qiE 'does not exist|not found|NoSuchKey|10007'; then
+            echo "Sin estado anterior: primera corrida"
+          else
+            echo "No se pudo leer el estado anterior de R2; se corta para no perderlo."
+            exit 1
+          fi
+          # Configuración comercial opcional (techos): se guarda en R2, no en el repo.
+          $WRANGLER r2 object get "$BUCKET/precios-amado/config.json" --file "$PRECIOS_AMADO_HOME/config.json" --remote >/dev/null 2>&1 || rm -f "$PRECIOS_AMADO_HOME/config.json"
+
+      - name: Correr Precios Amado
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REPORT_EMAIL_FROM: Amado Libros <web@notificaciones.amadolibros.com>
+          PRECIOS_EMAIL_TO: sebastian@amadolibros.com
+          IN_LIMIT: ${{ inputs.limit }}
+          IN_SIN_CORREO: ${{ inputs.sin_correo }}
+        shell: bash
+        run: |
+          ARGS=()
+          if [[ "$IN_LIMIT" =~ ^[0-9]+$ ]]; then ARGS+=(--limit "$IN_LIMIT"); fi
+          if [ "$IN_SIN_CORREO" = "true" ] || [ "$GITHUB_EVENT_NAME" = "push" ]; then ARGS+=(--sin-correo); fi
+          node precios-amado/src/run.mjs "${ARGS[@]}"
+
+      - name: Guardar estado y reporte (R2 privado)
+        if: always() && steps.restore.outcome == 'success'
+        shell: bash
+        run: |
+          [ -d "$PRECIOS_AMADO_HOME/state" ] || exit 0
+          rm -f "$PRECIOS_AMADO_HOME/state/lock"
+          tar -czf state.tgz -C "$PRECIOS_AMADO_HOME" state
+          $WRANGLER r2 object put "$BUCKET/$PREFIX/state.tgz" --file state.tgz --remote >/dev/null
+          if [ -f "$PRECIOS_AMADO_HOME/reportes/ultimo.html" ]; then
+            $WRANGLER r2 object put "$BUCKET/$PREFIX/ultimo.html" --file "$PRECIOS_AMADO_HOME/reportes/ultimo.html" --content-type 'text/html; charset=utf-8' --remote >/dev/null
+            $WRANGLER r2 object put "$BUCKET/$PREFIX/reportes/$(date -u +%Y-%m-%dT%H%M)-${GITHUB_RUN_ID}.html" --file "$PRECIOS_AMADO_HOME/reportes/ultimo.html" --content-type 'text/html; charset=utf-8' --remote >/dev/null
+          fi
+          echo "Estado y reporte guardados en R2 ($PREFIX, $(du -sh state.tgz | cut -f1) de estado)"

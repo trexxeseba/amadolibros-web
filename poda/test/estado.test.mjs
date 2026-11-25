@@ -104,3 +104,28 @@ test('lista de transparencia: con gasto de 150 o más que no se pausan, con el m
   assert.match(m['1'], /Menos de 5 clics/); assert.match(m['2'], /Venta atribuida/); assert.match(m['4'], /PAUSED/);
   assert.equal(m['3'], undefined, 'el que se pausa no está en esta lista');
 });
+
+test('propuesta de reactivar por suba de precio (caso Biblias 14/11) vuelve a pausado', () => {
+  const registro = [{ ad_group_id: '1', external_id: 'MLU1', estado: 'propuesta_reactivar', origen: 'poda', regla_reactivar: 6, precio_lista: 3321, fecha_pausa: '2026-11-13', fecha_reactivar_propuesta: '2026-11-14' }];
+  const r = calcularDia({ hoy, registro, grupos: mapa(grupo(1, { estado: 'PAUSED', precio: 3700, precioTope: 3700, gasto: 391, clics: 16 })) });
+  assert.equal(r.listas.reactivar.length, 0);
+  assert.equal(r.cambios[0].fila.estado, 'pausado');
+});
+
+test('propuesta de reactivar por baja de precio se mantiene', () => {
+  const registro = [{ ad_group_id: '1', external_id: 'MLU1', estado: 'propuesta_reactivar', origen: 'poda', regla_reactivar: 6, precio_lista: 3321, fecha_pausa: '2026-11-13', fecha_reactivar_propuesta: '2026-11-14' }];
+  const r = calcularDia({ hoy, registro, grupos: mapa(grupo(1, { estado: 'PAUSED', precio: 2900, precioTope: 2900 })) });
+  assert.equal(r.listas.reactivar.length, 1);
+});
+
+test('venta cara: se propone pausar y, ya pausado, sus ventas de antes no lo reactivan', () => {
+  const g = grupo(1, { precio: 2150, precioTope: 2150, gasto: 1927, clics: 165, cpc: 12, ventasAtribuidas: 3 });
+  const r1 = calcularDia({ hoy, grupos: mapa(g) });
+  assert.equal(r1.listas.pausar.length, 1);
+  assert.match(r1.cambios[0].fila.motivo, /^Venta cara/);
+  const registro = [{ ...r1.cambios[0].fila, estado: 'pausado', fecha_pausa: hoy }];
+  const r2 = calcularDia({ hoy, registro, grupos: mapa({ ...g, estado: 'PAUSED', ordenesDesde: () => 0 }) });
+  assert.equal(r2.listas.reactivar.length, 0);
+  const r3 = calcularDia({ hoy, registro, grupos: mapa({ ...g, estado: 'PAUSED', ordenesDesde: () => 1 }) });
+  assert.equal(r3.listas.reactivar.length, 1);
+});
