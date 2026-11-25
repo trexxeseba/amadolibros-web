@@ -53,9 +53,23 @@ misma cuenta de Mercado Pago cobra las ventas de Mercado Libre: esas se ignoran.
 
 ## Cómo ver el estado de la conciliación
 
-La última corrida queda en KV, clave `payments-reconcile:last:v1`, con la hora,
-el resultado y las cantidades (revisados, de la web, candidatos, aplicados, sin
-asignar). El endpoint responde lo mismo a quien lo llama.
+La última corrida queda en la base de pedidos, tabla `payment_reconcile_runs`
+(una fila por entorno y cuenta), con la hora, el resultado y las cantidades
+(revisados, de la web, candidatos, aplicados, sin asignar). El endpoint
+responde lo mismo a quien lo llama.
+
+```sql
+SELECT scope, started_at, finished_at, status, summary_json FROM payment_reconcile_runs;
+```
+
+### Freno de frecuencia y llamados simultáneos
+
+El turno de cada corrida se toma en esa misma tabla con una sentencia
+condicional: corre como mucho una vez cada 4 minutos y, de varios llamados
+simultáneos, pasa uno solo. No depende de KV. Si la base no confirma el turno,
+la corrida no consulta a Mercado Pago y responde 503. Una corrida que quedó
+colgada libera el turno sola al pasar los 4 minutos. Una vista previa tiene su
+propio turno y no frena a producción.
 
 Consulta de incidentes abiertos:
 

@@ -15,6 +15,12 @@
 // Lo dispara el Worker cada 5 minutos. El endpoint es público pero inofensivo:
 // no recibe datos, corre como mucho una vez cada 4 minutos y responde sólo
 // cantidades.
+//
+// El turno se toma en la base de pedidos con una sentencia condicional
+// (payment_reconcile_runs): de dos llamados simultáneos pasa uno solo. Si el
+// turno no se puede tomar (base caída, tabla ausente), no se consulta a
+// Mercado Pago: se responde 503. El turno es por entorno y cuenta: una vista
+// previa no le saca el turno a producción.
 
 import { resolveConfig } from './_env_config.js';
 import {
@@ -25,7 +31,6 @@ import {
 import { createPaymentProcessor, isWebOrderReference } from './_mp_webhook_handler.js';
 import { notifyPendingIncidents as defaultNotifyPending } from './_payment_incidents.js';
 
-export const RECONCILE_STATE_KEY = 'payments-reconcile:last:v1';
 const MIN_INTERVAL_MS = 4 * 60 * 1000;
 const PAGE_SIZE = 50;
 const MAX_PAGES = 6;
@@ -63,6 +68,24 @@ async function loadKnownIncidents(db, paymentIds) {
   return known;
 }
 
+export function reconcileScope(config) {
+  return `${config.appEnv}:${config.mpCollectorId}`;
+}
+
+/**
+ * Toma el turno de la corrida. Devuelve true sólo para un llamado por ventana:
+ * la fila se inserta o se pisa únicamente si la corrida anterior empezó hace
+ * más de MIN_INTERVAL_MS. Cualquier error se propaga: sin turno no se corre.
+ */
+async function claimRun(db, scope, now) {
+  const result = await db.prepare(
+    "INSERT INTO payment_reconcile_runs (scope,started_at,finished_at,status,summary_json) VALUES (?,?,NULL,'running',NULL) " +
+    "ON CONFLICT(scope) DO UPDATE SET started_at=excluded.started_at, finished_at=NULL, status='running', summary_json=NULL " +
+    'WHERE payment_reconcile_runs.started_at <= ?'
+  ).bind(scope, now.toISOString(), new Date(now.getTime() - MIN_INTERVAL_MS).toISOString()).run();
+  return Number(result?.meta?.changes) === 1;
+}
+
 /** ¿El pago de Mercado Pago no cierra con lo que dice la base? */
 export function needsProcessing(payment, order) {
   if (payment.status === 'approved') {
@@ -95,22 +118,20 @@ export function createPaymentsReconcileHandler({
 
     const accessToken = env?.MP_ACCESS_TOKEN;
     const db = env?.ORDERS_DB;
-    const kv = env?.AMADO_KV;
     if (!accessToken || !db) return json({ error: 'Servicio no disponible.' }, 503);
-    // En producción el freno de frecuencia es obligatorio: sin él, cualquiera
-    // podría hacer que la web consulte a Mercado Pago a repetición.
-    if (config.isProduction && !kv) return json({ error: 'Servicio no disponible.' }, 503);
 
+    // Freno de frecuencia y de simultaneidad. Sin turno confirmado no se
+    // consulta a Mercado Pago: ni por error de la base ni por duda.
     const now = getNow();
-    if (kv) {
-      try {
-        const last = JSON.parse(await kv.get(RECONCILE_STATE_KEY) || 'null');
-        if (last?.started_at && now.getTime() - Date.parse(last.started_at) < MIN_INTERVAL_MS) {
-          return json({ ok: true, skipped: true });
-        }
-      } catch { /* estado ilegible: se corre */ }
-      await kv.put(RECONCILE_STATE_KEY, JSON.stringify({ started_at: now.toISOString(), status: 'running' })).catch(() => {});
+    const scope = reconcileScope(config);
+    let claimed = false;
+    try {
+      claimed = await claimRun(db, scope, now);
+    } catch (error) {
+      console.error('[payments-reconcile] no se pudo tomar el turno', error?.name || 'Error');
+      return json({ error: 'Servicio no disponible.' }, 503);
     }
+    if (!claimed) return json({ ok: true, skipped: true });
 
     const summary = { revisados: 0, de_la_web: 0, candidatos: 0, aplicados: 0, sin_asignar: 0, reintentar: 0, avisos_reenviados: 0 };
     let status = 'ok';
@@ -160,10 +181,13 @@ export function createPaymentsReconcileHandler({
       console.error('[payments-reconcile] falló la corrida', error?.name || 'Error');
     }
 
-    if (kv) {
-      await kv.put(RECONCILE_STATE_KEY, JSON.stringify({
-        started_at: now.toISOString(), finished_at: getNow().toISOString(), status, ...summary,
-      })).catch(() => {});
+    // Resultado de la corrida. Sólo si el turno sigue siendo de esta corrida.
+    try {
+      await db.prepare(
+        'UPDATE payment_reconcile_runs SET finished_at=?, status=?, summary_json=? WHERE scope=? AND started_at=?'
+      ).bind(getNow().toISOString(), status, JSON.stringify(summary), scope, now.toISOString()).run();
+    } catch (error) {
+      console.error('[payments-reconcile] no se pudo anotar el resultado', error?.name || 'Error');
     }
     return json({ ok: status === 'ok', status, ...summary }, status === 'ok' ? 200 : 502);
   };

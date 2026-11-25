@@ -10,7 +10,7 @@ import { createHmac, randomUUID } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { createOrdersHandler } from '../_orders_handler.js';
 import { createMpWebhookHandler, isWebOrderReference } from '../_mp_webhook_handler.js';
-import { createPaymentsReconcileHandler, needsProcessing, RECONCILE_STATE_KEY } from '../_payments_reconcile_handler.js';
+import { createPaymentsReconcileHandler, needsProcessing } from '../_payments_reconcile_handler.js';
 import { buildIncidentEmail, notifyPendingIncidents, reportIncident } from '../_payment_incidents.js';
 import { searchRecentPayments } from '../_mp_client.js';
 import { confirmTransfer } from '../../_shared/panel-transfer.js';
@@ -346,7 +346,10 @@ test('si la búsqueda de Mercado Pago falla, responde 502 y deja el estado anota
   w.state.searchOk = false;
   const run = await w.reconcile();
   assert.equal(run.status, 502);
-  assert.equal(JSON.parse(w.kvStore.get(RECONCILE_STATE_KEY)).status, 'mp_search_failed');
+  const row = w.sqlite.prepare('SELECT scope,status,finished_at FROM payment_reconcile_runs').get();
+  assert.equal(row.status, 'mp_search_failed');
+  assert.equal(row.scope, `production:${COLLECTOR}`);
+  assert.ok(row.finished_at);
 });
 
 test('la respuesta de la conciliación trae sólo cantidades', async () => {
@@ -359,7 +362,7 @@ test('la respuesta de la conciliación trae sólo cantidades', async () => {
   for (const value of Object.values(run.body)) assert.ok(['number', 'boolean', 'string'].includes(typeof value));
 });
 
-test('conciliación: sólo POST, host permitido y, en producción, con freno obligatorio', async () => {
+test('conciliación: sólo POST y host permitido; no depende de KV', async () => {
   const w = world();
   const handler = createPaymentsReconcileHandler({ mpClient: { searchRecentPayments: async () => ({ ok: true, results: [] }) } });
   const get = await handler({ request: new Request(HOST + '/api/payments/reconcile'), env: w.env });
@@ -367,7 +370,104 @@ test('conciliación: sólo POST, host permitido y, en producción, con freno obl
   const otherHost = await handler({ request: new Request('https://evil.example/api/payments/reconcile', { method: 'POST' }), env: w.env });
   assert.equal(otherHost.status, 400);
   const noKv = await handler({ request: new Request(HOST + '/api/payments/reconcile', { method: 'POST' }), env: { ...w.env, AMADO_KV: undefined } });
-  assert.equal(noKv.status, 503);
+  assert.equal(noKv.status, 200);
+  const again = await handler({ request: new Request(HOST + '/api/payments/reconcile', { method: 'POST' }), env: { ...w.env, AMADO_KV: undefined } });
+  assert.equal((await again.json()).skipped, true);
+});
+
+// ── Hallazgos de la revisión del 25/11: simultaneidad y caída del freno ─────
+
+const post = (handler, env) => handler({ request: new Request(HOST + '/api/payments/reconcile', { method: 'POST' }), env })
+  .then(async r => ({ status: r.status, body: await r.json() }));
+
+function slowSearch(state) {
+  let calls = 0;
+  return {
+    calls: () => calls,
+    searchRecentPayments: async (_token, { offset = 0, limit = 50 } = {}) => {
+      calls++;
+      await new Promise(resolve => setTimeout(resolve, 15));
+      return { ok: true, results: state.search.slice(offset, offset + limit) };
+    },
+  };
+}
+
+test('llamados simultáneos: de cinco, corre uno solo y Mercado Pago se consulta una vez', async () => {
+  const w = world();
+  const mp = slowSearch(w.state);
+  const handler = createPaymentsReconcileHandler({ mpClient: mp, getNow: () => w.state.now, notifyPending: async () => ({ sent: 0 }) });
+  const runs = await Promise.all(Array.from({ length: 5 }, () => post(handler, w.env)));
+  assert.equal(runs.filter(r => r.body.skipped === true).length, 4);
+  assert.equal(runs.filter(r => r.body.skipped === undefined && r.status === 200).length, 1);
+  assert.equal(mp.calls(), 1);
+  assert.equal(w.sqlite.prepare('SELECT count(*) n FROM payment_reconcile_runs').get().n, 1);
+});
+
+test('llamados simultáneos con un pago por recuperar: el pedido se paga una vez y la venta se avisa una vez', async () => {
+  const w = world();
+  const order = await w.order();
+  w.payment(81, { transaction_amount: order.payable_total_uyu, external_reference: order.public_code });
+  w.state.search.push({ id: '81', status: 'approved', collector_id: COLLECTOR, external_reference: order.public_code });
+  const runs = await Promise.all([w.reconcile(), w.reconcile(), w.reconcile()]);
+  assert.equal(runs.reduce((sum, r) => sum + (r.body.aplicados || 0), 0), 1);
+  assert.equal(runs.filter(r => r.body.skipped === true).length, 2);
+  assert.equal(w.state.sales, 1);
+  assert.equal(w.state.getPaymentCalls, 1);
+  assert.equal(w.sqlite.prepare("SELECT count(*) n FROM order_events WHERE event_type='payment_reconciled'").get().n, 1);
+});
+
+test('KV caído o ausente no afloja el freno: el turno vive en la base', async () => {
+  const w = world();
+  const mp = slowSearch(w.state);
+  const handler = createPaymentsReconcileHandler({ mpClient: mp, getNow: () => w.state.now, notifyPending: async () => ({ sent: 0 }) });
+  const brokenKv = { get: async () => null, put: async () => { throw new Error('KV_WRITE_FAILURE'); } };
+  for (const AMADO_KV of [brokenKv, { get: async () => { throw new Error('KV_READ_FAILURE'); }, put: async () => {} }, undefined]) {
+    await post(handler, { ...w.env, AMADO_KV });
+  }
+  assert.equal(mp.calls(), 1);
+});
+
+test('si el turno no se puede tomar (base caída), responde 503 y no consulta a Mercado Pago', async () => {
+  const w = world();
+  const mp = slowSearch(w.state);
+  const handler = createPaymentsReconcileHandler({ mpClient: mp, getNow: () => w.state.now, notifyPending: async () => ({ sent: 0 }) });
+  const failingDb = { ...w.db, prepare: sql => (sql.includes('payment_reconcile_runs') ? { bind: () => ({ run: async () => { throw new Error('D1_ERROR'); } }) } : w.db.prepare(sql)) };
+  for (let i = 0; i < 3; i++) {
+    const run = await post(handler, { ...w.env, ORDERS_DB: failingDb });
+    assert.equal(run.status, 503);
+  }
+  assert.equal(mp.calls(), 0);
+});
+
+test('si la base no confirma el turno (respuesta sin cantidad de filas), no se corre', async () => {
+  const w = world();
+  const mp = slowSearch(w.state);
+  const handler = createPaymentsReconcileHandler({ mpClient: mp, getNow: () => w.state.now, notifyPending: async () => ({ sent: 0 }) });
+  const vagueDb = { ...w.db, prepare: sql => (sql.includes('INSERT INTO payment_reconcile_runs') ? { bind: () => ({ run: async () => ({}) }) } : w.db.prepare(sql)) };
+  const run = await post(handler, { ...w.env, ORDERS_DB: vagueDb });
+  assert.equal(run.body.skipped, true);
+  assert.equal(mp.calls(), 0);
+});
+
+test('una corrida en vista previa no le saca el turno a producción', async () => {
+  const w = world();
+  const mp = slowSearch(w.state);
+  const handler = createPaymentsReconcileHandler({ mpClient: mp, getNow: () => w.state.now, notifyPending: async () => ({ sent: 0 }) });
+  const previewEnv = { ...w.env, APP_ENV: 'preview', CANONICAL_ORIGIN: 'https://review.amadolibros-web.pages.dev', MP_COLLECTOR_ID: '200' };
+  const preview = await handler({ request: new Request('https://review.amadolibros-web.pages.dev/api/payments/reconcile', { method: 'POST' }), env: previewEnv });
+  assert.equal(preview.status, 200);
+  const prod = await post(handler, w.env);
+  assert.equal(prod.body.skipped, undefined);
+  assert.equal(mp.calls(), 2);
+  assert.deepEqual(w.sqlite.prepare('SELECT scope FROM payment_reconcile_runs ORDER BY scope').all().map(r => r.scope), ['preview:200', `production:${COLLECTOR}`]);
+});
+
+test('una corrida que quedó colgada libera el turno al pasar la ventana', async () => {
+  const w = world();
+  w.sqlite.prepare("INSERT INTO payment_reconcile_runs (scope,started_at,status) VALUES (?,?,'running')").run(`production:${COLLECTOR}`, w.state.now.toISOString());
+  assert.equal((await w.reconcile()).body.skipped, true);
+  w.later(5);
+  assert.equal((await w.reconcile()).body.skipped, undefined);
 });
 
 // ── Piezas sueltas ──────────────────────────────────────────────────────────

@@ -24,3 +24,15 @@ CREATE TABLE IF NOT EXISTS payment_incidents (
 
 CREATE INDEX IF NOT EXISTS idx_payment_incidents_created_at ON payment_incidents (created_at);
 CREATE INDEX IF NOT EXISTS idx_payment_incidents_payment_id ON payment_incidents (payment_id);
+
+-- Turno de la conciliación de pagos. Una fila por entorno y cuenta de Mercado
+-- Pago. Tomar el turno es una sola sentencia condicional: si dos llamados
+-- llegan a la vez, la base deja pasar uno solo. Guarda además el resultado de
+-- la última corrida (sólo cantidades).
+CREATE TABLE IF NOT EXISTS payment_reconcile_runs (
+  scope        TEXT PRIMARY KEY,
+  started_at   TEXT NOT NULL,
+  finished_at  TEXT,
+  status       TEXT NOT NULL,
+  summary_json TEXT
+);
