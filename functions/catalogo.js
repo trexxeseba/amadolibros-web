@@ -279,13 +279,14 @@ async function fetchActiveCategories(ctx) {
     }
 }
 
-function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, rawQ, safeQ, selectedCategory }) {
+function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, orden, rawQ, safeQ, selectedCategory }) {
+    const sortInput = orden ? `<input type="hidden" name="orden" value="${escapeHtml(orden)}">` : '';
     const availabilityInput = disponibilidad
         ? `<input type="hidden" name="disponibilidad" value="${escapeHtml(disponibilidad)}">`
         : '';
     if (!categories || categories.length === 0) {
         return `<form class="filters-bar" action="/catalogo" method="get">
-    ${availabilityInput}
+    ${availabilityInput}${sortInput}
     <input type="search" name="q" value="${safeQ}" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros" autocomplete="off" data-search-autocomplete>
     <button type="submit">Buscar</button>
   </form>`;
@@ -325,7 +326,7 @@ function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, r
         : '';
 
     return `<form class="filters-bar" action="/catalogo" method="get">
-    ${availabilityInput}
+    ${availabilityInput}${sortInput}
     <input type="search" name="q" value="${safeQ}" placeholder="Buscar por título, autor o ISBN" aria-label="Buscar libros" autocomplete="off" data-search-autocomplete>
     <label class="cat-select-wrap">
       <span class="sr-only">Categoría</span>
@@ -339,7 +340,7 @@ function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, r
   ${clearLink}`;
 }
 
-function availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, availableCount, orderCount }) {
+function availabilityTabsHtml({ disponibilidad, orden, rawQ, categoria, subcategoria, availableCount, orderCount }) {
     const options = [
         { value: '', label: 'Todos', count: availableCount + orderCount },
         { value: 'disponibles', label: 'Disponibles ahora', count: availableCount },
@@ -347,7 +348,7 @@ function availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, a
     ];
     const links = options.map(option => {
         const current = option.value === disponibilidad;
-        const href = catalogPath({
+        const href = catalogPath({ orden,
             q: rawQ,
             categoria,
             subcategoria,
@@ -395,9 +396,9 @@ const CAT_SELECT_STYLES = `
        formulario y conservan la categoría al buscar). Así el primer libro
        aparece en la primera pantalla. */
     @media (max-width: 700px){
-      .filters-bar{flex-wrap:nowrap}
+      .filters-bar{flex-wrap:wrap}
       .filters-bar input[type=search]{min-width:0}
-      .filters-bar .cat-select-wrap{display:none}
+      .filters-bar .cat-select-wrap{display:flex;flex:1 1 45%;min-width:0;order:2}.filters-bar .cat-select-wrap select{width:100%;min-width:0}.filters-bar .clear-filters{order:3}
       .availability-tab{min-height:40px;padding:.4rem .5rem;font-size:.74rem}
     }
 `;
@@ -454,7 +455,7 @@ function catalogPath({ q, categoria, subcategoria, disponibilidad, orden, page }
 // subtemas. Antes quedaban escondidos dentro del desplegable «Todos».
 // Los más grandes a la vista; el resto, a un toque en /temas.
 const TOPIC_NAV_LIMIT = 12;
-export function topicNavHtml({ categories = [], categoria = '', subcategoria = '', disponibilidad = '' }) {
+export function topicNavHtml({ categories = [], categoria = '', subcategoria = '', disponibilidad = '', q = '', orden = '' }) {
     if (!categories.length) return '';
     if (!categoria) {
         const topics = categories
@@ -464,20 +465,20 @@ export function topicNavHtml({ categories = [], categoria = '', subcategoria = '
             .slice(0, TOPIC_NAV_LIMIT);
         if (!topics.length) return '';
         const links = topics.map(c =>
-            `<a class="topic-chip" href="${escapeHtml(catalogPath({ categoria: c.id, disponibilidad }))}">${escapeHtml(c.name)}</a>`
+            `<a class="topic-chip" href="${escapeHtml(catalogPath({ q, orden, categoria: c.id, disponibilidad }))}">${escapeHtml(c.name)}</a>`
         ).join('');
         return `<nav class="topic-nav" aria-label="Explorar por tema">
     <p class="topic-nav-title">Explorá por tema</p>
-    <div class="topic-chips">${links}<a class="topic-chip topic-chip-all" href="/temas">Todos los temas →</a></div>
+    <div class="topic-chips">${links}<a class="topic-chip topic-chip-all" href="#cat-select">Todos los temas →</a></div>
   </nav>`;
     }
     const selected = categories.find(c => c.id === categoria);
     const subs = (selected?.subcategories || []).filter(s => Number(s.count) > 0);
-    const back = `<a class="topic-chip topic-chip-back" href="${escapeHtml(catalogPath({ disponibilidad }))}">← Todos los temas</a>`;
-    const all = `<a class="topic-chip${subcategoria ? '' : ' is-current'}" href="${escapeHtml(catalogPath({ categoria, disponibilidad }))}"${subcategoria ? '' : ' aria-current="page"'}>Todo ${escapeHtml(selected?.name || '')}</a>`;
+    const back = `<a class="topic-chip topic-chip-back" href="${escapeHtml(catalogPath({ q, orden, disponibilidad }))}">← Todos los temas</a>`;
+    const all = `<a class="topic-chip${subcategoria ? '' : ' is-current'}" href="${escapeHtml(catalogPath({ q, orden, categoria, disponibilidad }))}"${subcategoria ? '' : ' aria-current="page"'}>Todo ${escapeHtml(selected?.name || '')}</a>`;
     const subLinks = subs.map(sub => {
         const current = sub.id === subcategoria;
-        return `<a class="topic-chip${current ? ' is-current' : ''}" href="${escapeHtml(catalogPath({ categoria, subcategoria: sub.id, disponibilidad }))}"${current ? ' aria-current="page"' : ''}>${escapeHtml(sub.name)}</a>`;
+        return `<a class="topic-chip${current ? ' is-current' : ''}" href="${escapeHtml(catalogPath({ q, orden, categoria, subcategoria: sub.id, disponibilidad }))}"${current ? ' aria-current="page"' : ''}>${escapeHtml(sub.name)}</a>`;
     }).join('');
     return `<nav class="topic-nav" aria-label="Subtemas">
     <div class="topic-chips">${back}${all}${subLinks}</div>
@@ -1149,9 +1150,9 @@ export async function onRequest(ctx) {
 <body>
 ${siteHeaderHtml({ current: 'libros', showSearch: false })}
 <div class="wrap">
-  ${topicNavHtml({ categories, categoria, subcategoria, disponibilidad })}
-  ${filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, rawQ, safeQ, selectedCategory })}
-  ${availabilityTabsHtml({ disponibilidad, rawQ, categoria, subcategoria, availableCount, orderCount })}
+  ${topicNavHtml({ categories, categoria, subcategoria, disponibilidad, q: rawQ, orden })}
+  ${filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, orden, rawQ, safeQ, selectedCategory })}
+  ${availabilityTabsHtml({ disponibilidad, orden, rawQ, categoria, subcategoria, availableCount, orderCount })}
   ${chipsHtml}
   <h1>${heading}</h1>
   <div class="results-bar">

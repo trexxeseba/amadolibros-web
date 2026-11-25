@@ -4,7 +4,7 @@
 // Submit redirige a https://www.amadolibros.com/?q=<texto>.
 ---
 
-<div id="cso-overlay" class="cso-overlay" role="dialog" aria-modal="true" aria-labelledby="cso-title" hidden>
+<dialog id="cso-overlay" class="cso-overlay" role="dialog" aria-modal="true" aria-labelledby="cso-title" hidden>
   <div class="cso-panel">
 
     <div class="cso-hdr">
@@ -43,12 +43,20 @@
     </div>
 
   </div>
-</div>
+</dialog>
 
 <style>
   .cso-overlay[hidden] { display: none; }
 
   .cso-overlay {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    box-sizing: border-box;
     position: fixed;
     inset: 0;
     z-index: 100;
@@ -63,6 +71,7 @@
     background: var(--surface);
     width: 100%;
     height: 100%;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
   }
@@ -104,8 +113,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     border: none;
     background: transparent;
     color: var(--ink-2);
@@ -148,8 +157,9 @@
     -webkit-appearance: none;
     appearance: none;
   }
-  .cso-input:focus { border-color: var(--salmon); }
-  .cso-input::placeholder { color: var(--ink-2); opacity: 0.65; }
+  .cso-input:focus { border-color: var(--salmon); outline: 2px solid var(--salmon); outline-offset: 2px; }
+  .cso-overlay button:focus-visible { outline: 3px solid var(--salmon); outline-offset: 3px; }
+  .cso-input::placeholder { color: var(--ink-2); opacity: 1; }
 
   .cso-submit {
     flex: 0 0 auto;
@@ -188,37 +198,48 @@
   var closeBtn = document.getElementById('cso-close');
   var form     = document.getElementById('cso-form');
 
+  var returnFocus = null;
+  var previousOverflow = "";
+
   function openOverlay(query) {
     if (!overlay.hasAttribute('hidden')) return;
     if (typeof query === 'string') input.value = query;
+    returnFocus = document.activeElement;
+    previousOverflow = document.body.style.overflow;
     overlay.removeAttribute('hidden');
+    overlay.showModal();
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(function () {
-      requestAnimationFrame(function () { input.focus(); });
+      requestAnimationFrame(function () { if (overlay.open) input.focus(); });
     });
   }
 
   function closeOverlay() {
-    overlay.setAttribute('hidden', '');
-    document.body.style.overflow = '';
-    input.value = '';
+    overlay.close();
   }
+
+  overlay.addEventListener('close', function () {
+    overlay.setAttribute('hidden', '');
+    document.body.style.overflow = previousOverflow;
+    if (returnFocus && returnFocus.isConnected) returnFocus.focus();
+  });
+  overlay.addEventListener('cancel', function (event) {
+    event.preventDefault();
+    closeOverlay();
+  });
 
   // Abre via custom event disparado por Header
   document.addEventListener('amado:openCatalogSearch', function (event) {
     var query = event.detail && typeof event.detail.query === 'string'
       ? event.detail.query
-      : '';
+      : undefined;
     openOverlay(query);
   });
 
   // Cierre: botón X
   closeBtn.addEventListener('click', closeOverlay);
 
-  // Cierre: Escape
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && !overlay.hasAttribute('hidden')) closeOverlay();
-  });
+  // Escape y contención de foco: diálogo nativo.
 
   // Cierre: click en backdrop (fuera del panel)
   overlay.addEventListener('click', function (e) {

@@ -55,7 +55,7 @@ for (const category of SEO_CATEGORIES.filter(c => !c.tarotFilter)) {
                 displayed.push(...ids);
                 assert.equal(ids.length, Math.min(pageSize, 52 - (page - 1) * pageSize));
                 assert.equal((html.match(/class="stock-badge by-request"/g) || []).length, ids.length / 2);
-                assert.equal((html.match(/aria-label="Te llega hoy en Montevideo"/g) || []).length, ids.length / 2);
+                assert.equal((html.match(/aria-label="Entrega en el día en Montevideo"/g) || []).length, ids.length / 2);
                 assert.match(html, /26 disponibles · 26 por encargo/);
                 assert.match(html, /<form class="category-order"/);
                 assert.match(html, /Consultá precio y plazo de entrega/);

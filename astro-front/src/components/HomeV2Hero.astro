@@ -22,7 +22,7 @@ try {
   books = (data.items || [])
     .filter(book => /^MLU\d+$/.test(book.id || ''))
     .filter(book => book.status === 'active' && Number(book.available_quantity || 0) > 0)
-    .slice(0, 10);
+    .slice(0, 3);
 } catch (error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   console.warn('[HomeV2Hero] home.json no disponible:', message);
@@ -32,6 +32,7 @@ const heroBooks = books.map((book, index) => ({
   ...book,
   cover: responsiveBookCover(book.id, { optimize: import.meta.env.PUBLIC_INDEXABLE === 'true' }),
   position: index + 1,
+  href: `/libro/${book.id}/${book.title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").substring(0, 60)}`,
 }));
 ---
 
@@ -69,13 +70,9 @@ const heroBooks = books.map((book, index) => ({
         <button type="submit">Buscar</button>
       </form>
 
-      <div class="v2-human-door">
-        <div>
-          <span>¿No está en el catálogo?</span>
-          <strong>Contanos qué libro buscás.</strong>
-          <small>Revisamos personalmente dónde conseguirlo, incluso si está agotado o descatalogado.</small>
-        </div>
-        <a href="/libros-agotados-importados-uruguay#consulta">Iniciar búsqueda <span aria-hidden="true">→</span></a>
+      <div class="v2-shopping-paths">
+        <a href="/catalogo?disponibilidad=disponibles">Ver libros disponibles</a>
+        <a href="/libros-agotados-importados-uruguay#consulta">Pedir un libro</a>
       </div>
 
       <ul class="v2-trust" aria-label="Señales de confianza">
@@ -85,15 +82,15 @@ const heroBooks = books.map((book, index) => ({
       </ul>
     </div>
 
-    <div class="v2-visual" aria-label="Selección animada de libros disponibles">
+    <div class="v2-visual" aria-label="Selección de libros disponibles">
       <div class="v2-visual-label">
         <span>Ahora en Amado</span>
         <small>Tapas reales del catálogo</small>
       </div>
 
-      <div class="v2-cover-stage" aria-hidden="true">
+      <div class="v2-cover-stage">
         {heroBooks.length > 0 ? heroBooks.map((book, index) => (
-          <figure class={`v2-cover v2-cover-${(index % 10) + 1}`}>
+          <a class={`v2-cover v2-cover-${(index % 10) + 1}`} href={book.href} aria-label={`Ver ${book.title}`}>
             <img
               src={book.cover.src}
               srcset={book.cover.srcset || undefined}
@@ -105,7 +102,7 @@ const heroBooks = books.map((book, index) => ({
               decoding="async"
               onerror="this.onerror=null;this.src='/images/logo-amado.webp';this.classList.add('v2-cover-fallback')"
             />
-          </figure>
+          </a>
         )) : (
           <div class="v2-stage-fallback">
             <img src="/images/logo-amado.webp" width="120" height="118" alt="" />
@@ -121,26 +118,6 @@ const heroBooks = books.map((book, index) => ({
     </div>
   </div>
 </section>
-
-<script is:inline>
-(function () {
-  var form = document.querySelector('.v2-search');
-  var input = document.getElementById('v2-search-input');
-  if (!form || !input) return;
-
-  function openSearch() {
-    document.dispatchEvent(new CustomEvent('amado:openCatalogSearch', {
-      detail: { query: input.value.trim() },
-    }));
-  }
-
-  input.addEventListener('focus', openSearch);
-  form.addEventListener('submit', function (event) {
-    event.preventDefault();
-    openSearch();
-  });
-})();
-</script>
 
 <style>
   .v2-hero {
@@ -189,7 +166,7 @@ const heroBooks = books.map((book, index) => ({
   .v2-kicker {
     margin-bottom: 0.75rem;
     color: #ff8b68;
-    font-size: 0.68rem;
+    font-size: 0.875rem;
     font-weight: 850;
     letter-spacing: 0.09em;
     line-height: 1.25;
@@ -248,7 +225,7 @@ const heroBooks = books.map((book, index) => ({
     outline: 0;
     background: transparent;
     color: #1b1714;
-    font: 600 0.94rem/1.2 var(--font-ui);
+    font: 600 1rem/1.2 var(--font-ui);
   }
 
   .v2-search input::placeholder { color: #756b62; opacity: 1; }
@@ -260,7 +237,7 @@ const heroBooks = books.map((book, index) => ({
     border-radius: 999px;
     background: #ef6844;
     color: #1b1714;
-    font: 850 0.79rem/1 var(--font-ui);
+    font: 850 0.875rem/1 var(--font-ui);
     cursor: pointer;
   }
 
@@ -285,7 +262,7 @@ const heroBooks = books.map((book, index) => ({
 
   .v2-human-door > div > span {
     color: #ff8b68;
-    font-size: 0.66rem;
+    font-size: 0.875rem;
     font-weight: 850;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -302,7 +279,7 @@ const heroBooks = books.map((book, index) => ({
     max-width: 58ch;
     margin-top: 0.3rem;
     color: rgba(255, 249, 241, 0.7);
-    font-size: 0.72rem;
+    font-size: 0.875rem;
     line-height: 1.42;
   }
 
@@ -316,7 +293,7 @@ const heroBooks = books.map((book, index) => ({
     border-radius: 999px;
     background: #fff9f1;
     color: #1b1714;
-    font-size: 0.74rem;
+    font-size: 0.875rem;
     font-weight: 850;
     text-align: center;
   }
@@ -329,7 +306,7 @@ const heroBooks = books.map((book, index) => ({
     padding: 0;
     color: rgba(255, 249, 241, 0.68);
     list-style: none;
-    font-size: 0.64rem;
+    font-size: 0.875rem;
     font-weight: 750;
     letter-spacing: 0.02em;
   }
@@ -379,7 +356,7 @@ const heroBooks = books.map((book, index) => ({
   .v2-visual-label small,
   .v2-visual-footer a {
     color: rgba(255, 249, 241, 0.65);
-    font-size: 0.6rem;
+    font-size: 0.875rem;
     font-weight: 800;
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -469,4 +446,25 @@ const heroBooks = books.map((book, index) => ({
   @media (prefers-reduced-motion: reduce) {
     .v2-cover { animation: none; }
   }
+
+  .v2-shopping-paths{display:flex;flex-wrap:wrap;gap:.65rem;margin-top:1rem}
+  .v2-shopping-paths a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:.6rem 1rem;border:1px solid #fff9f1;border-radius:.5rem;font-size:.875rem;font-weight:750;color:#fff9f1}
+  .v2-shopping-paths a:first-child{background:#fff9f1;color:#1b1714}
+  .v2-hero a:focus-visible{outline:3px solid #ffb49d;outline-offset:4px}
+  .v2-cover-stage{position:relative;inset:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;padding:4rem 1.2rem;overflow:visible;perspective:none}
+  .v2-cover{position:relative;inset:auto;width:100%;animation:none;transform:none}
+  .v2-visual{min-height:0}
+  @media(max-width:1039px){
+    .v2-visual{display:none}
+    .v2-hero-grid{padding:1.25rem 0 1.5rem;gap:0}
+    h1{font-size:clamp(2rem,8vw,3rem);max-width:20ch;line-height:1.05}
+    .v2-lead{margin-top:.75rem;font-size:.9375rem;line-height:1.45}
+    .v2-kicker{font-size:.875rem;text-transform:none;letter-spacing:0;margin-bottom:.5rem}
+    .v2-search{margin-top:1rem;grid-template-columns:minmax(0,1fr) auto;border-radius:.65rem;padding:.4rem}
+    .v2-search>svg{display:none}
+    .v2-search input{padding-left:.5rem}
+    .v2-search button{grid-column:auto;width:auto;padding:.65rem}
+    .v2-trust{font-size:.875rem;letter-spacing:0}
+  }
+  @media(min-width:1040px){.v2-hero-grid{min-height:0;padding:3rem 0;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:2rem}h1{font-size:clamp(3rem,4.5vw,4.5rem)}}
 </style>

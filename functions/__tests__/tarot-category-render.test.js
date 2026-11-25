@@ -45,7 +45,7 @@ test('una grilla, un H1 y ningún bloque editorial, cuestionario o separación d
   assert.equal((html.match(/class="books-grid"/g) || []).length, 1);
   assert.equal(ids(html).length, 48);
   assert.doesNotMatch(html, /tarot-finder|tarot-module|Cómo elegir un tarot|Para empezar|Para profundizar|Clásicos|Mazos de oráculo<|Subcategorías de Esoterismo/);
-  assert.match(html, /Te llega hoy/);
+  assert.match(html, /Entrega en el día/);
   assert.match(html, /<form class="category-order"[^>]*method="get">/);
   assert.match(html, /<button type="submit">Ordenar<\/button>/);
   assert.doesNotMatch(html, /Más popular|Más vendido/);
@@ -194,7 +194,7 @@ test('la vista inicial intercala disponibles y por encargo antes de paginar, sin
   const stockById = new Map(items.map(item => [item.id, item.status]));
   assert.deepEqual(ids(first.html).map(id => stockById.get(id)), Array.from({ length: 48 }, (_, i) => i % 2 ? 'paused' : 'active'));
   assert.equal((first.html.match(/class="stock-badge by-request"/g) || []).length, 24);
-  assert.equal((first.html.match(/aria-label="Te llega hoy en Montevideo"/g) || []).length, 24);
+  assert.equal((first.html.match(/aria-label="Entrega en el día en Montevideo"/g) || []).length, 24);
   assert.doesNotMatch(first.html, /987[.,]654 UYU/);
   assert.match(first.html, /Consultá precio y plazo de entrega/);
   assert.match(first.html, /55 productos<\/strong> · 28 disponibles · 27 por encargo/);
