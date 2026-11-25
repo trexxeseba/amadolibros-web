@@ -18,7 +18,7 @@ test('pickup-cx-2: ninguna forma de entrega viene preseleccionada', () => {
 });
 
 test('pickup-cx-2: el beneficio de retiro se aplica desde $1.300 de compra total', () => {
-  assert.match(carrito, /value="pickup"[\s\S]*?Ahorrás \$150 en compras desde \$1\.300/);
+  assert.match(carrito, /value="pickup"[\s\S]*?Descontamos \$150 del precio de los libros en compras desde \$1\.300/);
   assert.match(carrito, /PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU = 1300/);
   assert.match(carrito, /Number\(subtotal\) >= PICKUP_DISCOUNT_MIN_PRODUCTS_TOTAL_UYU/);
   // V1.1 REDESIGN: copy más corto aprobado ("Gratis desde $1.500" en vez de

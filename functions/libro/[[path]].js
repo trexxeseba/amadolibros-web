@@ -1,6 +1,6 @@
 import { cleanBookDescription, cleanBookFormat } from '../_shared/book-display-cleanup.js';
 import { coverSources } from '../book-cover/[[path]].js';
-import { googleReadyImage, googleFutureReadyImage } from '../_shared/image-source-policy.js';
+import { googleReadyImage, googleFutureReadyImage, mlImageIdentity } from '../_shared/image-source-policy.js';
 import { findPreviewCover } from '../_shared/preview-cover.js';
 /**
  * functions/libro/[[path]].js
@@ -132,10 +132,7 @@ export function normalizeImages(item, previewCoverSrc = '') {
             if (typeof picture !== 'string') continue;
             const normalized = httpsImg(picture);
             const asset = normalized.split('/').pop()?.split('?')[0] || '';
-            const mlAsset = /^https:\/\/[^/]*mlstatic\.com\//i.test(normalized)
-                ? asset.match(/^D_(?:NQ_NP_)?(\d+-ML[A-Z]\d+_\d+)-[A-Z]+\.(?:jpe?g|png|webp)$/i)?.[1]
-                : null;
-            const identity = mlAsset || normalized;
+            const identity = mlImageIdentity(normalized) || normalized;
             if (!NON_BOOK_IMAGE_ASSETS.has(asset) && !duplicates.has(asset) && !seenAssets.has(identity)) {
                 seenAssets.add(identity);
                 pictures.push(normalized);
