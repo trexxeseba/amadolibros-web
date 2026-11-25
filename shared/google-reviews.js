@@ -2,7 +2,7 @@
 // clientes (se recortan solo en límite de oración; sin editar el contenido).
 //
 // Fuente: ficha de Google Maps de Amado Libros | Librería Online.
-// Relevadas el 18/11/2026: 4,9 de 5 con 82 reseñas (80 de 5 estrellas).
+// Relevadas en Google Maps el 24/11/2026: 4,9 de 5 con 87 reseñas (84 de 5 estrellas).
 // Para actualizar: cambiar GOOGLE_RATING y sumar o reemplazar entradas de
 // GOOGLE_REVIEWS. Nombre abreviado a nombre + inicial.
 //
@@ -12,8 +12,9 @@
 
 export const GOOGLE_RATING = Object.freeze({
   rating: '4,9',
-  count: 82,
-  asOf: '2026-11-18',
+  count: 87,
+  fiveStarCount: 84,
+  asOf: '2026-11-24',
 });
 
 export const GOOGLE_REVIEWS_URL = 'https://maps.google.com/?cid=11879259971653710404';
@@ -46,6 +47,28 @@ function esc(value) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+
+/** Reputación verificable, visible sin JavaScript y enlazada a la fuente. */
+export function googleRatingHtml({ dark = false } = {}) {
+  return `<style>
+.gtrust{display:flex;align-items:center;flex-wrap:wrap;gap:.65rem 1rem;width:fit-content;max-width:100%;margin:.95rem 0;padding:.8rem 1rem;border:1px solid #d5c5ad;border-radius:.6rem;background:#fffaf1;color:#29211c;text-decoration:none;font:400 .86rem/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+.gtrust:hover{border-color:#9c3d2b;color:#29211c}
+.gtrust:focus-visible{outline:3px solid #9c3d2b;outline-offset:4px}
+.gtrust-stars{color:#a65b00;font-size:1.15rem;letter-spacing:.08em;white-space:nowrap}
+.gtrust strong{display:block;font-size:1rem}
+.gtrust-detail{display:block;font-size:.78rem}
+.gtrust-link{font-size:.78rem;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.gtrust-dark{background:#ffffff0d;border-color:#ffffff40;color:#fff9ef}
+.gtrust-dark:hover{border-color:#edb98c;color:#fff9ef}
+.gtrust-dark .gtrust-stars{color:#f6c76b}
+.gtrust-dark:focus-visible{outline-color:#f6c76b}
+</style><a class="gtrust${dark ? ' gtrust-dark' : ''}" href="${esc(GOOGLE_REVIEWS_URL)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(GOOGLE_RATING.rating)} de 5 en Google, ${GOOGLE_RATING.count} reseñas. Leer opiniones en Google">
+  <span class="gtrust-stars" aria-hidden="true">★★★★★</span>
+  <span><strong>${esc(GOOGLE_RATING.rating)}/5 en Google</strong><span class="gtrust-detail">${GOOGLE_RATING.count} reseñas · ${GOOGLE_RATING.fiveStarCount} de 5 estrellas</span></span>
+  <span class="gtrust-link">Leer opiniones <span aria-hidden="true">↗</span></span>
+</a>`;
 }
 
 function hashString(value) {
@@ -109,6 +132,7 @@ export function googleReviewsHtml({
   columns = 3,
   title = 'Lo que cuentan quienes ya compraron',
   withAssets = true,
+  animate = true,
 } = {}) {
   const items = pickReviews(limit, seed);
   const cols = columns === 1 ? '' : columns === 2 ? ' gr-cols-2' : ' gr-cols-3';
@@ -124,5 +148,5 @@ export function googleReviewsHtml({
   </div>
   <ul class="gr-list${cols}">${cards}</ul>
   <p class="gr-foot"><a href="${esc(GOOGLE_REVIEWS_URL)}" target="_blank" rel="noopener noreferrer">Ver las ${esc(GOOGLE_RATING.count)} reseñas en Google</a><a href="${esc(GOOGLE_WRITE_REVIEW_URL)}">Dejar mi reseña</a></p>
-</section>${withAssets ? `<script>${GOOGLE_REVIEWS_SCRIPT}<\/script>` : ''}`;
+</section>${withAssets && animate ? `<script>${GOOGLE_REVIEWS_SCRIPT}<\/script>` : ''}`;
 }

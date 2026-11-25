@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import WAFloat from '../components/WAFloat.astro';
+import { googleRatingHtml } from '../../../shared/google-reviews.js';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -34,6 +35,7 @@ const jsonLd = {
 
       <section class="request-intro" aria-labelledby="request-title">
         <p class="eyebrow">Búsqueda manual, persona a persona</p>
+        <Fragment set:html={googleRatingHtml({ dark: true })} />
         <h1 id="request-title">Contanos qué libro querés encontrar</h1>
         <p>
           No necesitás tener todos los datos. Con un título incompleto, autor, ISBN,
@@ -147,6 +149,8 @@ const jsonLd = {
         <p id="photo-note" class="context-note" hidden>
           Cuando se abra WhatsApp, mandanos la foto de la tapa en el siguiente mensaje.
         </p>
+
+        <p class="context-note field-wide">Te confirmamos la edición, el estado, el precio y el plazo estimado antes de que decidas reservar.</p>
 
         <div class="form-actions field-wide">
           <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp-field">
