@@ -1,3 +1,7 @@
+import { createGalleryVisualPolicy } from '../../shared/gallery-visual-policy.js';
+import { NON_BOOK_VISUAL_REFERENCES } from '../../shared/gallery-visual-references.js';
+import { excludeNonBookImages } from '../../shared/gallery-visual-filter.js';
+import { createContactValidation } from '../../shared/contact-validation.js';
 import { cleanBookDescription, cleanBookFormat } from '../_shared/book-display-cleanup.js';
 import { coverSources } from '../book-cover/[[path]].js';
 import { googleReadyImage, googleFutureReadyImage, mlImageIdentity } from '../_shared/image-source-policy.js';
@@ -228,6 +232,7 @@ ${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" d
 </div>
 <script>(function(){
   var imgs=${imagesJson},n=imgs.length,cur=0,opener=null;
+  var allowed=imgs.map(function(_,i){return i;});
   var lb=document.getElementById('glb');
   var lbImg=document.getElementById('glbImg');
   var lbCtr=document.getElementById('glbCounter');
@@ -238,6 +243,7 @@ ${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" d
   var thumbBtns=[].slice.call(document.querySelectorAll('.thumb-btn'));
 
   function selectThumb(idx){
+    if(allowed.indexOf(idx)<0)return;
     cur=idx;
     mainImg.src=imgs[idx].src;
     if(imgs[idx].srcset){
@@ -247,12 +253,13 @@ ${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" d
       mainImg.removeAttribute('srcset');
       mainImg.removeAttribute('sizes');
     }
-    mainImg.alt=title+' — imagen '+(idx+1);
+    mainImg.alt=title+' — imagen '+(allowed.indexOf(idx)+1);
     mainBtn.setAttribute('data-current-index',String(idx));
     thumbBtns.forEach(function(b,i){b.setAttribute('aria-current',i===idx?'true':'false');});
   }
 
   function openLb(idx,trigger){
+    if(allowed.indexOf(idx)<0)return;
     cur=idx;opener=trigger||mainBtn;
     lb.removeAttribute('hidden');
     document.body.style.overflow='hidden';
@@ -267,12 +274,13 @@ ${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" d
 
   function updateLb(){
     lbImg.src=imgs[cur].lightbox;
-    lbImg.alt=title+' — imagen '+(cur+1);
-    if(lbCtr)lbCtr.textContent='Imagen '+(cur+1)+' de '+n;
+    var position=allowed.indexOf(cur)+1;
+    lbImg.alt=title+' — imagen '+position;
+    if(lbCtr)lbCtr.textContent='Imagen '+position+' de '+allowed.length;
   }
 
-  function prev(){cur=(cur-1+n)%n;updateLb();}
-  function next(){cur=(cur+1)%n;updateLb();}
+  function prev(){if(allowed.length){cur=allowed[(allowed.indexOf(cur)-1+allowed.length)%allowed.length];updateLb();}}
+  function next(){if(allowed.length){cur=allowed[(allowed.indexOf(cur)+1)%allowed.length];updateLb();}}
 
   mainBtn.addEventListener('click',function(){
     openLb(parseInt(mainBtn.getAttribute('data-current-index')||'0',10),mainBtn);
@@ -292,6 +300,31 @@ ${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" d
     if(e.key==='ArrowLeft')prev();
     if(e.key==='ArrowRight')next();
   });
+  function excludeImage(idx){
+    allowed=allowed.filter(function(i){return i!==idx;});
+    if(thumbBtns[idx]){thumbBtns[idx].hidden=true;thumbBtns[idx].style.display='none';}
+    if(pB){pB.hidden=allowed.length<2;pB.style.display=allowed.length<2?'none':'';}
+    if(nB){nB.hidden=allowed.length<2;nB.style.display=allowed.length<2?'none':'';}
+    if(!allowed.length){
+      if(!lb.hasAttribute('hidden'))closeLb();
+      mainBtn.hidden=true;mainBtn.style.display='none';
+      var placeholder=document.createElement('p');
+      placeholder.className='gallery-placeholder';placeholder.textContent='Imagen del libro no disponible';
+      mainBtn.parentNode.appendChild(placeholder);
+      return;
+    }
+    if(cur===idx||Number(mainBtn.getAttribute('data-current-index'))===idx)selectThumb(allowed[0]);
+    thumbBtns.forEach(function(btn,i){var pos=allowed.indexOf(i);if(pos>=0)btn.setAttribute('aria-label',title+' - imagen '+(pos+1));});
+    if(!lb.hasAttribute('hidden'))updateLb();
+  }
+  if(typeof Image==='function'&&typeof document.createElement==='function'){
+    var filterImages=function(){
+      var policy=(${createGalleryVisualPolicy.toString()})(${JSON.stringify(NON_BOOK_VISUAL_REFERENCES)});
+      (${excludeNonBookImages.toString()})(imgs,policy,excludeImage);
+    };
+    if(typeof requestIdleCallback==='function')requestIdleCallback(filterImages,{timeout:1500});
+    else setTimeout(filterImages,0);
+  }
 })();<\/script>`;
 }
 
@@ -773,7 +806,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       ${waitlistSiteKey ? `<form class="waitlist-form" id="aviso-stock" novalidate>
         <label for="waitlist-email">O dejanos tu WhatsApp o correo y te avisamos</label>
         <div class="waitlist-row">
-          <input id="waitlist-email" name="email" type="text" inputmode="email"
+          <input id="waitlist-email" name="email" type="text" inputmode="text" aria-describedby="waitlist-status"
                  autocomplete="email" maxlength="254" required
                  placeholder="099 123 456 o tu@email.com">
           <button class="btn btn-waitlist" type="submit">Avisame cuando llegue</button>
@@ -1136,18 +1169,25 @@ ${!inStock && waitlistSiteKey ? `
 <script>(function(){
   var form=document.getElementById('aviso-stock');
   if(!form)return;
+  var contactValidation=(${createContactValidation.toString()})();
+  var field=form.elements.email;
   var status=document.getElementById('waitlist-status');
   var button=form.querySelector('button[type="submit"]');
   function show(message,kind){
     status.textContent=message;
     status.className='waitlist-status '+(kind||'');
   }
+  field.addEventListener('input',function(){field.removeAttribute('aria-invalid');if(status.classList.contains('is-error'))show('','');});
   form.addEventListener('submit',async function(event){
     event.preventDefault();
     var email=form.elements.email.value.trim();
     var tokenInput=form.querySelector('input[name="cf-turnstile-response"]');
     var token=tokenInput?tokenInput.value:'';
-    if(!email){show('Ingresá tu WhatsApp o correo.','is-error');form.elements.email.focus();return;}
+    if(!contactValidation.replyContact(email)){
+      show('Ingresá un correo válido o tu WhatsApp, por ejemplo 099 123 456.','is-error');
+      field.setAttribute('aria-invalid','true');field.focus();return;
+    }
+    field.removeAttribute('aria-invalid');
     if(!token){show('Completá la verificación antes de continuar.','is-error');return;}
     button.disabled=true;
     button.textContent='Guardando…';
@@ -1168,7 +1208,7 @@ ${!inStock && waitlistSiteKey ? `
       try{data=await response.json();}catch(_error){}
       if(!response.ok)throw new Error(data.error||'No pudimos guardar el aviso.');
       show(data.already_registered
-        ? 'Ya teníamos registrado este correo para este libro.'
+        ? 'Ya teníamos registrado este contacto para este libro.'
         : 'Pronto. Te avisaremos cuando vuelva a estar disponible.','is-ok');
       form.elements.email.value='';
     }catch(error){

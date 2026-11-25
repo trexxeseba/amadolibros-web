@@ -362,3 +362,22 @@ test('rechaza un contacto que no es correo ni WhatsApp', async () => {
   const { response } = await call(handler, db, validBody({ email: 'hola' }));
   assert.equal(response.status, 400);
 });
+
+test('contactos con letras mezcladas, numeros repetidos o correo incompleto no llegan al captcha ni a D1', async () => {
+  for (const email of ['tel099123456abc', '99999999', 'cliente@', '@dominio.com', 'cliente @dominio.com']) {
+    const db = memoryDb(), hooks = {};
+    const { response } = await call(makeHandler({ hooks }), db, validBody({ email }));
+    assert.equal(response.status, 400, email);
+    assert.equal(hooks.verifyArgs, undefined, email);
+    assert.equal(hooks.catalogCalls || 0, 0);
+    assert.equal(db.rows.size + db.waRows.size, 0);
+  }
+});
+
+test('normaliza fijo local y numeros internacionales sin inventar un pais', () => {
+  assert.equal(normalizeWhatsapp('2400 1234'), '59824001234');
+  assert.equal(normalizeWhatsapp('+598 99 123 456'), '59899123456');
+  assert.equal(normalizeWhatsapp('99123456'), '59899123456');
+  assert.equal(normalizeWhatsapp('+354 555 1234'), '3545551234');
+  assert.equal(normalizeWhatsapp('tel 099123456'), null);
+});

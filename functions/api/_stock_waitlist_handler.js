@@ -1,4 +1,5 @@
 import { verifyTurnstile } from './_turnstile.js';
+import { contactValidation } from '../../shared/contact-validation.js';
 
 const MAX_BODY_BYTES = 8 * 1024;
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
@@ -72,18 +73,20 @@ async function ensurePreviewSchema(db) {
 
 function normalizeEmail(value) {
   const email = cleanString(value).toLowerCase();
-  if (email.length < 5 || email.length > 254) return null;
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
+  if (!contactValidation.validEmail(email)) return null;
   return email;
 }
 
 // Teléfono para WhatsApp: se guarda sólo con dígitos y código de país. Un
 // número uruguayo escrito local (09x xxx xxx / 9x xxx xxx) se completa con 598.
 export function normalizeWhatsapp(value) {
-  let digits = cleanString(value).replace(/[^\d]/g, '');
+  const raw = cleanString(value);
+  if (!contactValidation.validPhone(raw)) return null;
+  let digits = raw.replace(/[^\d]/g, '');
   if (digits.startsWith('00')) digits = digits.slice(2);
   if (/^0?9\d{7}$/.test(digits)) digits = `598${digits.replace(/^0/, '')}`;
-  if (digits.length < 10 || digits.length > 15) return null;
+  if (/^[24]\d{7}$/.test(digits)) digits = `598${digits}`;
+  if (digits.length < 8 || digits.length > 15) return null;
   return digits;
 }
 
