@@ -32,7 +32,7 @@ test('el primer pantallazo comunica búsqueda por encargo y revisión humana', (
   assert.match(heroAstro, /Los conseguimos\./);
   assert.match(heroAstro, /una persona revisa opciones y lo busca por encargo/);
   assert.match(heroAstro, /Título, autor o ISBN/);
-  assert.match(heroAstro, /Contanos qué libro buscás/);
+  assert.match(heroAstro, /Pedir un libro/);
   assert.match(heroAstro, /href="\/libros-agotados-importados-uruguay#consulta"/);
   assert.doesNotMatch(heroAstro, /búsqueda humana/i);
 });
@@ -42,7 +42,7 @@ test('el header editorial ofrece navegación comercial y cultural', () => {
     assert.match(headerAstro, new RegExp(`>${label}<`));
   }
   assert.match(headerAstro, /Envío gratis desde \$1\.500/);
-  assert.match(headerAstro, /Entrega en el día en Montevideo/);
+  assert.match(headerAstro, /Montevideo: entrega en el día a coordinar/);
   assert.match(headerAstro, /Libros difíciles y búsquedas por encargo/);
 });
 
@@ -52,16 +52,18 @@ test('el recorrido posterior combina temas, tapas grandes, contenido y confianza
   assert.match(topicsAstro, /Desarrollo personal/);
   assert.match(topicsAstro, /href="\/libros-agotados-importados-uruguay">Pedir una búsqueda/);
   assert.match(topicsAstro, /href="\/temas">Ver todos los temas/);
-  assert.match(shelfAstro, /Tapas que piden que las mires\./);
+  assert.match(shelfAstro, /Libros disponibles para comprar\./);
   assert.match(shelfAstro, /responsiveBookCover/);
   assert.match(ideasAstro, /Amado Lee/);
   assert.match(ideasAstro, /Tu búsqueda nos importa\./);
   assert.match(ideasAstro, /No es una respuesta automática/);
 });
 
-test('el buscador del hero conserva la búsqueda expandida y el mobile accesible', () => {
-  assert.match(heroAstro, /amado:openCatalogSearch/);
-  assert.match(heroAstro, /detail: \{ query: input\.value\.trim\(\) \}/);
+test('la búsqueda de portada usa un formulario directo y el buscador global es modal', () => {
+  assert.match(heroAstro, /action="\/catalogo" method="get"/);
+  assert.doesNotMatch(heroAstro, /amado:openCatalogSearch/);
+  assert.match(catalogSearchOverlayAstro, /overlay\.showModal\(\)/);
+  assert.match(catalogSearchOverlayAstro, /returnFocus\.focus\(\)/);
   assert.match(heroAstro, /@media \(max-width: 520px\)/);
   assert.match(heroAstro, /\.v2-search button \{ grid-column: 1 \/ -1; width: 100%; \}/);
   assert.match(catalogSearchOverlayAstro, /¿Qué libro estás buscando\?/);

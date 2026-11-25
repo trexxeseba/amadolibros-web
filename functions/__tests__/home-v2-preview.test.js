@@ -29,7 +29,7 @@ test('HOME-V2: header editorial y navegación cultural están presentes', () => 
     assert.match(header, new RegExp(`>${label}<`));
   }
   assert.match(header, /Envío gratis desde \$1\.500/);
-  assert.match(header, /Entrega en el día en Montevideo/);
+  assert.match(header, /Montevideo: entrega en el día a coordinar/);
   assert.match(header, /Libros difíciles y búsquedas por encargo/);
 });
 
@@ -38,7 +38,7 @@ test('HOME-V2: el hero combina catálogo, búsqueda humana y movimiento accesibl
   assert.match(hero, /Los conseguimos\./);
   assert.match(hero, /una persona revisa opciones y lo busca por encargo/);
   assert.match(hero, /Título, autor o ISBN/);
-  assert.match(hero, /Contanos qué libro buscás/);
+  assert.match(hero, /Pedir un libro/);
   assert.match(hero, /@keyframes v2-cover-float/);
   assert.match(hero, /@media \(prefers-reduced-motion: reduce\)/);
   assert.doesNotMatch(hero, /autoplay|<video/i);
@@ -50,7 +50,7 @@ test('HOME-V2: temas, tapas grandes, Amado Lee y servicio humano forman el recor
   assert.match(topics, /Desarrollo personal/);
   assert.match(topics, /href="\/libros-agotados-importados-uruguay">Pedir una búsqueda/);
   assert.match(topics, /href="\/temas">Ver todos los temas/);
-  assert.match(shelf, /Tapas que piden que las mires\./);
+  assert.match(shelf, /Libros disponibles para comprar\./);
   assert.match(shelf, /responsiveBookCover/);
   assert.match(ideas, /Amado Lee/);
   assert.match(ideas, /Contenido propio de Amado Libros/);
