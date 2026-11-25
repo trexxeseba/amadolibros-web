@@ -67,7 +67,7 @@ test('flujo completo simulado: Worker → descarga → plan respeta N/A y excluy
   const downloaded = await fetchAllItems({ secret: 'test-secret', fetcher: async (url, init) => handle(new Request(url, init), env), wait: async () => {} });
   const plan = buildFillPlan({ items: downloaded.items, mode: 'raw', registry: [{ isbn, facts: { bibliographic: { publication_year: '2019' } } }] });
   assert.deepEqual(plan.rows.map(row => row.id), ['MLU3']);
-  assert.deepEqual(plan.pilot[0].firm, [{ mluId: 'PUBLICATION_YEAR', value: '2019' }]);
+  assert.deepEqual(plan.pilot[0].firm, [{ mluId: 'PUBLICATION_YEAR', value: '2019', sources: ['registro'] }]);
   assert.equal(plan.excluded.user_product, 1);
 });
 
