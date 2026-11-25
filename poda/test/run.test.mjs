@@ -69,3 +69,18 @@ test('en modo prueba el mail lista lo que pausaría aunque venga en la lista de 
   assert.match(dato, /PAUSARÍA \(1\)/); assert.match(dato, /Argentina Colonial/);
   assert.match(dato, /NO se pausan, y por qué \(1\)/); assert.match(dato, /Menos de 5 clics/);
 });
+
+test('las reactivaciones llevan su motivo y la que sólo entró en una promoción va aparte, para decidir', () => {
+  const base = { item_ids: ['MLU1'], precio_lista: 2000, gasto: 100, clics: 5, cpc: 20 };
+  const r = { contadores: { ...resultado.contadores, reactivar: 3 }, listas: { ...resultado.listas, reactivar: [
+    { ...base, titulo: 'Vendido', regla: 5, motivo: 'Venta atribuida tarde (regla 5).' },
+    { ...base, titulo: 'Rebajado', regla: 6, motivo: 'Bajó el precio de 2200 a 2000 (regla 6): el gasto se cuenta de cero.', desde: '2026-11-20' },
+    { ...base, titulo: 'EnPromo', regla: 6, motivo: 'Entró en una promoción (regla 6): el gasto se cuenta de cero.' },
+  ] } };
+  const dato = armarFilaDiaria({ fecha: '2026-11-25', accion: 'correr', modo: 'real', real: true, resultado: r }).fldwtSvMycZShRfJD;
+  const bloqueDe = titulo => dato.split('\n\n').find(b => b.startsWith(titulo)) ?? '';
+  assert.match(bloqueDe('A REACTIVAR: volvió a venderse'), /Vendido.*Venta atribuida tarde/);
+  assert.match(bloqueDe('A REACTIVAR: bajó el precio'), /Rebajado.*Bajó el precio de 2200 a 2000.*propuesto el 2026-11-20/);
+  assert.match(bloqueDe('PARA DECIDIR: sólo entró en una promoción'), /EnPromo/);
+  assert.doesNotMatch(bloqueDe('A REACTIVAR: bajó el precio'), /EnPromo/);
+});
