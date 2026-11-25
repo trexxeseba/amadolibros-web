@@ -1,8 +1,10 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { purchaseTrustHtml } from '../../../shared/purchase-trust.js';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import WAFloat from '../components/WAFloat.astro';
+import { googleRatingHtml } from '../../../shared/google-reviews.js';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -20,6 +22,7 @@ const jsonLd = {
 ---
 
 <BaseLayout
+  showSocialProof={false}
   title="Pedí una búsqueda de libro | Amado Libros"
   description="Contanos qué libro buscás. Revisamos manualmente títulos agotados, importados, digitales, técnicos y ediciones antiguas para clientes en Uruguay."
   canonical="https://www.amadolibros.com/pedir-libro/"
@@ -34,6 +37,7 @@ const jsonLd = {
 
       <section class="request-intro" aria-labelledby="request-title">
         <p class="eyebrow">Búsqueda manual, persona a persona</p>
+        <Fragment set:html={googleRatingHtml({ dark: true })} />
         <h1 id="request-title">Contanos qué libro querés encontrar</h1>
         <p>
           No necesitás tener todos los datos. Con un título incompleto, autor, ISBN,
@@ -148,6 +152,8 @@ const jsonLd = {
           Cuando se abra WhatsApp, mandanos la foto de la tapa en el siguiente mensaje.
         </p>
 
+        <p class="context-note field-wide">Te confirmamos la edición, el estado, el precio y el plazo estimado antes de que decidas reservar.</p>
+
         <div class="form-actions field-wide">
           <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp-field">
           <button type="submit" id="request-submit">Enviar pedido por WhatsApp</button>
@@ -158,6 +164,7 @@ const jsonLd = {
           Guardamos el pedido con un código para seguirlo, sin pedirte datos personales. Al continuar se abre WhatsApp con la información ordenada para que podamos buscarlo.
         </p>
       </form>
+      <Fragment set:html={purchaseTrustHtml()} />
     </div>
   </main>
   <Footer />

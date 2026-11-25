@@ -33,7 +33,7 @@ test('el primer pantallazo comunica búsqueda por encargo y revisión humana', (
   assert.match(heroAstro, /una persona revisa opciones y lo busca por encargo/);
   assert.match(heroAstro, /Título, autor o ISBN/);
   assert.match(heroAstro, /Contanos qué libro buscás/);
-  assert.match(heroAstro, /href="\/pedir-libro\/\?tipo=exacto"/);
+  assert.match(heroAstro, /href="\/libros-agotados-importados-uruguay#consulta"/);
   assert.doesNotMatch(heroAstro, /búsqueda humana/i);
 });
 

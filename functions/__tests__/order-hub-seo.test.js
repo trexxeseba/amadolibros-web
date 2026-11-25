@@ -222,7 +222,7 @@ test('sitemap-pages publica la raíz y sólo las páginas vigentes 2..N', async 
   assert.ok(!locs.includes('https://www.amadolibros.com/libros-por-encargo?page=4'));
 });
 
-test('la home V2 ofrece el pedido exacto y el hub mantiene la landing informativa', () => {
+test('la home V2 ofrece consulta rápida y el hub mantiene la landing informativa', () => {
   const home = readFileSync('astro-front/src/pages/index.astro', 'utf8');
   const hero = readFileSync('astro-front/src/components/HomeV2Hero.astro', 'utf8');
   const ideas = readFileSync('astro-front/src/components/HomeV2Ideas.astro', 'utf8');
@@ -230,7 +230,7 @@ test('la home V2 ofrece el pedido exacto y el hub mantiene la landing informativ
 
   assert.match(home, /<HomeV2Hero \/>/);
   assert.match(home, /<HomeV2Ideas \/>/);
-  assert.match(hero, /href="\/pedir-libro\/\?tipo=exacto"/);
+  assert.match(hero, /href="\/libros-agotados-importados-uruguay#consulta"/);
   assert.match(ideas, /href="\/pedir-libro\/\?tipo=exacto"/);
   assert.match(ideas, /La disponibilidad, el precio y el plazo se confirman/i);
   assert.match(hub, /href="\/libros-agotados-importados-uruguay"/);

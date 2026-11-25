@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { purchaseTrustHtml } from '../../../shared/purchase-trust.js';
 import HomeV2Header from '../components/HomeV2Header.astro';
 import HomeV2Hero from '../components/HomeV2Hero.astro';
 import HomeV2Liquidacion from '../components/HomeV2Liquidacion.astro';
@@ -59,6 +60,7 @@ const jsonLd = {
 ---
 
 <BaseLayout
+  showSocialProof={false}
   title="Libros difíciles de encontrar en Uruguay | Amado Libros"
   canonical="https://www.amadolibros.com/"
   description="Comprá libros importados en Uruguay o pedinos una búsqueda enfocada por encargo para ediciones agotadas, descatalogadas o difíciles de conseguir."
@@ -68,10 +70,11 @@ const jsonLd = {
   <main class="home-v2-main">
     <HomeV2Hero />
     <HomeV2Liquidacion />
+    <div class="home-purchase-trust"><Fragment set:html={purchaseTrustHtml()} /></div>
+    <GoogleReviews />
     <HomeV2Topics />
     <HomeV2Shelf />
     <HomeV2Ideas />
-    <GoogleReviews />
   </main>
   <Footer />
   <SearchOverlay />
@@ -85,6 +88,7 @@ const jsonLd = {
   }
 
   .home-v2-main { overflow: clip; }
+  .home-purchase-trust { padding: 0 1rem; }
 
   /* El encabezado es fijo: sin este margen, al entrar por «Temas»,
      «Recomendados» o «Ideas» el título de la sección quedaba debajo de él. */
