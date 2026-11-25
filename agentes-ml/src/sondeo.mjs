@@ -247,6 +247,30 @@ async function main() {
       });
     }
   }
+  // 9. Competencia y catálogo (24/11/2026): /products/{id}/items responde 403 desde el 23/11.
+  //    Se captura el cuerpo exacto del error y se prueban los caminos alternativos documentados. Sólo GET.
+  await seccion('competencia_y_catalogo', async () => {
+    const conFicha = items.find(i => i?.catalog_product_id), sinFicha = items.find(i => i && !i.catalog_product_id);
+    const pid = conFicha?.catalog_product_id ?? null, S = CUENTA.sellerId;
+    const pruebas = [
+      ['products_items', pid && `/products/${pid}/items?limit=5`],
+      ['products_detalle', pid && `/products/${pid}`],
+      ['products_search_q', conFicha?.title && `/products/search?site_id=${SITE_ID}&status=active&q=${encodeURIComponent(String(conFicha.title).slice(0, 60))}`],
+      ['sites_search_propio', `/sites/${SITE_ID}/search?seller_id=${S}&limit=1`],
+      ['suggestions_user_items', `/suggestions/user/${S}/items`],
+      ['elegibles_catalogo', `/users/${S}/items/search?tags=catalog_listing_eligible&limit=1`],
+      ['elegibilidad_con_ficha', conFicha && `/items/${conFicha.id}/catalog_listing_eligibility`],
+      ['elegibilidad_sin_ficha', sinFicha && `/items/${sinFicha.id}/catalog_listing_eligibility`],
+      ['brand_central_cupo', `/catalog_suggestions/users/${S}/quota`],
+      ['brand_central_dominios', `/catalog_suggestions/domains/${SITE_ID}/available/full`],
+    ];
+    const out = {};
+    for (const [nombre, path] of pruebas) {
+      if (!path) { out[nombre] = { omitida: true }; continue; }
+      out[nombre] = await sondar(ml, path, {}, j => ({ total: j?.paging?.total ?? j?.total ?? (Array.isArray(j) ? j.length : null), status: j?.status ?? null, buy_box_eligible: j?.buy_box_eligible ?? null, reason: j?.reason ?? null }));
+    }
+    return out;
+  });
   imprimir('estadisticas_cliente', ml.stats);
 }
 
