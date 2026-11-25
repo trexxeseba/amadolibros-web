@@ -79,7 +79,7 @@ async function main() {
   });
   // Visitas de 30 días de las que están más caras que la referencia (Seba, 25/11/2026: empezar por las más vistas).
   const caras = filas.filter(f => f.sugerido !== null && f.precio !== null && f.sugerido < f.precio);
-  await enParalelo(caras, 4, async f => { const r = await ml.sonda(`/items/${f.id}/visits/time_window?last=30&unit=day`); f.visitas_30d = r.ok ? Number(r.json?.total_visits ?? 0) : null; });
+  await enParalelo(caras, 4, async f => { try { const r = await ml.get(`/items/${f.id}/visits/time_window?last=30&unit=day`); f.visitas_30d = Number(r?.total_visits ?? 0); } catch (e) { if (e?.fatal || e?.status === 429) throw e; f.visitas_30d = null; } });
   const fecha = new Date().toISOString().slice(0, 10);
   const resumen = { fecha, cuenta: cuenta.clave, total_segun_ml: total, ids: lista.length, errores, ...resumenReferencias(filas), claves_vistas: [...new Set(filas.flatMap(f => f.claves))] };
   mkdirSync(salida, { recursive: true });
