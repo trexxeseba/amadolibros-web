@@ -1,6 +1,6 @@
 // Lógica pura del job de promociones por título (sin red, sin reloj implícito).
 // La parte con red está en promos.mjs; esto se prueba solo.
-import { LIMITES, normalizar, esLibroMedico } from './guardas.mjs';
+import { LIMITES, normalizar, esLibroMedico, descuentoPct } from './guardas.mjs';
 
 const num = v => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v))) ? null : Number(v);
 const lista = j => Array.isArray(j) ? j : Array.isArray(j?.results) ? j.results : [];
@@ -122,3 +122,20 @@ export const primerDiaDelMes = fecha => String(fecha).slice(0, 8) + '01';
 
 // Bucket de un porcentaje para el log público (de 5 en 5).
 export const bucketPct = pct => pct === null || pct === undefined ? null : `${Math.floor(pct / 5) * 5}-${Math.floor(pct / 5) * 5 + 5}%`;
+
+// Cambio de precio de un título que YA está en una promo (acción cambiar-precio).
+// Solo baja (nunca sube), nunca bajo el piso, y el descuento sobre el precio regular de la
+// entrada no pasa del tope a cargo nuestro. Devuelve { ok, motivo?, pct, antes, despues }.
+export const PISO_PROMO_UYU = 0; // Seba, 24/11/2026: el piso de 500 se olvida para este camino
+export function evaluarCambioPrecio(entrada, precioNuevo, { piso = PISO_PROMO_UYU } = {}) {
+  const antes = num(entrada?.price), original = num(entrada?.original_price), nuevo = num(precioNuevo);
+  const no = motivo => ({ ok: false, motivo, antes, despues: nuevo, pct: null });
+  if (!entrada || String(entrada.status).toLowerCase() !== "started") return no("no_esta_activa_en_la_promo");
+  if (antes === null || original === null || original <= 0) return no("entrada_sin_precios");
+  if (nuevo === null || nuevo <= 0) return no("precio_invalido");
+  if (nuevo >= antes) return no("no_baja_el_precio");
+  if (nuevo <= piso) return no("bajo_el_piso");
+  const pct = descuentoPct(original, nuevo);
+  if (pct === null || pct > LIMITES.descuentoMaxPct) return { ok: false, motivo: "descuento_mayor_al_tope", antes, despues: nuevo, pct };
+  return { ok: true, antes, despues: nuevo, pct };
+}
