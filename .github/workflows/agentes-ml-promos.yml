@@ -18,7 +18,7 @@ on:
       accion:
         description: 'Qué hacer'
         type: choice
-        options: [estado, sumar, sumar-lote, sacar, cambiar-precio, seleccion, ads-gasto]
+        options: [estado, sumar, sumar-lote, sacar, cambiar-precio, envio-gratis, seleccion, ads-gasto]
         default: estado
       item:
         description: 'Publicación (MLU... o el número)'

@@ -288,6 +288,20 @@ async function main() {
     }
     return { fichas_probadas: pids.length, http: codigos, con_buy_box_winner: con, ganador_somos_nosotros: nuestro, con_datos_de_envio: conLogistica, errores: error, claves_winner: [...claves], claves_envio: [...clavesEnvio] };
   });
+  // 11. Automatización de precios de Mercado Libre (25/11/2026): ¿se puede leer por API qué reglas admite cada
+  //     publicación y cuál tiene puesta? Sólo GET. El log lleva códigos y formas, no precios.
+  await seccion('automatizacion_de_precios', async () => {
+    const cat = items.find(i => i?.catalog_listing), trad = items.find(i => i && !i.catalog_listing);
+    const out = {};
+    for (const [nombre, it] of [['catalogo', cat], ['tradicional', trad]]) {
+      if (!it) { out[nombre] = { omitida: true }; continue; }
+      out[nombre] = {
+        reglas: await sondar(ml, `/pricing-automation/items/${it.id}/rules`, {}, j => ({ reglas: (j?.rules ?? []).map(r => r?.rule_id ?? r?.id ?? null) })),
+        automatizacion: await sondar(ml, `/pricing-automation/items/${it.id}/automation`, {}, j => ({ estado: j?.status ?? null, regla: j?.item_rule?.rule_id ?? j?.rule_id ?? null, tiene_minimo: j?.min_price != null, tiene_maximo: j?.max_price != null })),
+      };
+    }
+    return out;
+  });
   imprimir('estadisticas_cliente', ml.stats);
 }
 
