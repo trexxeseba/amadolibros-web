@@ -19,7 +19,7 @@ import { faviconHeadHtml, footerHtml, FOOTER_STYLES, waFloatHtml, WA_FLOAT_STYLE
 import { siteHeaderHtml, SITE_HEADER_STYLES, SITE_HEADER_SCRIPT, SITE_FONTS_HEAD } from './_shared/site-header.js';
 import { bookCoverUrl, CARD_IMAGE_SIZES, responsiveImage } from './_shared/cloudflare-images.js';
 import { deriveBookDisplayTitle } from './_shared/book-display-title.js';
-import { promoAwareCacheControl, promoWasHtml, webPromoActive, WEB_PROMO } from './_shared/web-promo.js';
+import { promoAwareCacheControl, promoWasHtml } from './_shared/web-promo.js';
 import { LIQUIDACION, resolveLiquidation, sortLiquidation } from './_shared/liquidacion.js';
 import { liquidationPricingActive, transferDisplayPrice, LIQUIDACION_PRECIO, TRANSFER_DISCOUNT } from './_shared/descuentos.js';
 import { buildWhatsAppMessage, whatsappHref } from '../shared/whatsapp-messages.js';
@@ -129,7 +129,7 @@ function cardHtml(book, idx, env, topic = '') {
     ${book.author ? `<p class="rc-author">${escapeHtml(book.author)}</p>` : ''}
     <div class="rc-prices">
       <span class="rc-base">$${escapeHtml(priceStr)} UYU</span>
-      ${promoWasHtml(book)}
+      ${promoWasHtml({ ...book, liquidation: true })}
       ${transfer ? `<span class="rc-transfer">12% menos por transferencia: $${escapeHtml(transfer)} UYU</span>` : ''}
       ${price >= FREE_SHIPPING_THRESHOLD_UYU ? '<span class="rc-free-shipping">Envío gratis</span>' : ''}
     </div>
@@ -198,12 +198,10 @@ export async function onRequest(ctx) {
     const slice = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
     const temaName = tema ? topics.find(t => t.id === tema).name : '';
-    const promoOn = webPromoActive(new Date(now), ctx.env);
+    // Esta página nunca anuncia otra promo (Amado Week u otra): solo el precio de liquidación.
     const liquidationPriced = liquidation.mode === 'lista' && liquidationPricingActive(new Date(now), ctx.env);
     const lead = liquidationPriced
         ? `Libros que te esperan en nuestros estantes, en stock y listos para salir hoy, con ${Math.round(LIQUIDACION_PRECIO.discount * 100)}% menos sobre su precio habitual, y ${Math.round(TRANSFER_DISCOUNT * 100)}% más pagando por transferencia.`
-        : promoOn
-        ? `Libros que te esperan en nuestros estantes, listos para salir hoy. Con la ${escapeHtml(WEB_PROMO.name)}, ${WEB_PROMO.percent}% menos hasta el ${escapeHtml(WEB_PROMO.endLabel)}, y 12% más pagando por transferencia.`
         : 'Libros que te esperan en nuestros estantes, en stock y listos para salir hoy. Pagando por transferencia tenés 12% menos.';
     const heading = temaName ? `${LIQUIDACION.name}: ${escapeHtml(temaName)}` : LIQUIDACION.name;
     const title = `${temaName ? `${temaName} en liquidación` : 'Promo Liquidación Amado: libros en stock'}${page > 1 ? ` — Página ${page}` : ''} | Amado Libros`;
