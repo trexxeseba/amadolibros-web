@@ -141,73 +141,16 @@ test('11. el CTA neutro no fusiona la lógica de pago: delega en focusFirstMissi
 // Pago. No duplica la validación de submit real: es la única función que
 // decide a qué falta el CTA neutro debe llevar.
 
-test('11b. focusFirstMissingRequirement() sigue el orden completo, no salta directo de Entrega a Pago', () => {
-  const start = CARRITO.indexOf('function focusFirstMissingRequirement');
-  assert.notEqual(start, -1);
-  const end = CARRITO.indexOf('// ── Persistencia de la etapa', start);
-  const fn = CARRITO.slice(start, end);
-
-  const order = [
-    'requireDeliveryType()',
-    '!isPickupAccepted()',
-    "showFieldError('buyer-name'",
-    "showFieldError('buyer-phone'",
-    "showFieldError('buyer-email'",
-    "showFieldError('delivery-address'",
-    "showFieldError('delivery-barrio'",
-    "showFieldError('delivery-departamento'",
-    'requirePaymentMethod()',
-  ];
-  let cursor = -1;
-  for (const token of order) {
-    const idx = fn.indexOf(token, cursor + 1);
-    assert.ok(idx > cursor, `"${token}" debe aparecer, y en este orden, dentro de focusFirstMissingRequirement()`);
-    cursor = idx;
-  }
-  // Los campos de envío sólo se piden si deliveryType === 'shipping'.
-  const shippingGateIdx = fn.indexOf("deliveryType === 'shipping'");
-  const addressIdx = fn.indexOf("showFieldError('delivery-address'");
-  assert.ok(shippingGateIdx !== -1 && shippingGateIdx < addressIdx);
-});
-
-// Corrección revisión ChatGPT (ronda final): la aceptación de retiro
-// (pickup-ack) faltaba en focusFirstMissingRequirement() — permitía llegar
-// hasta Pago con retiro elegido y el checkbox sin marcar, para recién ahí
-// (al confirmar de verdad) volver arriba al pickup-ack. Ahora se exige
-// justo después de Entrega, sólo cuando deliveryType === 'pickup', con el
-// mismo mensaje/foco/scroll que ya usan createTransferOrder()/btnPrepare.
-
-test('11b2. focusFirstMissingRequirement() exige pickup-ack inmediatamente después de Entrega, sólo si es retiro', () => {
-  const start = CARRITO.indexOf('function focusFirstMissingRequirement');
-  const end = CARRITO.indexOf('// ── Persistencia de la etapa', start);
-  const fn = CARRITO.slice(start, end);
-
-  assert.match(fn, /if \(deliveryType === 'pickup' && !isPickupAccepted\(\)\) \{/);
-  assert.match(fn, /pickupAckErr\.textContent = 'Necesitamos que confirmes esto antes de seguir\.';/);
-  assert.match(fn, /pickupAckErr\.hidden = false;/);
-  assert.match(fn, /pickupAck\.setAttribute\('aria-invalid', 'true'\);/);
-  assert.match(fn, /pickupAck\.focus\(\);/);
-  assert.match(fn, /pickupAck\.scrollIntoView\(\{ block: 'center' \}\);/);
-
-  // El gate de pickup-ack va antes que el de Nombre, no después.
-  const pickupGateIdx = fn.indexOf("deliveryType === 'pickup' && !isPickupAccepted()");
-  const nameIdx = fn.indexOf("showFieldError('buyer-name'");
-  assert.ok(pickupGateIdx !== -1 && pickupGateIdx < nameIdx);
-});
-
-test('11b3. el mensaje/foco/scroll de pickup-ack en el CTA neutro es un espejo textual del que ya usa createTransferOrder()', () => {
-  const neutralStart = CARRITO.indexOf('function focusFirstMissingRequirement');
-  const neutralEnd = CARRITO.indexOf('// ── Persistencia de la etapa', neutralStart);
-  const neutralBlock = CARRITO.slice(neutralStart, neutralEnd);
-
+// El comportamiento y orden visual se ejecutan en checkout-field-validation.test.js.
+test('11b. el CTA neutro usa la misma validación que transferencia y Mercado Pago', () => {
+  const neutral = CARRITO.slice(CARRITO.indexOf('function focusFirstMissingRequirement'), CARRITO.indexOf('function clearCorrectedFieldErrors'));
+  assert.match(neutral, /return validateCheckoutFields\(true\)/);
   const transferStart = CARRITO.indexOf('async function createTransferOrder');
-  const transferEnd = CARRITO.indexOf('if (btnTransfer) {', transferStart);
-  const transferBlock = CARRITO.slice(transferStart, transferEnd);
-  assert.match(transferBlock, /deliveryType === 'pickup' && !isPickupAccepted\(\)/);
-
-  const messageRe = /pickupAckErr\.textContent =\s*\n?\s*'Necesitamos que confirmes esto antes de seguir\.';/;
-  assert.match(neutralBlock, messageRe);
-  assert.match(transferBlock, messageRe);
+  const transfer = CARRITO.slice(transferStart, CARRITO.indexOf('if (btnTransfer)', transferStart));
+  assert.match(transfer, /if \(!validateCheckoutFields\(\)\) return null;/);
+  const cardStart = CARRITO.indexOf("btnPrepare.addEventListener('click'");
+  const card = CARRITO.slice(cardStart, CARRITO.indexOf('refreshCartAvailability({ initial: true })', cardStart));
+  assert.match(card, /if \(!validateCheckoutFields\(\)\) return;/);
 });
 
 test('11c. no duplica una segunda lógica de validación: createTransferOrder()/btnPrepare no llaman a focusFirstMissingRequirement()', () => {
@@ -522,7 +465,7 @@ test('26. Nombre, WhatsApp y Email siguen siendo el mínimo común, los tres mar
 });
 
 test('27. microcopy debajo de WhatsApp explica para qué se usa el dato', () => {
-  assert.match(CARRITO, /id="buyer-phone-help">Lo usamos únicamente para coordinar tu pedido y la entrega\.</);
+  assert.match(CARRITO, /id="buyer-phone-help">Lo usamos para coordinar tu pedido y la entrega\.</);
   assert.match(CARRITO, /aria-describedby="buyer-phone-help err-buyer-phone"/);
 });
 

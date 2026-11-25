@@ -70,6 +70,9 @@
   document.addEventListener('click', function (event) {
     var button = event.target.closest('#btn-wa-order, #btn-prepare-order, #btn-transfer-order');
     if (!button) return;
+    // The checkout clears corrected errors and validates in visual order.
+    // Keep this fallback if its main script failed to load.
+    if (button.id !== 'btn-wa-order' && typeof window.__amadoCheckoutValidate === 'function') return;
     var validation = checkoutError(button.id);
     if (!validation) return;
     event.preventDefault();

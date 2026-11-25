@@ -214,9 +214,10 @@ export const FOOTER_STYLES = `
     .site-footer a:focus-visible{outline:2px solid #f8f5ef;outline-offset:2px}
     .footer-name{font-weight:800;font-size:1rem;color:#f8f5ef;margin-bottom:.4rem}
     .footer-tagline{margin-bottom:.75rem;max-width:46ch}
-    .footer-copy{font-size:.78rem;color:rgba(248,245,239,.45)}
+    .footer-copy{font-size:.78rem;color:rgba(248,245,239,.65)}
     .footer-info-title{font-weight:700;color:#f8f5ef;margin-bottom:.5rem}
     .footer-list{list-style:none;padding:0;margin:0;display:grid;gap:.35rem}
+    .footer-list a{display:inline-flex;align-items:center;min-height:44px}
     .footer-contact{display:grid;gap:.4rem;justify-items:start}
     .footer-wa-link{display:inline-flex;align-items:center;gap:.4rem;
         min-height:44px}

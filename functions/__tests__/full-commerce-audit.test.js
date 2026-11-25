@@ -136,3 +136,14 @@ test('los mazos, el tarot, las barajas y los juegos de cartas del feed (decisió
   const compu = catalogItem({ id: 'MLU999', domain_id: 'MLU-COMPUTER_COMPONENTS', isbn: null, author: null, pages: null });
   assert.equal(auditFeed({ items: [compu] }, rows, FUERA_DE_PROMO).issues.some(row => row.code === 'FEED_NON_BOOK'), true);
 });
+
+
+test('fractional supplier prices use the same integer UYU amount in feed, page and checkout', () => {
+  const catalog = { items: [catalogItem({ price: 1467.75 })] };
+  const valid = auditFeed(catalog, parseMerchantFeed(feedXml({ price: '1468 UYU' })), FUERA_DE_PROMO);
+  assert.equal(valid.critical, 0);
+  const inconsistent = auditFeed(catalog, parseMerchantFeed(feedXml({ price: '1467.75 UYU' })), FUERA_DE_PROMO);
+  assert.ok(inconsistent.issues.some(issue => issue.code === 'FEED_PRICE_MISMATCH'));
+  assert.equal(catalog.items[0].price, 1467.75);
+  assert.equal(expectedFeedPrice(1467.75, FUERA_DE_PROMO), 1468);
+});

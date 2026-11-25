@@ -2,9 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
+import { contactValidation } from '../../shared/contact-validation.js';
 
 const page = readFileSync('astro-front/src/pages/pedir-libro.astro', 'utf8');
-const script = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+const script = page.match(/<script>([\s\S]*?)<\/script>/)[1].replace(/import \{ contactValidation \}[^;]+;/, '');
 
 function setup(response, networkError = false) {
   const elements = new Map();
@@ -15,14 +16,21 @@ function setup(response, networkError = false) {
       addEventListener(event, fn) { this.listeners[event] = fn; },
       reportValidity() { return true; },
       focus() { this.focused = true; },
+      setCustomValidity(message) { this.validationMessage = message; },
+      setAttribute(key, value) { (this.attrs ||= {})[key] = value; },
+      getAttribute(key) { return this.attrs?.[key] ?? null; },
+      hasAttribute(key) { return this.attrs?.[key] !== undefined; },
+      removeAttribute(key) { delete this.attrs?.[key]; },
     });
     return elements.get(selector);
   }
   const data = { query: 'Libro solicitado', reply_contact: 'lector@example.com', format: 'Impreso', language: 'Español' };
+  element('#reply-contact').value = data.reply_contact;
   const calls = [];
   const events = [];
   const location = { search: '?tipo=exacto', href: 'https://www.amadolibros.com/pedir-libro/?tipo=exacto' };
   runInNewContext(script, {
+    contactValidation,
     document: { querySelector: element, getElementById: id => element('#' + id) },
     window: { location, gtag(...args) { events.push(args); args[2]?.event_callback?.(); } },
     URLSearchParams, AbortController, setTimeout, clearTimeout, encodeURIComponent,
@@ -34,7 +42,7 @@ function setup(response, networkError = false) {
     },
   });
   return {
-    element, calls, events, location,
+    element, calls, events, location, data,
     submit: () => element('#manual-book-request').listeners.submit({ preventDefault() {} }),
   };
 }
@@ -56,6 +64,24 @@ test('la solicitud confirmada se queda en la web y mide una sola conversión sin
   assert.equal(JSON.stringify(conversions).includes('lector@example.com'), false);
   await flow.submit();
   assert.equal(flow.calls.length, 1, 'un doble envío no crea otra solicitud');
+});
+
+test('contacto inválido se corrige en el campo antes de cualquier solicitud de red', async () => {
+  const flow = setup({ status: 201, body: { received: true, notification_sent: true, request_code: 'AL-TEST3' } });
+  const field = flow.element('#reply-contact');
+  field.value = flow.data.reply_contact = 'abc';
+  await flow.submit();
+  assert.equal(flow.calls.length, 0);
+  assert.equal(field.getAttribute('aria-invalid'), 'true');
+  assert.equal(flow.element('#contact-error').hidden, false);
+  assert.equal(field.focused, true);
+  field.value = flow.data.reply_contact = '099 123 456';
+  field.listeners.input();
+  assert.equal(field.validationMessage, '');
+  assert.equal(field.getAttribute('aria-invalid'), null);
+  assert.equal(flow.element('#contact-error').hidden, true);
+  await flow.submit();
+  assert.equal(flow.calls.length, 1);
 });
 
 test('el aviso pendiente conserva el formulario, explica el estado y no cuenta conversión', async () => {

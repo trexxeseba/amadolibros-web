@@ -62,36 +62,36 @@ test('1c. no se usa cursor:wait para representar una decisión pendiente del cli
   assert.doesNotMatch(cssBlock, /cursor:\s*wait/);
 });
 
-test('2. al click sin entrega, requireDeliveryType() corta el flujo antes de cualquier await/fetch — Mercado Pago', () => {
+test('2. al click sin entrega, validateCheckoutFields() corta el flujo antes de cualquier await/fetch — Mercado Pago', () => {
   const handlerStart = CARRITO.indexOf("btnPrepare.addEventListener('click'");
   assert.notEqual(handlerStart, -1);
   const handlerBlock = CARRITO.slice(handlerStart, handlerStart + 3000);
 
-  const guardIdx = handlerBlock.search(/if\s*\(\s*!deliveryType\s*\)\s*\{\s*\n\s*requireDeliveryType\(\);\s*\n\s*return;\s*\n\s*\}/);
+  const guardIdx = handlerBlock.indexOf('if (!validateCheckoutFields()) return;');
   assert.notEqual(guardIdx, -1, 'no se encontró el corte temprano por falta de entrega');
 
   const firstAwaitIdx = handlerBlock.indexOf('await ');
   const firstOrdersFetchIdx = handlerBlock.indexOf("fetch('/api/orders'");
   const firstPrefsFetchIdx = handlerBlock.indexOf("fetch('/api/preferences'");
 
-  assert.ok(firstAwaitIdx === -1 || guardIdx < firstAwaitIdx, 'requireDeliveryType debe ejecutarse antes de cualquier await');
+  assert.ok(firstAwaitIdx === -1 || guardIdx < firstAwaitIdx, 'validateCheckoutFields debe ejecutarse antes de cualquier await');
   assert.ok(firstOrdersFetchIdx === -1 || guardIdx < firstOrdersFetchIdx, 'no debe llamarse /api/orders antes de elegir entrega');
   assert.ok(firstPrefsFetchIdx === -1 || guardIdx < firstPrefsFetchIdx, 'no debe llamarse /api/preferences antes de elegir entrega');
 });
 
-test('3. al click sin entrega, requireDeliveryType() corta el flujo antes de cualquier await/fetch — transferencia', () => {
+test('3. al click sin entrega, validateCheckoutFields() corta el flujo antes de cualquier await/fetch — transferencia', () => {
   const fnStart = CARRITO.indexOf('async function createTransferOrder');
   assert.notEqual(fnStart, -1);
   const fnEnd = CARRITO.indexOf('async function getTurnstileTokenForOrder', fnStart);
   const fn = CARRITO.slice(fnStart, fnEnd);
 
-  const guardIdx = fn.indexOf("if (!deliveryType) { requireDeliveryType(); return null; }");
+  const guardIdx = fn.indexOf('if (!validateCheckoutFields()) return null;');
   assert.notEqual(guardIdx, -1);
 
   const firstAwaitIdx = fn.indexOf('await ');
   const firstOrdersFetchIdx = fn.indexOf("fetch('/api/orders'");
 
-  assert.ok(firstAwaitIdx === -1 || guardIdx < firstAwaitIdx, 'requireDeliveryType debe ejecutarse antes de cualquier await');
+  assert.ok(firstAwaitIdx === -1 || guardIdx < firstAwaitIdx, 'validateCheckoutFields debe ejecutarse antes de cualquier await');
   assert.ok(firstOrdersFetchIdx === -1 || guardIdx < firstOrdersFetchIdx, 'no debe llamarse /api/orders antes de elegir entrega');
   assert.doesNotMatch(fn.slice(0, guardIdx), /fetchTransferOptions|transferIdempotencyKey =/, 'no debe pedirse ninguna cuenta antes de elegir entrega');
 });
@@ -213,7 +213,7 @@ test('14. sin entrega elegida, orders-guard.js no intercepta el click de transfe
 
 test('15. el click handler global le pasa el id del botón a checkoutError()', () => {
   const idx = GUARD.indexOf("document.addEventListener('click'");
-  const block = GUARD.slice(idx, idx + 400);
+  const block = GUARD.slice(idx, GUARD.indexOf('}, true);', idx));
   assert.match(block, /checkoutError\(button\.id\)/);
 });
 
