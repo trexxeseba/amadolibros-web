@@ -220,7 +220,7 @@ async function cambiarPrecio() {
   const envioGratis = envio.ok ? envio.json?.shipping?.free_shipping === true : null;
   imprimir("lectura", { promo: resumenPromo(promo), item: f.item, entrada: resumenEntrada(entrada), evaluacion: ev, envio_gratis: envioGratis });
   if (!ev.ok) return fallo(ev.motivo, { evaluacion: ev });
-  if (envioGratis !== true) return fallo("sin_envio_gratis", { envio_gratis: envioGratis, antes: ev.antes, propuesto: ev.despues });
+  // Seba (24/11/2026): se baja el precio igual; el envío no se toca. Solo se informa.
   const body = cuerpoPost(promo, ev.despues, entrada);
   if (modo !== "real") { imprimir("resultado", { ok: true, modo, accion: ACCION, item: ITEM, haria: body, antes: ev.antes, despues: ev.despues, pct: ev.pct }); return; }
   let r;
