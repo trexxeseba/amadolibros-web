@@ -22,6 +22,14 @@ import {
   premioPublico,
 } from '../_shared/premio-web.js';
 import { resolveConfig, checkoutDisabledResponse } from './_env_config.js';
+import {
+  heldMessage,
+  loadFirmSold,
+  loadHeldByOthers,
+  reduceAvailability,
+  stockGuardStatements,
+  stockWindows,
+} from '../_shared/stock-reservations.js';
 
 const EXISTING_ORDER_SELECT =
   'SELECT id, public_code, status, payment_status, delivery_type, ' +
@@ -147,14 +155,50 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
       return json({ error: 'Catálogo no disponible. Intentá de nuevo en unos segundos.' }, 503);
     }
 
-    const { errors, issues, snapshot } = buildSnapshot(consolidatedItems, catalog.items);
-    if (errors.length > 0) {
-      return json({
-        error: 'Actualizamos la disponibilidad de tu carrito.',
-        code: 'CART_CHANGED',
-        issues,
-      }, 422);
-    }
+    // Stock comprometido por la propia web desde la última foto del catálogo
+    // (stock-reservations.js). Las ventas firmes se descuentan y el libro
+    // figura agotado; un pedido abierto de otra persona sólo frena el alta.
+    const buyerKey = { email: normalizeBuyerEmail(body.buyer.email), phone: body.buyer.phone.trim() };
+    const productIds = consolidatedItems.map(item => item.product_id);
+    const stockCheck = async () => {
+      const windows = stockWindows({ now, catalogUpdatedAt: catalog.updated_at });
+      let firm = new Map();
+      let held = new Map();
+      try {
+        firm = await loadFirmSold(db, productIds, windows);
+        held = await loadHeldByOthers(db, productIds, windows, buyerKey);
+      } catch (error) {
+        // Sin esta lectura se sigue como antes: el candado del lote de alta
+        // igual impide que dos pedidos se lleven el mismo ejemplar.
+        console.error('[orders] stock reservation lookup error', safeErrorName(error));
+      }
+      const built = buildSnapshot(consolidatedItems, reduceAvailability(catalog.items, firm));
+      const heldTitles = built.errors.length > 0 ? [] : built.snapshot
+        .filter(item => item.quantity > item.observed_available_quantity - (held.get(item.product_id) || 0))
+        .map(item => item.title);
+      return { ...built, windows, heldTitles };
+    };
+    const stockResponse = check => {
+      if (check.errors.length > 0) {
+        return json({
+          error: 'Actualizamos la disponibilidad de tu carrito.',
+          code: 'CART_CHANGED',
+          issues: check.issues,
+        }, 422);
+      }
+      if (check.heldTitles.length > 0) {
+        return json({ error: heldMessage(check.heldTitles), code: 'STOCK_HELD' }, 409);
+      }
+      return null;
+    };
+
+    const firstCheck = await stockCheck();
+    const stockBlocked = stockResponse(firstCheck);
+    if (stockBlocked) return stockBlocked;
+    const { snapshot, windows: stockWindow } = firstCheck;
+    const catalogAvailable = new Map(catalog.items
+      .filter(item => item && typeof item.id === 'string')
+      .map(item => [item.id, Number(item.available_quantity)]));
 
     let premio = null;
     if (premioPedido.code) {
@@ -297,11 +341,12 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
       )
     );
 
+    const createdEventId = crypto.randomUUID();
     const eventStmt = db.prepare(
       'INSERT INTO order_events (id, order_id, event_type, payload_json, created_at) ' +
       'VALUES (?, ?, ?, ?, ?)'
     ).bind(
-      crypto.randomUUID(),
+      createdEventId,
       orderId,
       'created',
       JSON.stringify({
@@ -314,7 +359,19 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
     );
 
     try {
-      await db.batch([orderStmt, ...itemStmts, eventStmt]);
+      // El candado va último: cuenta también los libros de este pedido.
+      const guardStmts = stockGuardStatements(db, {
+        orderId,
+        createdEventId,
+        createdAt,
+        windows: stockWindow,
+        buyer: buyerKey,
+        lines: snapshot.map(item => ({
+          product_id: item.product_id,
+          catalog_available: catalogAvailable.get(item.product_id),
+        })),
+      });
+      await db.batch([orderStmt, ...itemStmts, eventStmt, ...guardStmts]);
     } catch (batchError) {
       if (premioAplicado) {
         await db.prepare(PREMIO_LIBERAR_SQL).bind(premio.code, orderId).run().catch(() => {});
@@ -327,6 +384,16 @@ export function createOrdersHandler({ fetchCatalog, getNow = () => new Date(), v
         }
       } catch {
         // Se conserva el error genérico de escritura; no se expone detalle interno.
+      }
+
+      // El lote también se deshace cuando el candado de stock detecta que otro
+      // pedido se llevó el ejemplar en el mismo instante: se vuelve a mirar el
+      // stock y, si es eso, se responde como cualquier falta de stock.
+      try {
+        const recheck = stockResponse(await stockCheck());
+        if (recheck) return recheck;
+      } catch {
+        // Se conserva el error genérico de escritura.
       }
 
       // code=ORDERS_DB_WRITE_FAILED identifica esta etapa exacta (el batch de

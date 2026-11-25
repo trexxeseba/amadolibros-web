@@ -3,6 +3,7 @@ import {
   validateCartAgainstCatalog,
   validateCartBody,
 } from './_orders_logic.js';
+import { loadFirmSold, reduceAvailability, stockWindows } from '../_shared/stock-reservations.js';
 
 function json(body, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(body), {
@@ -16,7 +17,7 @@ function json(body, status = 200, extraHeaders = {}) {
   });
 }
 
-export function createCartValidationHandler({ fetchCatalog }) {
+export function createCartValidationHandler({ fetchCatalog, getNow = () => new Date() }) {
   return async function onRequest(context) {
     const { request } = context;
     if (request.method !== 'POST') {
@@ -60,7 +61,24 @@ export function createCartValidationHandler({ fetchCatalog }) {
       }, 503);
     }
 
-    const items = validateCartAgainstCatalog(body.items, catalog.items);
+    // Ventas firmes de la web que la foto del catálogo todavía no refleja
+    // (pagadas después de la sincronización, o con pago pendiente). Los
+    // pedidos abiertos sin pagar no se descuentan acá: pueden no concretarse,
+    // y quien vuelve a su carrito no tiene que ver agotado su propio libro.
+    let catalogItems = catalog.items;
+    const db = context.env?.ORDERS_DB;
+    if (db) {
+      try {
+        const windows = stockWindows({ now: getNow(), catalogUpdatedAt: catalog.updated_at });
+        const firm = await loadFirmSold(db, body.items.map(item => item.product_id.trim()), windows);
+        catalogItems = reduceAvailability(catalog.items, firm);
+      } catch {
+        // Sin esta lectura el carrito valida contra el catálogo, como antes.
+        // El alta del pedido vuelve a comprobarlo.
+      }
+    }
+
+    const items = validateCartAgainstCatalog(body.items, catalogItems);
     const blockingStatuses = new Set(['sin_stock', 'no_existe', 'moneda_no_admitida']);
     return json({
       items,
