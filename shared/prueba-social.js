@@ -61,7 +61,7 @@ export function pruebaSocialScript({ reviews = PRUEBA_SOCIAL_REVIEWS, reviewsUrl
   return `(function(){
 var CFG=${data};
 var p=location.pathname;
-if(/^\\/(carrito|checkout|pago|pedido|cuenta|panel|gracias|opinar)(\\/|$)/.test(p))return;
+if(/^\\/(libro|pedir-libro|carrito|checkout|pago|pedido|cuenta|panel|gracias|opinar)(\\/|$)/.test(p))return;
 var MAX=4,KEY='ps_n',n=0;
 try{n=parseInt(sessionStorage.getItem(KEY)||'0',10)||0;if(sessionStorage.getItem('ps_off')==='1')return;}catch(e){}
 if(n>=MAX)return;

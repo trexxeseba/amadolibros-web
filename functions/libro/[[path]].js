@@ -90,6 +90,17 @@ function httpsImg(url) {
         .replace(/-I\.(jpg|jpeg|png|webp)(?=($|\?))/i, '-O.$1');
 }
 
+// Logos verificados visualmente: sus copias permanentes no son fotos del libro.
+const NON_BOOK_IMAGE_HASHES = new Set([
+    'eed924a9ecbe503f14c34dc6626aeff509374511ffcf20f06f522172f9797590',
+    '1965d41c371323ff00e38f74b691e0249ed0a941d279f99dadd4b2d016219152',
+]);
+
+function isBookGalleryImage(source) {
+    const hash = String(source || '').split('/').pop().split('.')[0];
+    return !NON_BOOK_IMAGE_HASHES.has(hash);
+}
+
 export function normalizeImages(item, previewCoverSrc = '') {
     const NON_BOOK_IMAGE_ASSETS = new Set([
         'D_768794-MLU78243849622_082024-O.jpg',
@@ -453,12 +464,12 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     const originalSources = normalizeImages(item);
     const catalogSources = coverSources(item);
     const sourceImages = normalizeImages(item, previewCoverSrc);
-    const images       = permanentSources || (isPreview
+    const images       = (permanentSources || (isPreview
         ? sourceImages
         : sourceImages.map((source, position) => {
             const catalogPosition = catalogSources.indexOf(originalSources[position]);
             return catalogPosition >= 0 ? bookCoverUrl(item.id, catalogPosition) : source;
-        }));
+        }))).filter(isBookGalleryImage);
     const img          = images[0] || '';
     const cartThumbnail = responsiveImage(img, {
         widths: [240],
@@ -816,15 +827,16 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         border-bottom:1px solid #e2e8f0;color:#64748b}
     nav a{color:#a94e3d;text-decoration:none}
     main{max-width:940px;margin:1.5rem auto;padding:0 1rem;
-         display:grid;grid-template-columns:1fr;gap:1.75rem}
-    @media(min-width:640px){main{grid-template-columns:380px 1fr}}
+         display:grid;grid-template-columns:minmax(0,1fr);gap:1.75rem}
+    .cover,.info{min-width:0}
+    @media(min-width:640px){main{grid-template-columns:minmax(0,380px) minmax(0,1fr)}}
     /* Celular: la tapa ocupaba toda la primera pantalla y el precio quedaba
        dos pantallas abajo. Tapa centrada y contenida, miniaturas en una fila. */
     @media(max-width:639px){
       main{margin-top:1rem;gap:1.1rem}
-      .cover-main{width:auto;height:auto;max-width:100%;max-height:38vh;margin:0 auto;object-fit:contain}
+      main .cover-main{width:auto;height:auto;max-width:100%;max-height:38vh;margin:0 auto;object-fit:contain}
       .cover-btn{text-align:center}
-      main .thumbs{max-width:none;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;
+      main .thumbs{width:100%;max-width:100%;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;
                    scrollbar-width:none;padding-bottom:.2rem}
       main .thumbs::-webkit-scrollbar{display:none}
       main .thumb-btn{width:48px;height:48px}
@@ -873,7 +885,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     .meta strong{color:#1e293b}
     .badge{display:inline-block;padding:.2rem .7rem;border-radius:2rem;
            font-size:.75rem;font-weight:600;margin-bottom:.875rem}
-    .in-stock{background:#dcfce7;color:#16a34a}
+    .in-stock{background:#dcfce7;color:#166534}
     .details{background:white;border:1px solid #e2e8f0;border-radius:.5rem;
              margin:.65rem 0 0;overflow:hidden}
     .detail-row{display:grid;grid-template-columns:94px 1fr;gap:.75rem;
@@ -1026,20 +1038,20 @@ ${siteHeaderHtml()}
     <h1>${safeTitle}</h1>
     ${inStock ? `<span class="badge in-stock">✓ En stock</span>` : ''}
     ${deliveryBadgeHtml(inStock)}
-    ${essentialHtml}
-    ${inStock ? moreDetailsHtml : ''}
     ${priceHtml}
     <div class="cta">
       ${actionHtml}
     </div>
     ${trustHtml}
+    ${essentialHtml}
+    ${inStock ? moreDetailsHtml : ''}
     ${inStock ? googleReviewsHtml({ limit: 3, seed: item.id, columns: 1, title: 'Lo que cuentan quienes ya compraron' }) : ''}
     ${editorialHtml}
     ${!inStock ? moreDetailsHtml : ''}
     ${seoOpportunityHtml}
     <p class="shipping">${inStock
       ? '🚚 Entrega en el día en Montevideo según zona, horario y confirmación · Envío $250 · Gratis desde $1.500 · Atención personalizada.'
-      : '🌎 Si preferís no esperar, también podemos buscarlo por encargo en el exterior.'
+      : '🌎 Podemos buscarlo por encargo. Te confirmamos disponibilidad, precio y plazo antes de reservar.'
     } <a href="/politicas/#envios">Ver política de envíos</a>.</p>
   </div>
   ${relatedBooksHtml}
@@ -1308,7 +1320,7 @@ export async function onRequest(context) {
     if (context.env?.COVER_GOOGLE_QUALITY_GATE === 'true') {
         googleImages = copies
             .map((copy, index) => ({ current: copy?.entry?.current, index }))
-            .filter(candidate => googleReadyImage(candidate.current))
+            .filter(candidate => googleReadyImage(candidate.current) && !NON_BOOK_IMAGE_HASHES.has(copies[candidate.index]?.sha256))
             // La primera de la lista es la que Google toma como principal. Las
             // que ya cumplen el mínimo de 2027 van adelante: sirven hoy, van a
             // seguir sirviendo y no arrastran el aviso de resolución. Las que

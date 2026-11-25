@@ -392,14 +392,14 @@ const CAT_SELECT_STYLES = `
     .availability-tab.is-current{border-color:#18120e;background:#18120e;color:#fff}
     .availability-tab.is-current span{color:#e8ded3}
     .availability-tab:focus-visible{outline:2px solid #a94e3d;outline-offset:2px}
-    /* Celular: buscador y botón en una sola fila; los temas ya están a la
-       vista como botones, así que los desplegables se ocultan (siguen en el
-       formulario y conservan la categoría al buscar). Así el primer libro
-       aparece en la primera pantalla. */
+    /* El buscador conserva su propia fila: los filtros no lo pueden encoger. */
     @media (max-width: 700px){
-      .filters-bar{flex-wrap:wrap}
-      .filters-bar input[type=search]{min-width:0}
-      .filters-bar .cat-select-wrap{display:flex;flex:1 1 45%;min-width:0;order:2}.filters-bar .cat-select-wrap select{width:100%;min-width:0}.filters-bar .clear-filters{order:3}
+      .filters-bar{display:grid;grid-template-columns:minmax(0,1fr) auto}
+      .filters-bar input[type=search]{grid-column:1/-1;min-width:0;width:100%;font-size:1rem}
+      .filters-bar button[type=submit]{grid-column:2;grid-row:2}
+      .filters-bar .cat-select-wrap{display:flex;min-width:0;grid-column:1}
+      .filters-bar .cat-select-wrap select{width:100%;min-width:0;font-size:1rem}
+      .filters-bar .clear-filters{grid-column:1/-1;margin-bottom:0}
       .availability-tab{min-height:40px;padding:.4rem .5rem;font-size:.74rem}
     }
 `;
