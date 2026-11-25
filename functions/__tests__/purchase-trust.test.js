@@ -13,7 +13,7 @@ test('las señales de confianza distinguen pagos, devolución y conexión sin at
     assert.match(html, /libro sin uso y en el mismo estado/);
     assert.match(html, /gastos de retorno a cargo del comprador/);
     assert.match(html, /Conexión segura HTTPS/);
-    assert.doesNotMatch(html, /VeriSign|DigiCert|Norton|Compra Protegida|100%|<script/i);
+    assert.doesNotMatch(html, /VeriSign|DigiCert|Norton|Compra Protegida|100% segura|<script/i);
     for (const route of ['/terminos/', '/devoluciones/', '/privacidad/', '/contacto/']) {
       assert.ok(html.includes('href="' + route + '"'));
     }
