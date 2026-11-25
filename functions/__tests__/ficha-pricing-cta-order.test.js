@@ -284,3 +284,28 @@ test('la galería omite los logos conocidos y mantiene las posiciones originales
     const main = html.slice(html.indexOf('<main>'), html.indexOf('<div class="info">'));
     assert.equal((main.match(/class="thumb-btn"/g) || []).length, 2);
 });
+
+test('la ruta alternativa de las dos imágenes verificadas también se excluye, sin afectar otros libros', () => {
+    const urls = [
+        'https://preview.example/book-cover/MLU640785075/cover.jpg',
+        'https://preview.example/book-cover/MLU640785075/cover-4.jpg',
+        'https://preview.example/book-cover/MLU640785075/cover-5.jpg',
+        'https://preview.example/book-cover/MLU640785075/cover-6.jpg',
+    ];
+    const html = renderPage(book(), 'un-libro', true, '', '', [], null, urls);
+    assert.ok(html.includes('/MLU640785075/cover-6.jpg'));
+    assert.ok(!html.includes('/MLU640785075/cover-4.jpg'));
+    assert.ok(!html.includes('/MLU640785075/cover-5.jpg'));
+    const other = renderPage(book(), 'un-libro', true, '', '', [], null, urls.map(url => url.replace('MLU640785075', 'MLU2')));
+    assert.ok(other.includes('/MLU2/cover-4.jpg'));
+    assert.ok(other.includes('/MLU2/cover-5.jpg'));
+});
+
+test('la descripción de la edición revisada corrige caracteres defectuosos sin alterar el catálogo', () => {
+    const item = book({ id: 'MLU640785075', description: 'Su profesor de universidadá Morrieá Schwartz, despues de muchos años, a traves de las conversaciones.' });
+    const html = renderPage(item, 'un-libro', false, '');
+    assert.match(html, /universidad, Morrie Schwartz/);
+    assert.match(html, /después de muchos años, a través/);
+    assert.doesNotMatch(html, /universidadá|Morrieá/);
+    assert.ok(item.description.includes('universidadá'));
+});

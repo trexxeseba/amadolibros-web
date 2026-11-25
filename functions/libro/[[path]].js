@@ -97,8 +97,11 @@ const NON_BOOK_IMAGE_HASHES = new Set([
 ]);
 
 function isBookGalleryImage(source) {
-    const hash = String(source || '').split('/').pop().split('.')[0];
-    return !NON_BOOK_IMAGE_HASHES.has(hash);
+    const path = String(source || '').split('?')[0];
+    const hash = path.split('/').pop().split('.')[0];
+    // Preview puede servir estas mismas imágenes verificadas sin copia por hash.
+    const verifiedLogoRoute = /\/book-cover\/MLU640785075\/cover-[45]\.jpg$/.test(path);
+    return !NON_BOOK_IMAGE_HASHES.has(hash) && !verifiedLogoRoute;
 }
 
 export function normalizeImages(item, previewCoverSrc = '') {
@@ -500,7 +503,11 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         ? item.bibliographic
         : {};
     const editorialHtml = renderEditorialEnrichment(editorial);
-    const description = item.description ? String(item.description).trim() : '';
+    const rawDescription = item.description ? String(item.description).trim() : '';
+    const description = item.id === 'MLU640785075'
+        ? rawDescription.replace('universidadá Morrieá Schwartz', 'universidad, Morrie Schwartz')
+            .replace(/\bdespues\b/g, 'después').replace(/\btraves\b/g, 'través')
+        : rawDescription;
     const descriptionHtml = description && !editorial
         ? `<div class="book-description"><h2>Descripción</h2><p>${escapeHtml(description)}</p></div>`
         : '';
