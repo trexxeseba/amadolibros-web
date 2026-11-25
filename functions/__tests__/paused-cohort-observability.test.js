@@ -143,4 +143,3 @@ test('el contrato UI diferencia alta nueva de contacto ya registrado', () => {
   assert.match(analytics, /availability_type/);
   assert.match(analytics, /\^Ya teníamos registrado/i);
 });
-
