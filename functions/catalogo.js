@@ -319,6 +319,7 @@ function filtersBarHtml({ categories, categoria, subcategoria, disponibilidad, o
         categoria: '',
         subcategoria: '',
         disponibilidad,
+        orden,
         page: 1,
     });
     const clearLink = hasAnyFilter && (categoria || subcategoria)
@@ -375,7 +376,7 @@ const CAT_SELECT_STYLES = `
     .clear-filters{display:inline-block;margin-bottom:1.25rem;font-size:.82rem;
                     color:#a94e3d;text-decoration:none;font-weight:600}
     .clear-filters:hover{text-decoration:underline}
-    .active-filters{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem}
+    .active-filters a{min-height:32px;display:inline-flex;align-items:center}.active-filters a:focus-visible{outline:3px solid #86422a;outline-offset:3px}.active-filters{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem}
     .filter-chip{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .65rem;
                  background:#efe6db;border-radius:999px;font-size:.75rem;color:#4a3d30;font-weight:600}
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
@@ -983,10 +984,10 @@ export async function onRequest(ctx) {
 
     // Chips de filtros activos — visibilidad clara de qué está aplicado.
     const chips = [];
-    if (rawQ) chips.push(`<span class="filter-chip">“${safeQ}”</span>`);
-    if (categoria) chips.push(`<span class="filter-chip">${escapeHtml(selectedCategory.name)}</span>`);
-    if (subcategoria) chips.push(`<span class="filter-chip">${escapeHtml(selectedSubcategoryName)}</span>`);
-    if (availabilityLabel) chips.push(`<span class="filter-chip">${availabilityLabel}</span>`);
+    if (rawQ) chips.push(`<a class="filter-chip" href="${escapeHtml(catalogPath({ categoria, subcategoria, disponibilidad, orden }))}" aria-label="Quitar búsqueda">“${safeQ}” ×</a>`);
+    if (categoria) chips.push(`<a class="filter-chip" href="${escapeHtml(catalogPath({ q: rawQ, disponibilidad, orden }))}" aria-label="Quitar categoría">${escapeHtml(selectedCategory.name)} ×</a>`);
+    if (subcategoria) chips.push(`<a class="filter-chip" href="${escapeHtml(catalogPath({ q: rawQ, categoria, disponibilidad, orden }))}" aria-label="Quitar subcategoría">${escapeHtml(selectedSubcategoryName)} ×</a>`);
+    if (availabilityLabel) chips.push(`<a class="filter-chip" href="${escapeHtml(catalogPath({ q: rawQ, categoria, subcategoria, orden }))}" aria-label="Quitar disponibilidad">${availabilityLabel} ×</a>`);
     const chipsHtml = chips.length > 0 ? `<div class="active-filters">${chips.join('')}</div>` : '';
 
     // Sin filtro: página de índice, indexable, con metadatos/JSON-LD ricos
