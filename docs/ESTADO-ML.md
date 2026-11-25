@@ -8,7 +8,7 @@ Reglas de este archivo:
 - Prioridad fija: 1) avisos de riesgo de cuenta, 2) precios, 3) cupones y promos, 4) atributos, 5) reposición, 6) el resto. Un frente por vez.
 - Si un número cambia respecto del informe anterior, se explica en una línea.
 
-Última actualización: 25/11/2026 19:30 (Montevideo).
+Última actualización: 25/11/2026 20:30 (Montevideo).
 
 ## Números del día
 
@@ -25,7 +25,7 @@ Reglas de este archivo:
 |---|---|---|---|---|---|
 | 1 | Avisos de riesgo de cuenta | No hay rutina que los lea. Seba no eligió la rutina B (25/11) | Ninguno hasta que Seba la pida | Seba | 25/11 |
 | 2a | Precios: para competir | 6 en pantalla. Precio Ganador corre solo cada 2 horas en modo real y el paso que cambia precios termina bien. Desde el 24/11 cada corrida figuraba fallida porque la auditoría se caía con el 403 de ML; se arregla para que no la tumbe | Verificar la primera corrida en verde | Claude | 26/11 |
-| 2b | Precios: sin catálogo | Lista de las 400 más vistas armada. Revisadas 20 + 12 (25/11). Hay 380 pendientes; 43 de ellas tienen 10 visitas o más | Aplicar cambios: BLOQUEADO (ver Bloqueos) | Seba (permiso) | 25/11 |
+| 2b | Precios: sin catálogo | Lista de las 400 más vistas armada. Revisadas 20 + 12 (25/11). Hay 380 pendientes; 43 de ellas tienen 10 visitas o más | La rutina F las revisa desde el 26/11 | Claude | 26/11 |
 | 3 | Cupón $400 OFF "Seguidores 400" | ACTIVO por API (estado started, vence 28/11 23:59). Comunicación del canal de difusión "Enviando" desde las 17:00 | Medir vistas, clics y ventas | Claude | 26/11 |
 | 4 | Atributos de fichas | 4.134 con faltantes (edición 3.427, año 2.012, tapa 1.315, páginas 1.245, género 1.031). Plan por ISBN mergeado (#806): 584 con propuesta firme, 18 de aviso único que se cargan por API. Todavía no se cargó ninguna | Construir la carga diaria; desglosar los 5.936 de ML en la pantalla de calidad | Claude | 26/11 |
 | 5 | Reposición | 276 sin stock, 189 pausadas que vendieron. Cuenta de Arkano y de los títulos con ventas repetidas sin hacer | Correr el motor de reposición | Claude | 27/11 |
@@ -43,7 +43,7 @@ Reglas de este archivo:
 Elegidas por Seba el 25/11:
 - A. Precios: ya existe (Precio Ganador, cada 2 horas, modo real). Falta que corra en verde.
 - E. Atributos, tanda diaria a las 03:00 en GitHub Actions: a construir.
-- F. Sin catálogo por Chrome, tarea de Claude con Sonnet, 10 por hora de 10:00 a 18:00: a crear.
+- F. Sin catálogo por Chrome: ACTIVA desde el 25/11 (tarea de Claude, Sonnet, 10 por hora de 10:05 a 18:05; primera corrida 26/11). Anota cada corrida en el registro privado. Riesgo: si el control de permisos frena el cambio de precio, la publicación queda en "revisar".
 
 No elegidas: B (avisos de riesgo), C (stock y pausadas), D (informe 19:00 por mail), G (reprobar 403 por Actions; se hace a mano el 26/11).
 
