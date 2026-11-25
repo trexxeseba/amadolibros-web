@@ -68,6 +68,8 @@ pedidos o de Mercado Pago, y al rotar una credencial.
 
 - **Demora del aviso:** hasta 20 minutos desde que empieza la falla, por las dos corridas seguidas.
 - **Pagos que Mercado Pago cobró y la web no registró:** eso es conciliación, no disponibilidad.
+- **Consulta a Mercado Pago guardada:** un resultado bueno vale 5 minutos y una falla 1 minuto, por entorno, cuenta y credencial (un resultado de una vista previa no sirve para producción; al cambiar la credencial se consulta de nuevo). Las llamadas simultáneas comparten una sola consulta. Tras corregir una credencial, el diagnóstico puede tardar hasta 1 minuto en volver a `ok`.
+- **Freno de consultas entre procesos:** si KV no responde, el freno es por proceso de Cloudflare; procesos distintos pueden hacer una consulta cada uno por minuto.
 - **Caída de Checkly:** si Checkly deja de correr, no avisa nadie. El workflow en `estado` muestra la última corrida de cada control.
 - **Límites del plan gratuito:** si la cuenta se queda sin corridas, los controles se frenan. `estado` muestra el plan vigente.
 

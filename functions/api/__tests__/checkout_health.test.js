@@ -150,16 +150,30 @@ test('health-13: un resultado bueno de Mercado Pago se reutiliza 5 minutos', asy
   assert.equal(body.checks.mercado_pago, 'ok');
 });
 
-test('health-14: una falla de Mercado Pago no se guarda: la recuperación se ve en la corrida siguiente', async () => {
+test('health-14: una falla de Mercado Pago se guarda 1 minuto y después se vuelve a consultar', async () => {
   const env = envOk();
-  assert.equal((await run({ env, fetchFn: mpFetch({ status: 401 }) })).body.checks.mercado_pago, 'falla');
-  assert.equal(env.AMADO_KV.store.size, 0);
-  assert.equal((await run({ env, fetchFn: mpFetch() })).body.checks.mercado_pago, 'ok');
+  let now = NOW;
+  const ask = async fetchFn => {
+    const handler = createCheckoutHealthHandler({ fetchCatalog: async () => ({ items: [{ id: 'MLU1' }] }), fetchFn, getNow: () => now });
+    const response = await handler({ request: new Request('https://www.amadolibros.com/api/checkout-health'), env });
+    return (await response.json()).checks.mercado_pago;
+  };
+  assert.equal(await ask(mpFetch({ status: 401 })), 'falla');
+  const during = mpFetch();
+  assert.equal(await ask(during), 'falla');
+  assert.equal(during.calls.length, 0);
+  now = new Date(NOW.getTime() + 61_000);
+  const after = mpFetch();
+  assert.equal(await ask(after), 'ok');
+  assert.equal(after.calls.length, 1);
 });
 
 test('health-15: un resultado guardado vencido se vuelve a consultar', async () => {
+  const env = envOk();
+  await run({ env });
+  const [key] = [...env.AMADO_KV.store.keys()];
   const old = new Date(NOW.getTime() - 6 * 60 * 1000).toISOString();
-  const env = envOk({ AMADO_KV: kvMock({ 'checkout-health:mp:v1': JSON.stringify({ result: 'ok', at: old }) }) });
+  env.AMADO_KV.store.set(key, JSON.stringify({ result: 'ok', at: old }));
   const fetchFn = mpFetch({ status: 401 });
   const { body } = await run({ env, fetchFn });
   assert.equal(fetchFn.calls.length, 1);
@@ -175,3 +189,78 @@ test('health-17: POST → 405', async () => {
   const { response } = await run({ method: 'POST' });
   assert.equal(response.status, 405);
 });
+
+// --- Hallazgos de la revisión del 25/11 ---
+
+const CATALOG = { items: [{ id: 'MLU1' }] };
+const PROD_URL = 'https://www.amadolibros.com/api/checkout-health';
+
+function tokenFetch(goodToken, id) {
+  const calls = [];
+  const fn = async (_url, opts) => {
+    calls.push(opts.headers.Authorization);
+    return new Response(JSON.stringify({ id }), { status: opts.headers.Authorization === `Bearer ${goodToken}` ? 200 : 401 });
+  };
+  fn.calls = calls;
+  return fn;
+}
+
+test('health-18: un resultado bueno de una vista previa no tapa una credencial inválida de producción', async () => {
+  const kv = kvMock();
+  const fetchFn = tokenFetch('token-de-vista-previa', 200);
+  const handler = createCheckoutHealthHandler({ fetchCatalog: async () => CATALOG, fetchFn, getNow: () => NOW });
+  const preview = envOk({ APP_ENV: 'preview', CANONICAL_ORIGIN: 'https://review.amadolibros-web.pages.dev', MP_COLLECTOR_ID: '200', MP_ACCESS_TOKEN: 'token-de-vista-previa', AMADO_KV: kv });
+  const prod = envOk({ MP_ACCESS_TOKEN: 'token-de-produccion-invalido', AMADO_KV: kv });
+  const first = await handler({ request: new Request('https://review.amadolibros-web.pages.dev/api/checkout-health'), env: preview });
+  const second = await handler({ request: new Request(PROD_URL), env: prod });
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 503);
+  assert.equal((await second.json()).checks.mercado_pago, 'falla');
+  assert.equal(fetchFn.calls.length, 2);
+});
+
+test('health-19: misma cuenta y entorno con la credencial cambiada → se consulta de nuevo', async () => {
+  const kv = kvMock();
+  await run({ env: envOk({ AMADO_KV: kv }) });
+  const fetchFn = mpFetch({ status: 401 });
+  const { body } = await run({ env: envOk({ AMADO_KV: kv, MP_ACCESS_TOKEN: 'APP_USR-otra-credencial' }), fetchFn });
+  assert.equal(fetchFn.calls.length, 1);
+  assert.equal(body.checks.mercado_pago, 'falla');
+});
+
+test('health-20: el guardado no contiene la credencial', async () => {
+  const env = envOk();
+  await run({ env });
+  assert.equal(env.AMADO_KV.store.size, 1);
+  for (const [key, value] of env.AMADO_KV.store) {
+    assert.equal(`${key} ${value}`.includes('secreto-de-prueba'), false);
+    assert.match(key, /^checkout-health:mp:v2:production:\d+:[0-9a-f]{16}$/);
+  }
+});
+
+const KV_CASES = [
+  ['con KV', () => kvMock()],
+  ['sin KV', () => undefined],
+  ['con KV caído', () => ({ get: async () => { throw new Error('kv'); }, put: async () => { throw new Error('kv'); } })],
+];
+for (const [name, makeKv] of KV_CASES) {
+  test(`health-21 (${name}): cinco consultas seguidas con Mercado Pago rechazando → una sola llamada`, async () => {
+    const fetchFn = mpFetch({ status: 401 });
+    const env = envOk({ AMADO_KV: makeKv() });
+    const handler = createCheckoutHealthHandler({ fetchCatalog: async () => CATALOG, fetchFn, getNow: () => NOW });
+    for (let i = 0; i < 5; i++) {
+      const response = await handler({ request: new Request(PROD_URL), env });
+      assert.equal(response.status, 503);
+    }
+    assert.equal(fetchFn.calls.length, 1);
+  });
+
+  test(`health-22 (${name}): cinco consultas simultáneas en frío → una sola llamada`, async () => {
+    const fetchFn = mpFetch();
+    const env = envOk({ AMADO_KV: makeKv() });
+    const handler = createCheckoutHealthHandler({ fetchCatalog: async () => CATALOG, fetchFn, getNow: () => NOW });
+    const responses = await Promise.all(Array.from({ length: 5 }, () => handler({ request: new Request(PROD_URL), env })));
+    assert.deepEqual(responses.map(r => r.status), [200, 200, 200, 200, 200]);
+    assert.equal(fetchFn.calls.length, 1);
+  });
+}

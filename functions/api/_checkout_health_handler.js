@@ -18,10 +18,15 @@ import { resolveConfig } from './_env_config.js';
 
 const MP_USERS_ME = 'https://api.mercadopago.com/users/me';
 const MP_TIMEOUT_MS = 6000;
-// La consulta a Mercado Pago se guarda unos minutos: el endpoint es público y
-// no tiene que poder usarse para golpear la API de Mercado Pago a repetición.
-const MP_CACHE_KEY = 'checkout-health:mp:v1';
-const MP_CACHE_TTL_SECONDS = 300;
+// La consulta a Mercado Pago se guarda: el endpoint es público y no tiene que
+// poder usarse para golpear la API de Mercado Pago a repetición. Un resultado
+// bueno vale 5 minutos; una falla, 1 minuto (la recuperación se ve enseguida).
+// La clave del guardado lleva el entorno, la cuenta y una huella de la
+// credencial: un resultado de una vista previa nunca sirve para producción, y
+// una credencial cambiada se consulta de nuevo.
+const MP_CACHE_PREFIX = 'checkout-health:mp:v2';
+const MP_OK_TTL_SECONDS = 300;
+const MP_FAIL_TTL_SECONDS = 60;
 
 const OK = 'ok';
 const FAIL = 'falla';
@@ -79,25 +84,57 @@ async function queryMercadoPago(token, collectorId, fetchFn) {
   }
 }
 
-async function checkMercadoPago({ token, collectorId, kv, fetchFn, now }) {
+async function mpCacheKey({ appEnv, collectorId, token }) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+  const print = [...new Uint8Array(digest)].slice(0, 8).map(byte => byte.toString(16).padStart(2, '0')).join('');
+  return `${MP_CACHE_PREFIX}:${appEnv}:${collectorId}:${print}`;
+}
+
+function fresh(entry, now) {
+  if (!entry || (entry.result !== OK && entry.result !== FAIL)) return null;
+  const age = now.getTime() - Date.parse(entry.at);
+  const ttl = entry.result === OK ? MP_OK_TTL_SECONDS : MP_FAIL_TTL_SECONDS;
+  return age >= 0 && age < ttl * 1000 ? entry.result : null;
+}
+
+// `memory` e `inflight` viven mientras viva el proceso que atiende: frenan las
+// consultas repetidas aunque KV no esté o falle, y hacen que las llamadas
+// simultáneas compartan una sola consulta a Mercado Pago.
+async function checkMercadoPago({ token, collectorId, appEnv, kv, fetchFn, now, memory, inflight }) {
   if (!present(token)) return FAIL;
-  if (kv) {
-    try {
-      const cached = JSON.parse(await kv.get(MP_CACHE_KEY) || 'null');
-      // Sólo se reutiliza un resultado bueno: una falla se vuelve a consultar
-      // siempre, para que la recuperación se vea en la corrida siguiente.
-      if (cached?.result === OK && now.getTime() - Date.parse(cached.at) < MP_CACHE_TTL_SECONDS * 1000) return OK;
-    } catch { /* sin caché: se consulta */ }
+  const key = await mpCacheKey({ appEnv, collectorId, token });
+
+  const remembered = fresh(memory.get(key), now);
+  if (remembered) return remembered;
+  if (inflight.has(key)) return inflight.get(key);
+
+  const work = (async () => {
+    if (kv) {
+      try {
+        const cached = fresh(JSON.parse(await kv.get(key) || 'null'), now);
+        if (cached) return cached;
+      } catch { /* sin guardado legible: se consulta */ }
+    }
+    const result = await queryMercadoPago(token, collectorId, fetchFn);
+    const entry = { result, at: now.toISOString() };
+    memory.set(key, entry);
+    if (kv) {
+      const ttl = result === OK ? MP_OK_TTL_SECONDS : MP_FAIL_TTL_SECONDS;
+      try { await kv.put(key, JSON.stringify(entry), { expirationTtl: ttl }); } catch { /* queda la memoria */ }
+    }
+    return result;
+  })();
+  inflight.set(key, work);
+  try {
+    return await work;
+  } finally {
+    inflight.delete(key);
   }
-  const result = await queryMercadoPago(token, collectorId, fetchFn);
-  if (kv && result === OK) {
-    await kv.put(MP_CACHE_KEY, JSON.stringify({ result, at: now.toISOString() }), { expirationTtl: MP_CACHE_TTL_SECONDS })
-      .catch(() => {});
-  }
-  return result;
 }
 
 export function createCheckoutHealthHandler({ fetchCatalog, fetchFn = (...args) => globalThis.fetch(...args), getNow = () => new Date() }) {
+  const memory = new Map();
+  const inflight = new Map();
   return async function onRequest(context) {
     const { request, env } = context;
     if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -121,7 +158,7 @@ export function createCheckoutHealthHandler({ fetchCatalog, fetchFn = (...args) 
       checkOrdersDb(env?.ORDERS_DB),
       checkCatalog(fetchCatalog, context),
       config.ok
-        ? checkMercadoPago({ token: env?.MP_ACCESS_TOKEN, collectorId: config.mpCollectorId, kv: env?.AMADO_KV, fetchFn, now })
+        ? checkMercadoPago({ token: env?.MP_ACCESS_TOKEN, collectorId: config.mpCollectorId, appEnv: config.appEnv, kv: env?.AMADO_KV, fetchFn, now, memory, inflight })
         : Promise.resolve(FAIL),
     ]);
     checks.base_de_pedidos = db;
