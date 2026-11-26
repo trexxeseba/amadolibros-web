@@ -1,0 +1,41 @@
+name: Latido de precios sin catálogo (vigía)
+
+# Pedido de Seba del 26/11/2026 (E1): la tarea de Claude "Precios sin catálogo por Chrome" corre en la
+# PC cada hora de 06:05 a 23:05 y fallaba en silencio (se frenaba esperando un permiso). Cada corrida
+# deja un latido en el repo privado (rama estado/diagnostico, latidos/sin-catalogo.json). Este vigía
+# avisa por mail si pasan más de 3 horas sin latido dentro del horario. Sólo lee.
+
+on:
+  schedule:
+    # 10:20, 14:20, 18:20 y 22:20 de Montevideo.
+    - cron: '20 13,17,21,1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vigia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Comprobar el último latido
+        env:
+          GH_TOKEN: ${{ secrets.ESTADO_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
+        shell: bash
+        run: |
+          ultimo=$(gh api "repos/trexxeseba/amadolibros-privado/commits?path=latidos/sin-catalogo.json&sha=estado/diagnostico&per_page=1" --jq '.[0].commit.committer.date' 2>/dev/null || true)
+          ahora=$(date -u +%s)
+          if [ -z "$ultimo" ]; then horas=999; else horas=$(( (ahora - $(date -u -d "$ultimo" +%s)) / 3600 )); fi
+          echo "Horas desde el último latido: $horas"
+          if [ "$horas" -gt 3 ]; then
+            node precio-ganador/src/alarma.mjs "la tarea de precios sin catálogo no corre hace $horas horas" "La tarea de Claude 'Precios sin catálogo por Chrome' no dejó latido en más de 3 horas. Causa habitual: quedó esperando un permiso en la app de Claude o la app está cerrada. Abrir la tarea en la app, tocar 'Ejecutar ahora' y aprobar con 'permitir siempre'."
+          fi
