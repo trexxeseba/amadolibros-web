@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-import {renderPage} from '../libro/[[path]].js';
+import {renderPage} from './helpers/render-product-page.js';
 const fixtures=JSON.parse(readFileSync(new URL('./fixtures/gallery-visual.json',import.meta.url),'utf8'));
 const poster=fixtures.decoded.find(r=>fixtures.cases.find(c=>c.id===r.id).bad);
 const cover=fixtures.decoded.find(r=>!fixtures.cases.find(c=>c.id===r.id).bad);

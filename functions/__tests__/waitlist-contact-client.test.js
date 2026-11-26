@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import {renderPage} from '../libro/[[path]].js';
+import {renderPage} from './helpers/render-product-page.js';
 
 test('Avisame valida antes del envio y permite corregir el contacto sin recargar',async()=>{
   const html=renderPage({id:'MLU12345',title:'Libro agotado',price:1200,status:'paused',available_quantity:0},'libro',true,'test-key');

@@ -323,7 +323,9 @@ ${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" d
       // toString() ese ayudante no viaja y el filtro fallaba con "__name is not defined".
       var __name=function(target){return target;};
       var policy=(${createGalleryVisualPolicy.toString()})(${JSON.stringify(NON_BOOK_VISUAL_REFERENCES)});
-      (${excludeNonBookImages.toString()})(imgs,policy,excludeImage);
+      (${excludeNonBookImages.toString()})(imgs,policy,excludeImage).then(function(){
+        mainBtn.setAttribute('data-gallery-filter','complete');
+      });
     };
     if(typeof requestIdleCallback==='function')requestIdleCallback(filterImages,{timeout:1500});
     else setTimeout(filterImages,0);
@@ -1172,6 +1174,8 @@ ${!inStock && waitlistSiteKey ? `
 <script>(function(){
   var form=document.getElementById('aviso-stock');
   if(!form)return;
+  // keepNames agrega este ayudante dentro de la fábrica serializada.
+  var __name=function(target){return target;};
   var contactValidation=(${createContactValidation.toString()})();
   var field=form.elements.email;
   var status=document.getElementById('waitlist-status');
