@@ -61,12 +61,23 @@ export function cuponesDeDetalle(detalles) {
   })).filter(c => c.fijo !== null || c.pct !== null);
 }
 
+// Corrida diaria (PROMOCION=auto): campañas del vendedor y de Mercado Libre (DEAL) que ya empezaron o
+// empiezan en los próximos 3 días y no terminaron. Nunca las de liquidación ni "Amado Week". Función pura.
+export function promosDelDia(promos, ahora = new Date()) {
+  const t = ahora.getTime(), en3 = t + 3 * 86400000;
+  return promos.filter(p => ['DEAL', 'SELLER_CAMPAIGN'].includes(p?.type)
+    && ['started', 'pending'].includes(String(p.status ?? '').toLowerCase())
+    && !/amado\s*liquidacion|amado\s*week/i.test(String(p.name ?? '').normalize('NFD').replace(/[̀-ͯ]/g, ''))
+    && Date.parse(p.start_date) <= en3 && Date.parse(p.finish_date) > t);
+}
+
 async function main() {
   const env = process.env, args = process.argv.slice(2);
   const salida = args[args.indexOf('--salida') + 1] || '.';
   const real = String(env.MODO ?? 'prueba') === 'real';
   const nombre = String(env.PROMOCION ?? '').trim().toLowerCase();
-  const desde = Math.max(0, Number(env.DESDE) || 0), cantidad = Math.min(3000, Math.max(1, Number(env.CANTIDAD) || 1500));
+  const auto = nombre === 'auto';
+  const desde = auto ? 0 : Math.max(0, Number(env.DESDE) || 0), cantidad = auto ? Infinity : Math.min(3000, Math.max(1, Number(env.CANTIDAD) || 1500));
   const soloItems = String(env.ITEMS ?? '').split(/[\s,;]+/).map(s => s.trim().toUpperCase()).filter(s => /^MLU\d{6,15}$/.test(s));
   const config = JSON.parse(readFileSync(new URL('../config/exclusiones.json', import.meta.url), 'utf8'));
   const excluidos = new Set((config.items ?? []).map(s => String(s).toUpperCase()));
@@ -75,9 +86,9 @@ async function main() {
   if (String(yo?.id) !== CUENTA.sellerId) throw Object.assign(new Error('token_de_otra_cuenta'), { fatal: true });
 
   const promos = lista(await ml.get(`/seller-promotions/users/${CUENTA.sellerId}?${V2}`));
-  const promo = promos.find(p => String(p.name ?? '').trim().toLowerCase() === nombre);
-  if (!promo) throw Object.assign(new Error('promo_no_encontrada'), { fatal: true });
-  if (!['DEAL', 'SELLER_CAMPAIGN'].includes(promo.type)) throw Object.assign(new Error('tipo_no_permitido'), { fatal: true });
+  const objetivo = auto ? promosDelDia(promos, new Date()) : promos.filter(p => String(p.name ?? '').trim().toLowerCase() === nombre);
+  if (!objetivo.length) { if (auto) { console.log('Sin promociones del día para trabajar'); return; } throw Object.assign(new Error('promo_no_encontrada'), { fatal: true }); }
+  if (objetivo.some(p => !['DEAL', 'SELLER_CAMPAIGN'].includes(p.type))) throw Object.assign(new Error('tipo_no_permitido'), { fatal: true });
   const detCup = [];
   for (const p of promos.filter(p => p.type === 'SELLER_COUPON_CAMPAIGN')) {
     const r = await ml.sonda(`/seller-promotions/promotions/${encodeURIComponent(p.id)}?promotion_type=SELLER_COUPON_CAMPAIGN&${V2}`);
@@ -85,6 +96,7 @@ async function main() {
     detCup.push({ ...r.json, status: r.json?.status ?? p.status, name: p.name });
   }
   const cupones = cuponesDeDetalle(detCup);
+  for (const promo of objetivo) {
   console.log(`Promo ${promo.type} | cupones vigentes leídos: ${cupones.length} | modo ${real ? 'real' : 'prueba'}`);
 
   // Entradas de la promoción: adheridas (pending/started) y candidatas.
@@ -166,9 +178,10 @@ async function main() {
   }
 
   mkdirSync(salida, { recursive: true });
-  writeFileSync(join(salida, `promo-masiva-${Date.now()}.json`), JSON.stringify({ promo: { id: promo.id, type: promo.type, name: promo.name }, modo: real ? 'real' : 'prueba', desde, cantidad, cupones, cuenta, filas }, null, 1));
+  writeFileSync(join(salida, `promo-masiva-${promo.type}-${Date.now()}.json`), JSON.stringify({ promo: { id: promo.id, type: promo.type, name: promo.name }, modo: real ? 'real' : 'prueba', desde, cantidad, cupones, cuenta, filas }, null, 1));
   console.log('Resultado por estado:', JSON.stringify(cuenta)); // sólo conteos
   if ((cuenta.error ?? 0) + (cuenta.no_verificado ?? 0) + (cuenta.error_reingreso ?? 0) > tanda.length * 0.2) process.exitCode = 1;
+  }
 }
 
 if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file://').href) main().catch(e => { console.error('promo-masiva:', e?.code ?? e?.message); process.exit(1); });

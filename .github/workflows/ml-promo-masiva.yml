@@ -5,10 +5,13 @@ name: ML promo masiva (Amado Libros)
 # agentes-ml/src/promo-masiva.mjs. El log sólo lleva conteos; el detalle va al repo privado.
 
 on:
+  # Todos los días a las 06:00 de Montevideo: las promos vigentes o que empiezan en 3 días (PROMOCION=auto).
+  schedule:
+    - cron: '0 9 * * *'
   workflow_dispatch:
     inputs:
       promocion:
-        description: 'Nombre exacto de la promoción en Mercado Libre'
+        description: 'Nombre exacto de la promoción en Mercado Libre, o auto (las del día)'
         required: true
         type: string
       desde:
@@ -39,7 +42,7 @@ concurrency:
 jobs:
   promo:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 340
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
@@ -47,14 +50,14 @@ jobs:
       ESTADO_REPO: trexxeseba/amadolibros-privado
       ESTADO_RAMA: estado/diagnostico
       ESTADO_TOKEN: ${{ secrets.ESTADO_TOKEN }}
-      PROMOCION: ${{ inputs.promocion }}
+      PROMOCION: ${{ inputs.promocion || 'auto' }}
       DESDE: ${{ inputs.desde }}
       CANTIDAD: ${{ inputs.cantidad }}
       ITEMS: ${{ inputs.items }}
-      MODO: ${{ inputs.modo }}
+      MODO: ${{ inputs.modo || 'real' }}
     steps:
       - name: Modo real sólo desde main
-        if: inputs.modo == 'real' && github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/main' && (inputs.modo || 'real') == 'real'
         run: exit 1
       - uses: actions/checkout@v4
         with:
