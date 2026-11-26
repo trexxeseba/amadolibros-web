@@ -1,4 +1,4 @@
-name: Checkly y navegador - evidencia de solo lectura
+name: Checkly y navegador - diagnostico y prueba de firma
 on:
   workflow_dispatch:
   push:
@@ -6,13 +6,14 @@ on:
     paths:
       - '.github/workflows/checkly-evidence.yml'
       - 'scripts/monitoring/checkly-evidence.mjs'
+      - 'scripts/monitoring/checkly-detail.mjs'
       - 'scripts/monitoring/browser-evidence.cjs'
 permissions:
   contents: read
 jobs:
   checkly:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,6 +25,11 @@ jobs:
         env:
           CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
         run: node scripts/monitoring/checkly-evidence.mjs
+      - name: Leer trazas y ejecutar dos veces el control de firma existente
+        env:
+          CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
+          RETEST_SIGNATURE: '1'
+        run: node scripts/monitoring/checkly-detail.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
