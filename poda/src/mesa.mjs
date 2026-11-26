@@ -70,7 +70,8 @@ export function armarMail({ fecha, real, cuerpo, avisos = [] }) {
 export function listaParaChrome({ fecha, accion, real, resultado }) {
   const L = resultado.listas;
   const f = x => ({ ad_group_id: String(x.ad_group_id ?? x.id ?? ''), items: x.item_ids ?? [], titulo: x.titulo ?? null, motivo: x.motivo ?? null, provisoria: /PROVISORIA/.test(String(x.motivo ?? '')), gasto: x.gasto ?? null, clics: x.clics ?? null });
-  return { fecha, accion, real, pausar: [...L.pausar, ...L.pendientesPausa].map(f), reactivar: L.reactivar.filter(x => !esSoloPromo(x)).map(f) };
+  // pausaria: lo que se pausaría en modo prueba o auditoría (para mostrarlo antes del OK); la tarea de Chrome no lo ejecuta.
+  return { fecha, accion, real, pausar: [...L.pausar, ...L.pendientesPausa].map(f), pausaria: (L.pausaria ?? []).map(f), reactivar: L.reactivar.filter(x => !esSoloPromo(x)).map(f) };
 }
 
 // Mail de respaldo con el detalle (privado, a Seba). Sólo si no se pudo subir a la mesa.
