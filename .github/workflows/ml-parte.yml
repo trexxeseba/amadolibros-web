@@ -1,0 +1,54 @@
+name: ML parte del operador (Amado Libros, solo lectura)
+
+# Pedido de Seba del 26/11/2026: parte completo de cada frente de Mercado Libre. Sólo lee.
+# El repo es público: el log dice qué pasos terminaron; los números van al repo privado
+# (rama estado/diagnostico, carpeta parte/). Ver agentes-ml/src/parte-operador.mjs.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ml-parte
+  cancel-in-progress: false
+
+jobs:
+  parte:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ESTADO_REPO: trexxeseba/amadolibros-privado
+      ESTADO_RAMA: estado/diagnostico
+      ESTADO_TOKEN: ${{ secrets.ESTADO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests
+        run: node --test agentes-ml/test/parte-operador.test.mjs
+      - name: Leer
+        run: node agentes-ml/src/parte-operador.mjs --salida "salida"
+      - name: Guardar en el repo privado
+        shell: bash
+        run: |
+          [ -n "$ESTADO_TOKEN" ] || { echo "Falta el secreto ESTADO_TOKEN"; exit 1; }
+          git config --global user.name "diagnostico[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git clone -q "https://x-access-token:${ESTADO_TOKEN}@github.com/${ESTADO_REPO}.git" privado
+          cd privado
+          git checkout -q "$ESTADO_RAMA"
+          mkdir -p parte
+          cp ../salida/parte-operador.json "parte/$GITHUB_RUN_ID.json"
+          cp ../salida/parte-operador.json "parte/ultimo.json"
+          git add -A
+          git commit -q -m "Parte $GITHUB_RUN_ID [skip ci]"
+          git push -q origin "HEAD:$ESTADO_RAMA"
+          echo "Guardado"
