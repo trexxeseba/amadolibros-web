@@ -162,8 +162,7 @@ export async function estado({ api = checklyApi() } = {}) {
       log('resultado', { nombre: c.name, tiene_fallas: r.hasFailures ?? null, con_error: r.hasErrors ?? null, degradado: r.isDegraded ?? null, claves: Object.keys(api_).join(','), desde: r.startedAt ?? null, ubicacion: r.runLocation ?? null,
         http: api_.response?.status ?? api_.responseStatus ?? null, tiempo_ms: api_.timings?.total ?? r.responseTime ?? null,
         error_de_conexion: api_.requestError || null,
-        aserciones: (api_.assertions || []).filter(x => x.error || x.pass === false || x.passed === false)
-          .map(x => ({ fuente: x.source, comparacion: x.comparison, esperado: x.target, actual: x.actual ?? null })) });
+        aserciones: (api_.assertions || []).map(x => ({ fuente: x.source, comparacion: x.comparison, esperado: x.target, actual: x.actual ?? null, error: x.error ?? null })) });
     } catch (error) { log('resultado', { nombre: c.name, error: String(error?.message || error).slice(0, 120) }); }
   }
   for (const ch of channels) {
