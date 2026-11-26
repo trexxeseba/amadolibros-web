@@ -90,7 +90,8 @@ export function cobroChecks(channelIds, { frequency = 10 } = {}) {
       request: { method: 'POST', url: `${SITE}/api/webhooks/mercadopago?data.id=1&type=payment`, followRedirects: false,
         skipSSL: false, bodyType: 'JSON', body: '{"type":"payment","data":{"id":"1"}}',
         headers: [...headers, { key: 'Content-Type', value: 'application/json' }],
-        assertions: [{ source: 'STATUS_CODE', comparison: 'EQUALS', target: '401' }] } },
+        assertions: [{ source: 'STATUS_CODE', comparison: 'GREATER_THAN', target: '400' }, { source: 'STATUS_CODE', comparison: 'LESS_THAN', target: '402' },
+          { source: 'JSON_BODY', property: '$.error', comparison: 'CONTAINS', target: 'Firma' }] } },
   ];
 }
 
@@ -151,6 +152,20 @@ export async function estado({ api = checklyApi() } = {}) {
     log('control', { nombre: c.name, tipo: c.checkType, activo: c.activated, silenciado: c.muted, cada_min: c.frequency,
       etiquetas: c.tags, canales: (c.alertChannelSubscriptions || []).filter(x => x.activated).length,
       falla_ahora: s.hasFailures ?? null, error_ahora: s.hasErrors ?? null, ultimo_cambio: s.updated_at || s.updatedAt || null });
+  }
+  // Para los controles que fallan ahora: qué respondió el último resultado
+  // (solo código, tiempo y las aserciones que no se cumplieron; nunca el cuerpo).
+  for (const c of checks.filter(x => statusById.get(x.id)?.hasFailures)) {
+    log('definicion', { nombre: c.name, metodo: c.request?.method, url: c.request?.url, aserciones: c.request?.assertions, cuerpo: c.request?.body, tipo_cuerpo: c.request?.bodyType, seguir_redirecciones: c.request?.followRedirects, reintentos: c.retryStrategy?.type ?? null, fallas_antes_de_avisar: c.alertSettings?.escalationType === 'RUN_BASED' ? c.alertSettings?.runBasedEscalation : c.alertSettings, degradado_ms: c.degradedResponseTime, maximo_ms: c.maxResponseTime, script_previo: !!c.setupSnippetId, script_posterior: !!c.tearDownSnippetId, doble_chequeo: c.doubleCheck });
+    try {
+      const page = await api(`/v2/check-results/${c.id}?limit=1&resultType=FINAL`);
+      const r = page.entries?.[0] || {};
+      const api_ = r.apiCheckResult || {};
+      log('resultado', { nombre: c.name, tiene_fallas: r.hasFailures ?? null, con_error: r.hasErrors ?? null, degradado: r.isDegraded ?? null, claves: Object.keys(api_).join(','), desde: r.startedAt ?? null, ubicacion: r.runLocation ?? null,
+        http: api_.response?.status ?? api_.responseStatus ?? null, tiempo_ms: api_.timings?.total ?? r.responseTime ?? null,
+        error_de_conexion: api_.requestError || null, registro: JSON.stringify(api_.jobLog ?? null).slice(0, 600), respuesta_claves: Object.keys(api_.response || {}).join(','), cabecera_servidor: (api_.response?.headers?.server ?? null),
+        aserciones: (api_.assertions || []).map(x => ({ fuente: x.source, comparacion: x.comparison, esperado: x.target, actual: x.actual ?? null, error: x.error ?? null })) });
+    } catch (error) { log('resultado', { nombre: c.name, error: String(error?.message || error).slice(0, 120) }); }
   }
   for (const ch of channels) {
     log('canal', { tipo: ch.type, destino: ch.type === 'EMAIL' ? maskEmail(ch.config?.address) : (ch.config?.name || ''),
