@@ -282,6 +282,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
           <!-- Acciones de pago -->
           <section class="cart-pay-section" aria-label="Confirmar y pagar">
             {checkoutEnabled && <div id="cf-ts-container"></div>}
+            {checkoutEnabled && <p id="cf-ts-status" class="cf-ts-status" role="status" aria-live="polite" hidden></p>}
 
             <div id="checkout-error" class="checkout-error" role="alert" hidden></div>
 
@@ -1026,6 +1027,12 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
   }
   .payment-opt-preview[hidden] { display: none; }
 
+  .cf-ts-status {
+    margin: 8px 0 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #5a4a3a;
+  }
   .checkout-error {
     background: #fef2f2;
     border: 1px solid #fecaca;
@@ -1686,16 +1693,32 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
     });
   }
 
+  // Aviso visible mientras Cloudflare verifica que la persona es real: si
+  // tarda más de 2 segundos se explica qué pasa; al terminar se borra.
+  function tsShowStatus(text) {
+    var el = document.getElementById('cf-ts-status');
+    if (!el) return;
+    el.textContent = text || '';
+    el.hidden = !text;
+  }
+
   function tsGetToken() {
     return new Promise(function (resolve, reject) {
       if (tsWidgetId == null) { reject(new Error('ts-not-ready')); return; }
-      tsPending = { resolve: resolve, reject: reject };
+      var notice = setTimeout(function () {
+        tsShowStatus('Estamos verificando que sos una persona. Puede tardar unos segundos, no cierres esta página.');
+      }, 2000);
+      var done = function () { clearTimeout(notice); tsShowStatus(''); };
+      tsPending = {
+        resolve: function (t) { done(); resolve(t); },
+        reject:  function (e) { done(); reject(e); },
+      };
       window.turnstile.reset(tsWidgetId);
       window.turnstile.execute(tsWidgetId);
       // Timeout de seguridad en caso de que ningún callback dispare.
       setTimeout(function () {
         if (tsPending) { var r=tsPending.reject; tsPending=null; r(new Error('ts-timeout')); }
-      }, 30000);
+      }, 20000);
     });
   }
 
@@ -3731,7 +3754,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       if (!turnstileConfigured) return null;
       if (tsWidgetId == null) throw new Error('La verificación aún no cargó. Esperá un momento y reintentá.');
       try { return await tsGetToken(); }
-      catch (_) { throw new Error('Error en la verificación. Recargá la página e intentá de nuevo.'); }
+      catch (_) { throw new Error('No pudimos completar la verificación de seguridad. Tocá el botón para intentar de nuevo; si se repite, recargá la página o escribinos por WhatsApp.'); }
     }
 
     async function attachAnalyticsContext(payload) {
@@ -3963,7 +3986,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
           try {
             cfTsResponse = await tsGetToken();
           } catch (_tsErr) {
-            showCheckoutError('Error en la verificación. Recargá la página e intentá de nuevo.');
+            showCheckoutError('No pudimos completar la verificación de seguridad. Tocá el botón para intentar de nuevo; si se repite, recargá la página o escribinos por WhatsApp.');
             resetPrepareButton();
             return;
           }
