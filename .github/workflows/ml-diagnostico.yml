@@ -5,6 +5,9 @@ name: ML diagnóstico del día (Amado Libros, solo lectura)
 # quedan en el repo privado (rama estado/diagnostico), igual que el estado de Precio Ganador.
 
 on:
+  # Todos los días a las 18:30 de Montevideo, antes del informe de las 19:00.
+  schedule:
+    - cron: '30 21 * * *'
   workflow_dispatch:
 
 permissions:

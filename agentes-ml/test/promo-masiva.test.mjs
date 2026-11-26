@@ -39,3 +39,18 @@ test('nunca sube el precio y respeta el rango de la promo', () => {
   assert.equal(precioConTopes({ regular: 1000, techo: 950, min: 900, cupones: [] }).precio, 900);
   assert.equal(precioConTopes({ regular: 1000, techo: 950, max: 700, cupones: [] }).error, 'sin_rango');
 });
+test('la corrida diaria toma las promos vigentes o que empiezan en 3 días, nunca cupones ni liquidación', async () => {
+  const { promosDelDia } = await import('../src/promo-masiva.mjs');
+  const ahora = new Date('2026-11-26T15:00:00Z');
+  const p = (name, type, status, start, finish) => ({ name, type, status, start_date: start, finish_date: finish });
+  const r = promosDelDia([
+    p('black friday', 'DEAL', 'pending', '2026-11-27T03:00:00Z', '2026-12-01T02:00:00Z'),
+    p('Amado 15', 'SELLER_CAMPAIGN', 'started', '2026-11-01T00:00:00', '2026-12-01T00:00:00'),
+    p('NAVIDAD Y REYES', 'DEAL', 'pending', '2026-12-01T03:00:00Z', '2027-01-07T00:00:00Z'),
+    p('Seguidores 400', 'SELLER_COUPON_CAMPAIGN', 'started', '2026-10-30T00:00:00', '2026-11-29T00:00:00'),
+    p('Amado Liquidación 40', 'SELLER_CAMPAIGN', 'started', '2026-11-01T00:00:00', '2026-12-01T00:00:00'),
+    p('Potenciá tus ventas', 'SMART', 'started', '2026-08-04T00:00:00', '2027-02-04T00:00:00'),
+    p('vieja', 'DEAL', 'started', '2026-11-01T00:00:00Z', '2026-11-20T00:00:00Z'),
+  ], ahora);
+  assert.deepEqual(r.map(x => x.name), ['black friday', 'Amado 15']);
+});
