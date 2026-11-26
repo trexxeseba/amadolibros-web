@@ -1,0 +1,57 @@
+name: ML diagnóstico del día (Amado Libros, solo lectura)
+
+# Pedido de Seba del 26/11/2026: ventas, visitas, promociones, cupones y publicaciones del día.
+# Sólo lee Mercado Libre. El repo es público: el log dice qué pasos terminaron y los números
+# quedan en el repo privado (rama estado/diagnostico), igual que el estado de Precio Ganador.
+
+on:
+  # Todos los días a las 18:30 de Montevideo, antes del informe de las 19:00.
+  schedule:
+    - cron: '30 21 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ml-diagnostico
+  cancel-in-progress: false
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ESTADO_REPO: trexxeseba/amadolibros-privado
+      ESTADO_RAMA: estado/diagnostico
+      ESTADO_TOKEN: ${{ secrets.ESTADO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests
+        run: node --test agentes-ml/test/diagnostico-dia.test.mjs
+      - name: Leer
+        run: node agentes-ml/src/diagnostico-dia.mjs --salida "salida"
+      - name: Guardar en el repo privado
+        shell: bash
+        run: |
+          [ -n "$ESTADO_TOKEN" ] || { echo "Falta el secreto ESTADO_TOKEN"; exit 1; }
+          git config --global user.name "diagnostico[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git clone -q "https://x-access-token:${ESTADO_TOKEN}@github.com/${ESTADO_REPO}.git" privado
+          cd privado
+          if git ls-remote --exit-code --heads origin "$ESTADO_RAMA" >/dev/null; then git checkout -q "$ESTADO_RAMA"; else git checkout -q --orphan "$ESTADO_RAMA"; git rm -rqf . || true; fi
+          mkdir -p "corridas"
+          cp ../salida/diagnostico-libros.json "corridas/$GITHUB_RUN_ID.json"
+          cp ../salida/diagnostico-libros.json "ultimo.json"
+          git add -A
+          git commit -q -m "Diagnóstico $GITHUB_RUN_ID [skip ci]"
+          git push -q origin "HEAD:$ESTADO_RAMA"
+          echo "Guardado"
