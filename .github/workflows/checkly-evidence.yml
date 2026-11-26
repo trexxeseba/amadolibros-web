@@ -78,26 +78,3 @@ jobs:
           name: browser-evidence
           path: browser-evidence/
           retention-days: 7
-  apply-approved-browser:
-    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[apply-browser-approved]') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 6
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Aplicar unicamente el script aprobado y verificar dos corridas
-        env:
-          CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
-          APPLY_APPROVED_BROWSER: '2026-11-26'
-          VERIFY_SETTINGS_NORMALIZATION: '1'
-        run: node scripts/monitoring/checkly-browser-apply.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: checkly-browser-application
-          path: checkly-browser-application/
-          retention-days: 7
