@@ -17,6 +17,12 @@ for(const endpoint of ['', '/keyEvents?pageSize=200','/googleAdsLinks?pageSize=2
 const metadata=await read('https://analyticsdata.googleapis.com/v1beta/properties/'+p+'/metadata');
 const dims=new Set((metadata.data.dimensions||[]).map(x=>x.apiName)),metrics=new Set((metadata.data.metrics||[]).map(x=>x.apiName));
 const desired=[
+ {id:'shopping-queries',dimensions:['sessionGoogleAdsCampaignId','sessionGoogleAdsQuery'],metrics:['sessions','advertiserAdClicks','advertiserAdCost','keyEvents'],campaign:'24472564042'},
+ {id:'shopping-landings',dimensions:['sessionGoogleAdsCampaignId','landingPage'],metrics:['sessions','advertiserAdClicks','advertiserAdCost','keyEvents'],campaign:'24472564042'},
+ {id:'shopping-landings-sessions',dimensions:['sessionGoogleAdsCampaignId','landingPage'],metrics:['sessions','keyEvents'],campaign:'24472564042'},
+ {id:'shopping-viewed-items',dimensions:['sessionGoogleAdsCampaignId','itemId','itemName'],metrics:['itemsViewed','itemsAddedToCart','itemsPurchased'],campaign:'24472564042'},
+ {id:'shopping-whatsapp-landing',dimensions:['sessionGoogleAdsCampaignId','landingPage','pagePath'],metrics:['eventCount','keyEvents'],event:'whatsapp_click',campaign:'24472564042'},
+ {id:'onsite-searches',dimensions:['searchTerm'],metrics:['eventCount'],event:'view_search_results'},
  {id:'event-inventory',dimensions:['eventName'],metrics:['eventCount','keyEvents','totalUsers']},
  {id:'events-by-device',dimensions:['eventName','deviceCategory'],metrics:['eventCount','keyEvents','totalUsers']},
  {id:'whatsapp-by-source-and-page',dimensions:['sessionSourceMedium','pagePath'],metrics:['eventCount','totalUsers','keyEvents'],event:'whatsapp_click'},
@@ -31,7 +37,7 @@ for(const spec of desired){
  const missing=[...spec.dimensions.filter(x=>!dims.has(x)),...spec.metrics.filter(x=>!metrics.has(x))];
  if(missing.length){report.reports.push({id:spec.id,skippedMissingFields:missing});continue;}
  const body={dateRanges:[report.period],dimensions:spec.dimensions.map(name=>({name})),metrics:spec.metrics.map(name=>({name})),limit:'10000',keepEmptyRows:true,returnPropertyQuota:true};
- if(spec.event)body.dimensionFilter={filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:spec.event}}};
+ const filters=[];if(spec.event)filters.push({filter:{fieldName:'eventName',stringFilter:{matchType:'EXACT',value:spec.event}}});if(spec.campaign)filters.push({filter:{fieldName:'sessionGoogleAdsCampaignId',stringFilter:{matchType:'EXACT',value:spec.campaign}}});if(filters.length)body.dimensionFilter={andGroup:{expressions:filters}};
  const r=await read('https://analyticsdata.googleapis.com/v1beta/properties/'+p+':runReport',body);
  report.reports.push({id:spec.id,...r});console.log(JSON.stringify({read:spec.id,status:r.status,complete:!r.data.rowCount||r.data.rowCount<=10000}));
 }
@@ -39,6 +45,13 @@ process.env.MERCHANT_ACCESS_TOKEN=token;process.env.MERCHANT_ACCOUNT_ID='5330457
 const originalLog=console.log;
 try{console.log=()=>{};await merchantMain();report.merchant={ok:true};}catch(e){report.merchant={ok:false,message:e.message.slice(0,2000)}}finally{console.log=originalLog;}
 const outputs={ga4:report};
+const rawProducts={at:new Date().toISOString(),products:[],pages:[],complete:false};let pageToken='';
+for(let i=0;i<8;i++){
+ const u=new URL('https://merchantapi.googleapis.com/products/v1/accounts/5330457716/products');u.searchParams.set('pageSize','1000');if(pageToken)u.searchParams.set('pageToken',pageToken);
+ const r=await fetch(u,{headers:{authorization:'Bearer '+token},signal:AbortSignal.timeout(30000)});const data=await r.json();rawProducts.pages.push({status:r.status,count:data.products?.length||0});
+ if(!r.ok){rawProducts.error=data;break;}rawProducts.products.push(...(data.products||[]));pageToken=data.nextPageToken||'';if(!pageToken){rawProducts.complete=true;break;}
+}
+outputs.merchantRaw=rawProducts;console.log(JSON.stringify({read:'merchant-raw',complete:rawProducts.complete,status:rawProducts.pages.at(-1)?.status}));
 try{for(const f of await readdir('private-audit/merchant'))if(f.endsWith('.json'))outputs['merchant/'+f]=JSON.parse(await readFile('private-audit/merchant/'+f,'utf8'));}catch{}
 const key=randomBytes(32),iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key,iv);
 const ciphertext=Buffer.concat([cipher.update(JSON.stringify(outputs),'utf8'),cipher.final()]);
