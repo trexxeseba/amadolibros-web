@@ -21,9 +21,10 @@ import { detalleError } from './sanear.mjs';
 import { esLibroMedico } from './guardas.mjs';
 import { fuenteTokenD1 } from '../../precio-ganador/src/token.mjs';
 
-// Seba 26/11 (segundo mensaje): promo hasta 26 % en libros (20 % lo que no es libro); el cupón se puede
-// sumar, pero el total con el cupón más fuerte nunca baja del 60 % del regular (piso de Precio Ganador).
-export const TOPES = Object.freeze({ visibleMaxPct: 26, visibleNoLibroMaxPct: 20, totalConCuponMaxPct: 40, pisoPct: 60 });
+// Seba 26/11: promo hasta 26 % en libros y también en lo que no es libro (decisión del 26/11 a la noche);
+// el cupón se puede sumar, pero el total con el cupón más fuerte nunca baja del 60 % del regular.
+// Las promos no llevan piso de $500 (Seba 26/11: ese piso es de Precio Ganador, no del motor de promos).
+export const TOPES = Object.freeze({ visibleMaxPct: 26, visibleNoLibroMaxPct: 26, totalConCuponMaxPct: 40, pisoPct: 60 });
 const V2 = 'app_version=v2';
 const lista = j => Array.isArray(j) ? j : Array.isArray(j?.results) ? j.results : [];
 const num = v => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v))) ? null : Number(v);

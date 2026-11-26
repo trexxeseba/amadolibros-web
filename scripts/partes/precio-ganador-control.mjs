@@ -62,6 +62,7 @@ async function main() {
   let mail = 'no_hacia_falta';
   if (salida.atencion.length) mail = (await enviarAlarma({ aviso: true, asunto: `control: ${salida.atencion[0].slice(0, 90)}`, texto: salida.texto + (process.env.RUN_URL ? `\n\nDetalle: ${process.env.RUN_URL}` : '') })).status;
   console.log(JSON.stringify({ atencion: salida.atencion.length, mail }));
-  if (salida.atencion.length) process.exitCode = 1;
+  // La alerta va por mail; el workflow queda en rojo sólo si el mail no salió (Seba 26/11: antes cada aviso lo marcaba fallido).
+  if (salida.atencion.length && mail !== 'enviado') process.exitCode = 1;
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) await main();

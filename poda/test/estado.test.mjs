@@ -8,14 +8,14 @@ const grupo = (id, o = {}) => ({ id, external_id: `MLU${id}`, tipo: 'ITEM', item
 const mapa = (...gs) => new Map(gs.map(g => [String(g.id), g]));
 
 test('un activo sin venta que llegó al tope se propone para pausar', () => {
-  const r = calcularDia({ hoy, grupos: mapa(grupo(1, { gasto: 260, clics: 12, cpc: 21 })) });
+  const r = calcularDia({ hoy, grupos: mapa(grupo(1, { gasto: 260, clics: 16, cpc: 16 })) });
   assert.equal(r.listas.pausar.length, 1);
   assert.equal(r.cambios[0].fila.estado, 'propuesta_pausa');
   assert.equal(r.contadores.pausar, 1);
 });
 
 test('en auditar no propone pausas, sólo cuenta las que haría', () => {
-  const r = calcularDia({ hoy, accion: 'auditar', grupos: mapa(grupo(1, { gasto: 260, clics: 12, cpc: 21 })) });
+  const r = calcularDia({ hoy, accion: 'auditar', grupos: mapa(grupo(1, { gasto: 260, clics: 16, cpc: 16 })) });
   assert.equal(r.listas.pausar.length, 0);
   assert.equal(r.listas.pausaria.length, 1);
   assert.equal(r.cambios.length, 0);
@@ -30,14 +30,14 @@ test('una propuesta que el Agente único ya pausó pasa a pausado', () => {
 
 test('una propuesta pendiente que ya no corresponde (entró una venta) se borra', () => {
   const registro = [{ ad_group_id: '1', external_id: 'MLU1', estado: 'propuesta_pausa', origen: 'poda', fecha_propuesta: '2026-11-12' }];
-  const r = calcularDia({ hoy, grupos: mapa(grupo(1, { gasto: 260, clics: 12, cpc: 21, ventasOrdenes: 1 })), registro });
+  const r = calcularDia({ hoy, grupos: mapa(grupo(1, { gasto: 260, clics: 16, cpc: 16, ventasOrdenes: 1 })), registro });
   assert.equal(r.cambios.some(c => c.tipo === 'borrar'), true);
   assert.equal(r.listas.pendientesPausa.length, 0);
 });
 
 test('una propuesta que sigue vigente y no se ejecutó queda en pendientes, sin duplicarse', () => {
   const registro = [{ ad_group_id: '1', external_id: 'MLU1', estado: 'propuesta_pausa', origen: 'poda', fecha_propuesta: '2026-11-12' }];
-  const r = calcularDia({ hoy, grupos: mapa(grupo(1, { gasto: 270, clics: 13, cpc: 21 })), registro });
+  const r = calcularDia({ hoy, grupos: mapa(grupo(1, { gasto: 270, clics: 17, cpc: 16 })), registro });
   assert.equal(r.listas.pendientesPausa.length, 1);
   assert.equal(r.listas.pausar.length, 0, 'no se propone dos veces');
 });
@@ -76,10 +76,9 @@ test('semilla: lo pausado a mano por el Agente único entra al registro y no se 
   assert.equal(r.listas.reactivar.length, 0);
 });
 
-test('un anuncio sin venta y con la mitad del tope va a observación; clic caro se informa', () => {
-  const r = calcularDia({ hoy, grupos: mapa(grupo(1, { gasto: 130, clics: 8, cpc: 16 }), grupo(2, { gasto: 40, clics: 2, cpc: 101 })) });
+test('un anuncio sin venta con 10 a 14 clics va a observación', () => {
+  const r = calcularDia({ hoy, grupos: mapa(grupo(1, { gasto: 130, clics: 11, cpc: 12 }), grupo(2, { gasto: 40, clics: 2, cpc: 20 })) });
   assert.equal(r.listas.observar.length, 1);
-  assert.equal(r.listas.clicCaro.length, 1);
 });
 
 test('el freno deja afuera los excedentes y avisa', () => {
@@ -99,9 +98,9 @@ test('contando: pasados 30 días se borra del registro', () => {
 test('diasEntre', () => assert.equal(diasEntre('2026-11-01', '2026-11-13'), 12));
 
 test('lista de transparencia: con gasto de 150 o más que no se pausan, con el motivo', () => {
-  const r = calcularDia({ hoy, grupos: mapa(grupo(1, { gasto: 300, clics: 3, cpc: 100 }), grupo(2, { gasto: 400, clics: 20, cpc: 20, ventasAtribuidas: 1 }), grupo(3, { gasto: 260, clics: 12, cpc: 21 }), grupo(4, { estado: 'PAUSED', gasto: 200 })) });
+  const r = calcularDia({ hoy, grupos: mapa(grupo(1, { gasto: 300, clics: 3, cpc: 100 }), grupo(2, { gasto: 400, clics: 20, cpc: 20, ventasAtribuidas: 1, monto: 2500 }), grupo(3, { gasto: 260, clics: 16, cpc: 16 }), grupo(4, { estado: 'PAUSED', gasto: 200 })) });
   const m = Object.fromEntries(r.listas.conGasto.map(f => [f.ad_group_id, f.motivo]));
-  assert.match(m['1'], /Menos de 5 clics/); assert.match(m['2'], /Venta atribuida/); assert.match(m['4'], /PAUSED/);
+  assert.match(m['1'], /Menos de 10 clics/); assert.match(m['2'], /Tuvo venta/); assert.match(m['4'], /PAUSED/);
   assert.equal(m['3'], undefined, 'el que se pausa no está en esta lista');
 });
 
@@ -118,14 +117,9 @@ test('propuesta de reactivar por baja de precio se mantiene', () => {
   assert.equal(r.listas.reactivar.length, 1);
 });
 
-test('venta cara: se propone pausar y, ya pausado, sus ventas de antes no lo reactivan', () => {
-  const g = grupo(1, { precio: 2150, precioTope: 2150, gasto: 1927, clics: 165, cpc: 12, ventasAtribuidas: 3 });
+test('ROAS bajo sostenido: se propone pausar con la regla C', () => {
+  const g = grupo(1, { precio: 2150, precioTope: 2150, gasto: 1927, clics: 165, cpc: 12, ventasAtribuidas: 1, monto: 2150 });
   const r1 = calcularDia({ hoy, grupos: mapa(g) });
   assert.equal(r1.listas.pausar.length, 1);
-  assert.match(r1.cambios[0].fila.motivo, /^Venta cara/);
-  const registro = [{ ...r1.cambios[0].fila, estado: 'pausado', fecha_pausa: hoy }];
-  const r2 = calcularDia({ hoy, registro, grupos: mapa({ ...g, estado: 'PAUSED', ordenesDesde: () => 0 }) });
-  assert.equal(r2.listas.reactivar.length, 0);
-  const r3 = calcularDia({ hoy, registro, grupos: mapa({ ...g, estado: 'PAUSED', ordenesDesde: () => 1 }) });
-  assert.equal(r3.listas.reactivar.length, 1);
+  assert.match(r1.cambios[0].fila.motivo, /regla C/);
 });

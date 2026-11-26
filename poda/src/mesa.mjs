@@ -1,5 +1,5 @@
 import { nextInternalEmailAt } from '../../functions/_shared/internal-email-schedule.js';
-// Fila diaria de la poda en la mesa de decisiones (Airtable) y mail de respaldo.
+// Texto diario de la poda y mail (desde el 26/11/2026 sin la mesa de Airtable).
 // El detalle con montos va SOLO acá y a D1: nunca a los logs de Actions (repo público).
 // Code nunca pone una fila en Aprobada ni en Rechazada.
 export const MESA = { base: 'appElRtjx65dmtTgO', tabla: 'tblAoTEnKA2eC85g6' };
@@ -46,24 +46,40 @@ export function armarFilaAlerta({ fecha, motivo, detalle }) {
   return { [F.clave]: `poda|alerta|${motivo}|${fecha}`, [F.propuesta]: `Poda ${fecha}: ${detalle.slice(0, 120)}`, [F.fecha]: fecha, [F.rama]: 'Publicidad', [F.tarea]: 'Poda automatica', [F.tipo]: motivo === 'error' ? 'Error' : 'Alerta', [F.prioridad]: 'Alta', [F.estado]: 'Nueva', [F.dato]: detalle, [F.recomendada]: 'Revisar antes de la próxima corrida.' };
 }
 
-// Upsert por Clave con la API de Airtable. Sin AIRTABLE_TOKEN devuelve { ok:false, motivo:'sin_token' }.
-export async function subirFila(fields, { env = process.env, fetcher = (...a) => globalThis.fetch(...a) } = {}) {
-  const token = env.AIRTABLE_TOKEN;
-  if (!token) return { ok: false, motivo: 'sin_token' };
-  const res = await fetcher(`https://api.airtable.com/v0/${MESA.base}/${MESA.tabla}`, {
-    method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(30000),
-    body: JSON.stringify({ performUpsert: { fieldsToMergeOn: [F.clave] }, typecast: true, records: [{ fields }] }),
-  }).catch(() => null);
-  return res?.ok ? { ok: true } : { ok: false, motivo: `airtable_http_${res?.status ?? 'transporte'}` };
+// Mail diario (Seba 26/11/2026): arriba APP, PROYECTO y COMETIDO en mayúscula y negrita; abajo cómo
+// desactivarlo o modificarlo. Nada va a Airtable.
+const esc = t => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+export const PIE = [
+  'Cómo desactivarlo o modificarlo:',
+  '- Apagar: en el repo amadolibros-web, poda/modo.json en "off", o desactivar el workflow "Poda de anuncios (Mercado Ads)" en Actions.',
+  '- Solo prueba (no registra nada): poda/modo.json en "dry-run".',
+  '- Cambiar reglas: poda/src/reglas.mjs (REGLAS: clicsSinVenta, diasSeguidos, roasMinimo).',
+  '- Cambiar destinatario: PODA_EMAIL_TO en .github/workflows/poda-anuncios.yml.',
+  '- Pausas por Chrome: tarea programada de Claude "Poda de anuncios por la consola".',
+].join('\n');
+export function armarMail({ fecha, real, cuerpo, avisos = [] }) {
+  const cab = ['APP: MERCADO ADS DE AMADO LIBROS', 'PROYECTO: PODA DE ANUNCIOS', 'COMETIDO: PAUSAR LOS ANUNCIOS QUE GASTAN SIN VENDER Y REACTIVAR LOS QUE VUELVEN A VENDER'];
+  const texto = [...cab, '', ...avisos, ...(avisos.length ? [''] : []), String(cuerpo ?? ''), '', PIE].join('\n');
+  const html = `<div style="font-family:Arial,sans-serif;font-size:14px">${cab.map(l => `<p style="margin:0"><b>${esc(l)}</b></p>`).join('')}<br>`
+    + (avisos.length ? `<p><b>${avisos.map(esc).join('<br>')}</b></p>` : '')
+    + `<pre style="font-family:Arial,sans-serif;white-space:pre-wrap">${esc(cuerpo)}</pre><hr><pre style="font-family:Arial,sans-serif;white-space:pre-wrap;color:#555">${esc(PIE)}</pre></div>`;
+  return { asunto: `Poda de anuncios ${fecha}${real ? '' : ' (prueba)'}${avisos.length ? ' - ATENCIÓN' : ''}`, texto, html };
+}
+
+// Lista que ejecuta la tarea de Chrome: qué pausar y qué reactivar en la consola de Mercado Ads.
+export function listaParaChrome({ fecha, accion, real, resultado }) {
+  const L = resultado.listas;
+  const f = x => ({ ad_group_id: String(x.ad_group_id ?? x.id ?? ''), items: x.item_ids ?? [], titulo: x.titulo ?? null, motivo: x.motivo ?? null, provisoria: /PROVISORIA/.test(String(x.motivo ?? '')), gasto: x.gasto ?? null, clics: x.clics ?? null });
+  return { fecha, accion, real, pausar: [...L.pausar, ...L.pendientesPausa].map(f), reactivar: L.reactivar.filter(x => !esSoloPromo(x)).map(f) };
 }
 
 // Mail de respaldo con el detalle (privado, a Seba). Sólo si no se pudo subir a la mesa.
-export async function enviarMail({ asunto, texto, env = process.env, fetcher = (...a) => globalThis.fetch(...a) }) {
+export async function enviarMail({ asunto, texto, html = null, env = process.env, fetcher = (...a) => globalThis.fetch(...a) }) {
   const apiKey = env.RESEND_API_KEY, to = String(env.PODA_EMAIL_TO ?? '').split(',').map(s => s.trim()).filter(Boolean);
   if (!apiKey || !to.length) return { ok: false, motivo: 'sin_credenciales' };
   const res = await fetcher('https://api.resend.com/emails', {
     method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(30000),
-    body: JSON.stringify({ scheduled_at: nextInternalEmailAt(), from: env.REPORT_EMAIL_FROM || 'Amado Libros <web@notificaciones.amadolibros.com>', to, subject: asunto, text: texto }),
+    body: JSON.stringify({ scheduled_at: nextInternalEmailAt(), from: env.REPORT_EMAIL_FROM || 'Amado Libros <web@notificaciones.amadolibros.com>', to, subject: asunto, text: texto, ...(html ? { html } : {}) }),
   }).catch(() => null);
   return res?.ok ? { ok: true } : { ok: false, motivo: `resend_http_${res?.status ?? 'transporte'}` };
 }

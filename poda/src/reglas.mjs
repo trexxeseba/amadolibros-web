@@ -1,4 +1,4 @@
-// Reglas de poda de anuncios de Mercado Ads (acordadas con Seba el 11/11/2026).
+// Reglas de poda de anuncios de Mercado Ads (acordadas con Seba el 11/11/2026; las de pausa cambian el 26/11/2026, ver evaluarAnuncio).
 // Módulo puro: sin red, sin reloj implícito, sin secretos. Lo usan la corrida diaria
 // y los tests. Cada "anuncio" es un grupo de anuncios de Mercado Ads (ad group): la
 // fila que se ve en la consola. Para una publicación tradicional es la publicación;
@@ -39,6 +39,11 @@ export const REGLAS = Object.freeze({
   maxPorCorrida: 25,
   maxPorDia: 60,
   diasVentana: 30,
+  // Reglas del 26/11/2026.
+  clicsSinVenta: 15,
+  clicsObservacion: 10,
+  diasSeguidos: 3,
+  roasMinimo: 2.5,
 });
 
 const num = v => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v))) ? null : Number(v);
@@ -80,41 +85,35 @@ export function costoPorVenta({ gasto, ventas, precio }) {
   return { porVenta: r2(g / v), pct: Math.round((g / v / p) * 1000) / 1000 };
 }
 
-// Reglas 1 a 4, 7 y 8 para un anuncio activo. Devuelve:
-//   { accion: 'pausar' | 'mantener' | 'observar' | 'no_aplica' | 'falta_precio' | 'protegido' | 'revisar',
-//     motivo, tope, topeClics, cpc, clicCaro }
+// Reglas de pausa de Seba del 26/11/2026 (reemplazan las 1 a 4, 7 y 10 del 11/11), métricas a 30 días:
+//  A. 15 o más clics sin ninguna venta (atribuida o en órdenes).
+//  B. 3 días seguidos (los últimos 3 completos) con gasto y sin ventas.
+//  C. ROAS sostenido abajo de 2,5: el de 30 días y el de 7 días (si gastó en la semana) por debajo.
+// Si el anuncio tuvo clics en los últimos 7 días, la pausa es PROVISORIA: una venta de esos clics
+// puede atribuirse más tarde. Siguen valiendo las excepciones (regla 8) y las reactivaciones 5 y 6.
+// Devuelve { accion: 'pausar' | 'mantener' | 'observar' | 'no_aplica' | 'protegido' | 'revisar', motivo,
+//   regla, provisoria, roas30, roas7, ... }
+const roas = (monto, gasto) => { const m = num(monto), g = num(gasto); return m !== null && g ? r2(m / g) : null; };
 export function evaluarAnuncio(a) {
   const gasto = num(a.gasto) ?? 0, clics = num(a.clics) ?? 0;
   const cpc = costoPorClic({ cpc: a.cpc, gasto, clics });
   const precio = precioParaTope({ precio: a.precio, precioLista: a.precioLista ?? a.precioTope });
-  const tope = topeGasto(precio);
-  const tc = topeClics(tope, cpc);
-  const clicCaro = precio !== null && cpc !== null && cpc > REGLAS.pctClicCaro * precio;
-  const base = { tope, topeClics: tc, cpc, precio, clicCaro };
-  const res = (accion, motivo) => ({ ...base, accion, motivo });
+  const roas30 = roas(a.monto, gasto), roas7 = roas(a.monto7, a.gasto7);
+  const provisoria = (num(a.clics7) ?? 0) > 0;
+  const base = { tope: null, topeClics: REGLAS.clicsSinVenta, cpc, precio, clicCaro: false, roas30, roas7, provisoria };
+  const res = (accion, motivo, regla = null) => ({ ...base, accion, regla, motivo: accion === 'pausar' && provisoria ? `${motivo} PROVISORIA: tuvo clics en los últimos 7 días.` : motivo });
 
   if (a.estado !== 'ACTIVE') return res('no_aplica', `Estado ${a.estado ?? 'desconocido'}: no se poda.`);
   if (a.protegido) return res('protegido', a.protegido);
-  const atribuidas = num(a.ventasAtribuidas) ?? 0, ordenes = num(a.ventasOrdenes) ?? 0;
-  const ventas = Math.max(atribuidas, ordenes);
-  if (ventas > 0) {
-    const cv = costoPorVenta({ gasto, ventas, precio });
-    base.costoVenta = cv;
-    if (cv && tope !== null && gasto >= tope && cv.pct > REGLAS.pctCostoVenta) {
-      if (a.revisar) return res('revisar', a.revisar);
-      return { ...res('pausar', `Venta cara: gastó ${r2(gasto)} para ${ventas} venta${ventas > 1 ? 's' : ''}, ${Math.round(cv.porVenta)} por venta = ${Math.round(cv.pct * 100)} % del precio (máximo ${Math.round(REGLAS.pctCostoVenta * 100)} %, regla 10).`), ventaCara: true };
-    }
-    return res('mantener', cv ? `Tuvo venta; costo por venta ${Math.round(cv.pct * 100)} % del precio (regla 4).` : 'Tuvo venta en los últimos 30 días (regla 4).');
-  }
-  if (clics < REGLAS.minClics) return res('mantener', `Menos de ${REGLAS.minClics} clics.`);
-  if (tope === null) return res('falta_precio', 'No se pudo leer el precio: no se poda.');
-  const porGasto = gasto >= tope, porClics = tc !== null && clics >= tc;
-  if (porGasto || porClics) {
-    if (a.revisar) return res('revisar', a.revisar);
-    return res('pausar', porGasto ? `Gastó ${r2(gasto)} sin venta, tope ${tope}.` : `${clics} clics sin venta, tope ${tc} clics.`);
-  }
-  if (gasto >= tope * REGLAS.pctObservacion) return res('observar', `Sin venta, gastó ${r2(gasto)} de un tope de ${tope}.`);
-  return res('mantener', 'Debajo del tope.');
+  const ventas = Math.max(num(a.ventasAtribuidas) ?? 0, num(a.ventasOrdenes) ?? 0);
+  const pausar = (motivo, regla) => a.revisar ? res('revisar', a.revisar) : res('pausar', motivo, regla);
+  if (ventas === 0 && clics >= REGLAS.clicsSinVenta) return pausar(`${clics} clics sin venta en 30 días (regla A: 15 o más).`, 'A');
+  const d = Array.isArray(a.dias3) ? a.dias3 : null;
+  if (d && d.length === REGLAS.diasSeguidos && d.every(x => (num(x?.gasto) ?? 0) > 0 && !((num(x?.ventas) ?? 0) > 0))) return pausar(`${REGLAS.diasSeguidos} días seguidos con gasto y sin ventas (regla B).`, 'B');
+  if (ventas > 0 && roas30 !== null && roas30 < REGLAS.roasMinimo && (roas7 === null || roas7 < REGLAS.roasMinimo)) return pausar(`ROAS ${roas30} en 30 días${roas7 !== null ? ` y ${roas7} en 7` : ''}, abajo de ${REGLAS.roasMinimo} (regla C).`, 'C');
+  if (ventas > 0) return res('mantener', `Tuvo venta; ROAS ${roas30 ?? 'sin dato'} en 30 días.`);
+  if (clics >= REGLAS.clicsObservacion) return res('observar', `${clics} clics sin venta (se pausa en ${REGLAS.clicsSinVenta}).`);
+  return res('mantener', `Menos de ${REGLAS.clicsObservacion} clics sin venta.`);
 }
 
 // Reglas 5 y 6 para un anuncio pausado por la poda.

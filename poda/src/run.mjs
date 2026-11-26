@@ -5,29 +5,29 @@
 // Mercado Libre NO documenta cambiar el estado de un anuncio por API: este proceso
 // sólo LEE (el cliente rechaza cualquier método que no sea GET). Calcula con las reglas
 // del 11/11/2026 qué pausar y qué reactivar, lo deja en el registro de D1 y en la fila
-// diaria de la mesa, y el Agente único lo ejecuta por navegador sin calcular nada.
+// diario por mail (sin Airtable desde el 26/11/2026), y la tarea de Claude lo ejecuta por la consola.
 //
 // El repo y sus logs son públicos: por stdout sólo salen cantidades. Montos, títulos y
-// precios van a D1 (poda_corridas, poda_registro) y a la mesa.
+// precios van a D1 (poda_corridas, poda_registro), al mail y al repo privado.
 //
 // Frenos: si cualquier lectura clave falla (token, métricas, órdenes, precios) la
 // corrida no escribe nada y deja una fila de Error. Sin órdenes legibles y frescas no
 // se propone ninguna pausa. Máximo 25 pausas por corrida y 60 por día.
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { CUENTA, fechaMontevideo, fechaCorrida } from '../../agentes-ml/src/config.mjs';
 import { crearCliente } from '../../agentes-ml/src/ml.mjs';
 import { fuenteTokenD1 } from '../../precio-ganador/src/token.mjs';
 import { crearD1, lit, ESQUEMA, grabarCambios } from './d1.mjs';
 import { calcularDia } from './estado.mjs';
 import { REGLAS } from './reglas.mjs';
-import { armarFilaDiaria, armarFilaAlerta, subirFila, enviarMail } from './mesa.mjs';
+import { armarFilaDiaria, armarMail, listaParaChrome, enviarMail } from './mesa.mjs';
 
 const json = nombre => JSON.parse(readFileSync(new URL(`../${nombre}`, import.meta.url), 'utf8'));
 const ADVERTISER_ID = 51659;            // anunciante de Amado Libros en Mercado Ads (consola de Ads)
 const SITE = 'MLU';
 const CAMPANIA_FANTASMA = '301999953';  // donde ML deja los anuncios sin campaña: no existe como campaña
 const H = { headers: { 'Api-Version': '2' } };
-const METRICAS = 'CLICKS,COST,CPC,UNITS_QUANTITY,DIRECT_UNITS_QUANTITY,INDIRECT_UNITS_QUANTITY';
+const METRICAS = 'CLICKS,COST,CPC,UNITS_QUANTITY,DIRECT_UNITS_QUANTITY,INDIRECT_UNITS_QUANTITY,TOTAL_AMOUNT';
 const FRESCURA_ORDENES_MS = 6 * 3600 * 1000;
 const num = v => (v === null || v === undefined || !Number.isFinite(Number(v))) ? 0 : Number(v);
 
@@ -55,7 +55,7 @@ export function grupoDeMetricas(g, campanias, hoy, cfg) {
     id: String(g.id), external_id: g.ad_group_external_id ?? null, tipo: g.ad_group_type ?? null, titulo: g.title ?? null,
     item_ids: g.ad_group_type === 'ITEM' && g.ad_group_external_id ? [g.ad_group_external_id] : [],
     campaign_id: g.campaign_id != null ? String(g.campaign_id) : null, campaign_nombre: camp?.name ?? null, estado, protegido,
-    gasto: num(m.cost), clics: num(m.clicks), cpc: num(m.cpc) || null,
+    gasto: num(m.cost), clics: num(m.clicks), cpc: num(m.cpc) || null, monto: num(m.total_amount),
     ventasAtribuidas: num(m.units_quantity) || (num(m.direct_units_quantity) + num(m.indirect_units_quantity)),
     ventasOrdenes: 0, precio: null, precioTope: null, promo: false, salteado: true, _sinPoda: itemSinPoda, _hoy: hoy,
   };
@@ -111,6 +111,27 @@ async function main() {
     }
     if (!grupos.size) throw Object.assign(new Error('sin_anuncios_leidos'), { code: 'sin_anuncios_leidos', fatal: true });
 
+    // ── Reglas del 26/11: métricas de 7 días (ROAS sostenido y pausa provisoria) y de cada uno de los
+    // últimos 3 días completos (3 días seguidos con gasto y sin ventas). Sólo los activos.
+    const metricasActivos = async (d0, d1_) => {
+      const o = new Map();
+      for (let off = 0; off < 9950; off += 50) {
+        const r = await ml.get(`${base}/ad_groups/search?limit=50&offset=${off}&date_from=${d0}&date_to=${d1_}&metrics=${METRICAS}&filters[statuses]=active`, H);
+        for (const g of r?.results ?? []) o.set(String(g.id), g.metrics ?? {});
+        if ((r?.results ?? []).length < 50) break;
+      }
+      return o;
+    };
+    const m7 = await metricasActivos(fechaCorrida(-7), hoy);
+    const dias = [];
+    for (const k of [-1, -2, -3]) dias.push(await metricasActivos(fechaCorrida(k), fechaCorrida(k)));
+    for (const g of grupos.values()) {
+      if (g.estado !== 'ACTIVE') continue;
+      const s7 = m7.get(g.id) ?? {};
+      g.gasto7 = num(s7.cost); g.monto7 = num(s7.total_amount); g.clics7 = num(s7.clicks);
+      g.dias3 = dias.map(m => { const x = m.get(g.id) ?? {}; return { gasto: num(x.cost), ventas: num(x.units_quantity) }; });
+    }
+
     // ── Registro de la poda y semillas.
     const registro = await d1.query('SELECT * FROM poda_registro');
     const semillas = [];
@@ -125,9 +146,9 @@ async function main() {
     // ── Lectura a fondo sólo de los candidatos, los del registro y las semillas.
     const ids = new Set(registro.map(r => String(r.ad_group_id)));
     for (const s of semillas) for (const g of grupos.values()) if (g.external_id === s.external_id) ids.add(g.id);
-    for (const g of grupos.values()) if (g.estado === 'ACTIVE' && g.clics >= REGLAS.minClics && g.ventasAtribuidas === 0 && g.gasto >= REGLAS.pisoTope * REGLAS.pctObservacion) ids.add(g.id);
-    // Regla 10: los que vendieron y ya gastaron el piso del tope necesitan precio para medir el costo por venta.
-    for (const g of grupos.values()) if (g.estado === 'ACTIVE' && g.ventasAtribuidas > 0 && g.gasto >= REGLAS.pisoTope) ids.add(g.id);
+    // Reglas del 26/11: todo activo con gasto en 30 días es candidato (clics, 3 días o ROAS); hace falta
+    // su precio (registro, regla 6) y sus ventas en órdenes.
+    for (const g of grupos.values()) if (g.estado === 'ACTIVE' && g.gasto > 0) ids.add(g.id);
     let leidos = 0, fallidos = 0;
     for (const id of ids) {
       const g = grupos.get(id);
@@ -153,7 +174,7 @@ async function main() {
         const reg = registro.find(r => String(r.ad_group_id) === id);
         if (reg?.estado === 'contando' && reg.contar_desde) {
           const m = (await ml.get(`/advertising/${SITE}/product_ads/ad_groups/${id}?date_from=${reg.contar_desde}&date_to=${hoy}&metrics=${METRICAS}`, H))?.metrics ?? {};
-          g.gasto = num(m.cost); g.clics = num(m.clicks); g.cpc = num(m.cpc) || null; g.ventasAtribuidas = num(m.units_quantity);
+          g.gasto = num(m.cost); g.clics = num(m.clicks); g.cpc = num(m.cpc) || null; g.ventasAtribuidas = num(m.units_quantity); g.monto = num(m.total_amount);
         }
         const protegidoItem = g.item_ids.find(it => g._sinPoda[it] && g._sinPoda[it] >= hoy);
         if (protegidoItem) g.protegido = `Sin poda hasta ${g._sinPoda[protegidoItem]} (tuvo venta).`;
@@ -184,33 +205,26 @@ async function main() {
     const detalle = { listas: resultado.listas, contadores: resultado.contadores };
     await d1.query(`INSERT INTO poda_corridas(fecha, accion, modo, contadores_json, detalle_json, creado_ms) VALUES(${lit(hoy)}, ${lit(accion)}, ${lit(modo + (real ? '' : '/sin-registro'))}, ${lit(JSON.stringify(resultado.contadores))}, ${lit(JSON.stringify(detalle).slice(0, 900000))}, ${Date.now()});`);
 
-    // ── Mesa (o mail de respaldo, privado). Una fila por día; si existe se actualiza.
+    // ── Aviso por mail (Seba 26/11/2026: nada a Airtable; las decisiones van por el chat y el mail).
+    // Lista para la tarea de Claude que pausa por la consola de Mercado Ads (la API responde 401).
     const fila = armarFilaDiaria({ fecha: hoy, accion: accion === 'restaurar' ? 'auditar' : accion, modo, real, resultado });
-    let mesa = await subirFila(fila);
-    if (resultado.alertaFreno) await subirFila(armarFilaAlerta({ fecha: hoy, motivo: 'freno', detalle: `El cálculo pidió más pausas que el máximo por corrida (${REGLAS.maxPorCorrida}) o por día (${REGLAS.maxPorDia}). Los excedentes no se propusieron. Puede ser un error en los datos: revisar.` }));
-    if (!ordenesLegibles && accion === 'correr') await subirFila(armarFilaAlerta({ fecha: hoy, motivo: 'ordenes', detalle: 'Las órdenes de la tienda no están frescas en la base: no se propuso ninguna pausa en esta corrida.' }));
-    let mail = null;
-    // Si la mesa no responde, el mail lo dice en el asunto y arriba de todo (26/11/2026: Airtable
-    // respondía 403 y la poda seguía en verde sin que nadie se enterara). Si tampoco sale el mail,
-    // el job termina en rojo para que lo vean el vigía y GitHub.
-    if (!mesa.ok) {
-      const avisos = [
-        `ATENCIÓN: la mesa de decisiones (Airtable) no respondió (${mesa.motivo}). Esta lista no quedó cargada en la mesa: usar este mail.`,
-        resultado.alertaFreno ? `Freno: el cálculo pidió más pausas que el máximo por corrida (${REGLAS.maxPorCorrida}) o por día (${REGLAS.maxPorDia}).` : null,
-        !ordenesLegibles && accion === 'correr' ? 'Las órdenes de la tienda no están frescas en la base: no se propuso ninguna pausa.' : null,
-      ].filter(Boolean).join('\n');
-      mail = await enviarMail({ asunto: `Poda de anuncios ${hoy} (${real ? 'real' : 'prueba'}) - la mesa de Airtable no respondió`, texto: `${avisos}\n\n${fila.fldwtSvMycZShRfJD ?? Object.values(fila).join('\n')}`, env });
-      if (!mail.ok) process.exitCode = 1;
-    }
+    const avisos = [
+      resultado.alertaFreno ? `Freno: el cálculo pidió más pausas que el máximo por corrida (${REGLAS.maxPorCorrida}) o por día (${REGLAS.maxPorDia}). Los excedentes no se propusieron.` : null,
+      !ordenesLegibles && accion === 'correr' ? 'Las órdenes de la tienda no están frescas en la base: no se propuso ninguna pausa.' : null,
+    ].filter(Boolean);
+    const mailArmado = armarMail({ fecha: hoy, real, cuerpo: fila.fldwtSvMycZShRfJD, avisos });
+    const mail = await enviarMail({ asunto: mailArmado.asunto, texto: mailArmado.texto, html: mailArmado.html, env });
+    if (!mail.ok) process.exitCode = 1;
+    if (env.PODA_SALIDA) { mkdirSync(env.PODA_SALIDA, { recursive: true }); writeFileSync(`${env.PODA_SALIDA}/poda-lista.json`, JSON.stringify(listaParaChrome({ fecha: hoy, accion, real, resultado }), null, 1)); }
 
     const c = resultado.contadores;
-    console.log(`Poda ${accion} ${modo}${real ? '' : ' (no registra)'}: evaluados ${c.evaluados}, a pausar ${c.pausar + c.pausaria}, pendientes ${c.pendientes_pausa}, a reactivar ${c.reactivar}, observación ${c.observacion}, clic caro ${c.clic_caro}, falta precio ${c.falta_precio}, excedentes ${c.excedentes}, errores ${c.errores}. Registro: ${registroGrabado} cambios. Mesa: ${mesa.ok ? 'ok' : mesa.motivo}${mail ? `, mail: ${mail.ok ? 'ok' : mail.motivo}` : ''}. ${Math.round((Date.now() - t0) / 1000)} s.`);
+    console.log(`Poda ${accion} ${modo}${real ? '' : ' (no registra)'}: evaluados ${c.evaluados}, a pausar ${c.pausar + c.pausaria}, pendientes ${c.pendientes_pausa}, a reactivar ${c.reactivar}, observación ${c.observacion}, clic caro ${c.clic_caro}, falta precio ${c.falta_precio}, excedentes ${c.excedentes}, errores ${c.errores}. Registro: ${registroGrabado} cambios. Mail: ${mail.ok ? 'ok' : mail.motivo}. ${Math.round((Date.now() - t0) / 1000)} s.`);
   } catch (e) {
     // Nada se escribió en el registro. Se deja la fila de Error y se falla el job.
     const motivo = String(e?.code ?? e?.message ?? 'error').replace(/[^\w.:-]/g, '').slice(0, 80);
     const detalleError = `La corrida ${accion} no escribió nada. Error observado: ${motivo}${e?.status ? ` (HTTP ${e.status})` : ''}${e?.path ? ` en ${String(e.path).split('?')[0]}` : ''}${e?.detalle?.message ? `, ${String(e.detalle.message).slice(0, 120)}` : ''}.`;
-    const r = await subirFila(armarFilaAlerta({ fecha: hoy, motivo: 'error', detalle: detalleError })).catch(() => ({ ok: false }));
-    if (!r.ok) await enviarMail({ asunto: `Poda de anuncios ${hoy}: ERROR`, texto: detalleError, env }).catch(() => {});
+    const m = armarMail({ fecha: hoy, real: false, cuerpo: detalleError, avisos: ['ERROR: la corrida no escribió nada.'] });
+    await enviarMail({ asunto: `Poda de anuncios ${hoy}: ERROR`, texto: m.texto, html: m.html, env }).catch(() => {});
     console.error(`Poda fallida: ${motivo}${e?.status ? ` HTTP ${e.status}` : ''}`);
     process.exit(1);
   }

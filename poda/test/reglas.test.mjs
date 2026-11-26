@@ -38,93 +38,40 @@ test('regla 9: con promoción se usa el precio de lista', () => {
 
 const base = { estado: 'ACTIVE', precio: 2500, gasto: 0, clics: 0, cpc: null, ventasAtribuidas: 0, ventasOrdenes: 0 };
 
-test('regla 3: se pausa al llegar al tope de gasto sin ninguna venta', () => {
-  const r = evaluarAnuncio({ ...base, gasto: 250, clics: 12, cpc: 20.8 });
-  assert.equal(r.accion, 'pausar');
-  assert.equal(r.tope, 250);
+const A = o => ({ estado: 'ACTIVE', gasto: 0, clics: 0, ventasAtribuidas: 0, ventasOrdenes: 0, precio: 2500, ...o });
+
+test('regla A (26/11): 15 o más clics sin venta en 30 días se pausa; 14 no', () => {
+  assert.equal(evaluarAnuncio(A({ gasto: 200, clics: 15 })).accion, 'pausar');
+  assert.equal(evaluarAnuncio(A({ gasto: 200, clics: 15 })).regla, 'A');
+  assert.equal(evaluarAnuncio(A({ gasto: 200, clics: 14 })).accion, 'observar');
 });
 
-test('regla 3: se pausa al llegar al tope de clics aunque el gasto no llegue', () => {
-  // clic $10: tope de 25 clics, gasto 240 < 250
-  const r = evaluarAnuncio({ ...base, gasto: 240, clics: 25, cpc: 9.6 });
-  assert.equal(r.topeClics, 26, 'con cpc 9,6 el tope de clics es 26');
-  const r2 = evaluarAnuncio({ ...base, gasto: 245, clics: 25, cpc: 10 });
-  assert.equal(r2.topeClics, 25);
-  assert.equal(r2.accion, 'pausar');
+test('regla A no pausa si hubo venta (atribuida o en órdenes) y el ROAS da', () => {
+  assert.equal(evaluarAnuncio(A({ gasto: 200, clics: 30, ventasAtribuidas: 1, monto: 2500 })).accion, 'mantener');
 });
 
-test('nunca se pausa con menos de 5 clics, aunque el gasto pase el tope', () => {
-  const r = evaluarAnuncio({ ...base, gasto: 400, clics: 4, cpc: 100 });
-  assert.equal(r.accion, 'mantener');
-  assert.match(r.motivo, /5 clics/);
-  assert.equal(evaluarAnuncio({ ...base, gasto: 400, clics: 5, cpc: 80 }).accion, 'pausar');
+test('regla B (26/11): 3 días seguidos con gasto y sin ventas se pausa', () => {
+  const dias3 = [{ gasto: 20, ventas: 0 }, { gasto: 15, ventas: 0 }, { gasto: 5, ventas: 0 }];
+  assert.equal(evaluarAnuncio(A({ gasto: 40, clics: 4, dias3 })).regla, 'B');
+  assert.equal(evaluarAnuncio(A({ gasto: 40, clics: 4, dias3: [{ gasto: 20, ventas: 0 }, { gasto: 0, ventas: 0 }, { gasto: 5, ventas: 0 }] })).accion, 'mantener');
+  assert.equal(evaluarAnuncio(A({ gasto: 40, clics: 4, dias3: [{ gasto: 20, ventas: 1 }, { gasto: 15, ventas: 0 }, { gasto: 5, ventas: 0 }] })).accion, 'mantener');
 });
 
-test('regla 4: con una venta y costo por venta dentro del máximo no se pausa', () => {
-  // libro de $2.500, tope 250: gastó 400 para 1 venta = 16 % del precio (máximo 20 %).
-  const r = evaluarAnuncio({ ...base, gasto: 400, clics: 30, cpc: 13, ventasAtribuidas: 1 });
-  assert.equal(r.accion, 'mantener');
-  assert.match(r.motivo, /16 %/);
+test('regla C (26/11): ROAS sostenido abajo de 2,5 (30 y 7 días) se pausa; si en 7 días repuntó, no', () => {
+  assert.equal(evaluarAnuncio(A({ gasto: 1000, clics: 40, ventasAtribuidas: 1, monto: 2000, gasto7: 300, monto7: 0 })).regla, 'C');
+  assert.equal(evaluarAnuncio(A({ gasto: 1000, clics: 40, ventasAtribuidas: 1, monto: 2000, gasto7: 300, monto7: 2000 })).accion, 'mantener');
+  assert.equal(evaluarAnuncio(A({ gasto: 1000, clics: 40, ventasAtribuidas: 1, monto: 3000 })).accion, 'mantener');
 });
 
-test('regla 4: una venta no atribuida (en órdenes) también cuenta como venta', () => {
-  const r = evaluarAnuncio({ ...base, gasto: 400, clics: 30, cpc: 13, ventasOrdenes: 1 });
-  assert.equal(r.accion, 'mantener');
+test('pausa provisoria: con clics en los últimos 7 días queda marcada', () => {
+  const r = evaluarAnuncio(A({ gasto: 200, clics: 20, clics7: 3 }));
+  assert.equal(r.accion, 'pausar'); assert.equal(r.provisoria, true); assert.match(r.motivo, /PROVISORIA/);
+  assert.equal(evaluarAnuncio(A({ gasto: 200, clics: 20, clics7: 0 })).provisoria, false);
 });
 
-test('regla 10: una venta sola no alcanza si costó más del 20 % del precio', () => {
-  // libro de $2.500: gastó 900 para 1 venta = 36 % del precio.
-  const r = evaluarAnuncio({ ...base, gasto: 900, clics: 60, cpc: 15, ventasAtribuidas: 1 });
-  assert.equal(r.accion, 'pausar');
-  assert.equal(r.ventaCara, true);
-  assert.match(r.motivo, /^Venta cara/);
-  assert.match(r.motivo, /36 %/);
-});
-
-test('regla 10: con varias ventas se divide el gasto entre todas', () => {
-  // 900 / 4 ventas = 225 por venta = 9 % de $2.500: se mantiene.
-  assert.equal(evaluarAnuncio({ ...base, gasto: 900, clics: 60, cpc: 15, ventasAtribuidas: 4 }).accion, 'mantener');
-  // 1.500 / 2 = 750 = 30 %: se pausa. Cuenta la mayor entre atribuidas y órdenes.
-  assert.equal(evaluarAnuncio({ ...base, gasto: 1500, clics: 100, cpc: 15, ventasAtribuidas: 1, ventasOrdenes: 2 }).accion, 'pausar');
-});
-
-test('regla 10: no actúa antes de gastar el tope, ni sin precio, ni en protegidos', () => {
-  // libro de $1.000 (tope 150): gastó 140 para 1 venta = 14 %... y aunque fuera caro, no llegó al tope.
-  assert.equal(evaluarAnuncio({ ...base, precio: 500, gasto: 140, clics: 10, cpc: 14, ventasAtribuidas: 1 }).accion, 'mantener');
-  assert.equal(evaluarAnuncio({ ...base, precio: null, gasto: 900, clics: 60, cpc: 15, ventasAtribuidas: 1 }).accion, 'mantener');
-  assert.equal(evaluarAnuncio({ ...base, gasto: 900, clics: 60, cpc: 15, ventasAtribuidas: 1, protegido: 'Sin poda.' }).accion, 'protegido');
-});
-
-test('regla 9 en la corrida: el precio de lista llega como precioTope', () => {
-  // vende a 2.000 con promo, lista 2.500: tope 250, no 200.
-  assert.equal(evaluarAnuncio({ ...base, precio: 2000, precioTope: 2500, gasto: 220, clics: 15, cpc: 14 }).tope, 250);
-});
-
-test('debajo del tope se mantiene; desde la mitad queda en observación', () => {
-  assert.equal(evaluarAnuncio({ ...base, gasto: 50, clics: 6, cpc: 8 }).accion, 'mantener');
-  assert.equal(evaluarAnuncio({ ...base, gasto: 130, clics: 8, cpc: 16 }).accion, 'observar');
-});
-
-test('regla 8: sin precio no se pausa; pausados y deshabilitados no aplican; protegidas no se tocan', () => {
-  assert.equal(evaluarAnuncio({ ...base, precio: null, gasto: 500, clics: 30, cpc: 16 }).accion, 'falta_precio');
-  assert.equal(evaluarAnuncio({ ...base, estado: 'PAUSED', gasto: 500, clics: 30 }).accion, 'no_aplica');
-  assert.equal(evaluarAnuncio({ ...base, estado: 'HOLD', gasto: 500, clics: 30 }).accion, 'no_aplica');
-  assert.equal(evaluarAnuncio({ ...base, gasto: 500, clics: 30, cpc: 16, protegido: 'Campaña protegida' }).accion, 'protegido');
-});
-
-test('regla 9: con promoción el tope sale del precio de lista', () => {
-  // precio visible 1.400 (tope 150) pero de lista 2.500 (tope 250): gastó 200, no se pausa
-  const r = evaluarAnuncio({ ...base, precio: 1400, precioLista: 2500, gasto: 200, clics: 9, cpc: 22 });
-  assert.equal(r.tope, 250);
-  assert.notEqual(r.accion, 'pausar');
-});
-
-test('regla 7: clic caro = costo por clic mayor al 4 % del precio, sólo se informa', () => {
-  const r = evaluarAnuncio({ ...base, gasto: 120, clics: 4, cpc: 101 });
-  assert.equal(r.clicCaro, true);
-  assert.notEqual(r.accion, 'pausar', 'informar no pausa por sí solo');
-  assert.equal(evaluarAnuncio({ ...base, gasto: 20, clics: 2, cpc: 101 }).clicCaro, true);
-  assert.equal(evaluarAnuncio({ ...base, gasto: 50, clics: 5, cpc: 100 }).clicCaro, false, 'justo el 4 % no es caro');
+test('regla 8: pausados no aplican; protegidas no se tocan', () => {
+  assert.equal(evaluarAnuncio(A({ estado: 'PAUSED', clics: 50 })).accion, 'no_aplica');
+  assert.equal(evaluarAnuncio(A({ clics: 50, protegido: 'Campaña protegida.' })).accion, 'protegido');
 });
 
 test('regla 5: una venta atribuida tarde o una venta en órdenes reactiva', () => {
