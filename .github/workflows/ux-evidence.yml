@@ -1,0 +1,37 @@
+name: UX journeys - evidence only
+on:
+  push:
+    branches: [codex/checkly-evidence-20261126]
+    paths:
+      - 'scripts/monitoring/ux-audit.cjs'
+      - '.github/workflows/ux-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser and accessibility diagnostics
+        run: |
+          mkdir -p /tmp/amado-ux
+          cd /tmp/amado-ux
+          npm install --no-save playwright@1.62.1 axe-core
+          npx playwright install --with-deps chromium
+      - name: Walk customer journeys without submitting orders or analytics
+        env:
+          NODE_PATH: /tmp/amado-ux/node_modules
+        run: node scripts/monitoring/ux-audit.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ux-evidence
+          path: ux-evidence/
+          retention-days: 7
