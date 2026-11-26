@@ -70,7 +70,12 @@ async function applyApproved(db, order, payment, now, queueAnalytics = false) {
   const payload  = paymentPayload(payment, { amount: payment.transaction_amount });
   const statements = [
     db.prepare(
-      "UPDATE orders SET payment_status='approved', status='paid', payment_id=?, paid_at=?, " +
+      "INSERT OR IGNORE INTO order_events (id,order_id,event_type,payload_json,created_at) " +
+      "SELECT ?,id,'payment_after_cancellation',?,? FROM orders WHERE id=? " +
+      "AND (status='cancelled' OR cancelled_at IS NOT NULL) AND payment_status!='approved'"
+    ).bind(`mp:${payment.id}:after-cancellation`, payload, now.toISOString(), order.id),
+    db.prepare(
+      "UPDATE orders SET payment_status='approved', status='paid', cancelled_at=NULL, payment_id=?, paid_at=?, " +
       "paid_amount_uyu=?, updated_at=? WHERE id=? AND payment_status!='approved'"
     ).bind(String(payment.id), paidAt, order.payable_total_uyu, now.toISOString(), order.id),
     db.prepare(
@@ -247,7 +252,7 @@ export function createPaymentProcessor({
 
     const order = await db
       .prepare(
-        'SELECT id,public_code,status,payment_status,buyer_name,buyer_phone,buyer_email,delivery_type,' +
+        'SELECT id,public_code,status,cancelled_at,payment_status,buyer_name,buyer_phone,buyer_email,delivery_type,' +
         'address,locality,department,requested_delivery_date,requested_delivery_from,' +
         'requested_delivery_to,delivery_notes,products_total_uyu,pickup_discount_uyu,' +
         'shipping_cost_uyu,payable_total_uyu,currency,payment_preference_id,' +

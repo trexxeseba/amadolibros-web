@@ -131,6 +131,7 @@ function dbMock({ order = baseOrder(), batchError = null } = {}) {
       return {
         bind(..._args) {
           return {
+            sql, args: _args,
             async first() {
               if (sql.includes('public_code')) return order;
               return null;
@@ -785,7 +786,7 @@ test('ga4-1: pago aprobado en producción agenda purchase server-side', async ()
   assert.equal(calls.length, 1);
   assert.equal(calls[0].order.public_code, 'AL-TEST');
   assert.equal(calls[0].order.paid_at, '2026-07-21T11:00:00.000Z');
-  assert.equal(db_.batches[0].length, 3, 'pago y outbox GA4 deben persistirse en el mismo batch');
+  assert.ok(db_.batches[0].some(s => s.sql.includes("'ga4_purchase'")), 'el outbox GA4 se persiste en el batch del pago');
 });
 
 test('ga4-2: preview no encola ni envía purchase a GA4', async () => {
@@ -799,7 +800,7 @@ test('ga4-2: preview no encola ni envía purchase a GA4', async () => {
   const res = await h({ request: makeReq(), env: previewEnv });
   assert.equal(res.status, 200);
   assert.equal(calls, 0);
-  assert.equal(previewEnv.ORDERS_DB.batches[0].length, 2, 'preview no agrega el outbox GA4');
+  assert.equal(previewEnv.ORDERS_DB.batches[0].some(s => s.sql.includes("'ga4_purchase'")), false, 'preview no agrega el outbox GA4');
 });
 
 test('ga4-3: una falla de Google no revierte ni degrada el pago aprobado', async () => {
@@ -820,7 +821,7 @@ test('ga4-3: una falla de Google no revierte ni degrada el pago aprobado', async
     },
   });
   assert.equal(res.status, 200);
-  assert.equal(db_.batches[0].length, 3);
+  assert.ok(db_.batches[0].some(s => s.sql.includes("'ga4_purchase'")));
 });
 
 test('email-2: pago aprobado en preview no envía notificación interna', async () => {
