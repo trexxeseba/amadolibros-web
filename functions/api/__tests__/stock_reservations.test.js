@@ -11,6 +11,8 @@ import { createOrdersHandler } from '../_orders_handler.js';
 import { createCartValidationHandler } from '../_cart_validation_handler.js';
 import { heldMessage, ownPaymentMessage, stockWindows, reduceAvailability, PENDING_HOLD_HOURS } from '../../_shared/stock-reservations.js';
 import { createPreferenceHandler } from '../_mp_handler.js';
+import { createMpWebhookHandler } from '../_mp_webhook_handler.js';
+import { createHmac } from 'node:crypto';
 import { confirmTransfer, transferBlockedReason } from '../../_shared/panel-transfer.js';
 
 const HOST = 'https://www.amadolibros.com';
@@ -580,4 +582,84 @@ test('mensaje de pago propio en curso: en positivo, sin emojis ni "sólo" o "ún
   assert.equal(/s[oó]lo|únicamente/i.test(message), false);
   assert.match(message, /WhatsApp/);
   assert.match(message, /pedido en curso/);
+});
+
+// ── Pago recibido y escenarios de cobro (sin Mercado Pago real) ─────────────
+// Usa el webhook real contra la base real; solo se simula la respuesta de la
+// API de Mercado Pago (getPayment) y los envíos de correo.
+function webhookWorld(w, amount, { status = 'approved', paymentId = '9001' } = {}) {
+  const mail = { sale: 0, customer: 0, ga4: 0 };
+  const handler = createMpWebhookHandler({
+    mpClient: {
+      getPayment: async () => ({ ok: true, id: paymentId, status, collector_id: 440298103, currency_id: 'UYU', transaction_amount: amount, external_reference: w.currentCode, live_mode: true, date_approved: '2026-11-25T15:01:00Z' }),
+      getMerchantOrder: async () => ({ ok: false }),
+    },
+    getNow: () => w.state.now,
+    saleNotifier: async () => { mail.sale++; return { sent: 1 }; },
+    orderEmails: { sendPaidCustomer: async () => { mail.customer++; return { sent: 1 }; } },
+    purchaseAnalytics: { sendPurchase: async () => { mail.ga4++; return { sent: 1 }; } },
+    metaPurchase: { sendPurchase: async () => ({ sent: 0 }) },
+  });
+  const send = async () => {
+    const ts = '1700000000', rid = 'req-' + Math.random();
+    const v1 = createHmac('sha256', w.env.MP_WEBHOOK_SECRET).update('id:' + paymentId + ';request-id:' + rid + ';ts:' + ts + ';').digest('hex');
+    const request = new Request(HOST + '/api/webhooks/mercadopago?data.id=' + paymentId + '&type=payment', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-signature': 'ts=' + ts + ',v1=' + v1, 'x-request-id': rid }, body: JSON.stringify({ type: 'payment', action: 'payment.updated', data: { id: paymentId } }) });
+    return (await handler({ request, env: w.env })).status;
+  };
+  return { send, mail };
+}
+
+test('pago aprobado después de que el pedido fue cancelado: queda pagado una sola vez, con su importe y sin duplicados', async () => {
+  const w = world({ realClock: true });
+  const k = key();
+  const first = await w.order(ANA, { key: k });
+  const code = first.body.order.public_code;
+  w.currentCode = code;
+  assert.equal((await w.payLink(code, k)).status, 200);
+  w.set(code, { status: 'cancelled', cancelled_at: w.state.now.toISOString() });
+  const amount = w.row(code).payable_total_uyu;
+  const { send, mail } = webhookWorld(w, amount);
+  // Mercado Pago reintenta y puede entregar el mismo aviso varias veces a la vez.
+  const statuses = await Promise.all([send(), send(), send(), send(), send()]);
+  assert.deepEqual([...new Set(statuses)], [200]);
+  const row = w.row(code);
+  assert.equal(row.payment_status, 'approved');
+  assert.equal(row.status, 'paid');
+  assert.equal(row.paid_amount_uyu, amount);
+  assert.equal(row.payment_id, '9001');
+  assert.equal(w.events('payment_approved').length, 1);
+  assert.equal(w.sqlite.prepare("SELECT COUNT(*) n FROM order_events WHERE event_type='ga4_purchase'").get().n, 1);
+});
+
+test('pago con importe distinto al del pedido: se ignora y el pedido no queda pagado', async () => {
+  const w = world({ realClock: true });
+  const k = key();
+  const first = await w.order(ANA, { key: k });
+  const code = first.body.order.public_code;
+  w.currentCode = code;
+  const { send } = webhookWorld(w, w.row(code).payable_total_uyu - 1);
+  assert.equal(await send(), 200);
+  assert.notEqual(w.row(code).status, 'paid');
+  assert.equal(w.events('payment_approved').length, 0);
+});
+
+test('doble clic en pagar: un solo link y un solo pedido; el pago lo deja pagado una vez', async () => {
+  const w = world({ realClock: true });
+  const k = key();
+  const first = await w.order(ANA, { key: k });
+  const code = first.body.order.public_code;
+  w.currentCode = code;
+  const [a, b, c] = await Promise.all([w.payLink(code, k), w.payLink(code, k), w.payLink(code, k)]);
+  // Uno obtiene el link; los otros reciben 'ya se está generando' y pueden reintentar.
+  assert.deepEqual([a.status, b.status, c.status].sort(), [200, 409, 409]);
+  assert.equal(w.state.created, 1);
+  const retry = await w.payLink(code, k);
+  assert.equal(retry.status, 200);
+  assert.equal(retry.body.checkout_url, [a, b, c].find(r => r.status === 200).body.checkout_url);
+  assert.equal(w.state.created, 1);
+  assert.equal(w.count(), 1);
+  const { send } = webhookWorld(w, w.row(code).payable_total_uyu);
+  assert.equal(await send(), 200);
+  assert.equal(w.row(code).status, 'paid');
+  assert.equal(w.openUnits(), 1); // el pedido pagado sigue comprometiendo su unidad
 });
