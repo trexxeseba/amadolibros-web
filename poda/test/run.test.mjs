@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { modoEfectivo, grupoDeMetricas, leerArgs } from '../src/run.mjs';
-import { armarFilaDiaria, subirFila, ROTULO } from '../src/mesa.mjs';
+import { armarFilaDiaria, armarMail, listaParaChrome, ROTULO } from '../src/mesa.mjs';
 import { sqlUpsert, lit } from '../src/d1.mjs';
 
 test('modo: real sólo si el archivo lo dice, la variable no frena y no es prueba', () => {
@@ -45,16 +45,18 @@ test('la fila diaria lleva clave poda|fecha, rama Publicidad, nunca Aprobada, y 
   assert.equal(armarFilaDiaria({ fecha: '2026-11-13', accion: 'auditar', modo: 'real', real: true, resultado }).fld0pPEWivLADcKOu, 'poda|2026-11-13|auditoria');
 });
 
-test('sin AIRTABLE_TOKEN no se llama a la red', async () => {
-  let llamadas = 0;
-  const r = await subirFila({ a: 1 }, { env: {}, fetcher: async () => { llamadas++; return { ok: true }; } });
-  assert.deepEqual(r, { ok: false, motivo: 'sin_token' }); assert.equal(llamadas, 0);
+test('mail (26/11): APP, PROYECTO y COMETIDO arriba en negrita y cómo desactivarlo abajo', () => {
+  const m = armarMail({ fecha: '2026-11-26', real: true, cuerpo: 'lista', avisos: [] });
+  assert.match(m.texto, /^APP: MERCADO ADS DE AMADO LIBROS\nPROYECTO: PODA DE ANUNCIOS\nCOMETIDO: /);
+  assert.match(m.html, /<b>APP: MERCADO ADS DE AMADO LIBROS<\/b>/);
+  assert.match(m.texto, /Cómo desactivarlo o modificarlo/);
+  assert.ok(m.texto.indexOf('lista') < m.texto.indexOf('Cómo desactivarlo'));
 });
 
-test('upsert de Airtable por Clave, nunca crea duplicados', async () => {
-  let cuerpo = null;
-  const r = await subirFila({ x: 1 }, { env: { AIRTABLE_TOKEN: 't' }, fetcher: async (u, o) => { cuerpo = JSON.parse(o.body); assert.equal(o.method, 'PATCH'); return { ok: true }; } });
-  assert.equal(r.ok, true); assert.deepEqual(cuerpo.performUpsert.fieldsToMergeOn, ['fld0pPEWivLADcKOu']);
+test('lista para Chrome: pausar (nuevos y pendientes) con la marca de provisoria', () => {
+  const resultado = { listas: { pausar: [{ ad_group_id: '1', item_ids: ['MLU1'], motivo: '15 clics sin venta. PROVISORIA: tuvo clics' }], pendientesPausa: [{ ad_group_id: '2', item_ids: ['MLU2'], motivo: 'x' }], reactivar: [] } };
+  const l = listaParaChrome({ fecha: '2026-11-26', accion: 'correr', real: true, resultado });
+  assert.equal(l.pausar.length, 2); assert.equal(l.pausar[0].provisoria, true); assert.equal(l.pausar[1].provisoria, false);
 });
 
 test('SQL: comillas escapadas y nulos', () => {

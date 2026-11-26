@@ -22,9 +22,9 @@ test('libro: promo hasta 26 %', () => {
   const r = precioConTopes({ regular: 1500, techo: 1425, cupones });
   assert.equal(r.precio, 1110); assert.equal(r.pct, 26);
 });
-test('lo que no es libro: hasta 20 %', () => {
+test('lo que no es libro: hasta 26 % (decisión del 26/11)', () => {
   const r = precioConTopes({ regular: 1500, techo: 1425, cupones, topes: { ...TOPES, visibleMaxPct: TOPES.visibleNoLibroMaxPct } });
-  assert.equal(r.pct, 20);
+  assert.equal(r.pct, 26);
 });
 test('con el cupón más fuerte el total nunca baja del 60 % del regular', () => {
   for (const R of [2500, 3000, 4000, 4800, 5000, 9000]) {

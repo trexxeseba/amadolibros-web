@@ -28,6 +28,8 @@ permission to write."** El bloqueo es de Mercado Libre, no del código ni del to
 
 ## Reglas
 
+Desde el 26/11/2026 (Seba) se pausa por: A) 15 o más clics sin venta en 30 días; B) 3 días seguidos con gasto y sin ventas; C) ROAS abajo de 2,5 en 30 días y en 7. Con clics en los últimos 7 días la pausa es PROVISORIA. Sin Airtable: la lista va por mail y al repo privado (`estado/diagnostico`, `poda/ultima.json`), y la tarea de Claude "Poda de anuncios por la consola" la ejecuta con Chrome. La tabla de abajo es la regla anterior (11/11), que sigue valiendo para reactivar (reglas 5 y 6) y excepciones.
+
 | | |
 |---|---|
 | Tope de gasto sin venta | 10 % del precio, piso $150, techo $400 |

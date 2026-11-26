@@ -1,14 +1,14 @@
 name: Poda de anuncios (Mercado Ads)
 
 # Poda diaria de anuncios de Mercado Ads de Amado Libros. Sólo LEE la API: calcula con las
-# reglas del 11/11/2026 qué anuncios pausar y cuáles reactivar y deja la lista en la mesa
-# de decisiones; el Agente único la ejecuta en la consola. Detalle en poda/README.md.
+# reglas del 26/11/2026 qué anuncios pausar y cuáles reactivar, manda la lista por mail y la deja
+# en el repo privado para la tarea de Claude que la ejecuta en la consola. Detalle en poda/README.md.
 #
 # Modo: poda/modo.json ("real" | "dry-run" | "off"). Variable del repo PODA_DRY_RUN=true
 # lo fuerza a prueba. Arranca en dry-run: pasa a real sólo con un sí de Seba.
 #
 # El repo es público y estos logs también: sólo salen cantidades. Montos, títulos y
-# precios van a la base de Cloudflare (poda_registro, poda_corridas) y a la mesa.
+# precios van a la base de Cloudflare (poda_registro, poda_corridas), al mail y al repo privado.
 on:
   schedule:
     # 11:30 de Montevideo (UTC-3): la corrida del día. Respaldo del disparo del Worker.
@@ -76,7 +76,10 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+      PODA_SALIDA: salida
+      ESTADO_REPO: trexxeseba/amadolibros-privado
+      ESTADO_RAMA: estado/diagnostico
+      ESTADO_TOKEN: ${{ secrets.ESTADO_TOKEN }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       PODA_EMAIL_TO: undiaes@gmail.com
       PODA_DRY_RUN: ${{ vars.PODA_DRY_RUN }}
@@ -97,3 +100,22 @@ jobs:
           ARGS=(--accion "$ACCION")
           if [ "$PRUEBA" = "true" ]; then ARGS+=(--prueba); fi
           node poda/src/run.mjs "${ARGS[@]}"
+      # Lista para la tarea de Claude que pausa por la consola de Mercado Ads (la API da 401).
+      - name: Guardar la lista en el repo privado
+        if: always()
+        shell: bash
+        run: |
+          [ -f salida/poda-lista.json ] || exit 0
+          [ -n "$ESTADO_TOKEN" ] || { echo "Falta ESTADO_TOKEN"; exit 1; }
+          git config --global user.name "poda[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git clone -q "https://x-access-token:${ESTADO_TOKEN}@github.com/${ESTADO_REPO}.git" privado
+          cd privado
+          git checkout -q "$ESTADO_RAMA"
+          mkdir -p poda
+          cp ../salida/poda-lista.json "poda/$GITHUB_RUN_ID.json"
+          cp ../salida/poda-lista.json "poda/ultima.json"
+          git add -A
+          git commit -q -m "Poda $GITHUB_RUN_ID [skip ci]"
+          git push -q origin "HEAD:$ESTADO_RAMA"
+          echo "Guardado"
