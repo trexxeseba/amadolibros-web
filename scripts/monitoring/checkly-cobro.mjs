@@ -152,6 +152,20 @@ export async function estado({ api = checklyApi() } = {}) {
       etiquetas: c.tags, canales: (c.alertChannelSubscriptions || []).filter(x => x.activated).length,
       falla_ahora: s.hasFailures ?? null, error_ahora: s.hasErrors ?? null, ultimo_cambio: s.updated_at || s.updatedAt || null });
   }
+  // Para los controles que fallan ahora: qué respondió el último resultado
+  // (solo código, tiempo y las aserciones que no se cumplieron; nunca el cuerpo).
+  for (const c of checks.filter(x => statusById.get(x.id)?.hasFailures)) {
+    try {
+      const page = await api(`/v2/check-results/${c.id}?limit=1&resultType=FINAL`);
+      const r = page.entries?.[0] || {};
+      const api_ = r.apiCheckResult || {};
+      log('resultado', { nombre: c.name, desde: r.startedAt ?? null, ubicacion: r.runLocation ?? null,
+        http: api_.response?.status ?? api_.responseStatus ?? null, tiempo_ms: api_.timings?.total ?? r.responseTime ?? null,
+        error_de_conexion: api_.requestError || null,
+        aserciones: (api_.assertions || []).filter(x => x.error || x.pass === false || x.passed === false)
+          .map(x => ({ fuente: x.source, comparacion: x.comparison, esperado: x.target, actual: x.actual ?? null })) });
+    } catch (error) { log('resultado', { nombre: c.name, error: String(error?.message || error).slice(0, 120) }); }
+  }
   for (const ch of channels) {
     log('canal', { tipo: ch.type, destino: ch.type === 'EMAIL' ? maskEmail(ch.config?.address) : (ch.config?.name || ''),
       avisa_falla: ch.sendFailure, avisa_recuperacion: ch.sendRecovery,
