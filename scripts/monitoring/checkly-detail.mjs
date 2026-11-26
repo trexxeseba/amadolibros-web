@@ -38,13 +38,14 @@ for(const p of ['/v1/maintenance-windows?limit=100','/v1/accounts/me/entitlement
  try{report.diagnostics[p]=await getDiagnostic(p);}catch(e){report.diagnostics[p]={error:scrub(e.message)};}
 }
 for(const c of inventory){
- const fields=['id','name','checkType','activated','muted','frequency','frequencyOffset','locations','groupId','groupOrder','created_at','updated_at','runtimeId','runParallel','doubleCheck','useGlobalAlertSettings','maxResponseTime','degradedResponseTime','retryStrategy','schedulingStrategy'];
+ const fields=['id','name','checkType','activated','muted','shouldFail','pending','frequency','frequencyOffset','locations','groupId','groupOrder','created_at','updated_at','runtimeId','runParallel','doubleCheck','useGlobalAlertSettings','maxResponseTime','degradedResponseTime','retryStrategy','schedulingStrategy'];
  const details=Object.fromEntries(fields.filter(k=>k in c).map(k=>[k,c[k]]));
  details.availableKeys=Object.keys(c);
+ details.hasSetupOrTeardown=Boolean(c.setupSnippetId||c.tearDownSnippetId||c.localSetupScript||c.localTearDownScript);
  const batch=await recentResults(api,c.id,{resultType:'ALL'});
  details.latest=batch.rows[0]?summarizeResult(batch.rows[0],c):null;
  if(c.id===SIGNATURE&&batch.rows[0]){
-  const r=batch.rows[0];details.resultKeys=Object.keys(r);
+  const r=batch.rows[0];details.resultKeys=Object.keys(r);details.errorGroupIds=r.errorGroupIds;
   details.rawAssertions=r.apiCheckResult?.assertions||[];
   details.responseMeta=Object.fromEntries(Object.entries(r.apiCheckResult?.response||{}).filter(([k])=>!['body','headers'].includes(k)));
  }
@@ -52,7 +53,7 @@ for(const c of inventory){
   const script=c.script||'';
   if(/\b(?:APP_USR-|TEST-)[A-Za-z0-9_-]{15,}/.test(script)||/\bBearer\s+[A-Za-z0-9_-]{12,}/.test(script))throw Error('SCRIPT_CONTAINS_CREDENTIAL_PATTERN');
   await writeFile(resolve(dir,'browser-check-current.js'),script);
-  const failures=batch.rows.filter(r=>r.hasFailures||r.hasErrors).slice(0,2);
+  const failures=process.env.DOWNLOAD_TRACES==='0'?[]:batch.rows.filter(r=>r.hasFailures||r.hasErrors).slice(0,2);
   for(const r of failures){
    const manifest=await api('/v1/check-results/'+c.id+'/'+r.id+'/assets');
    let index=0;

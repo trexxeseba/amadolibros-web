@@ -10,6 +10,7 @@ on:
       - 'scripts/monitoring/browser-evidence.cjs'
       - 'scripts/monitoring/checkly-browser.spec.cjs'
       - 'scripts/monitoring/checkly-browser-regression.cjs'
+      - 'scripts/monitoring/checkly-browser-apply.mjs'
 permissions:
   contents: read
 jobs:
@@ -27,10 +28,11 @@ jobs:
         env:
           CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
         run: node scripts/monitoring/checkly-evidence.mjs
-      - name: Leer trazas y ejecutar dos veces el control de firma existente
+      - name: Leer configuracion y cupo sin cambiar controles
         env:
           CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
           RETEST_SIGNATURE: '0'
+          DOWNLOAD_TRACES: '0'
         run: node scripts/monitoring/checkly-detail.mjs
       - uses: actions/upload-artifact@v4
         if: always()
@@ -39,7 +41,7 @@ jobs:
           path: checkly-evidence/
           retention-days: 7
   browser:
-    if: ${{ !contains(github.event.head_commit.message, '[checkly-read-only]') }}
+    if: ${{ !contains(github.event.head_commit.message, '[skip-chrome]') && !contains(github.event.head_commit.message, '[checkly-read-only]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -75,5 +77,27 @@ jobs:
         with:
           name: browser-evidence
           path: browser-evidence/
+          retention-days: 7
+  apply-approved-browser:
+    if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[apply-browser-approved]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Aplicar unicamente el script aprobado y verificar dos corridas
+        env:
+          CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
+          APPLY_APPROVED_BROWSER: '2026-11-26'
+        run: node scripts/monitoring/checkly-browser-apply.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: checkly-browser-application
+          path: checkly-browser-application/
           retention-days: 7
 
