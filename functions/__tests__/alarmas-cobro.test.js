@@ -69,7 +69,8 @@ test('controles del cobro: sólo lectura o rechazo esperado, nunca un pedido ni 
   assert.ok(webhook.request.url.includes('/api/webhooks/mercadopago'));
   // Sin encabezado de firma: el servidor tiene que rechazarlo.
   assert.equal(webhook.request.headers.some(h => /signature/i.test(h.key)), false);
-  assert.deepEqual(webhook.request.assertions, [{ source: 'STATUS_CODE', comparison: 'EQUALS', target: '401' }]);
+  assert.deepEqual(webhook.request.assertions, [{ source: 'STATUS_CODE', comparison: 'GREATER_THAN', target: '400' }, { source: 'STATUS_CODE', comparison: 'LESS_THAN', target: '402' },
+    { source: 'JSON_BODY', property: '$.error', comparison: 'CONTAINS', target: 'Firma' }]);
   // Ningún control pega contra los servicios que crean pedidos o pagos.
   for (const check of checks) assert.equal(/\/api\/(orders|preferences|transfer-options)/.test(check.request.url), false);
 });

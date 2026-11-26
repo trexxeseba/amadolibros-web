@@ -90,7 +90,8 @@ export function cobroChecks(channelIds, { frequency = 10 } = {}) {
       request: { method: 'POST', url: `${SITE}/api/webhooks/mercadopago?data.id=1&type=payment`, followRedirects: false,
         skipSSL: false, bodyType: 'JSON', body: '{"type":"payment","data":{"id":"1"}}',
         headers: [...headers, { key: 'Content-Type', value: 'application/json' }],
-        assertions: [{ source: 'STATUS_CODE', comparison: 'EQUALS', target: '401' }] } },
+        assertions: [{ source: 'STATUS_CODE', comparison: 'GREATER_THAN', target: '400' }, { source: 'STATUS_CODE', comparison: 'LESS_THAN', target: '402' },
+          { source: 'JSON_BODY', property: '$.error', comparison: 'CONTAINS', target: 'Firma' }] } },
   ];
 }
 
