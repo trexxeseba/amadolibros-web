@@ -17,9 +17,10 @@ const yo = await ml.get('/users/me');
 if (String(yo?.id) !== CUENTA.sellerId) throw new Error('token_de_otra_cuenta');
 const S = CUENTA.sellerId;
 
-const ids = (await ml.get(`/users/${S}/items/search?status=active&limit=100`))?.results ?? [];
+const ids = []; let scroll = null;
+for (let i = 0; i < 20; i++) { const d = await ml.get(`/users/${S}/items/search?status=active&search_type=scan&limit=100${scroll ? `&scroll_id=${encodeURIComponent(scroll)}` : ''}`); const r = d?.results ?? []; if (!r.length) break; ids.push(...r); scroll = d?.scroll_id; if (!scroll) break; }
 const items = [];
-for (let i = 0; i < ids.length; i += 20) { const d = await ml.get(bulkItemsPath(ids.slice(i, i + 20), 'id,catalog_listing,catalog_product_id,attributes,title')); for (const e of d ?? []) { const it = bulkEntryItem(e); if (it) items.push(it); } }
+for (let i = 0; i < ids.length && (items.filter(x => x.catalog_listing && x.catalog_product_id).length < 5 || items.length < 100); i += 20) { const d = await ml.get(bulkItemsPath(ids.slice(i, i + 20), 'id,catalog_listing,catalog_product_id,attributes,title')); for (const e of d ?? []) { const it = bulkEntryItem(e); if (it) items.push(it); } }
 const isbn = it => (it.attributes ?? []).find(a => a.id === 'GTIN' || a.id === 'ISBN')?.value_name?.split(',')[0]?.trim();
 const cat = items.filter(i => i.catalog_listing && i.catalog_product_id).slice(0, 5);
 const sin = items.filter(i => !i.catalog_listing && isbn(i)).slice(0, 5);
@@ -34,6 +35,9 @@ for (const it of cat) {
   const p = it.catalog_product_id;
   let r = await ml.sonda(`/products/${p}/items?limit=50`); anotar('api /products/{id}/items con token', r.status, r.json?.results?.length);
   r = await ml.sonda(`/products/${p}`); anotar('api /products/{id} con token (buy_box_winner)', r.status, r.json?.buy_box_winner ? 1 : 0);
+  if (r.json?.buy_box_winner) anotar('buy_box_winner trae precio y vendedor', r.json.buy_box_winner.price && r.json.buy_box_winner.seller_id ? 'si' : 'no', 1);
+  const w = (await ml.sonda(`/items/${it.id}/price_to_win?version=v2`)).json?.winner?.item_id;
+  if (w) { r = await ml.sonda(`/items/${w}?attributes=id,seller_id,price`); anotar('api /items/{ganador} con token', r.status, r.json?.seller_id ? 1 : 0); r = await ml.sonda(`/items/${w}/shipping_options?city_to=TUxVQ0NJVTk5MTU`); anotar('api shipping_options del ganador', r.status, r.ok ? 1 : 0); }
   r = await ml.sonda(`/sites/MLU/search?product_id=${p}`); anotar('api /sites/MLU/search?product_id con token', r.status, r.json?.results?.length);
   r = await ml.sonda(`/items/${it.id}/price_to_win?version=v2`); anotar('api price_to_win con token', r.status, r.json?.price_to_win ? 1 : 0);
   let c = await crudo(`https://api.mercadolibre.com/products/${p}/items?limit=50`); anotar('api /products/{id}/items sin token', c.status, (c.t.match(/"item_id"/g) ?? []).length);
