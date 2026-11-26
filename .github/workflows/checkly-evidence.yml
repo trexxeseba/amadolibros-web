@@ -1,0 +1,58 @@
+name: Checkly y navegador - evidencia de solo lectura
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/checkly-evidence-20261126]
+    paths:
+      - '.github/workflows/checkly-evidence.yml'
+      - 'scripts/monitoring/checkly-evidence.mjs'
+      - 'scripts/monitoring/browser-evidence.cjs'
+permissions:
+  contents: read
+jobs:
+  checkly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Consultar resultados existentes (GET)
+        env:
+          CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
+        run: node scripts/monitoring/checkly-evidence.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: checkly-evidence
+          path: checkly-evidence/
+          retention-days: 7
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar navegador de diagnostico
+        run: |
+          mkdir -p /tmp/amado-browser
+          cd /tmp/amado-browser
+          npm install --no-save playwright@1.62.1
+          npx playwright install --with-deps chromium
+      - name: Capturar portada, catalogo y ficha sin escrituras
+        env:
+          NODE_PATH: /tmp/amado-browser/node_modules
+        run: node scripts/monitoring/browser-evidence.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-evidence
+          path: browser-evidence/
+          retention-days: 7
