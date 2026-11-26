@@ -71,6 +71,9 @@ export function promosDelDia(promos, ahora = new Date()) {
     && Date.parse(p.start_date) <= en3 && Date.parse(p.finish_date) > t);
 }
 
+// Errores de Mercado Libre que se pasan solos esperando unos segundos.
+export const reintentable = e => [423, 429, 500, 502, 503].includes(e?.status) || /SIBLING_CREATION_IN_PROCESS|Locked/i.test(JSON.stringify(e?.detalle ?? ''));
+
 async function main() {
   const env = process.env, args = process.argv.slice(2);
   const salida = args[args.indexOf('--salida') + 1] || '.';
@@ -142,8 +145,15 @@ async function main() {
           // Ya adherida: Mercado Libre no deja cambiar el precio con otro POST; se sale y se vuelve a entrar.
           via = 'delete_post';
           await ml.delete(`/seller-promotions/items/${id}?promotion_type=${promo.type}&promotion_id=${encodeURIComponent(promo.id)}&${V2}`);
-          try { await ml.post(`/seller-promotions/items/${id}?${V2}`, body); }
-          catch (err2) {
+          // Recién salida, Mercado Libre tarda en soltar la oferta (OFFER_SIBLING_CREATION_IN_PROCESS, 423
+          // Offer Locked, 500): se reintenta con espera creciente antes de darla por perdida.
+          let err2 = null;
+          for (const espera of [4000, 8000, 15000, 30000]) {
+            await new Promise(r => setTimeout(r, espera));
+            try { await ml.post(`/seller-promotions/items/${id}?${V2}`, body); err2 = null; break; }
+            catch (e2) { err2 = e2; if (!reintentable(e2)) break; }
+          }
+          if (err2) {
             // Si el precio nuevo no entra, se vuelve a dejar como estaba.
             try { await ml.post(`/seller-promotions/items/${id}?${V2}`, { ...body, deal_price: enPromo }); } catch { /* queda anotado */ }
             anotar({ id, estado: 'error_reingreso', regular, precio_previo: enPromo, intento: obj.precio, detalle: detalleError(err2) }); continue;
