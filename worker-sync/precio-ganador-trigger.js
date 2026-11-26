@@ -72,11 +72,13 @@ async function alertar(env, fetcher, resultado) {
   const to = String(env?.PRECIO_GANADOR_EMAIL_TO ?? '').split(',').map(s => s.trim()).filter(Boolean);
   if (!apiKey || !to.length) return { ...resultado, alerta: 'sin_credenciales' };
   try {
+    const entrega = nextInternalEmailAt();
+    // Una alarma por motivo por día: Resend no repite la misma clave en 24 horas.
     const res = await fetcher('https://api.resend.com/emails', {
-      method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(20000),
-      body: JSON.stringify({ scheduled_at: nextInternalEmailAt(), from: env?.REPORT_EMAIL_FROM || 'Amado Libros <web@notificaciones.amadolibros.com>', to, subject: `ALARMA Precio Ganador: el Worker no pudo lanzar la corrida (${resultado.state})`,
+      method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `precio-ganador-worker/${entrega.slice(0, 10)}/${resultado.state}` }, signal: AbortSignal.timeout(20000),
+      body: JSON.stringify({ scheduled_at: entrega, from: env?.REPORT_EMAIL_FROM || 'Amado Libros <web@notificaciones.amadolibros.com>', to, subject: `ALARMA Precio Ganador: el Worker no pudo lanzar la corrida (${resultado.state})`,
         text: `El Worker de Cloudflare no pudo pedirle a GitHub que corra Precio Ganador.\nMotivo: ${resultado.detalle ?? resultado.state}.\nSi el cron de GitHub tampoco corre, lanzala a mano en Actions > Precio Ganador.` }),
     });
-    return { ...resultado, alerta: res.ok ? 'enviada' : `resend_http_${res.status}` };
+    return { ...resultado, alerta: res.ok ? 'enviada' : res.status === 409 ? 'ya_avisado' : `resend_http_${res.status}` };
   } catch { return { ...resultado, alerta: 'resend_transporte' }; }
 }

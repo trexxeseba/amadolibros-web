@@ -179,10 +179,12 @@ export async function enviarResumen({ cuenta, acum, resumen, ayer = null, fetche
   const { asunto, texto, html } = armarReporteDiario({ cuenta, acum, resumen, ayer });
   try {
     const res = await fetcher('https://api.resend.com/emails', {
-      method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `precio-ganador-${cuenta.clave}-${fechaMontevideo()}-${process.env.GITHUB_RUN_ID ?? Date.now()}` },
+      method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `precio-ganador-${cuenta.clave}-${fechaMontevideo()}` },
       body: JSON.stringify({ scheduled_at: nextInternalEmailAt(), from, to, subject: asunto, html, text: texto }),
       signal: AbortSignal.timeout(30000),
     });
+    // Un resumen por cuenta por día: si el Worker y el cron de GitHub corren los dos a las 21:00, el segundo da 409.
+    if (res.status === 409) return { status: 'ya_enviado' };
     return res.ok ? { status: 'enviado' } : { status: 'error', http: res.status };
   } catch { return { status: 'error_transporte' }; }
 }
