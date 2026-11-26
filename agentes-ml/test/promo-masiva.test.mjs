@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cuponMaximo, precioConTopes, cuponesDeDetalle } from '../src/promo-masiva.mjs';
+import { cuponMaximo, precioConTopes, cuponesDeDetalle, TOPES } from '../src/promo-masiva.mjs';
 
 // Los cupones vigentes del 26/11/2026.
 const cupones = cuponesDeDetalle([
@@ -18,25 +18,24 @@ test('el cupón sólo cuenta si la compra llega al mínimo y el de porcentaje re
   assert.equal(cuponMaximo(3000, cupones), 400);
   assert.equal(cuponMaximo(5000, cupones), 700);
 });
-test('un libro barato llega al 16 % porque no le entra ningún cupón', () => {
+test('libro: promo hasta 26 %', () => {
   const r = precioConTopes({ regular: 1500, techo: 1425, cupones });
-  assert.equal(r.precio, 1260); assert.equal(r.pct, 16);
+  assert.equal(r.precio, 1110); assert.equal(r.pct, 26);
 });
-test('con cupón posible el total no pasa el 25 %', () => {
-  for (const R of [2500, 3000, 4000, 4500, 5000, 9000]) {
+test('lo que no es libro: hasta 20 %', () => {
+  const r = precioConTopes({ regular: 1500, techo: 1425, cupones, topes: { ...TOPES, visibleMaxPct: TOPES.visibleNoLibroMaxPct } });
+  assert.equal(r.pct, 20);
+});
+test('con el cupón más fuerte el total nunca baja del 60 % del regular', () => {
+  for (const R of [2500, 3000, 4000, 4800, 5000, 9000]) {
     const r = precioConTopes({ regular: R, techo: R * 0.95, cupones });
     assert.ok(!r.error, String(R));
-    assert.ok(r.pct <= 16 && r.total_pct <= 25, `${R}: ${r.pct} ${r.total_pct}`);
-    assert.ok((R - r.precio + cuponMaximo(r.precio, cupones)) / R <= 0.25 + 1e-9);
+    assert.ok(r.pct <= 26, `${R}: ${r.pct}`);
+    assert.ok(r.precio - cuponMaximo(r.precio, cupones) >= R * 0.6 - 1e-9, `${R}: ${r.precio}`);
   }
 });
-test('nunca sube el precio: si el tope no permite bajar más que hoy, no toca', () => {
-  const r = precioConTopes({ regular: 5000, techo: 4300, cupones });
-  assert.equal(precioConTopes({ regular: 5000, techo: 4000, cupones }).error, 'sin_rango');
-  assert.equal(r.error, 'pasa_el_tope_con_cupon');
-});
-test('respeta el rango de la promo y el piso del 60 %', () => {
-  const r = precioConTopes({ regular: 1000, techo: 950, min: 900, cupones: [] });
-  assert.equal(r.precio, 900);
-  assert.equal(precioConTopes({ regular: 1000, techo: 950, max: 800, cupones: [] }).error, 'sin_rango');
+test('nunca sube el precio y respeta el rango de la promo', () => {
+  assert.equal(precioConTopes({ regular: 5000, techo: 3600, cupones }).error, 'sin_rango');
+  assert.equal(precioConTopes({ regular: 1000, techo: 950, min: 900, cupones: [] }).precio, 900);
+  assert.equal(precioConTopes({ regular: 1000, techo: 950, max: 700, cupones: [] }).error, 'sin_rango');
 });

@@ -5,12 +5,11 @@
 //
 // Para cada publicación de la promoción (las que ya están adheridas y las candidatas) calcula el
 // precio con el MAYOR descuento que permiten los topes de Seba y lo escribe:
-//   - Libros: descuento visible de hasta 16 % sobre el precio regular.
+//   - Libros: descuento visible de hasta 26 % sobre el precio regular; lo que no es libro, hasta 20 %.
 //   - El total con el cupón más fuerte que podría usar el comprador (cupones de vendedor vigentes,
-//     con su compra mínima y su tope) nunca pasa el 25 %.
+//     con su compra mínima y su tope) nunca pasa el 40 % (piso de 60 %: perder poco).
 //   - Nunca deja el precio más caro que el que se ve hoy ni que el que ya tenía en la promoción.
-//   - Piso de pérdida: nunca menos del 60 % del regular (mínimo provisorio de Precio Ganador: los
-//     costos de Amado Libros no están cargados). Con los topes de arriba nunca se llega.
+//   - El 60 % es el mínimo provisorio de Precio Ganador (los costos de Amado Libros no están cargados).
 //   - Fuera: libros médicos y la lista manual de config/exclusiones.json.
 // Después de escribir relee la entrada de la publicación en la promoción y confirma el precio.
 // El repo es público: el log sólo lleva conteos; el detalle va al archivo de salida (repo privado).
@@ -22,7 +21,9 @@ import { detalleError } from './sanear.mjs';
 import { esLibroMedico } from './guardas.mjs';
 import { fuenteTokenD1 } from '../../precio-ganador/src/token.mjs';
 
-export const TOPES = Object.freeze({ visibleMaxPct: 16, totalConCuponMaxPct: 25, pisoPct: 60 });
+// Seba 26/11 (segundo mensaje): promo hasta 26 % en libros (20 % lo que no es libro); el cupón se puede
+// sumar, pero el total con el cupón más fuerte nunca baja del 60 % del regular (piso de Precio Ganador).
+export const TOPES = Object.freeze({ visibleMaxPct: 26, visibleNoLibroMaxPct: 20, totalConCuponMaxPct: 40, pisoPct: 60 });
 const V2 = 'app_version=v2';
 const lista = j => Array.isArray(j) ? j : Array.isArray(j?.results) ? j.results : [];
 const num = v => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v))) ? null : Number(v);
@@ -109,14 +110,15 @@ async function main() {
       const e = cola.shift(); const id = e.id;
       try {
         if (excluidos.has(id)) { anotar({ id, estado: 'excluido_lista' }); continue; }
-        const [it, sp] = await Promise.all([ml.get(`/items/${id}?attributes=id,title,price,available_quantity,status`), ml.sonda(`/items/${id}/sale_price`)]);
+        const [it, sp] = await Promise.all([ml.get(`/items/${id}?attributes=id,title,price,available_quantity,status,domain_id`), ml.sonda(`/items/${id}/sale_price`)]);
         if (it?.status !== 'active' || !(it?.available_quantity > 0)) { anotar({ id, estado: 'no_activa' }); continue; }
         if (esLibroMedico(it.title, config)) { anotar({ id, estado: 'excluido_medico' }); continue; }
         const regular = num(sp.json?.regular_amount) ?? num(e.original_price) ?? num(it.price);
         const visible = num(sp.json?.amount) ?? regular;
         const enPromo = num(e.price) > 0 ? num(e.price) : null;
         const techo = Math.min(visible, enPromo ?? Infinity);
-        const obj = precioConTopes({ regular, techo, min: e.min_discounted_price, max: e.max_discounted_price, cupones });
+        const esLibro = String(it.domain_id ?? '').toUpperCase().endsWith('-BOOKS');
+        const obj = precioConTopes({ regular, techo, min: e.min_discounted_price, max: e.max_discounted_price, cupones, topes: esLibro ? TOPES : { ...TOPES, visibleMaxPct: TOPES.visibleNoLibroMaxPct } });
         if (obj.error) { anotar({ id, estado: obj.error, regular, visible, en_promo: enPromo }); continue; }
         if (enPromo !== null && obj.precio >= enPromo) { anotar({ id, estado: 'ya_estaba_al_maximo', regular, precio: enPromo }); continue; }
         if (!real) { anotar({ id, estado: 'haria', regular, visible, en_promo: enPromo, precio: obj.precio, pct: obj.pct, total_pct: obj.total_pct }); continue; }
