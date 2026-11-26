@@ -1,31 +1,42 @@
 # Regalos, galerías y avisos de stock
 
-## Cambio visible
+## Resultado
 
-- Regalos ofrece Agregar al carrito con el mismo controlador de las fichas. El segundo clic abre el carrito sin duplicar la unidad. WhatsApp queda disponible para consultas y dedicatorias.
-- Solo libros activos, con unidades enteras disponibles, precio positivo y moneda UYU tienen botón de compra. Precio y stock se vuelven a validar en el servidor por el flujo existente del carrito.
-- Avisame cuando llegue usa las mismas reglas de contacto en la ficha y en la API. Letras mezcladas con teléfonos y correos incompletos se rechazan antes de CAPTCHA, catálogo y base. Corregir el campo limpia el error; se conservan los datos si falla el envío.
-- La galería conserva el filtro exacto de imágenes revisadas y suma una comparación visual para reconocer copias recomprimidas de carteles conocidos. Las coincidencias se quitan de miniaturas, imagen principal y zoom; si no queda ninguna foto, se muestra un mensaje de imagen no disponible.
+- Regalos permite agregar libros disponibles al carrito. El segundo clic abre el carrito sin duplicar unidades; WhatsApp sigue disponible para consultas.
+- El aviso de stock valida WhatsApp o correo con las mismas reglas en la ficha y en la API. Mantiene CAPTCHA y la comprobación de disponibilidad.
+- La galería oculta carteles conocidos de miniaturas, imagen principal y zoom. Compara proporciones, huella perceptual de luminancia de 32 × 32 y colores en 4 × 4 celdas contra 14 referencias revisadas; conserva las imágenes si la carga o la lectura por CORS falla.
+- Ambos clientes serializados incluyen el ayudante que esbuild introduce con `keepNames`. La validación de CI ejecuta sus pruebas también sobre el módulo empaquetado: detecta el error `__name is not defined` que el código fuente sin empaquetar no mostraba.
 
-## Filtro conservador
+## Evidencia del 26/11/2026
 
-Se comparan proporciones, huella perceptual de luminancia de 32 × 32 y distribución de colores en 4 × 4 celdas. Se requieren todas las condiciones: proporciones dentro de aproximadamente 6 %, distancia Hamming hasta 6 bits y error de color RMS hasta 16. No es un clasificador general ni borra imágenes del catálogo.
+Versión revisada de la rama: `52b0e541836331835e297f7468e3fd9ec11b54c6`.
+Versión de integración usada por GitHub Actions: `8db6ff4b847cfeb204e141d4c836719ed4c81802`.
 
-Las 14 referencias visuales provienen de fotos ya identificadas y revisadas en #813: logos de Amado y carteles de embalaje/envío. Sus SHA256 originales se guardan junto a las huellas. Los otros identificadores ya revisados siguen cubiertos por el filtro exacto.
+- [CI completo aprobado](https://github.com/trexxeseba/amadolibros-web/actions/runs/45835496313): 3.419 ejecuciones de pruebas, sintaxis y compilaciones con checkout apagado y encendido.
+- [Despliegue y auditorías de Preview](https://github.com/trexxeseba/amadolibros-web/actions/runs/45835496050): revisión comercial, productos de muestra, datos bibliográficos y enlaces aprobados.
+- [Capturas y reporte del navegador](https://github.com/trexxeseba/amadolibros-web/actions/runs/45835496050/artifacts/15125655902), artefacto `purchase-ui-pr-822`.
 
-El navegador inspecciona miniaturas con dos cargas simultáneas como máximo, después de un turno de inactividad. Si una imagen no carga, el canvas no es legible por CORS o vence el plazo de 4 segundos, se conserva. No se descargan imágenes de referencia: las huellas vienen incluidas en la página.
+En Chrome automatizado, a 375 × 812 y 1440 × 900:
 
-## Evidencia local — 25/11/2026
+| Comprobación | Resultado |
+| --- | --- |
+| Regalos, carrito, ficha y aviso de reposición | Ancho del documento igual al viewport; sin desborde horizontal |
+| Primer y segundo clic en Agregar al carrito | Una unidad; segundo clic abre el carrito |
+| Contacto inválido | Error visible; ninguna solicitud enviada |
+| Corrección y envío válido | Cliente llega al estado de éxito con respuesta interceptada |
+| JavaScript | Sin errores de página en los recorridos |
+| Imágenes de enlaces | Ninguna sin texto alternativo en la muestra |
 
-42 pruebas focalizadas aprobadas:
-- Clic real del controlador de carrito sobre los datos generados por Regalos, precio/unidades y segundo clic.
-- Formulario con contacto inválido, corrección y envío simulado; rechazo equivalente en la API.
-- 35 imágenes originales revisadas visualmente: 14 carteles y 21 fotos/tapas/contratapas/material del libro. Cada una se prueba original, JPEG de 96 px/calidad 35 y JPEG de 240 px/calidad 75: 105 casos, sin falsos positivos ni carteles omitidos en esta muestra.
-- Navegación completa del controlador de galería tras excluir un cartel y estado vacío cuando todas las imágenes son carteles.
-- Fallos de imagen y CORS conservan la foto; máximo de dos cargas en paralelo.
+Ficha agotada usada: `MLU1416777650` (Murdoku). El envío de aviso se interceptó en el navegador: no se registró ningún contacto y no se comprobó la entrega de un correo real ni un desafío CAPTCHA real.
 
-Las variantes se decodificaron y recomprimieron con System.Drawing. El fixture guarda huellas, hashes de procedencia y tres muestras de píxeles para comprobar el cálculo. Los controladores de página se ejecutaron con Node VM y DOM simulado; no equivale a una medición visual en un teléfono.
+Se probaron las galerías `MLU1494548512`, `MLU1447482978`, `MLU626310388`, `MLU1256360946` y `MLU1465393798`. El filtro desplegado ocultó una imagen en cada una, sin errores de JavaScript ni CORS. En la última ficha se reemplazó una miniatura solo dentro del navegador por tres variantes controladas de un cartel: JPEG 96 px/calidad 45, JPEG 240 px/calidad 85 y WebP 480 px/calidad 75. Las tres se ocultaron. No se cambió ninguna imagen del servidor.
 
-## Comprobación tras desplegar
+La muestra local anterior sigue cubierta: 35 imágenes revisadas (14 carteles y 21 fotos/tapas/contratapas/material del libro), en original y dos variantes JPEG: 105 casos sin falsos positivos ni carteles omitidos dentro de esa muestra.
 
-Abrir Regalos y fichas en 375 px y escritorio. Probar carrito, aviso de contacto y una ficha con copia recomprimida de un cartel conocido. Comprobar que CORS permite leer las miniaturas y que tapas e interiores permanecen visibles. El navegador local de esta sesión no inició, por lo que esa comprobación de renderizado queda pendiente. Las pruebas no crearon pedidos, cobros ni correos reales.
+## Alcance y límites
+
+El filtro no es un clasificador universal. Carteles con otras composiciones requieren nuevas referencias revisadas. Se conserva el filtro exacto existente.
+
+La versión de prueba tiene el cobro apagado. Estos controles no son una compra completa con Mercado Pago: no crearon pedidos, cobros ni correos reales. Las capturas completas pueden mostrar imágenes aún no cargadas fuera del viewport por la carga diferida; no se contabilizan como imágenes rotas sin desplazarse hasta ellas.
+
+El script `scripts/commerce/check-preview-purchase-ui.mjs` solo admite dominios de Preview, bloquea las escrituras de API ajenas a la validación de carrito e intercepta el aviso de stock. El workflow lo ejecuta en este PR y conserva las capturas durante 30 días.

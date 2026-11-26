@@ -73,6 +73,7 @@ import { handlePurchasesRoute } from './purchases.js';
 import { handleReposicionRead, REPOSICION_PATH } from './reposicion-read.js';
 import { mlCompetition, competitionStatus, competitionCoverage } from './ml-competition.js';
 import { fxRates } from './fx-rates.js';
+import { triggerPaymentsReconcile } from './payments-reconcile-trigger.js';
 import {
   addCompressedIndexes,
   buildManifest,
@@ -116,6 +117,13 @@ export default {
         processPendingMetaPurchases(env).catch(error => {
           console.error('[Meta purchase] Error de reintento', error?.name || 'Error');
           return { status: 'error' };
+        }),
+        // Conciliación de pagos de Mercado Pago: corre en Pages (ahí están las
+        // credenciales); acá sólo se la dispara. Un pago cuyo aviso no llegó
+        // se aplica con las mismas validaciones, y lo que no cierra se avisa.
+        triggerPaymentsReconcile(env).then(result => {
+          if (result.status === 'error') console.error('[pagos] La conciliación no respondió bien', result.http);
+          return result;
         }),
         // Stock del proveedor para las altas de la cola: pausa/reactiva según el
         // snapshot vigente. Inerte mientras ML_STOCK_SYNC_MODE sea "disabled".

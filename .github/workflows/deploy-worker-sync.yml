@@ -78,6 +78,19 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
 
+      - name: Sync reconcile signing key to Worker
+        run: |
+          if [ -z "$RECONCILE_SECRET" ]; then
+            echo "::warning::Falta RECONCILE_SECRET: la conciliación de pagos queda sin disparar hasta cargarla."
+            exit 0
+          fi
+          cd worker-sync
+          printf '%s' "$RECONCILE_SECRET" | npx wrangler@3 secret put RECONCILE_SECRET
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RECONCILE_SECRET: ${{ secrets.RECONCILE_SECRET }}
+
       - name: Sync GA4 Measurement Protocol secret to Worker
         run: |
           if [ -z "$GA4_API_SECRET" ]; then

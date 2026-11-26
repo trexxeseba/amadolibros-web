@@ -217,3 +217,50 @@ export async function searchPreferenceByRef(publicCode, accessToken, now, { expe
   candidates.sort((a, b) => Date.parse(b.date_created || '0') - Date.parse(a.date_created || '0'));
   return getPreference(candidates[0].id, accessToken, publicCode, { expectedCollectorId, checkoutField, fetch: f, timeoutMs });
 }
+
+// Pagos modificados en los últimos días, del más reciente al más viejo. Lo usa
+// sólo la conciliación, y sólo para DESCUBRIR ids: cada pago se vuelve a pedir
+// con getPayment y pasa por las mismas validaciones que el aviso firmado, así
+// que nada de lo que devuelve esta búsqueda decide por sí solo un cobro.
+export async function searchRecentPayments(accessToken, { days = 2, limit = 50, offset = 0, fetch: f = globalThis.fetch, timeoutMs = 10000 } = {}) {
+  const query = new URLSearchParams({
+    sort: 'date_last_updated',
+    criteria: 'desc',
+    range: 'date_last_updated',
+    begin_date: `NOW-${days}DAYS`,
+    end_date: 'NOW',
+    limit: String(limit),
+    offset: String(offset),
+  });
+  let resp;
+  try {
+    resp = await fetchMp(
+      `${MP_BASE}/v1/payments/search?${query}`,
+      { headers: { 'Authorization': `Bearer ${accessToken}` } },
+      timeoutMs,
+      f
+    );
+  } catch (e) {
+    if (e?.name === 'AbortError') return { ok: false, code: 'MP_TIMEOUT' };
+    return { ok: false, code: 'MP_API_ERROR' };
+  }
+  if (!resp.ok) return { ok: false, code: mpErrorCode(resp.status) };
+  let data;
+  try { data = await resp.json(); } catch { return { ok: false, code: 'MP_API_ERROR' }; }
+  // La referencia documenta la respuesta envuelta en un arreglo; la API la
+  // devuelve también como objeto. Se aceptan las dos formas.
+  const page = Array.isArray(data) ? data[0] : data;
+  if (!page || !Array.isArray(page.results)) return { ok: false, code: 'MP_API_ERROR' };
+  return {
+    ok: true,
+    total: Number(page.paging?.total) || 0,
+    results: page.results
+      .filter(p => p && (typeof p.id === 'number' || typeof p.id === 'string'))
+      .map(p => ({
+        id: String(p.id),
+        status: typeof p.status === 'string' ? p.status : null,
+        collector_id: Number(p.collector_id ?? p.collector?.id) || null,
+        external_reference: typeof p.external_reference === 'string' ? p.external_reference : null,
+      })),
+  };
+}
