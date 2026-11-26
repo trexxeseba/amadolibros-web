@@ -1,0 +1,68 @@
+name: ML reactivar publicaciones (Amado Libros)
+
+# Pedido de Seba del 26/11/2026: reactivar las publicaciones que Mercado Libre pausó por
+# "precio con cambio inusual". prueba = lee y guarda el detalle; real = pone status=active
+# y verifica. Nunca cambia precios. El log sólo lleva conteos; el detalle va al repo privado.
+# Ver agentes-ml/src/reactivar.mjs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      items:
+        description: 'Publicaciones (MLU separadas por coma, hasta 50)'
+        required: true
+        type: string
+      modo:
+        description: 'prueba = sólo lee · real = reactiva (sólo desde main)'
+        type: choice
+        options: [prueba, real]
+        default: prueba
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ml-reactivar
+  cancel-in-progress: false
+
+jobs:
+  reactivar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ESTADO_REPO: trexxeseba/amadolibros-privado
+      ESTADO_RAMA: estado/diagnostico
+      ESTADO_TOKEN: ${{ secrets.ESTADO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests
+        run: node --test agentes-ml/test/reactivar.test.mjs
+      - name: Reactivar
+        env:
+          ITEMS: ${{ inputs.items }}
+          MODO: ${{ inputs.modo == 'real' && github.ref == 'refs/heads/main' && 'real' || 'prueba' }}
+        run: node agentes-ml/src/reactivar.mjs --salida "salida"
+      - name: Guardar en el repo privado
+        if: always()
+        shell: bash
+        run: |
+          [ -f salida/reactivar.json ] || exit 0
+          git config --global user.name "diagnostico[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git clone -q "https://x-access-token:${ESTADO_TOKEN}@github.com/${ESTADO_REPO}.git" privado
+          cd privado
+          git checkout -q "$ESTADO_RAMA"
+          mkdir -p reactivar
+          cp ../salida/reactivar.json "reactivar/$GITHUB_RUN_ID.json"
+          git add -A
+          git commit -q -m "Reactivar $GITHUB_RUN_ID [skip ci]"
+          git push -q origin "HEAD:$ESTADO_RAMA"
+          echo "Guardado"
