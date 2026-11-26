@@ -51,11 +51,13 @@ export function precioNormal(item) {
   const real = item?.price ?? null, orig = Number(item?.original_price);
   return Number.isFinite(orig) && real !== null && orig > real ? orig : real;
 }
-export function motivosDeFalla({ porTipo, muestraN, erroresAplicar, intentos }) {
+export function motivosDeFalla({ porTipo, muestraN, erroresAplicar, intentos, estadoN = 0 }) {
   const m = [];
   if (porTipo.muestra > 2) m.push(`${porTipo.muestra} de ${muestraN} de la muestra no coinciden con ML`);
   if (porTipo.regla > 0) m.push(`${porTipo.regla} decisiones no coinciden con la regla`);
-  if (porTipo.estado > 10) m.push(`${porTipo.estado} publicaciones del estado con otro precio en ML`);
+  // Precio cambiado fuera del sistema (a mano, promo, otra herramienta): falla sólo si son más de 10 y más del 1 %
+  // del estado. Con 9.808 publicaciones en el estado de Vintage, 18 cambiadas (0,2 %) es un aviso, no una caída.
+  if (porTipo.estado > 10 && porTipo.estado > estadoN * 0.01) m.push(`${porTipo.estado} publicaciones del estado con otro precio en ML`);
   if (erroresAplicar > 3 && erroresAplicar > intentos * 0.02) m.push(`${erroresAplicar} errores de aplicación sobre ${intentos} intentos`);
   return m;
 }
@@ -71,6 +73,13 @@ export async function ofertas(pid, cliente = ml) {
   catch (e) { if (e.status === 404) return []; if (e.status === 403) return null; throw e; }
 }
 
+// El 25/11/2026 price_to_win también empezó a responder 403 a ratos ("Auditoría fallida: http_403" tumbó 10 corridas
+// de Libros). Un 403 deja esa publicación de la muestra sin leer; no es un error de la corrida.
+export async function precioParaGanar(id, cliente = ml) {
+  try { return await cliente.get(`/items/${id}/price_to_win?version=v2`); }
+  catch (e) { if (e.status === 403) return null; throw e; }
+}
+
 async function main() {
   const yo = await ml.get('/users/me');
   if (String(yo?.id) !== cuenta.sellerId) throw new Error('token_de_otra_cuenta');
@@ -81,7 +90,8 @@ async function main() {
   const catalogo = [...items.values()].filter(i => i.catalog_listing && i.catalog_product_id);
   for (let i = catalogo.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [catalogo[i], catalogo[j]] = [catalogo[j], catalogo[i]]; }
   for (const it of catalogo.slice(0, N)) {
-    const p = await ml.get(`/items/${it.id}/price_to_win?version=v2`);
+    const p = await precioParaGanar(it.id);
+    if (p === null) { muestra.push({ id: it.id, titulo: it.title.slice(0, 60), precio: it.price, conclusion: 'Sin leer: ML respondió 403 (PolicyAgent)', ok: true }); continue; }
     const leidas = await ofertas(it.catalog_product_id);
     const otras = (leidas ?? []).filter(o => String(o.seller_id) !== cuenta.sellerId);
     const masBarata = otras.reduce((m, o) => (m === null || Number(o.price) < m ? Number(o.price) : m), null);
@@ -142,7 +152,7 @@ async function main() {
   // El job falla sólo si el problema es serio: más de 2 de la muestra de 10, una
   // discrepancia de regla (es un bug), más de 10 publicaciones del estado con otro
   // precio, o errores de aplicación por encima del 2 % de los intentos (mínimo 3).
-  const motivosFalla = motivosDeFalla({ porTipo, muestraN: muestra.length, erroresAplicar, intentos });
+  const motivosFalla = motivosDeFalla({ porTipo, muestraN: muestra.length, erroresAplicar, intentos, estadoN: controlEstado.length });
   console.log(JSON.stringify({ muestra: muestra.length, estado: controlEstado.length, regla: controlRegla.length, discrepancias: discrepancias.length, por_tipo: porTipo, errores_aplicar: erroresAplicar, falla: motivosFalla }));
   // Cualquier discrepancia se avisa por mail con los IDs; el job queda en verde si no es seria.
   if (discrepancias.length || erroresAplicar) {
