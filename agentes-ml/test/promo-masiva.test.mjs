@@ -54,3 +54,10 @@ test('la corrida diaria toma las promos vigentes o que empiezan en 3 días, nunc
   ], ahora);
   assert.deepEqual(r.map(x => x.name), ['black friday', 'Amado 15']);
 });
+test('reintenta lo que Mercado Libre suelta solo y no lo que es definitivo', async () => {
+  const { reintentable } = await import('../src/promo-masiva.mjs');
+  assert.equal(reintentable({ status: 400, detalle: { message: 'Errors: OFFER_SIBLING_CREATION_IN_PROCESS - Creation of sibling offer in process' } }), true);
+  assert.equal(reintentable({ status: 423, detalle: {} }), true);
+  assert.equal(reintentable({ status: 500 }), true);
+  assert.equal(reintentable({ status: 400, detalle: { message: 'ERROR_CREDIBILITY_DISCOUNTED_PRICE' } }), false);
+});
