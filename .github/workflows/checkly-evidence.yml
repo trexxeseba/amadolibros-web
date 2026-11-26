@@ -93,6 +93,7 @@ jobs:
         env:
           CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
           APPLY_APPROVED_BROWSER: '2026-11-26'
+          VERIFY_SETTINGS_NORMALIZATION: '1'
         run: node scripts/monitoring/checkly-browser-apply.mjs
       - uses: actions/upload-artifact@v4
         if: always()
@@ -100,4 +101,3 @@ jobs:
           name: checkly-browser-application
           path: checkly-browser-application/
           retention-days: 7
-

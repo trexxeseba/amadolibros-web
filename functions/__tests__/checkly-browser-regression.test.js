@@ -25,4 +25,3 @@ test('CSS banner URLs are actually extracted from browser-computed backgrounds',
  const matches=[...'url("https://www.amadolibros.com/banner.webp")'.matchAll(rx)];
  assert.equal(matches.length,1);assert.equal(matches[0][1],'https://www.amadolibros.com/banner.webp');
 });
-

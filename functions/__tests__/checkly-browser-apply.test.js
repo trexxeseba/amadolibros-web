@@ -7,4 +7,3 @@ const c={id:BROWSER_ID,name:'Amado - portadas banners y ficha',checkType:'BROWSE
 test('approved browser update is idempotent for the reviewed script',()=>{assert.equal(hash(proposed),AFTER);assert.equal(approvedUpdate(c,proposed),null);});
 test('cannot update another check or an unreviewed script',()=>{assert.throws(()=>approvedUpdate({...c,id:'other'},proposed),/UNEXPECTED_CHECK/);assert.throws(()=>approvedUpdate(c,proposed+'//change'),/UNREVIEWED_PROPOSAL/);});
 test('concurrent changes to the live script require a new review',()=>{assert.throws(()=>approvedUpdate({...c,script:'changed'},proposed),/LIVE_SCRIPT_CHANGED/);});
-

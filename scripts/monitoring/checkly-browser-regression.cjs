@@ -10,4 +10,3 @@ fs.writeFileSync(path.join(dir,'playwright.config.cjs'),"module.exports={testDir
 const cli=require.resolve('@playwright/test/cli');
 const run=spawnSync(process.execPath,[cli,'test','--config',path.join(dir,'playwright.config.cjs')],{cwd:dir,stdio:'inherit',env:process.env});
 process.exitCode=run.status??1;
-

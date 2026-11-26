@@ -9,7 +9,7 @@ const headers={Authorization:'Bearer '+key,'X-Checkly-Account':CHECKLY_ACCOUNT,A
 const SIGNATURE='0e4f3da1-91d2-42cc-9c6c-c2888be2546b';
 async function getDiagnostic(path) {
  const allowed=['/v1/maintenance-windows?limit=100','/v1/accounts/me/entitlements','/v2/usage/summary','/v2/usage/terms','/v1/usage/summary','/v1/usage/terms'];
- if(!allowed.includes(path))throw Error('DIAGNOSTIC_PATH_NOT_ALLOWED');
+ if(!allowed.includes(path)&&path!=='/v1/error-groups/80abe22d-8bbc-4b87-b6f6-31231d263926')throw Error('DIAGNOSTIC_PATH_NOT_ALLOWED');
  const r=await fetch('https://api.checklyhq.com'+path,{method:'GET',headers,redirect:'error',signal:AbortSignal.timeout(20000)});
  return r.ok?await r.json():{httpStatus:r.status,error:scrub(await r.text())};
 }
@@ -34,6 +34,7 @@ async function downloadAsset(asset,checkId,resultId,file) {
 const inventory=await api('/v1/checks');
 const report={collectedAt:new Date().toISOString(),diagnostics:{},checks:[],assets:[],signatureRuns:[]};
 await mkdir(dir,{recursive:true});
+ report.diagnostics.signatureErrorGroup=await getDiagnostic('/v1/error-groups/80abe22d-8bbc-4b87-b6f6-31231d263926');
 for(const p of ['/v1/maintenance-windows?limit=100','/v1/accounts/me/entitlements','/v2/usage/summary','/v2/usage/terms','/v1/usage/summary','/v1/usage/terms']){
  try{report.diagnostics[p]=await getDiagnostic(p);}catch(e){report.diagnostics[p]={error:scrub(e.message)};}
 }
@@ -95,4 +96,3 @@ if(process.env.RETEST_SIGNATURE==='1'){
 }
 await writeFile(resolve(dir,'checkly-detail.json'),JSON.stringify(report,null,2));
 console.log(JSON.stringify({diagnosticsRead:true,assetDownloads:report.assets.map(x=>({resultId:x.resultId,file:x.file,bytes:x.bytes,error:x.error,httpStatus:x.httpStatus})),signatureRuns:report.signatureRuns.length}));
-

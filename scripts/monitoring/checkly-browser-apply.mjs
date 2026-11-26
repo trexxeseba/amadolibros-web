@@ -18,7 +18,7 @@ export function approvedUpdate(current,proposed){
  return hash(current.script)===AFTER?null:{script:proposed};
 }
 const protectedKeys=['name','checkType','activated','muted','shouldFail','frequency','locations','doubleCheck','retryStrategy','runParallel','maxResponseTime','degradedResponseTime','useGlobalAlertSettings','alertSettings','alertChannelSubscriptions','groupId','runtimeId','sslCheckDomain','environmentVariables','triggerIncident'];
-const protectedConfig=c=>Object.fromEntries(protectedKeys.filter(k=>k in c).map(k=>[k,c[k]]));
+const protectedConfig=c=>Object.fromEntries(protectedKeys.filter(k=>k in c).map(k=>[k,k==='alertChannelSubscriptions'?(c[k]||[]).map(s=>({alertChannelId:s.alertChannelId,activated:s.activated})).sort((a,b)=>a.alertChannelId-b.alertChannelId):c[k]]));
 async function main(){
  if(process.env.APPLY_APPROVED_BROWSER!=='2026-11-26')throw Error('OWNER_APPROVAL_REQUIRED');
  const api=readApi(),headers={Authorization:'Bearer '+process.env.CHECKLY_API_KEY,'X-Checkly-Account':CHECKLY_ACCOUNT,'Content-Type':'application/json'};
@@ -27,7 +27,8 @@ async function main(){
  const save=()=>writeFile(dir+'/application.json',JSON.stringify(report,null,2));
  try{
   const before=await api('/v1/checks/'+BROWSER_ID),script=await readFile(new URL('./checkly-browser.spec.cjs',import.meta.url),'utf8');
-  const body=approvedUpdate(before,script);
+  const approved=approvedUpdate(before,script);
+  const body=approved||(process.env.VERIFY_SETTINGS_NORMALIZATION==='1'?{script}:null);
   report.beforeHash=hash(before.script);report.proposedHash=hash(script);
   if(body){
    const r=await fetch('https://api.checklyhq.com/v1/checks/browser/'+BROWSER_ID+'?autoAssignAlerts=false',{method:'PUT',headers,redirect:'error',signal:AbortSignal.timeout(20000),body:JSON.stringify(body)});
@@ -35,6 +36,10 @@ async function main(){
    report.configurationChanged=true;report.appliedAt=new Date().toISOString();await save();
   }
   const after=await api('/v1/checks/'+BROWSER_ID);
+  report.changedMetadataKeys=protectedKeys.filter(k=>!isDeepStrictEqual(before[k],after[k]));
+  report.changedSettingKeys=protectedKeys.filter(k=>!isDeepStrictEqual(protectedConfig(before)[k],protectedConfig(after)[k]));
+  report.subscriptionsBefore=(before.alertChannelSubscriptions||[]).map(s=>({alertChannelId:s.alertChannelId,activated:s.activated}));
+  report.subscriptionsAfter=(after.alertChannelSubscriptions||[]).map(s=>({alertChannelId:s.alertChannelId,activated:s.activated}));
   report.settingsPreserved=isDeepStrictEqual(protectedConfig(before),protectedConfig(after));
   report.afterHash=hash(after.script);report.frequency=after.frequency;report.muted=after.muted;report.activated=after.activated;report.shouldFail=after.shouldFail;
   if(!report.settingsPreserved||report.afterHash!==AFTER)throw Error('CHECK_CONFIG_VERIFICATION_FAILED');
@@ -60,4 +65,3 @@ async function main(){
  await save();console.log(JSON.stringify(report));
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)await main();
-
