@@ -1,0 +1,85 @@
+name: ML promo masiva (Amado Libros)
+
+# Pedido de Seba del 26/11/2026: llevar las publicaciones de una promoción (Black Friday, etc.) al
+# mayor descuento dentro de sus topes (16 % visible, 25 % con el cupón más fuerte). Ver
+# agentes-ml/src/promo-masiva.mjs. El log sólo lleva conteos; el detalle va al repo privado.
+
+on:
+  workflow_dispatch:
+    inputs:
+      promocion:
+        description: 'Nombre exacto de la promoción en Mercado Libre'
+        required: true
+        type: string
+      desde:
+        description: 'Desde qué posición de la lista (tandas)'
+        default: '0'
+        type: string
+      cantidad:
+        description: 'Cuántas en esta tanda (máximo 3000)'
+        default: '1500'
+        type: string
+      items:
+        description: 'Opcional: sólo estas publicaciones (MLU separadas por coma)'
+        default: ''
+        type: string
+      modo:
+        description: 'prueba = no escribe · real = escribe (sólo desde main)'
+        type: choice
+        options: [prueba, real]
+        default: prueba
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ml-promo-masiva
+  cancel-in-progress: false
+
+jobs:
+  promo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ESTADO_REPO: trexxeseba/amadolibros-privado
+      ESTADO_RAMA: estado/diagnostico
+      ESTADO_TOKEN: ${{ secrets.ESTADO_TOKEN }}
+      PROMOCION: ${{ inputs.promocion }}
+      DESDE: ${{ inputs.desde }}
+      CANTIDAD: ${{ inputs.cantidad }}
+      ITEMS: ${{ inputs.items }}
+      MODO: ${{ inputs.modo }}
+    steps:
+      - name: Modo real sólo desde main
+        if: inputs.modo == 'real' && github.ref != 'refs/heads/main'
+        run: exit 1
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests
+        run: node --test agentes-ml/test/promo-masiva.test.mjs
+      - name: Correr
+        run: node agentes-ml/src/promo-masiva.mjs --salida salida
+      - name: Guardar en el repo privado
+        if: always()
+        shell: bash
+        run: |
+          [ -n "$ESTADO_TOKEN" ] || { echo "Falta el secreto ESTADO_TOKEN"; exit 1; }
+          ls salida/*.json >/dev/null 2>&1 || { echo "Sin salida"; exit 0; }
+          git config --global user.name "promo-masiva[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git clone -q "https://x-access-token:${ESTADO_TOKEN}@github.com/${ESTADO_REPO}.git" privado
+          cd privado
+          git checkout -q "$ESTADO_RAMA"
+          mkdir -p promo-masiva
+          for f in ../salida/*.json; do cp "$f" "promo-masiva/${GITHUB_RUN_ID}-$(basename "$f")"; done
+          git add -A
+          git commit -q -m "Promo masiva $GITHUB_RUN_ID [skip ci]"
+          for i in 1 2 3; do git push -q origin "HEAD:$ESTADO_RAMA" && { echo Guardado; exit 0; }; sleep 5; git pull -q --rebase origin "$ESTADO_RAMA"; done
+          exit 1
