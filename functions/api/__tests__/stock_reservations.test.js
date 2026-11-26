@@ -664,7 +664,6 @@ test('doble clic en pagar: un solo link y un solo pedido; el pago lo deja pagado
   assert.equal(w.openUnits(), 1); // el pedido pagado sigue comprometiendo su unidad
 });
 
-
 // Mercado Pago devuelve date_approved con zona horaria; las ventanas del
 // catálogo se expresan en UTC. Comparar esos textos pierde ventas recientes.
 test('zona horaria: un pago histórico con -04:00 descuenta el último ejemplar', async () => {
@@ -746,4 +745,3 @@ for (const dateApproved of [null, 'fecha-invalida']) {
     assert.equal((await w.cart()).body.items[0].status, 'sin_stock');
   });
 }
-
