@@ -74,6 +74,7 @@ const ROUTES = [
   { path: '/sitemap-books-paused.xml', kind: 'sitemap-books-paused' },
   { path: '/api/health' },
   { path: '/api/status' },
+  { path: '/api/checkout-health' },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -327,6 +328,25 @@ function analyzeSitemapBody(body, kind) {
   return { ok: false, reason: 'unknown sitemap kind' };
 }
 
+// ─── Diagnóstico del cobro ────────────────────────────────────────────────────
+
+function analyzeCheckoutHealth(status, data, checkoutExpectation) {
+  const checks = data && typeof data.checks === 'object' && data.checks ? data.checks : null;
+  if (!checks) return { ok: false, reason: 'checkout-health sin "checks"' };
+  const failing = Object.keys(checks).filter(name => checks[name] !== 'ok');
+  if (checkoutExpectation === 'enabled') {
+    if (status !== 200 || data.ok !== true || failing.length > 0) {
+      return { ok: false, reason: `HTTP ${status}; piezas del cobro caídas: ${failing.join(', ') || 'ninguna informada'}` };
+    }
+    return { ok: true };
+  }
+  const others = failing.filter(name => name !== 'cobros_encendidos');
+  if (status !== 503 || !failing.includes('cobros_encendidos') || others.length > 0) {
+    return { ok: false, reason: `checkout apagado: se esperaba 503 sólo por el interruptor (HTTP ${status}; caídas: ${failing.join(', ') || 'ninguna'})` };
+  }
+  return { ok: true };
+}
+
 // ─── Route validators ─────────────────────────────────────────────────────────
 
 async function checkRoute(path, checkoutExpectation) {
@@ -426,6 +446,22 @@ async function checkRoute(path, checkoutExpectation) {
     if (data.env !== 'prod') {
       return { ok: false, path, reason: `env="${data.env}" (expected "prod")` };
     }
+    const leak = checkInternalFields(data, path);
+    if (leak) return leak;
+    return { ok: true, path };
+  }
+
+  // ── /api/checkout-health — diagnóstico del cobro (GET, sólo lectura) ─────
+  // Con el checkout encendido tiene que estar todo en pie. Con el checkout
+  // apagado la única pieza que puede fallar es justamente el interruptor.
+  if (path === '/api/checkout-health') {
+    if (!hasContentType(resp.headers, 'application/json')) {
+      return { ok: false, path, reason: `Content-Type not JSON (got: ${resp.headers.get('content-type') || 'none'})` };
+    }
+    let data;
+    try { data = await resp.json(); } catch { return { ok: false, path, reason: 'invalid JSON' }; }
+    const analysis = analyzeCheckoutHealth(status, data, checkoutExpectation);
+    if (!analysis.ok) return { ok: false, path, reason: analysis.reason };
     const leak = checkInternalFields(data, path);
     if (leak) return leak;
     return { ok: true, path };
@@ -541,6 +577,7 @@ async function main() {
 // directamente (node scripts/smoke-production.js).
 module.exports = {
   analyzeCartCheckoutState,
+  analyzeCheckoutHealth,
   analyzeSitemapBody,
   resolveCheckoutExpectation,
   hasRenderedElementWithId,
