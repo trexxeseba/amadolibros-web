@@ -9,7 +9,7 @@ import {
 } from '../../../shared/whatsapp-messages.js';
 
 const WA_HREF = whatsappHref(buildWhatsAppMessage({
-  greeting: 'Hola, hice un pedido en Amado Libros y quería consultarles 😊',
+  greeting: 'Hola, hice un pedido en Amado Libros y quería consultarles',
   motive: 'Consultar el estado de mi pedido',
   situation: 'Estoy revisando la confirmación del pedido',
   page: '/pedido',
@@ -72,11 +72,13 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
             ? 'El pago no pudo confirmarse'
             : 'Pago en proceso de verificación';
         waEl.href = wa.href(wa.build({
-          greeting: 'Hola, hice un pedido en Amado Libros y quería consultarles 😊',
+          greeting: 'Hola, hice un pedido en Amado Libros y quería consultarles',
           motive: 'Consultar el estado de mi pedido',
           situation: situation,
           order: code || '',
-          page: window.location.href,
+          // Sin los parámetros de Mercado Pago (collection_id, preference_id,
+          // etc.): el mensaje queda corto y legible para quien lo recibe.
+          page: code ? '/pedido/?code=' + encodeURIComponent(code) : '/pedido/',
           closing: '¿Podrían ayudarme a verificarlo? Gracias.',
         }));
       }
@@ -99,8 +101,19 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
 
       var auth = null;
       try { auth = JSON.parse(sessionStorage.getItem('amado-mp-auth') || 'null'); } catch (_) {}
+      if (!auth || auth.public_code !== code) {
+        try { auth = JSON.parse(localStorage.getItem('amado-mp-auth') || 'null'); } catch (_) {}
+      }
 
-      if (!auth || auth.public_code !== code || !auth.idempotency_key) return;
+      if (!auth || auth.public_code !== code || !auth.idempotency_key) {
+        // Sin la clave de esta compra (otro navegador o dispositivo) no se
+        // puede consultar el estado real. En vez de dejar "verificando"
+        // para siempre, se explica cómo llega la confirmación.
+        if (iconEl) iconEl.textContent = '✉';
+        if (h1El)   h1El.textContent   = 'Volviste desde Mercado Pago';
+        if (leadEl) leadEl.textContent = 'Cuando Mercado Pago valide el pago te llega la confirmación por correo y te escribimos por WhatsApp. Si pasan unos minutos y no llega, consultanos con el botón de abajo.';
+        return;
+      }
 
       var MAX_ATTEMPTS  = 20;
       var INTERVAL_MS   = 3000;
