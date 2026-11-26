@@ -15,11 +15,12 @@ async function getDiagnostic(path) {
 }
 async function downloadAsset(asset,checkId,resultId,file) {
  const first=new URL(asset.url);
- if(first.origin!=='https://api.checklyhq.com'||!first.pathname.startsWith('/v1/check-results/'+checkId+'/'+resultId+'/'))throw Error('ASSET_PATH_NOT_ALLOWED');
+ const trusted = first.origin==='https://api.checklyhq.com' || /(?:^|\.)checklyhq\.com$|(?:^|\.)amazonaws\.com$/.test(first.hostname);
+ if(first.protocol!=='https:' || !trusted)throw Error('ASSET_PATH_NOT_ALLOWED');
  let url=first;
  for(let redirects=0;redirects<4;redirects++){
   if(url.protocol!=='https:')throw Error('ASSET_REQUIRES_HTTPS');
-  const r=await fetch(url,{method:'GET',redirect:'manual',headers:url.origin===first.origin?headers:{},signal:AbortSignal.timeout(45000)});
+  const r=await fetch(url,{method:'GET',redirect:'manual',headers:url.origin==='https://api.checklyhq.com'?headers:{},signal:AbortSignal.timeout(45000)});
   if([301,302,303,307,308].includes(r.status)){url=new URL(r.headers.get('location'),url);continue;}
   if(!r.ok)return{httpStatus:r.status};
   if(Number(r.headers.get('content-length')||0)>40000000)throw Error('ASSET_TOO_LARGE');
@@ -59,7 +60,7 @@ for(const c of inventory){
     if(!['trace','log','report','screenshot'].includes(asset.type))continue;
     const file=r.id+'-'+String(++index)+'-'+asset.name.replace(/[^a-zA-Z0-9_.-]/g,'_').slice(-120);
     try{report.assets.push({resultId:r.id,startedAt:r.startedAt,type:asset.type,name:asset.name,archive:asset.archive,...await downloadAsset(asset,c.id,r.id,file)});}
-    catch(e){report.assets.push({resultId:r.id,name:asset.name,error:scrub(e.message)});}
+    catch(e){report.assets.push({resultId:r.id,name:asset.name,url:scrub(asset.url),error:scrub(e.message)});}
    }
   }
  }
@@ -77,7 +78,7 @@ if(process.env.RETEST_SIGNATURE==='1'){
   const since=Date.now();
   const trigger=await fetch('https://api.checklyhq.com/v2/check-sessions/trigger',{method:'POST',headers:{...headers,'Content-Type':'application/json'},redirect:'error',body:JSON.stringify({target:{checkId:[SIGNATURE]},refreshCache:true}),signal:AbortSignal.timeout(20000)});
   const started={round,at:new Date(since).toISOString(),httpStatus:trigger.status};
-  if(!trigger.ok){report.signatureRuns.push(started);break;}
+  if(!trigger.ok){report.signatureRuns.push({...started,error:scrub(await trigger.text())});break;}
   let latest=null;
   for(let attempt=0;attempt<15;attempt++){
    await new Promise(r=>setTimeout(r,6000));
@@ -93,3 +94,4 @@ if(process.env.RETEST_SIGNATURE==='1'){
 }
 await writeFile(resolve(dir,'checkly-detail.json'),JSON.stringify(report,null,2));
 console.log(JSON.stringify({diagnosticsRead:true,assetDownloads:report.assets.map(x=>({resultId:x.resultId,file:x.file,bytes:x.bytes,error:x.error,httpStatus:x.httpStatus})),signatureRuns:report.signatureRuns.length}));
+

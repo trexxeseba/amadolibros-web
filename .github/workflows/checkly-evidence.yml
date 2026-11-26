@@ -8,6 +8,8 @@ on:
       - 'scripts/monitoring/checkly-evidence.mjs'
       - 'scripts/monitoring/checkly-detail.mjs'
       - 'scripts/monitoring/browser-evidence.cjs'
+      - 'scripts/monitoring/checkly-browser.spec.cjs'
+      - 'scripts/monitoring/checkly-browser-regression.cjs'
 permissions:
   contents: read
 jobs:
@@ -50,9 +52,20 @@ jobs:
         run: |
           mkdir -p /tmp/amado-browser
           cd /tmp/amado-browser
-          npm install --no-save playwright@1.62.1
+          npm install --no-save playwright@1.62.1 @playwright/test@1.62.1
           npx playwright install --with-deps chromium
+      - name: Probar correccion del control de imagenes en Chrome (dos veces por tamano)
+        env:
+          NODE_PATH: /tmp/amado-browser/node_modules
+        run: node scripts/monitoring/checkly-browser-regression.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-regression
+          path: checkly-browser-test/
+          retention-days: 7
       - name: Capturar portada, catalogo y ficha sin escrituras
+        if: always()
         env:
           NODE_PATH: /tmp/amado-browser/node_modules
         run: node scripts/monitoring/browser-evidence.cjs
@@ -62,3 +75,4 @@ jobs:
           name: browser-evidence
           path: browser-evidence/
           retention-days: 7
+
