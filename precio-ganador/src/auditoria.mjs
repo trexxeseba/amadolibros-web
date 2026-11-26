@@ -155,7 +155,12 @@ async function main() {
   const motivosFalla = motivosDeFalla({ porTipo, muestraN: muestra.length, erroresAplicar, intentos, estadoN: controlEstado.length });
   console.log(JSON.stringify({ muestra: muestra.length, estado: controlEstado.length, regla: controlRegla.length, discrepancias: discrepancias.length, por_tipo: porTipo, errores_aplicar: erroresAplicar, falla: motivosFalla }));
   // Cualquier discrepancia se avisa por mail con los IDs; el job queda en verde si no es seria.
-  if (discrepancias.length || erroresAplicar) {
+  // Seba 26/11/2026 (menos mails): los avisos que no tumban la corrida salen una vez por día, con la
+  // corrida de las 21 de Montevideo; los problemas serios siguen saliendo al momento.
+  const horaUy = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Montevideo', hour: 'numeric', hour12: false }).format(new Date()));
+  const avisoDelDia = motivosFalla.length > 0 || horaUy >= 21;
+  if (!avisoDelDia && (discrepancias.length || erroresAplicar)) console.log('Aviso de auditoría: sale con la corrida de las 21');
+  if (avisoDelDia && (discrepancias.length || erroresAplicar)) {
     const lineas = discrepancias.map(d => `- ${d.id} (${d.tipo}): ${d.detalle}`).join('\n');
     const errores = ultima.filter(f => f.accion === 'error_aplicar').map(f => `- ${f.id}: ${f.motivo ?? 'error'}${f.detalle ? ' ' + JSON.stringify(f.detalle) : ''} (precio ${f.precio}, ganador ${f.ganador})`).join('\n');
     await enviarAlarma({

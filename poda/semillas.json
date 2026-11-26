@@ -4,5 +4,71 @@
     "origen": "agente_manual",
     "fecha_pausa": "2026-11-12",
     "motivo": "Pausado manualmente por el Agente único."
+  },
+  {
+    "item_id": "MLU661501183",
+    "origen": "agente_manual",
+    "fecha_pausa": "2026-11-26",
+    "motivo": "Primer lote de la poda con las reglas del 26/11, pausado por la consola con el OK de Seba."
+  },
+  {
+    "item_id": "MLU658001214",
+    "origen": "agente_manual",
+    "fecha_pausa": "2026-11-26",
+    "motivo": "Primer lote de la poda con las reglas del 26/11, pausado por la consola con el OK de Seba."
+  },
+  {
+    "item_id": "MLU653960560",
+    "origen": "agente_manual",
+    "fecha_pausa": "2026-11-26",
+    "motivo": "Primer lote de la poda con las reglas del 26/11, pausado por la consola con el OK de Seba."
+  },
+  {
+    "item_id": "MLU1528012190",
+    "origen": "agente_manual",
+    "fecha_pausa": "2026-11-26",
+    "motivo": "Primer lote de la poda con las reglas del 26/11, pausado por la consola con el OK de Seba."
+  },
+  {
+    "item_id": "MLU693739430",
+    "origen": "agente_manual",
+    "fecha_pausa": "2026-11-26",
+    "motivo": "Primer lote de la poda con las reglas del 26/11, pausado por la consola con el OK de Seba."
+  },
+  {
+    "item_id": "MLU1493865572",
+    "origen": "agente_manual",
+    "fecha_pausa": "2026-11-26",
+    "motivo": "Primer lote de la poda con las reglas del 26/11, pausado por la consola con el OK de Seba."
+  },
+  {
+    "item_id": "MLU699221201",
+    "origen": "agente_manual",
+    "fecha_pausa": "2026-11-26",
+    "motivo": "Primer lote de la poda con las reglas del 26/11, pausado por la consola con el OK de Seba."
+  },
+  {
+    "item_id": "MLU1488610972",
+    "origen": "agente_manual",
+    "fecha_pausa": "2026-11-26",
+    "motivo": "Primer lote de la poda con las reglas del 26/11, pausado por la consola con el OK de Seba."
+  },
+  {
+    "item_id": "MLU706638240",
+    "origen": "agente_manual",
+    "fecha_pausa": "2026-11-26",
+    "motivo": "Primer lote de la poda con las reglas del 26/11, pausado por la consola con el OK de Seba."
+  },
+  {
+    "item_id": "MLU868935516",
+    "origen": "agente_manual",
+    "fecha_pausa": "2026-11-26",
+    "motivo": "Primer lote de la poda con las reglas del 26/11, pausado por la consola con el OK de Seba."
+  },
+  {
+    "item_id": "MLU731475248",
+    "origen": "agente_manual",
+    "fecha_pausa": "2026-11-26",
+    "motivo": "Primer lote de la poda con las reglas del 26/11, pausado por la consola con el OK de Seba."
   }
 ]

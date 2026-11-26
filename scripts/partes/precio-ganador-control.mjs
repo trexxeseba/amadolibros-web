@@ -60,9 +60,12 @@ async function main() {
   }
   if (process.env.GITHUB_STEP_SUMMARY) await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, `## Control de Precio Ganador\n\n${salida.texto.replace(/\n/g, '  \n')}\n`);
   let mail = 'no_hacia_falta';
-  if (salida.atencion.length) mail = (await enviarAlarma({ aviso: true, asunto: `control: ${salida.atencion[0].slice(0, 90)}`, texto: salida.texto + (process.env.RUN_URL ? `\n\nDetalle: ${process.env.RUN_URL}` : '') })).status;
+  // Seba 26/11/2026 (menos mails): el control avisa una vez por día, con la corrida de las 21:50.
+  const horaUy = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Montevideo', hour: 'numeric', hour12: false }).format(new Date()));
+  if (salida.atencion.length && horaUy < 21) mail = 'sale_con_el_control_de_las_21';
+  else if (salida.atencion.length) mail = (await enviarAlarma({ aviso: true, asunto: `control: ${salida.atencion[0].slice(0, 90)}`, texto: salida.texto + (process.env.RUN_URL ? `\n\nDetalle: ${process.env.RUN_URL}` : '') })).status;
   console.log(JSON.stringify({ atencion: salida.atencion.length, mail }));
   // La alerta va por mail; el workflow queda en rojo sólo si el mail no salió (Seba 26/11: antes cada aviso lo marcaba fallido).
-  if (salida.atencion.length && mail !== 'enviado') process.exitCode = 1;
+  if (salida.atencion.length && !['enviado', 'sale_con_el_control_de_las_21'].includes(mail)) process.exitCode = 1;
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) await main();
