@@ -587,17 +587,17 @@ test('mensaje de pago propio en curso: en positivo, sin emojis ni "sólo" o "ún
 // ── Pago recibido y escenarios de cobro (sin Mercado Pago real) ─────────────
 // Usa el webhook real contra la base real; solo se simula la respuesta de la
 // API de Mercado Pago (getPayment) y los envíos de correo.
-function webhookWorld(w, amount, { status = 'approved', paymentId = '9001' } = {}) {
+function webhookWorld(w, amount, { status = 'approved', paymentId = '9001', dateApproved = '2026-11-25T15:01:00Z' } = {}) {
   const mail = { sale: 0, customer: 0, ga4: 0 };
   const handler = createMpWebhookHandler({
     mpClient: {
-      getPayment: async () => ({ ok: true, id: paymentId, status, collector_id: 440298103, currency_id: 'UYU', transaction_amount: amount, external_reference: w.currentCode, live_mode: true, date_approved: '2026-11-25T15:01:00Z' }),
+      getPayment: async () => ({ ok: true, id: paymentId, status, collector_id: 440298103, currency_id: 'UYU', transaction_amount: amount, external_reference: w.currentCode, live_mode: true, date_approved: dateApproved }),
       getMerchantOrder: async () => ({ ok: false }),
     },
     getNow: () => w.state.now,
     saleNotifier: async () => { mail.sale++; return { sent: 1 }; },
     orderEmails: { sendPaidCustomer: async () => { mail.customer++; return { sent: 1 }; } },
-    purchaseAnalytics: { sendPurchase: async () => { mail.ga4++; return { sent: 1 }; } },
+    purchaseAnalytics: { sendPurchase: async ({ order }) => { mail.ga4++; mail.paidAt = order.paid_at; return { sent: 1 }; } },
     metaPurchase: { sendPurchase: async () => ({ sent: 0 }) },
   });
   const send = async () => {
@@ -663,3 +663,87 @@ test('doble clic en pagar: un solo link y un solo pedido; el pago lo deja pagado
   assert.equal(w.row(code).status, 'paid');
   assert.equal(w.openUnits(), 1); // el pedido pagado sigue comprometiendo su unidad
 });
+
+
+// Mercado Pago devuelve date_approved con zona horaria; las ventanas del
+// catálogo se expresan en UTC. Comparar esos textos pierde ventas recientes.
+test('zona horaria: un pago histórico con -04:00 descuenta el último ejemplar', async () => {
+  const w = world();
+  const first = await w.order(ANA);
+  w.set(first.body.order.public_code, {
+    status: 'paid', payment_status: 'approved', paid_at: '2026-11-25T11:00:00.000-04:00',
+  });
+  w.state.catalog.updated_at = '2026-11-25T15:05:00.000Z';
+  w.later(30);
+  assert.equal((await w.cart()).body.items[0].status, 'sin_stock');
+  assert.equal((await w.order(BRUNO)).status, 422);
+  assert.equal(w.count(), 1);
+});
+
+test('zona horaria: un pago anterior a la ventana no descuenta stock por su hora local', async () => {
+  const w = world();
+  const first = await w.order(ANA);
+  w.set(first.body.order.public_code, {
+    status: 'paid', payment_status: 'approved', paid_at: '2026-11-25T16:30:00.000+02:00',
+  });
+  // El pago fue a las 14:30 UTC: queda fuera del margen de 15 minutos.
+  w.state.catalog.updated_at = '2026-11-25T15:00:00.000Z';
+  w.later(30);
+  assert.equal((await w.cart()).body.items[0].status, 'ok');
+  assert.equal((await w.order(BRUNO)).status, 201);
+});
+
+test('zona horaria: el candado cuenta un pago con offset que llega entre la lectura y el alta', async () => {
+  const w = world();
+  const first = await w.order(ANA);
+  w.set(first.body.order.public_code, { status: 'cancelled' });
+  w.state.catalog.updated_at = '2026-11-25T15:05:00.000Z';
+  w.later(30);
+  const realBatch = w.db.batch;
+  let injected = false;
+  w.db.batch = async list => {
+    if (!injected) {
+      injected = true;
+      w.set(first.body.order.public_code, {
+        status: 'paid', payment_status: 'approved', paid_at: '2026-11-25T11:01:00.000-04:00',
+      });
+    }
+    return realBatch(list);
+  };
+  const second = await w.order(BRUNO);
+  assert.equal(injected, true);
+  assert.equal(second.status, 422);
+  assert.equal(second.body.code, 'CART_CHANGED');
+  assert.equal(w.count(), 1);
+  assert.equal(w.guards(), 0);
+});
+
+test('zona horaria: webhook guarda el pago en UTC y mantiene el último ejemplar descontado', async () => {
+  const w = world();
+  const first = await w.order(ANA);
+  w.currentCode = first.body.order.public_code;
+  w.state.catalog.updated_at = '2026-11-25T15:05:00.000Z';
+  w.later(30);
+  const { send, mail } = webhookWorld(w, w.row(w.currentCode).payable_total_uyu, {
+    dateApproved: '2026-11-25T11:01:00.000-04:00',
+  });
+  assert.equal(await send(), 200);
+  assert.equal(w.row(w.currentCode).paid_at, '2026-11-25T15:01:00.000Z');
+  assert.equal(mail.paidAt, '2026-11-25T15:01:00.000Z');
+  assert.equal((await w.cart()).body.items[0].status, 'sin_stock');
+  assert.equal((await w.order(BRUNO)).status, 422);
+});
+
+for (const dateApproved of [null, 'fecha-invalida']) {
+  test('zona horaria: fecha de aprobación ' + String(dateApproved) + ' usa la hora de recepción', async () => {
+    const w = world();
+    const first = await w.order(ANA);
+    w.currentCode = first.body.order.public_code;
+    const { send, mail } = webhookWorld(w, w.row(w.currentCode).payable_total_uyu, { dateApproved });
+    assert.equal(await send(), 200);
+    assert.equal(w.row(w.currentCode).paid_at, w.state.now.toISOString());
+    assert.equal(mail.paidAt, w.state.now.toISOString());
+    assert.equal((await w.cart()).body.items[0].status, 'sin_stock');
+  });
+}
+

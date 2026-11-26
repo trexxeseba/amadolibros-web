@@ -64,9 +64,16 @@ function paymentPayload(payment, extra = {}) {
   });
 }
 
+function approvalDate(payment, now) {
+  const milliseconds = typeof payment.date_approved === 'string'
+    ? Date.parse(payment.date_approved) : NaN;
+  return Number.isFinite(milliseconds)
+    ? new Date(milliseconds).toISOString() : now.toISOString();
+}
+
 async function applyApproved(db, order, payment, now, queueAnalytics = false) {
   const eventId  = `mp:${payment.id}:approved`;
-  const paidAt   = payment.date_approved || now.toISOString();
+  const paidAt   = approvalDate(payment, now);
   const payload  = paymentPayload(payment, { amount: payment.transaction_amount });
   const statements = [
     db.prepare(
@@ -351,7 +358,7 @@ export function createPaymentProcessor({
           order: {
             ...order,
             payment_id: String(payment.id),
-            paid_at: payment.date_approved || now.toISOString(),
+            paid_at: approvalDate(payment, now),
           },
           now,
         })),

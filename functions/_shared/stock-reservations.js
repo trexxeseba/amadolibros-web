@@ -35,7 +35,9 @@ export const SYNC_MARGIN_MINUTES = 15;
 export const UNKNOWN_CATALOG_AGE_HOURS = 26;
 
 const NOT_CANCELLED = "o.status <> 'cancelled' AND o.cancelled_at IS NULL";
-const FIRM = "((o.payment_status = 'pending' AND o.updated_at > ?) OR (o.payment_status = 'approved' AND o.paid_at > ?))";
+// Los pagos anteriores pueden conservar el offset de Mercado Pago (-04:00).
+// Comparar instantes también cubre esos registros sin reescribir la base.
+const FIRM = "((o.payment_status = 'pending' AND o.updated_at > ?) OR (o.payment_status = 'approved' AND julianday(o.paid_at) > julianday(?)))";
 const HOLD = "(o.status = 'open' AND o.cancelled_at IS NULL AND o.payment_status NOT IN ('approved','pending') AND o.expires_at > ?)";
 const OTHER_BUYER = "(COALESCE(o.buyer_email,'') <> ? AND COALESCE(o.buyer_phone,'') <> ?)";
 const SAME_BUYER = "(COALESCE(o.buyer_email,'') = ? OR COALESCE(o.buyer_phone,'') = ?)";
