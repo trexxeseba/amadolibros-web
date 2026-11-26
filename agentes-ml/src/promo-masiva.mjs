@@ -137,7 +137,7 @@ async function main() {
             anotar({ id, estado: 'error_reingreso', regular, precio_previo: enPromo, intento: obj.precio, detalle: detalleError(err2) }); continue;
           }
         }
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, 3000));
         const r2 = await ml.sonda(`/seller-promotions/items/${id}?${V2}`);
         const entrada = lista(r2.json).find(x => x.id === promo.id);
         const ok = entrada && Math.abs(num(entrada.price) - obj.precio) < 0.01;
@@ -145,6 +145,25 @@ async function main() {
       } catch (err) { anotar({ id, estado: 'error', detalle: detalleError(err) }); }
     }
   }));
+
+  // Segunda consulta: Mercado Libre tarda unos segundos en mostrar el precio nuevo. Se relee lo que
+  // no se pudo confirmar al toque.
+  const pendientes = filas.filter(f => f.estado === 'no_verificado');
+  if (pendientes.length) {
+    await new Promise(r => setTimeout(r, 30000));
+    const cola2 = [...pendientes];
+    await Promise.all(Array.from({ length: 4 }, async () => {
+      while (cola2.length) {
+        const f = cola2.shift();
+        try {
+          const r2 = await ml.sonda(`/seller-promotions/items/${f.id}?${V2}`);
+          const entrada = lista(r2.json).find(x => x.id === promo.id);
+          f.leido = num(entrada?.price); f.estado_entrada = entrada?.status ?? null;
+          if (entrada && Math.abs(f.leido - f.precio) < 0.01) { f.estado = 'aplicado'; cuenta.no_verificado--; cuenta.aplicado = (cuenta.aplicado ?? 0) + 1; }
+        } catch { /* queda no_verificado */ }
+      }
+    }));
+  }
 
   mkdirSync(salida, { recursive: true });
   writeFileSync(join(salida, `promo-masiva-${Date.now()}.json`), JSON.stringify({ promo: { id: promo.id, type: promo.type, name: promo.name }, modo: real ? 'real' : 'prueba', desde, cantidad, cupones, cuenta, filas }, null, 1));
