@@ -319,6 +319,9 @@ ${displayImages.map((image, i) => `    <button type="button" class="thumb-btn" d
   }
   if(typeof Image==='function'&&typeof document.createElement==='function'){
     var filterImages=function(){
+      // El empaquetador de Cloudflare envuelve las funciones con __name(); al serializarlas con
+      // toString() ese ayudante no viaja y el filtro fallaba con "__name is not defined".
+      var __name=function(target){return target;};
       var policy=(${createGalleryVisualPolicy.toString()})(${JSON.stringify(NON_BOOK_VISUAL_REFERENCES)});
       (${excludeNonBookImages.toString()})(imgs,policy,excludeImage);
     };

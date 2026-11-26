@@ -41,3 +41,12 @@ test('a gallery containing only reviewed posters shows an honest empty state',as
   assert.ok(thumbs.every(t=>t.hidden));assert.equal(nodes.gMainBtn.hidden,true);
   assert.equal(placeholders.length,1);assert.equal(placeholders[0].textContent,'Imagen del libro no disponible');
 });
+
+test('el filtro define __name antes de usar funciones serializadas (el empaquetado las envuelve con __name)',()=>{
+  const book={id:'MLU123456789',title:'Galeria',price:1200,status:'active',available_quantity:1,pictures:['https://http2.mlstatic.com/D_FIRST-O.jpg','https://http2.mlstatic.com/D_SECOND-O.jpg']};
+  const html=renderPage(book,'galeria');
+  const start=html.indexOf('var filterImages=function(){');
+  const shim=html.indexOf('var __name=function(target){return target;};',start);
+  assert.ok(start>0&&shim>start,'falta el ayudante __name dentro de filterImages');
+  assert.ok(shim<html.indexOf('var policy=',start),'__name se define antes de armar la politica');
+});
