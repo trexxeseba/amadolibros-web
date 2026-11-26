@@ -155,6 +155,7 @@ export async function estado({ api = checklyApi() } = {}) {
   // Para los controles que fallan ahora: qué respondió el último resultado
   // (solo código, tiempo y las aserciones que no se cumplieron; nunca el cuerpo).
   for (const c of checks.filter(x => statusById.get(x.id)?.hasFailures)) {
+    log('definicion', { nombre: c.name, metodo: c.request?.method, url: c.request?.url, aserciones: c.request?.assertions, cuerpo: c.request?.body, tipo_cuerpo: c.request?.bodyType, seguir_redirecciones: c.request?.followRedirects, reintentos: c.retryStrategy?.type ?? null, fallas_antes_de_avisar: c.alertSettings?.escalationType === 'RUN_BASED' ? c.alertSettings?.runBasedEscalation : c.alertSettings, degradado_ms: c.degradedResponseTime, maximo_ms: c.maxResponseTime, script_previo: !!c.setupSnippetId, script_posterior: !!c.tearDownSnippetId, doble_chequeo: c.doubleCheck });
     try {
       const page = await api(`/v2/check-results/${c.id}?limit=1&resultType=FINAL`);
       const r = page.entries?.[0] || {};
