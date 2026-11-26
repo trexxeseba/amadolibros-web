@@ -190,7 +190,18 @@ async function main() {
     if (resultado.alertaFreno) await subirFila(armarFilaAlerta({ fecha: hoy, motivo: 'freno', detalle: `El cálculo pidió más pausas que el máximo por corrida (${REGLAS.maxPorCorrida}) o por día (${REGLAS.maxPorDia}). Los excedentes no se propusieron. Puede ser un error en los datos: revisar.` }));
     if (!ordenesLegibles && accion === 'correr') await subirFila(armarFilaAlerta({ fecha: hoy, motivo: 'ordenes', detalle: 'Las órdenes de la tienda no están frescas en la base: no se propuso ninguna pausa en esta corrida.' }));
     let mail = null;
-    if (!mesa.ok) mail = await enviarMail({ asunto: `Poda de anuncios ${hoy} (${real ? 'real' : 'prueba'})`, texto: fila.fldwtSvMycZShRfJD ?? Object.values(fila).join('\n'), env });
+    // Si la mesa no responde, el mail lo dice en el asunto y arriba de todo (26/11/2026: Airtable
+    // respondía 403 y la poda seguía en verde sin que nadie se enterara). Si tampoco sale el mail,
+    // el job termina en rojo para que lo vean el vigía y GitHub.
+    if (!mesa.ok) {
+      const avisos = [
+        `ATENCIÓN: la mesa de decisiones (Airtable) no respondió (${mesa.motivo}). Esta lista no quedó cargada en la mesa: usar este mail.`,
+        resultado.alertaFreno ? `Freno: el cálculo pidió más pausas que el máximo por corrida (${REGLAS.maxPorCorrida}) o por día (${REGLAS.maxPorDia}).` : null,
+        !ordenesLegibles && accion === 'correr' ? 'Las órdenes de la tienda no están frescas en la base: no se propuso ninguna pausa.' : null,
+      ].filter(Boolean).join('\n');
+      mail = await enviarMail({ asunto: `Poda de anuncios ${hoy} (${real ? 'real' : 'prueba'}) - la mesa de Airtable no respondió`, texto: `${avisos}\n\n${fila.fldwtSvMycZShRfJD ?? Object.values(fila).join('\n')}`, env });
+      if (!mail.ok) process.exitCode = 1;
+    }
 
     const c = resultado.contadores;
     console.log(`Poda ${accion} ${modo}${real ? '' : ' (no registra)'}: evaluados ${c.evaluados}, a pausar ${c.pausar + c.pausaria}, pendientes ${c.pendientes_pausa}, a reactivar ${c.reactivar}, observación ${c.observacion}, clic caro ${c.clic_caro}, falta precio ${c.falta_precio}, excedentes ${c.excedentes}, errores ${c.errores}. Registro: ${registroGrabado} cambios. Mesa: ${mesa.ok ? 'ok' : mesa.motivo}${mail ? `, mail: ${mail.ok ? 'ok' : mail.motivo}` : ''}. ${Math.round((Date.now() - t0) / 1000)} s.`);

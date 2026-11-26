@@ -14,6 +14,10 @@ on:
         required: false
         default: ''
         type: string
+      competencia:
+        description: 'Probar qué fuentes de Mercado Libre muestran la competencia (solo lectura)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -39,11 +43,14 @@ jobs:
           node-version: '22'
       - name: Tests
         run: node --test agentes-ml/test/*.test.mjs
+      - name: Fuentes de competencia (solo lectura)
+        if: inputs.competencia
+        run: node agentes-ml/src/sondeo-competencia.mjs
       - name: Sondeo (solo lectura)
-        if: inputs.titulo == ''
+        if: inputs.titulo == '' && !inputs.competencia
         run: node agentes-ml/src/sondeo.mjs
       - name: Consulta de una publicación por título (solo lectura)
-        if: inputs.titulo != ''
+        if: inputs.titulo != '' && !inputs.competencia
         env:
           TITULO: ${{ inputs.titulo }}
         run: node agentes-ml/src/consulta.mjs "$TITULO"
