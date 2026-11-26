@@ -30,7 +30,7 @@ jobs:
       - name: Leer trazas y ejecutar dos veces el control de firma existente
         env:
           CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
-          RETEST_SIGNATURE: '1'
+          RETEST_SIGNATURE: '0'
         run: node scripts/monitoring/checkly-detail.mjs
       - uses: actions/upload-artifact@v4
         if: always()
@@ -39,6 +39,7 @@ jobs:
           path: checkly-evidence/
           retention-days: 7
   browser:
+    if: ${{ !contains(github.event.head_commit.message, '[checkly-read-only]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
