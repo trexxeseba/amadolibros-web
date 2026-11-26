@@ -4088,10 +4088,16 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
           var mpData = await mpResp.json();
           if (mpResp.ok && mpData.checkout_url) {
             try {
-              sessionStorage.setItem('amado-mp-auth', JSON.stringify({
+              var mpAuth = JSON.stringify({
                 public_code:     orderData.order.public_code,
                 idempotency_key: cart.idempotency_key,
-              }));
+              });
+              sessionStorage.setItem('amado-mp-auth', mpAuth);
+              // Respaldo: si Mercado Pago devuelve a la persona en otra
+              // pestaña (app de Mercado Pago, navegador del celular), la
+              // sesión no viaja y la página del pedido quedaría sin poder
+              // consultar el estado. localStorage sí es compartido.
+              localStorage.setItem('amado-mp-auth', mpAuth);
             } catch (_) {}
             window.location.href = mpData.checkout_url;
             return;
