@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { limites, elegirRegla, esAutomatizable, compararRegla, minimoOk } from '../src/automatizacion.mjs';
+import { limites, elegirRegla, esAutomatizable, compararRegla, minimoOk, sinIds } from '../src/automatizacion.mjs';
 
 test('límites: mínimo 60 % y máximo 145 % del precio de lista, en pesos enteros', () => {
   // Seba 26/11: mínimo 60 % nunca debajo de $500; máximo = precio base.
@@ -39,4 +39,9 @@ test('minimoOk: el mínimo de ML coincide con la regla de Seba (mayor entre $500
   assert.equal(minimoOk({ precio_lista: 600, automatizacion_antes: { min_price: 500 } }), true);
   assert.equal(minimoOk({ precio_lista: 2600, automatizacion_antes: { min_price: 2350 } }), false);
   assert.equal(minimoOk({ precio_lista: 2600, automatizacion_antes: null }), false);
+});
+
+test('sinIds: el error que va al log público no lleva números de publicación', () => {
+  assert.deepEqual(sinIds({ http: 412, detalle: { message: 'Cannot perform for item with id [MLU478651427]' } }), { http: 412, detalle: { message: 'Cannot perform for item with id [MLU…]' } });
+  assert.equal(sinIds(null), null);
 });
