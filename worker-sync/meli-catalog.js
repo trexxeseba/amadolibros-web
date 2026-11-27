@@ -268,7 +268,7 @@ export async function buildCatalog(env, accessToken, {
 
 // ─── Scroll de IDs ────────────────────────────────────────────────────────────
 
-async function fetchAllIds(
+export async function fetchAllIds(
   userId,
   accessToken,
   statuses = ['active'],
@@ -310,7 +310,7 @@ async function fetchAllIds(
 
 // ─── Detalles en batch ───────────────────────────────────────────────────────
 
-async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}) {
+async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}, mapItem = null) {
   const items       = [];
   const totalBatches = Math.ceil(ids.length / DETAIL_BATCH);
 
@@ -327,7 +327,10 @@ async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}) {
       const entries = Array.isArray(data) ? data : [data];
       for (const entry of entries) {
         const item = bulkEntryItem(entry);
-        if (item && item.id) items.push(item);
+        if (!item || !item.id) continue;
+        if (!mapItem) { items.push(item); continue; }
+        const mapped = mapItem(item);
+        if (mapped) items.push(mapped);
       }
     } catch (err) {
       const message =
@@ -345,6 +348,27 @@ async function fetchDetails(ids, accessToken, retryBudget, mlGetDeps = {}) {
   }
 
   return items;
+}
+
+/**
+ * Igual que el paso 2+3 de buildCatalog, pero achica cada lote apenas llega:
+ * nunca junta en memoria los cuerpos crudos de /items/bulk (con todos sus
+ * atributos), que para ~17.000 publicaciones superan los 128 MB del Worker.
+ * Lo usa la publicación por partes del catálogo productivo.
+ */
+export async function fetchSlimCatalogItems(ids, accessToken, {
+  retryBudget = createSyncRetryBudget(),
+  mlGetDeps = {},
+  dataQuality = createDataQualitySummary(),
+} = {}) {
+  let excluded = 0;
+  const items = await fetchDetails(ids, accessToken, retryBudget, mlGetDeps, raw => {
+    if (raw.status !== 'active' && raw.status !== 'paused') { excluded++; return null; }
+    // Supplier offers are published for ML with a lead time, not own-stock web inventory.
+    if (/^AMADO-AR-\d{13}$/.test(String(raw.seller_custom_field || ''))) { excluded++; return null; }
+    return slimItem(raw, dataQuality);
+  });
+  return { items, excluded, dataQuality };
 }
 
 // ─── Transformación ───────────────────────────────────────────────────────────
