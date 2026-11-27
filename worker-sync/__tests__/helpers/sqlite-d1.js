@@ -11,8 +11,11 @@ with db:
   out.append({'success':True,'results':rows,'meta':{'changes':max(cursor.rowcount,0)}})
 print(json.dumps(out))
 `;
+// Python en Windows lee stdin con la página de códigos del sistema (cp1252) y
+// convertía «días» en «dÃ­as»: se fuerza UTF-8 en la entrada y la salida.
+const PY_ENV={...process.env,PYTHONUTF8:'1',PYTHONIOENCODING:'utf-8'};
 export function sqliteD1(file){
- const execute=items=>JSON.parse(execFileSync('python3',['-c',python,file],{input:JSON.stringify(items),encoding:'utf8',stdio:['pipe','pipe','pipe']}));
+ const execute=items=>JSON.parse(execFileSync('python3',['-c',python,file],{input:JSON.stringify(items),encoding:'utf8',stdio:['pipe','pipe','pipe'],env:PY_ENV}));
  function statement(sql,args=[]) {
   return {
    sql,args,

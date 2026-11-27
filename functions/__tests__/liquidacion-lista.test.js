@@ -157,7 +157,7 @@ test('resumenFinal: cuenta lo que sobrevive a las exclusiones', () => {
 });
 
 test('el workflow es solo manual, solo lee y no imprime datos ni la clave', () => {
-    const wf = readFileSync('.github/workflows/liquidacion-lista.yml', 'utf8');
+    const wf = readFileSync('.github/workflows/liquidacion-lista.yml', 'utf8').replace(/\r\n/g, '\n');
     assert.match(wf, /^on:\n  workflow_dispatch:\n/m);
     assert.doesNotMatch(wf, /pull_request|push:|schedule:/);
     assert.match(wf, /SYNC_SECRET: \$\{\{ secrets\.SYNC_SECRET \}\}/);
@@ -274,7 +274,7 @@ test('escenarioParcial: cuenta lo que sobrevive a las exclusiones si se aceptara
 });
 
 test('el workflow guarda un artefacto y el escenario parcial queda fuera del repo', () => {
-    const wf = readFileSync('.github/workflows/liquidacion-lista.yml', 'utf8');
+    const wf = readFileSync('.github/workflows/liquidacion-lista.yml', 'utf8').replace(/\r\n/g, '\n');
     assert.match(wf, /actions\/upload-artifact@v4/);
     assert.match(wf, /--parcial-out "\$RUNNER_TEMP\/parcial\.json"/);
     assert.match(wf, /--parcial "\$RUNNER_TEMP\/parcial\.json"/);

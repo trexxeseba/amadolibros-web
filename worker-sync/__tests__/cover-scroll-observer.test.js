@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import { fileURLToPath } from 'node:url';
 import { browserObserverScript } from '../cover-scroll-observer.js';
 
 async function assertBrowserEvidence(script) {
@@ -96,7 +97,7 @@ if (process.env.COVER_SCROLL_TEST_BUNDLE === 'true') {
     test('keepNames bundle produces standalone browser evidence and accounts for real viewport intervals', async () => {
         const { build } = await import('../../astro-front/node_modules/esbuild/lib/main.js');
         const bundle = await build({
-            entryPoints: [new URL('../cover-scroll-observer.js', import.meta.url).pathname],
+            entryPoints: [fileURLToPath(new URL('../cover-scroll-observer.js', import.meta.url))],
             bundle: true, write: false, format: 'esm', platform: 'browser', keepNames: true,
         });
         const { browserObserverScript: bundledScript } = await import('data:text/javascript;base64,' +
