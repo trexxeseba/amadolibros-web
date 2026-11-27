@@ -14,18 +14,6 @@ on:
         required: false
         default: ''
         type: string
-      meli:
-        description: 'Ver Meli+ (marca de elegibles y promos ofrecidas, solo lectura)'
-        type: boolean
-        default: false
-      ads:
-        description: 'Ver permisos de la app en Mercado Ads (solo lectura)'
-        type: boolean
-        default: false
-      competencia:
-        description: 'Probar qué fuentes de Mercado Libre muestran la competencia (solo lectura)'
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -51,20 +39,11 @@ jobs:
           node-version: '22'
       - name: Tests
         run: node --test agentes-ml/test/*.test.mjs
-      - name: Meli+ (solo lectura)
-        if: inputs.meli
-        run: node agentes-ml/src/sondeo-meli.mjs
-      - name: Permisos de Mercado Ads (solo lectura)
-        if: inputs.ads
-        run: node agentes-ml/src/sondeo-ads.mjs
-      - name: Fuentes de competencia (solo lectura)
-        if: inputs.competencia
-        run: node agentes-ml/src/sondeo-competencia.mjs
       - name: Sondeo (solo lectura)
-        if: inputs.titulo == '' && !inputs.competencia && !inputs.ads && !inputs.meli
+        if: inputs.titulo == ''
         run: node agentes-ml/src/sondeo.mjs
       - name: Consulta de una publicación por título (solo lectura)
-        if: inputs.titulo != '' && !inputs.competencia && !inputs.ads && !inputs.meli
+        if: inputs.titulo != ''
         env:
           TITULO: ${{ inputs.titulo }}
         run: node agentes-ml/src/consulta.mjs "$TITULO"
