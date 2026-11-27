@@ -4,7 +4,7 @@ import {execFileSync} from 'node:child_process';
 import {retire,selectTargets,TARGETS,APPROVAL} from '../../scripts/monitoring/checkly-retire.mjs';
 
 const fixtures=()=>TARGETS.map(c=>({...c,activated:true,muted:false,frequency:10,locations:['us-east-1'],request:{url:'https://www.amadolibros.com/'},alertChannelSubscriptions:[{alertChannelId:7,activated:true}]}));
-function fakeApi(checks=fixtures(),{ignoreUpdate=false,alterConfig=false,partialList=false}={}) {
+function fakeApi(checks=fixtures(),{ignoreUpdate=false,alterConfig=false,partialList=false,keepSubscriptions=false}={}) {
   const inventory=structuredClone(checks),calls=[];
   const api=async(path,options={})=>{
     calls.push({path,...options});
@@ -12,7 +12,7 @@ function fakeApi(checks=fixtures(),{ignoreUpdate=false,alterConfig=false,partial
     if(path==='/v1/checks')return structuredClone(inventory).map(c=>{if(partialList){delete c.request;delete c.alertChannelSubscriptions;}return c;});
     const id=path.split('?')[0].split('/').at(-1),check=inventory.find(c=>c.id===id);
     if(!check)throw Error('UNEXPECTED_CHECK');
-    if(options.method==='PUT'&&!ignoreUpdate){Object.assign(check,options.body);if(alterConfig)check.frequency=60;}
+    if(options.method==='PUT'&&!ignoreUpdate){const subscriptions=check.alertChannelSubscriptions;Object.assign(check,options.body);if(keepSubscriptions)check.alertChannelSubscriptions=subscriptions;if(alterConfig)check.frequency=60;}
     return structuredClone(check);
   };
   api.calls=calls;
@@ -25,13 +25,13 @@ test('baja: apaga y silencia los seis IDs y verifica el inventario final',async(
   assert.deepEqual(report.remainingActive,[]);
   assert.equal(report.updated.length,6);
   for(const call of api.calls.filter(c=>c.method==='PUT')) {
-    assert.deepEqual(call.body,{activated:false,muted:true});
+    assert.deepEqual(call.body,{activated:false,muted:true,alertChannelSubscriptions:[]});
     assert.match(call.path,/^\/v1\/checks\/(api|browser)\/[a-f0-9-]+\?autoAssignAlerts=false$/);
   }
   assert.ok(api.calls.every(c=>!c.method||c.method==='PUT'));
 });
 test('baja: repetirla no vuelve a escribir ni recrea controles borrados',async()=>{
-  const checks=fixtures().slice(1).map(c=>({...c,activated:false,muted:true})),api=fakeApi(checks);
+  const checks=fixtures().slice(1).map(c=>({...c,activated:false,muted:true,alertChannelSubscriptions:[]})),api=fakeApi(checks);
   const report=await retire({api,approval:APPROVAL});
   assert.equal(report.updated.length,0);
   assert.deepEqual(report.missingKnownIds,[TARGETS[0].id]);
@@ -65,6 +65,9 @@ test('baja: no toca controles de otro proyecto y los informa',async()=>{
 });
 test('baja: HTTP exitoso sin apagado efectivo no se informa como éxito',async()=>{
   await assert.rejects(retire({api:fakeApi(fixtures(),{ignoreUpdate:true}),approval:APPROVAL}),/CHECKLY_NOT_DISABLED/);
+});
+test('baja: comprueba que también se hayan desuscripto los avisos',async()=>{
+  await assert.rejects(retire({api:fakeApi(fixtures(),{keepSubscriptions:true}),approval:APPROVAL}),/CHECKLY_ALERTS_STILL_ATTACHED/);
 });
 test('baja: detecta modificaciones a configuración ajena a la baja',async()=>{
   await assert.rejects(retire({api:fakeApi(fixtures(),{alterConfig:true}),approval:APPROVAL}),/CHECKLY_UNEXPECTED_CONFIGURATION_CHANGE/);

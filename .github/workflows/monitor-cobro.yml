@@ -2,7 +2,7 @@ name: Checkly - baja de controles
 
 # Baja autorizada por Seba el 26/11/2026, después de confirmar UptimeRobot.
 # Este workflow ya no crea, activa ni prueba controles en Checkly.
-# Puede repetirse: únicamente apaga y silencia los seis controles conocidos.
+# Puede repetirse: apaga, silencia y desuscribe los seis controles conocidos.
 on:
   workflow_dispatch:
   push:

@@ -17,8 +17,8 @@ export const TARGETS = [
 const targetById = new Map(TARGETS.map(c => [c.id,c]));
 const summary = c => ({id:c.id,name:c.name,checkType:c.checkType,activated:c.activated,muted:c.muted});
 const protectedKeys = ['name','checkType','request','script','frequency','locations','tags','groupId','runtimeId','runParallel','doubleCheck','retryStrategy','maxResponseTime','degradedResponseTime','alertSettings','useGlobalAlertSettings'];
-const protectedConfig = c => ({...Object.fromEntries(protectedKeys.map(k => [k,c[k]])),
-  subscriptions:(c.alertChannelSubscriptions||[]).map(s=>({id:s.alertChannelId,activated:s.activated})).sort((a,b)=>a.id-b.id)});
+const protectedConfig = c => Object.fromEntries(protectedKeys.map(k => [k,c[k]]));
+const hasSubscriptions = c => (c.alertChannelSubscriptions||[]).length>0;
 
 export function selectTargets(inventory) {
   if (!Array.isArray(inventory) || new Set(inventory.map(c=>c.id)).size !== inventory.length) throw Error('CHECKLY_INVENTORY_INVALID');
@@ -52,14 +52,15 @@ export async function retire({api, approval, report={}}) {
     const before=await api(`/v1/checks/${listed.id}`);
     if (before.id!==listed.id) throw Error('CHECKLY_TARGET_CHANGED');
     selectTargets([before]);
-    if (before.activated || !before.muted) {
+    if (before.activated || !before.muted || hasSubscriptions(before)) {
       await api(`/v1/checks/${before.checkType.toLowerCase()}/${before.id}?autoAssignAlerts=false`, {
-        method:'PUT',body:{activated:false,muted:true},
+        method:'PUT',body:{activated:false,muted:true,alertChannelSubscriptions:[]},
       });
       report.updated.push(before.id);
     }
     const after=await api(`/v1/checks/${before.id}`);
     if (after.id!==before.id || after.activated!==false || after.muted!==true) throw Error('CHECKLY_NOT_DISABLED');
+    if (hasSubscriptions(after)) throw Error('CHECKLY_ALERTS_STILL_ATTACHED');
     if (!isDeepStrictEqual(protectedConfig(before),protectedConfig(after))) {
       report.unexpectedChangedKeys=Object.keys(protectedConfig(before)).filter(k=>!isDeepStrictEqual(protectedConfig(before)[k],protectedConfig(after)[k]));
       throw Error('CHECKLY_UNEXPECTED_CONFIGURATION_CHANGE');
@@ -68,8 +69,9 @@ export async function retire({api, approval, report={}}) {
   }
   const finalInventory=await api('/v1/checks');
   const finalTargets=selectTargets(finalInventory);
-  if (finalTargets.some(c=>c.activated || !c.muted)) throw Error('CHECKLY_STILL_ACTIVE');
+  if (finalTargets.some(c=>c.activated || !c.muted || hasSubscriptions(c))) throw Error('CHECKLY_STILL_ACTIVE');
   report.remainingActive=finalInventory.filter(c=>c.activated).map(summary);
+  report.remainingAlertSubscriptions=finalTargets.reduce((n,c)=>n+(c.alertChannelSubscriptions||[]).length,0);
   report.knownChecksDisabled=true;
   report.finishedAt=new Date().toISOString();
   return report;

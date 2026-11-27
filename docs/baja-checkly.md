@@ -10,7 +10,8 @@ el titular, no por una lectura autenticada del dashboard desde esta sesión.
 
 - Apaga (`activated: false`) y silencia (`muted: true`) los seis controles
   identificados de Amado, incluida la antigua prueba de entrega al backend.
-- Conserva controles, configuración e historial. No elimina la cuenta ni datos.
+- Desuscribe los avisos de esos controles (`alertChannelSubscriptions: []`).
+- Conserva controles, definición de las pruebas e historial. No elimina la cuenta ni datos.
 - Verifica cada control después de modificarlo y vuelve a leer el inventario.
 - El workflow `monitor-cobro.yml` deja de activar controles al desplegar.
 - La CLI histórica rechaza `aplicar` y `simulacro`; `estado` sigue siendo de lectura.
