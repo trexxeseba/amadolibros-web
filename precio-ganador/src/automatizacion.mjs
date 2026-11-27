@@ -54,7 +54,7 @@ export function compararRegla({ precio, lista, estado, ganador, piso = PISO, umb
 }
 
 // Saca los números de publicación de un texto antes de ir al log público. Función pura.
-export const sinIds = v => v === null ? null : JSON.parse(JSON.stringify(v).replace(/MLUd+/g, 'MLU…'));
+export const sinIds = v => v === null ? null : JSON.parse(JSON.stringify(v).replace(/MLU\d+/g, 'MLU…'));
 
 // El mínimo puesto en ML coincide con la regla de Seba. Función pura.
 export function minimoOk(fila) {
