@@ -1,4 +1,5 @@
 ---
+import { SITE_FONTS_HEAD } from '../../../../shared/site-fonts.js';
 const indexable = import.meta.env.PUBLIC_INDEXABLE === "true";
 ---
 <!doctype html>
@@ -21,7 +22,7 @@ const indexable = import.meta.env.PUBLIC_INDEXABLE === "true";
 <meta name="description" content="Amado Libros is a bookstore in Uruguay working with new, antiquarian and rare books. Blanket orders, approval plans and standing orders for Uruguayan and Rioplatense titles.">
 
 <link rel="icon" href="https://www.amadolibros.com/favicon-32x32.png?v2" sizes="32x32">
-<link rel="stylesheet" href="https://fonts.bunny.net/css?family=playfair-display:700|inter:400,600,800&display=swap">
+<Fragment set:html={SITE_FONTS_HEAD} />
 <style>
 :root{--paper:#faf6ef;--surface:#fff;--ink:#1f1b18;--ink-2:#5a524b;--border:#e4dccf;--action:#b4442a;--header-bg:#1f1b18;--wa:#25d366}
 *{box-sizing:border-box}
