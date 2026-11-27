@@ -2,15 +2,15 @@
 import CartIcon from './CartIcon.astro';
 ---
 
-<div class="v2-topline" aria-label="Beneficios de compra">
-  <div class="v2-topline-track">
+<aside class="v2-topline" aria-label="Beneficios de compra">
+  <div class="v2-topline-track" tabindex="0">
     <span>Envío gratis desde $1.500</span>
     <span aria-hidden="true">✦</span>
     <span>Montevideo: entrega en el día a coordinar</span>
     <span aria-hidden="true">✦</span>
     <span>Libros difíciles y búsquedas por encargo</span>
   </div>
-</div>
+</aside>
 
 <header class="v2-header">
   <div class="v2-header-main">
@@ -238,6 +238,7 @@ import CartIcon from './CartIcon.astro';
     }
 
     .v2-topline-track::-webkit-scrollbar { display: none; }
+    .v2-topline-track:focus-visible { outline: 2px solid #1b1714; outline-offset: -3px; }
     .v2-brand small { display: none; }
   }
 

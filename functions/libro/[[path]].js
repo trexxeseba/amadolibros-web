@@ -1078,7 +1078,7 @@ ${siteHeaderHtml()}
 }());<\/script>
 
 ${footerHtml(undefined, canonicalUrl)}
-${sellableInCheckout ? `<div class="buy-bar" id="buy-bar" hidden>
+${sellableInCheckout ? `<div class="buy-bar" id="buy-bar" role="region" aria-label="Compra rápida" hidden>
   <div class="buy-bar-price"><strong>$${priceUY}</strong><small>o $${transferPrice} por transferencia</small></div>
   <button type="button" class="buy-bar-btn" data-buy-bar>Agregar al carrito</button>
 </div>` : ''}
