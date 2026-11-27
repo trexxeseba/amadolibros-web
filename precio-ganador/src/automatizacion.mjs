@@ -53,6 +53,9 @@ export function compararRegla({ precio, lista, estado, ganador, piso = PISO, umb
   return { compite, ml, pg, diferencia: ml === null ? null : ml - pg };
 }
 
+// Saca los números de publicación de un texto antes de ir al log público. Función pura.
+export const sinIds = v => v === null ? null : JSON.parse(JSON.stringify(v).replace(/MLUd+/g, 'MLU…'));
+
 // El mínimo puesto en ML coincide con la regla de Seba. Función pura.
 export function minimoOk(fila) {
   const lim = limites(fila?.precio_lista);
@@ -185,7 +188,7 @@ async function main() {
   const porRegla = {}; for (const f of filas) { const k = f.regla_elegida ?? 'sin_regla'; porRegla[k] = (porRegla[k] ?? 0) + 1; }
   const resumen = { fecha: new Date().toISOString().slice(0, 10), cuenta: cuenta.clave, accion, grupo: accion === 'quitar' ? null : grupo, modo: escribe ? 'real' : 'prueba', publicaciones: filas.length, http,
     por_regla: porRegla, ya_automatizadas: filas.filter(f => f.automatizada).length, minimo_distinto: filas.filter(f => f.automatizada && !minimoOk(f)).length, automatizables: filas.filter(esAutomatizable).length, resultado,
-    ejemplo_error: cambios.find(c => c.estado === 'error')?.error ?? null };
+    ejemplo_error: sinIds(cambios.find(c => c.estado === 'error')?.error ?? null) };
   mkdirSync(salida, { recursive: true });
   writeFileSync(join(salida, `${cuenta.clave}-automatizacion-${accion}.json`), JSON.stringify({ resumen, filas: accion === 'comparar' ? undefined : filas, cambios, comparacion, revision }, null, 1));
   console.log(JSON.stringify(resumen)); // sólo conteos y códigos: el log es público

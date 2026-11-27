@@ -12,6 +12,12 @@ import { join } from 'node:path';
 import { bulkItemsPath, bulkEntryItem } from '../../worker-sync/meli-bulk.js';
 import { clienteLibros, LIBROS, enParalelo, trozos, fechaUy } from './comun.mjs';
 
+// GET que no corta la corrida: { ok, status, json }. El cliente de precio-ganador no tiene sonda.
+export async function sondear(ml, path) {
+  try { return { ok: true, status: 200, json: await ml.get(path) }; }
+  catch (e) { if (e?.status === 429 || e?.fatal) throw e; return { ok: false, status: e?.status ?? 0, json: null }; }
+}
+
 const num = v => { const n = Number(v); return Number.isFinite(n) ? n : null; };
 export const mediana = a => { const o = a.filter(Number.isFinite).sort((x, y) => x - y); return o.length ? o[Math.floor(o.length / 2)] : null; };
 
@@ -51,12 +57,12 @@ async function main() {
     const precio = num(it.price);
     const k = `${precio}|${it.listing_type_id}|${it.category_id}`;
     if (!comisiones.has(k)) {
-      const r = await ml.sonda(`/sites/MLU/listing_prices?price=${precio}&listing_type_id=${it.listing_type_id}&category_id=${it.category_id}`);
+      const r = await sondear(ml, `/sites/MLU/listing_prices?price=${precio}&listing_type_id=${it.listing_type_id}&category_id=${it.category_id}`);
       http.comision[r.status] = (http.comision[r.status] ?? 0) + 1;
       const j = Array.isArray(r.json) ? r.json[0] : r.json;
       comisiones.set(k, r.ok ? num(j?.sale_fee_amount) : null);
     }
-    const s = await ml.sonda(`/users/${LIBROS.sellerId}/shipping_options/free?item_id=${id}`);
+    const s = await sondear(ml, `/users/${LIBROS.sellerId}/shipping_options/free?item_id=${id}`);
     http.envio[s.status] = (http.envio[s.status] ?? 0) + 1;
     const envio = s.ok ? num(s.json?.coverage?.all_country?.list_cost ?? s.json?.coverage?.all_country?.cost) : null;
     const comision = comisiones.get(k);
