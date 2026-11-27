@@ -296,4 +296,12 @@ test('el workflow llama a las partes en bucle y mantiene los controles del resul
   assert.match(workflow, /grep -q '"production_catalog_modified":false'/);
   assert.match(workflow, /grep -q '"key":"catalog\/manifest.json"'/);
   assert.match(workflow, /PRODUCTION_PAUSED_CATALOG_PUBLISH_ENABLED:true/);
+  // Guarda contra un YAML roto (pasó: un "\n" literal partió el curl y
+  // GitHub rechazó el archivo entero): dentro de jobs todo va indentado.
+  const jobs = workflow.replace(/\r\n/g, '\n').split('\njobs:\n')[1];
+  assert.ok(jobs, 'el workflow tiene jobs');
+  for (const line of jobs.split('\n')) {
+    if (line.trim()) assert.match(line, /^\s/, `línea sin indentar en el workflow: ${line}`);
+  }
+  assert.match(workflow, /-w "\\nHTTP_STATUS:%\{http_code\}" \\\r?\n/);
 });
