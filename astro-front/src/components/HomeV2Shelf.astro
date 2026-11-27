@@ -66,9 +66,9 @@ const shelfBooks = books.map(book => ({
   </div>
 
   {shelfBooks.length > 0 ? (
-    <div class="v2-book-strip" role="list">
+    <ul class="v2-book-strip" role="list">
       {shelfBooks.map((book, index) => (
-        <article class={`v2-book v2-book-${index + 1}`} role="listitem">
+        <li class={`v2-book v2-book-${index + 1}`}>
           <a class="v2-book-cover" href={book.href} aria-label={`Ver ${book.title}`}>
             <img
               src={book.cover.src}
@@ -91,9 +91,9 @@ const shelfBooks = books.map(book => ({
               {Number(book.price || 0) > 0 && <strong data-habitual-price={Number(book.price)}>{price.format(Number(book.price))}</strong>}
             </div>
           </div>
-        </article>
+        </li>
       ))}
-    </div>
+    </ul>
   ) : (
     <p class="v2-shelf-empty">La selección se completa al construir el catálogo.</p>
   )}
@@ -197,6 +197,8 @@ const shelfBooks = books.map(book => ({
   }
 
   .v2-book-strip {
+    list-style: none;
+    margin: 0;
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: minmax(210px, 66vw);

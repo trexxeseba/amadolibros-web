@@ -266,7 +266,7 @@ export async function onRequest(ctx) {
     @media(min-width:900px){.topic-chips{flex-wrap:wrap;overflow:visible}}
     .topic-chip{flex:0 0 auto;display:inline-flex;align-items:center;min-height:40px;padding:.45rem .85rem;border:1px solid #d1c8be;border-radius:999px;background:#fff;color:#18120e;font-size:.84rem;font-weight:700;text-decoration:none;white-space:nowrap}
     .topic-chip.is-current{border-color:#18120e;background:#18120e;color:#fff}
-    .sub{color:#64748b;font-size:.875rem;margin-bottom:.75rem}
+    .sub{color:#5f6b7d;font-size:.875rem;margin-bottom:.75rem}
     .grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
     @media(min-width:500px){.grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}
     @media(min-width:900px){.grid{grid-template-columns:repeat(4,1fr)}}

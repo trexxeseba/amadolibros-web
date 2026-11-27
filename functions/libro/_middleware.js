@@ -340,10 +340,10 @@ function renderProductShowcase(config, productId) {
     href: `/pedir-libro/?${requestQuery.toString()}`,
     label: 'Contanos qué buscás',
   };
-  const requestHelpHtml = `<aside class="showcase-help" aria-label="Ayuda para encontrar otro libro">
+  const requestHelpHtml = `<div class="showcase-help">
       <p>${escapeHtml(requestHelp.question)}</p>
       <a href="${escapeHtml(requestHelp.href)}">${escapeHtml(requestHelp.label)} →</a>
-    </aside>`;
+    </div>`;
 
   // FICHAS-QUALITY-GUARD-1: cada tarjeta se emite sólo si tiene contenido
   // real. Una sección vacía o rellenada con frases genéricas ocupa espacio

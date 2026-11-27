@@ -162,14 +162,17 @@ test('14. no queda ninguna referencia al logo inexistente logo-amado.png', () =>
     }
 });
 
-test('15. el logo de la ficha existe, es el webp y tiene alt', () => {
+test('15. el logo de la ficha existe, es el webp y no repite el nombre del enlace', () => {
     assert.ok(existsSync(root('astro-front/public' + BRAND.logo)), 'el webp debe existir');
     // El encabezado de la ficha es el compartido de la tienda.
     assert.match(FICHA, /siteHeaderHtml\(\)/);
     const img = siteHeaderHtml().match(/<img[^>]*brand-logo[^>]*>/);
     assert.ok(img, 'la ficha debe tener el logo en el header');
     assert.match(img[0], /logo-amado\.webp/);
-    assert.match(img[0], /alt="[^"]/, 'el logo necesita alt no vacío');
+    // El enlace ya se llama "Amado Libros" (aria-label + texto visible):
+    // el logo es decorativo para no leerse dos veces (image-redundant-alt).
+    assert.match(img[0], /alt=""/, 'el logo dentro del enlace con texto va con alt vacío');
+    assert.match(siteHeaderHtml(), /<a href="\/" class="brand-link" aria-label="Amado Libros[^"]*">/);
     assert.match(img[0], /width="\d+"[^>]*height="\d+"/, 'debe declarar dimensiones');
 });
 

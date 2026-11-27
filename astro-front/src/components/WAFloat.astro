@@ -10,6 +10,7 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
   closing: 'Quisiera hacerles una consulta. ¿Podrían ayudarme? Gracias.',
 }));
 ---
+<aside class="wa-float-dock" aria-label="Consulta por WhatsApp">
 <a
   href={WA_HREF}
   target="_blank"
@@ -22,6 +23,7 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
   </svg>
   <span class="wa-float-label">WhatsApp</span>
 </a>
+</aside>
 
 <style>
   .wa-float {

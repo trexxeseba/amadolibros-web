@@ -164,8 +164,16 @@ const heroBooks = books.map((book, index) => ({
 
   .v2-hero-copy { position: relative; z-index: 2; }
 
+  /* El kicker cae encima del resplandor anaranjado (.v2-hero-ambient-a), que
+     deja un fondo efectivo de ~#b35035 y el terracota claro no se lee (2,22:1).
+     Una etiqueta con fondo sólido del hero le da 8,04:1 sin cambiar el color. */
   .v2-kicker {
+    display: inline-block;
+    max-width: 100%;
     margin-bottom: 0.75rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    background: #171310;
     color: #ff8b68;
     font-size: 0.875rem;
     font-weight: 850;

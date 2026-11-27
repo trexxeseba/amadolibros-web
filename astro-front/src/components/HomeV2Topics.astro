@@ -104,13 +104,13 @@ const moreTopics = [
     <a class="v2-all-topics" href="/temas">Ver todos los temas <span aria-hidden="true">→</span></a>
   </nav>
 
-  <aside class="v2-rare-books" aria-label="Búsqueda de libros agotados">
+  <div class="v2-rare-books">
     <div>
       <strong>¿Buscás un libro agotado o importado?</strong>
       <span>Lo buscamos por título, autor, ISBN o foto y te confirmamos precio y plazo antes de avanzar.</span>
     </div>
     <a href="/pedir-libro/?tipo=exacto">Pedir una búsqueda <span aria-hidden="true">→</span></a>
-  </aside>
+  </div>
 </section>
 
 <style>
@@ -285,7 +285,7 @@ const moreTopics = [
     letter-spacing: 0.04em;
     line-height: 1.25;
     text-transform: uppercase;
-    opacity: 0.7;
+    opacity: 0.8; /* 0.7 daba 4,16:1 sobre el coral; 0.8 da 5,16:1 */
   }
 
   .v2-topic-copy strong {
