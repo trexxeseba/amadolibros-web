@@ -20,15 +20,33 @@ import { crearCliente } from '../../agentes-ml/src/ml.mjs';
 import { idsActivos, detalle } from './publicaciones.mjs';
 import { grupoDe } from './dormidas.mjs';
 
-export const MINIMO_PCT = 0.60, MAXIMO_PCT = 1.45;
+// Seba 26/11/2026 (decisión C): piso de $500 en libros y máximo = precio base (vuelve al base cuando no hay
+// competencia o la competencia sube). El mínimo sigue en 60 % del precio de lista, nunca debajo de $500.
+export const MINIMO_PCT = 0.60, MAXIMO_PCT = 1.00, PISO = 500;
 // Preferencia de regla: competir contra Mercado Libre y afuera si se ofrece; si no, sólo dentro de Mercado Libre.
 export const PREFERENCIA = ['INT_EXT', 'INT'];
 
 // Mínimo y máximo a partir del precio de lista. Función pura.
-export function limites(precioLista, { minimoPct = MINIMO_PCT, maximoPct = MAXIMO_PCT } = {}) {
+export function limites(precioLista, { minimoPct = MINIMO_PCT, maximoPct = MAXIMO_PCT, piso = PISO } = {}) {
   const p = Number(precioLista);
   if (!(p > 0)) return null;
-  return { min_price: Math.ceil(p * minimoPct), max_price: Math.floor(p * maximoPct) };
+  const min_price = Math.max(piso, Math.ceil(p * minimoPct)), max_price = Math.floor(p * maximoPct);
+  return min_price < max_price ? { min_price, max_price } : null;
+}
+
+// Comparación (Seba 26/11): qué precio dejaría la automatización de ML y qué haría la regla de Precio Ganador.
+// ML: el precio para ganar, dentro de mínimo y máximo; sin competencia, el máximo (precio base).
+// Precio Ganador: si el ganador está a menos de $400, 0,99 x ganador (nunca debajo de $500); sin competencia,
+// vuelve al precio base; si la diferencia es de $400 o más, no toca. Función pura.
+export function compararRegla({ precio, lista, estado, ganador, piso = PISO, umbral = 400 }) {
+  const lim = limites(lista);
+  const compite = estado === 'competing' && Number(ganador) > 0 && Number(ganador) < precio;
+  const ml = !lim ? null : compite ? Math.min(lim.max_price, Math.max(lim.min_price, Math.floor(Number(ganador)))) : lim.max_price;
+  let pg;
+  if (!compite) pg = Math.floor(lista);
+  else if (precio - Number(ganador) < umbral) pg = Math.max(piso, Math.floor(Number(ganador) * 0.99));
+  else pg = precio;
+  return { compite, ml, pg, diferencia: ml === null ? null : ml - pg };
 }
 
 // Regla a usar entre las que admite la publicación. Función pura.
@@ -52,16 +70,16 @@ async function main() {
   const opt = (n, d = null) => { const i = args.indexOf('--' + n); return i >= 0 ? args[i + 1] : d; };
   const cuenta = CUENTAS[opt('cuenta')];
   if (!cuenta || cuenta.clave !== 'libros') { console.error('Sólo --cuenta libros'); process.exit(2); }
-  const accion = opt('accion', 'leer'), grupo = opt('grupo', 'tarot_oraculos'), tope = Number(opt('tope', 40)), real = args.includes('--real'), salida = opt('salida', '.');
+  const accion = opt('accion', 'leer'), grupo = opt('grupo', 'todos'), tope = Number(opt('tope', 40)), real = args.includes('--real'), salida = opt('salida', '.');
   const idsPedidos = String(opt('ids', '')).split(/[,\s]+/).filter(id => /^MLU\d+$/.test(id));
-  if (!['leer', 'aplicar', 'quitar'].includes(accion)) { console.error('accion: leer | aplicar | quitar'); process.exit(2); }
-  const escribe = real && accion !== 'leer';
+  if (!['leer', 'aplicar', 'quitar', 'comparar'].includes(accion)) { console.error('accion: leer | aplicar | quitar | comparar'); process.exit(2); }
+  const escribe = real && !['leer', 'comparar'].includes(accion);
   const ml = crearCliente(fuenteTokenD1(cuenta), { intentos: 4, concurrencia: 4, soloLectura: !escribe });
   const yo = await ml.get('/users/me');
   if (String(yo?.id) !== cuenta.sellerId) throw Object.assign(new Error('token_de_otra_cuenta'), { fatal: true });
 
   const todos = [...(await detalle(ml, await idsActivos(ml, cuenta.sellerId))).values()];
-  const elegidos = accion === 'quitar' ? todos.filter(i => idsPedidos.includes(i.id)) : todos.filter(i => i.status === 'active' && grupoDe(i.title) === grupo);
+  const elegidos = accion === 'quitar' ? todos.filter(i => idsPedidos.includes(i.id)) : todos.filter(i => i.status === 'active' && (grupo === 'todos' || grupoDe(i.title) === grupo));
   const filas = []; const http = { reglas: {}, automatizacion: {} };
   await enParalelo(elegidos, 4, async it => {
     const r = await ml.sonda(`/pricing-automation/items/${it.id}/rules`);
@@ -76,6 +94,26 @@ async function main() {
   });
 
   const cambios = []; const resultado = {};
+  let comparacion = null;
+  if (accion === 'comparar') {
+    // 10 que compiten sin ganar y 3 que ganan solas (vuelta al precio base), de las que admiten regla.
+    const { entregaDe } = await import('./competencia.mjs');
+    const cache = new Map(); const compiten = [], solas = [];
+    for (const f of filas.filter(esAutomatizable).sort((a, b) => b.stock - a.stock)) {
+      if (compiten.length >= 10 && solas.length >= 3) break;
+      const p = await ml.sonda(`/items/${f.id}/price_to_win?version=v2`);
+      if (!p.ok) continue;
+      const estado = String(p.json?.status ?? ''), ganador = Number(p.json?.price_to_win) || null;
+      const c = compararRegla({ precio: f.precio, lista: f.precio_lista, estado, ganador });
+      const fila = { id: f.id, titulo: f.titulo, precio: f.precio, precio_lista: f.precio_lista, estado_ml: estado, ganador, ...c, limites: limites(f.precio_lista) };
+      if (c.compite && compiten.length < 10) { fila.entrega_ganador = await entregaDe(ml, p.json?.winner?.item_id, cache); compiten.push(fila); }
+      else if (!c.compite && estado === 'winning' && f.precio < f.precio_lista && solas.length < 3) solas.push(fila);
+    }
+    comparacion = { compiten, solas };
+    resultado.comparadas = compiten.length + solas.length;
+    resultado.ml_mas_bajo_que_pg = compiten.filter(x => x.diferencia < 0).length;
+    resultado.ganador_a_pedido = compiten.filter(x => x.entrega_ganador === 'demanda').length;
+  }
   const anotar = k => { resultado[k] = (resultado[k] ?? 0) + 1; };
   if (accion === 'aplicar') {
     const candidatas = filas.filter(esAutomatizable).sort((a, b) => b.stock - a.stock).slice(0, tope);
@@ -106,7 +144,7 @@ async function main() {
     por_regla: porRegla, ya_automatizadas: filas.filter(f => f.automatizada).length, automatizables: filas.filter(esAutomatizable).length, resultado,
     ejemplo_error: cambios.find(c => c.estado === 'error')?.error ?? null };
   mkdirSync(salida, { recursive: true });
-  writeFileSync(join(salida, `${cuenta.clave}-automatizacion-${accion}.json`), JSON.stringify({ resumen, filas, cambios }, null, 1));
+  writeFileSync(join(salida, `${cuenta.clave}-automatizacion-${accion}.json`), JSON.stringify({ resumen, filas: accion === 'comparar' ? undefined : filas, cambios, comparacion }, null, 1));
   console.log(JSON.stringify(resumen)); // sólo conteos y códigos: el log es público
   if (Object.keys(resultado).some(k => k.startsWith('error') || k === 'sin_verificar')) process.exitCode = 1;
 }
