@@ -142,9 +142,9 @@ test.beforeEach(() => {
 test('categoría válida filtra solo esa categoría', async () => {
   const res = await catalogRequest(context('https://preview.example/catalogo?categoria=esoterismo-tarot'));
   const html = await res.text();
-  assert.match(html, /Tarot De Los Ángeles/);
+  assert.match(html, /Tarot de los Ángeles/);
   assert.match(html, /Tarot Egipcio/);
-  assert.doesNotMatch(html, /El Género En Disputa/);
+  assert.doesNotMatch(html, /El Género en Disputa/);
   assert.doesNotMatch(html, /Sin categoría conocida/);
 });
 
@@ -154,15 +154,15 @@ test('un libro con rutas V2 aparece en más de una categoría sin duplicarse', a
   const philosophyHtml = await philosophy.text();
   const literatureHtml = await literature.text();
 
-  assert.match(philosophyHtml, /El Género En Disputa/);
-  assert.match(literatureHtml, /El Género En Disputa/);
-  assert.equal((literatureHtml.match(/El Género En Disputa/g) || []).length, 1); // una sola card
+  assert.match(philosophyHtml, /El Género en Disputa/);
+  assert.match(literatureHtml, /El Género en Disputa/);
+  assert.equal((literatureHtml.match(/El Género en Disputa/g) || []).length, 1); // una sola card
 });
 
 test('subcategoría válida filtra dentro de la categoría', async () => {
   const res = await catalogRequest(context('https://preview.example/catalogo?categoria=esoterismo-tarot&subcategoria=tarot-oraculos'));
   const html = await res.text();
-  assert.match(html, /Tarot De Los Ángeles/);
+  assert.match(html, /Tarot de los Ángeles/);
   assert.match(html, /<option value="tarot-oraculos" selected>/);
 });
 
@@ -170,7 +170,7 @@ test('subcategoría inválida para la categoría elegida vuelve a "Todas" (no ro
   const res = await catalogRequest(context('https://preview.example/catalogo?categoria=esoterismo-tarot&subcategoria=no-existe'));
   const html = await res.text();
   assert.equal(res.status, 200);
-  assert.match(html, /Tarot De Los Ángeles/);
+  assert.match(html, /Tarot de los Ángeles/);
   assert.match(html, /Tarot Egipcio/);
 });
 
@@ -178,36 +178,36 @@ test('subcategoría sin categoría se ignora', async () => {
   const res = await catalogRequest(context('https://preview.example/catalogo?subcategoria=tarot-oraculos'));
   const html = await res.text();
   // Sin categoria válida, cae en "sin filtro" -> índice completo.
-  assert.match(html, /El Género En Disputa/);
+  assert.match(html, /El Género en Disputa/);
 });
 
 test('categoría inválida vuelve a "Todos" (sin filtrar, sin error)', async () => {
   const res = await catalogRequest(context('https://preview.example/catalogo?categoria=no-existe'));
   assert.equal(res.status, 200);
   const html = await res.text();
-  assert.match(html, /El Género En Disputa/);
-  assert.match(html, /Tarot De Los Ángeles/);
+  assert.match(html, /El Género en Disputa/);
+  assert.match(html, /Tarot de los Ángeles/);
   assert.match(html, /Sin categoría conocida/);
 });
 
 test('búsqueda + categoría se combinan (AND, no OR)', async () => {
   const res = await catalogRequest(context('https://preview.example/catalogo?q=tarot&categoria=esoterismo-tarot'));
   const html = await res.text();
-  assert.match(html, /Tarot De Los Ángeles/);
+  assert.match(html, /Tarot de los Ángeles/);
   assert.match(html, /Tarot Egipcio/);
-  assert.doesNotMatch(html, /El Género En Disputa/);
+  assert.doesNotMatch(html, /El Género en Disputa/);
 });
 
 test('búsqueda + categoría + subcategoría se combinan', async () => {
   const res = await catalogRequest(context('https://preview.example/catalogo?q=tarot&categoria=esoterismo-tarot&subcategoria=tarot-oraculos'));
   const html = await res.text();
-  assert.match(html, /Tarot De Los Ángeles/);
+  assert.match(html, /Tarot de los Ángeles/);
 });
 
 test('búsqueda que no matchea la categoría elegida da cero resultados, no ignora la categoría', async () => {
   const res = await catalogRequest(context('https://preview.example/catalogo?q=genero&categoria=esoterismo-tarot'));
   const html = await res.text();
-  assert.doesNotMatch(html, /El Género En Disputa/);
+  assert.doesNotMatch(html, /El Género en Disputa/);
   assert.match(html, /No encontramos resultados/);
 });
 
@@ -250,8 +250,8 @@ test('catálogo sin ningún filtro muestra "Todos" seleccionado y todos los tít
   const res = await catalogRequest(context('https://preview.example/catalogo'));
   const html = await res.text();
   assert.match(html, /<option value=""\s*selected>Todos<\/option>/);
-  assert.match(html, /El Género En Disputa/);
-  assert.match(html, /Tarot De Los Ángeles/);
+  assert.match(html, /El Género en Disputa/);
+  assert.match(html, /Tarot de los Ángeles/);
   assert.match(html, /Sin categoría conocida/);
   assert.match(html, /Vinilo The Beatles/);
 });
@@ -276,8 +276,8 @@ test('en producción, el filtro de categoría también funciona', async () => {
   const res = await catalogRequest(context('https://www.amadolibros.com/catalogo?categoria=esoterismo-tarot', 'production'));
   const html = await res.text();
   assert.match(html, /<select/);
-  assert.match(html, /Tarot De Los Ángeles/);
-  assert.doesNotMatch(html, /El Género En Disputa/);
+  assert.match(html, /Tarot de los Ángeles/);
+  assert.doesNotMatch(html, /El Género en Disputa/);
   assert.match(html, /<meta name="robots" content="noindex">/);
   assert.match(html, /<link rel="canonical" href="https:\/\/www\.amadolibros\.com\/catalogo">/);
 });
@@ -295,13 +295,13 @@ test('ISBN exacto aparece primero', async () => {
   const html = await res.text();
   const firstCard = html.indexOf('<article class="rc-card');
   assert.ok(firstCard !== -1, 'no se renderizó ninguna card');
-  assert.match(html.slice(firstCard, firstCard + 500), /El Género En Disputa/);
+  assert.match(html.slice(firstCard, firstCard + 500), /El Género en Disputa/);
 });
 
 test('título exacto aparece primero que una coincidencia parcial', async () => {
   const res = await catalogRequest(context('https://preview.example/catalogo?q=tarot+de+los+angeles'));
   const html = await res.text();
-  const idxExact = html.indexOf('Tarot De Los Ángeles');
+  const idxExact = html.indexOf('Tarot de los Ángeles');
   const idxOther = html.indexOf('Tarot Egipcio');
   assert.ok(idxExact !== -1);
   assert.ok(idxOther === -1 || idxExact < idxOther, 'el título exacto debería aparecer antes');
@@ -310,26 +310,26 @@ test('título exacto aparece primero que una coincidencia parcial', async () => 
 test('autor exacto se encuentra y aparece en los resultados', async () => {
   const res = await catalogRequest(context('https://preview.example/catalogo?q=judith+butler'));
   const html = await res.text();
-  assert.match(html, /El Género En Disputa/);
+  assert.match(html, /El Género en Disputa/);
 });
 
 test('normalización de tildes: buscar sin tilde encuentra título con tilde', async () => {
   const res = await catalogRequest(context('https://preview.example/catalogo?q=angeles'));
   const html = await res.text();
-  assert.match(html, /Tarot De Los Ángeles/);
+  assert.match(html, /Tarot de los Ángeles/);
 });
 
 test('tolerancia liviana a errores de tipeo (distancia 1) cuando la búsqueda estricta no encuentra nada', async () => {
   // "angelas" en vez de "angeles" — un solo carácter de diferencia.
   const res = await catalogRequest(context('https://preview.example/catalogo?q=angelas'));
   const html = await res.text();
-  assert.match(html, /Tarot De Los Ángeles/);
+  assert.match(html, /Tarot de los Ángeles/);
 });
 
 test('sin duplicados: cada MLU aparece una sola vez en la grilla', async () => {
   const res = await catalogRequest(context('https://preview.example/catalogo?categoria=esoterismo-tarot'));
   const html = await res.text();
-  const count = (html.match(/Tarot De Los Ángeles/g) || []).length;
+  const count = (html.match(/Tarot de los Ángeles/g) || []).length;
   assert.equal(count, 1);
 });
 
@@ -358,7 +358,7 @@ test('pausadas visibles públicamente junto a las activas en "Todos"', async () 
   const res = await catalogRequest(context('https://preview.example/catalogo'));
   const html = await res.text();
   assert.match(html, /Diccionario Inglés Avanzado/);
-  assert.match(html, /El Género En Disputa/); // activa, sigue presente
+  assert.match(html, /El Género en Disputa/); // activa, sigue presente
 });
 
 test('"Todos" = universo público exacto (activas + pausadas, sin fantasmas)', async () => {
@@ -399,10 +399,10 @@ test('pausada no entra al checkout: sin "Ver ficha", CTA apunta a WhatsApp con m
 test('a igual relevancia, la activa aparece antes que la pausada', async () => {
   const res = await catalogRequest(context('https://preview.example/catalogo?categoria=filosofia-ciencias-sociales'));
   const html = await res.text();
-  const idxActive = html.indexOf('Manual De Filosofía Estoica'); // MLU9, activa
-  const idxPaused = html.indexOf('Ensayo De Filosofía Moderna'); // MLU10, pausada
+  const idxActive = html.indexOf('Manual de Filosofía Estoica'); // MLU9, activa
+  const idxPaused = html.indexOf('Ensayo de Filosofía Moderna'); // MLU10, pausada
   assert.ok(idxActive !== -1 && idxPaused !== -1);
-  const activeCard = html.match(/<article class="rc-card">[\s\S]*?Manual De Filosofía Estoica[\s\S]*?<\/article>/)?.[0];
+  const activeCard = html.match(/<article class="rc-card">[\s\S]*?Manual de Filosofía Estoica[\s\S]*?<\/article>/)?.[0];
   assert.match(activeCard || '', /Entrega en el día/);
   assert.match(activeCard || '', /Montevideo/);
   assert.ok(idxActive < idxPaused, 'la activa debería listarse antes que la pausada en empate de relevancia');
@@ -412,7 +412,7 @@ test('una coincidencia exacta pausada supera a una coincidencia débil activa', 
   const res = await catalogRequest(context('https://preview.example/catalogo?q=eva+luna'));
   const html = await res.text();
   const idxExactPaused = html.indexOf('>Eva Luna<'); // MLU7, título exacto, pausada
-  const idxWeakActive = html.indexOf('Eva Luna Historias De Mujeres Varias'); // MLU8, activa, parcial
+  const idxWeakActive = html.indexOf('Eva Luna Historias de Mujeres Varias'); // MLU8, activa, parcial
   assert.ok(idxExactPaused !== -1 && idxWeakActive !== -1);
   assert.ok(idxExactPaused < idxWeakActive, 'la coincidencia exacta (aunque pausada) debe ir primero');
 });
@@ -427,7 +427,7 @@ test('en producción, un manifest de pausadas ausente/inválido no rompe /catalo
   assert.equal(res.status, 200);
   const html = await res.text();
   assert.doesNotMatch(html, /Diccionario Inglés Avanzado/);
-  assert.match(html, /El Género En Disputa/);
+  assert.match(html, /El Género en Disputa/);
 });
 
 test('selector de categorías: alfabético, sin «Otros libros», comodines al final y sin vacías', async () => {

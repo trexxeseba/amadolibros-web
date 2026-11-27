@@ -1,3 +1,4 @@
+import { presentBookTitle } from '../../shared/book-title-presentation.js';
 import { cleanBookDescription, cleanBookFormat } from '../_shared/book-display-cleanup.js';
 import { coverSources } from '../book-cover/[[path]].js';
 import { googleReadyImage, googleFutureReadyImage, mlImageIdentity } from '../_shared/image-source-policy.js';
@@ -340,6 +341,7 @@ function renderRelatedBooks(relatedBooks, author, useCloudflareImages = true) {
         // «de <autor genérico>» del texto VISIBLE (título de tarjeta y alt).
         // El título comercial almacenado no se modifica.
         const title = escapeHtml(stripGenericAuthorMention(book.title) || book.title);
+        const visibleTitle = escapeHtml(presentBookTitle(stripGenericAuthorMention(book.title) || book.title));
         const href = `/libro/${encodeURIComponent(book.id)}/${slugify(book.title)}`;
         const source = useCloudflareImages
             ? bookCoverUrl(book.id)
@@ -355,7 +357,7 @@ function renderRelatedBooks(relatedBooks, author, useCloudflareImages = true) {
         return `<li class="related-book">
       <a class="related-book-link" href="${escapeHtml(href)}">
         ${image.src ? `<img class="related-book-cover" src="${escapeHtml(image.src)}"${responsiveAttrs} alt="Portada de ${title}" loading="lazy" width="120" height="180" decoding="async">` : ''}
-        <span class="related-book-title">${title}</span>
+        <span class="related-book-title">${visibleTitle}</span>
       </a>
     </li>`;
     }).join('\n');
@@ -447,6 +449,10 @@ function notFound() {
 export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverSrc = '', relatedBooks = [], googleImages = null, permanentSources = null) {
     const canonicalUrl = `${BASE}/libro/${item.id}/${slug}`;
     const safeTitle    = escapeHtml(item.title);
+    // Título para leer en pantalla (h1 y miga): conectores en minúscula.
+    // <title>, meta, JSON-LD y alt siguen con el título fuente.
+    const visibleTitle = presentBookTitle(item.title);
+    const safeVisibleTitle = escapeHtml(visibleTitle);
     // B11: los textos alternativos describen la portada sin arrastrar una
     // autoría genérica del título comercial. El título almacenado, el slug,
     // el canonical y la identidad de carrito permanecen intactos.
@@ -1040,13 +1046,13 @@ ${siteHeaderHtml()}
 
 <nav>
   <a href="/">Inicio</a> ›
-  <span>${safeTitle.substring(0, 70)}${item.title.length > 70 ? '…' : ''}</span>
+  <span>${safeVisibleTitle.substring(0, 70)}${item.title.length > 70 ? '…' : ''}</span>
 </nav>
 
 <main>
   ${renderGallery(images, safeImageTitle)}
   <div class="info">
-    <h1>${safeTitle}</h1>
+    <h1>${safeVisibleTitle}</h1>
     ${inStock ? `<span class="badge in-stock">✓ En stock</span>` : ''}
     ${deliveryBadgeHtml(inStock)}
     ${priceHtml}

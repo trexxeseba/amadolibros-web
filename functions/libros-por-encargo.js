@@ -9,6 +9,7 @@ import {
   orderHubPageCount, orderHubPageSlice, orderHubPath, parseOrderHubPage,
 } from './_shared/order-hub.js';
 import { buildWhatsAppMessage } from '../shared/whatsapp-messages.js';
+import { presentBookTitle } from '../shared/book-title-presentation.js';
 
 const TITLE = 'Libros por encargo en Uruguay | Amado Libros';
 const DESCRIPTION = 'Explorá libros agotados, importados y difíciles de conseguir que Amado Libros puede buscar y cotizar por encargo desde Uruguay.';
@@ -58,7 +59,7 @@ function cardHtml(book, position) {
     : '';
   return `<article class="book-card">
     <a class="book-cover-link" href="${href}" aria-label="Ver ficha de ${escapeHtml(book.title)}"><img src="${escapeHtml(image.src)}"${responsive} alt="Portada de ${escapeHtml(book.title)}" loading="${position < 8 ? 'eager' : 'lazy'}" decoding="async" width="280" height="420"></a>
-    <div class="book-body"><span class="order-badge">Por encargo</span><h2><a href="${href}">${escapeHtml(book.title)}</a></h2>
+    <div class="book-body"><span class="order-badge">Por encargo</span><h2><a href="${href}">${escapeHtml(presentBookTitle(book.title))}</a></h2>
       ${book.author ? `<p class="book-author">${escapeHtml(book.author)}</p>` : ''}
       ${book.isbn ? `<p class="book-isbn">ISBN ${escapeHtml(book.isbn)}</p>` : ''}
       <p class="order-note">Edición, disponibilidad, precio y plazo a confirmar.</p><a class="book-cta" href="${href}">Ver ficha y consultar →</a>

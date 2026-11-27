@@ -176,7 +176,9 @@ test('la ficha SSR curada conserva el enriquecimiento sin duplicarse ni alterar 
   assert.equal(html, baseHtml);
   assert.doesNotMatch(html, /desconocid/i);
   assert.match(html, new RegExp(`<title>${RAW_ITEM.title} \\| Amado Libros<\\/title>`));
-  assert.match(html, new RegExp(`<h1>${RAW_ITEM.title}<\\/h1>`));
+  // El h1 muestra el título con los conectores en minúscula (sólo
+  // presentación); <title> y canonical conservan el título fuente.
+  assert.match(html, /<h1>La Biblia Palabra de Vida - Verbo Divino<\/h1>/);
   assert.match(
     html,
     /<link rel="canonical" href="https:\/\/www\.amadolibros\.com\/libro\/MLU724888358\/la-biblia-palabra-de-vida-verbo-divino">/,

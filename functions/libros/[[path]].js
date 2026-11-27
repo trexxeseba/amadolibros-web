@@ -34,6 +34,7 @@ import { deliveryBadgeHtml, DELIVERY_BADGE_STYLES } from '../../shared/delivery-
 import { CARD_COVER_FRAMING_STYLES, cardCoverImageOptions } from '../../shared/card-cover-framing.js';
 import { parseCategoryOrder, orderCategoryItems, categoryOrderHtml, CATEGORY_ORDER_STYLES, categoryProductTabsHtml, CATEGORY_PRODUCT_STYLES } from '../_shared/category-order.js';
 import { fetchCategoryDates } from '../_shared/category-dates.js';
+import { presentBookTitle } from '../../shared/book-title-presentation.js';
 
 const TAROT_CATEGORY_ID = 'esoterismo-tarot';
 const TAROT_DECKS_CATEGORY_ID = 'esoterismo-tarot/mazos';
@@ -309,6 +310,9 @@ function cardHtml(item, index, navigationBase) {
         ...cardCoverImageOptions(item.id),
     });
     const title = escapeHtml(item.title);
+    // Título para leer en pantalla (conectores en minúscula); el alt y los
+    // datos estructurados siguen con el título fuente.
+    const visibleTitle = escapeHtml(presentBookTitle(item.title));
     const author = item.author ? `<p class="book-author">${escapeHtml(item.author)}</p>` : '';
     const byRequest = item.status === 'paused';
     const price = byRequest ? 0 : Number(item.price) || 0;
@@ -327,7 +331,7 @@ function cardHtml(item, index, navigationBase) {
   <a class="book-image" href="${escapeHtml(href)}">${imageHtml}</a>
   <div class="book-body">
     ${byRequest ? '<span class="stock-badge by-request">Por encargo</span>' : deliveryBadgeHtml(item.status === 'active' && Number(item.available_quantity) > 0)}
-    <h2><a href="${escapeHtml(href)}">${title}</a></h2>
+    <h2><a href="${escapeHtml(href)}">${visibleTitle}</a></h2>
     ${author}
     ${price > 0 ? `<div class="book-prices">
       <strong>$${escapeHtml(priceText)} UYU</strong>
