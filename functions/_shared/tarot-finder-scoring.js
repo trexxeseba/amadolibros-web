@@ -107,7 +107,7 @@ export function buildFinderNoResultsMessage(answers = {}, { buildWhatsAppMessage
   ].filter(Boolean);
 
   return buildWhatsAppMessage({
-    greeting: 'Hola, estoy buscando un mazo en Amado Libros 😊',
+    greeting: 'Hola, estoy buscando un mazo en Amado Libros',
     motive: 'Buscar un mazo con el selector "Encontrá tu mazo"',
     situation: situationLines.length ? situationLines.join('\n') : null,
     page,

@@ -71,7 +71,7 @@ test('3. Precio web/tarjeta usa la jerarquía visual principal y transferencia l
 test('3b. La ficha muestra envío gratis sólo cuando el precio llega al umbral', () => {
     const free = renderPage(book({ price: 1500 }), 'un-libro', false, '');
     const paid = renderPage(book({ price: 1490 }), 'un-libro', false, '');
-    assert.match(extractBlock(free, 'price-box'), /🚚<\/span> Envío gratis/);
+    assert.match(extractBlock(free, 'price-box'), /Envío gratis/);
     assert.doesNotMatch(extractBlock(paid, 'price-box'), /Envío gratis/);
 });
 
@@ -103,7 +103,7 @@ test('6. El enlace de WhatsApp sigue siendo válido (wa.me + mensaje codificado)
     const match = html.match(/href="https:\/\/wa\.me\/59899841325\?text=([^"]+)"/);
     assert.ok(match, 'la ficha debe incluir un enlace wa.me con mensaje');
     const message = decodeURIComponent(match[1]);
-    assert.match(message, /Hola, me interesa este libro que encontré en Amado Libros 😊/);
+    assert.match(message, /Hola, me interesa este libro que encontré en Amado Libros/);
     assert.match(message, /Motivo: Consulta sobre el libro o la entrega/);
     assert.match(message, /Libro: Un Libro & Su Título/);
     assert.match(message, /Autor: Autor De Prueba/);

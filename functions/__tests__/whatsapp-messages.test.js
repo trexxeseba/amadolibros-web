@@ -18,7 +18,7 @@ test('la consulta por encargo usa el copy aprobado y contexto operativo', () => 
   });
 
   assert.equal(message, [
-    'Hola, me interesa este libro que encontré en Amado Libros 😊',
+    'Hola, me interesa este libro que encontré en Amado Libros',
     '',
     'Motivo: Consultar disponibilidad y precio',
     'Libro: My Hero Academia 42 Edición Especial Cofre',

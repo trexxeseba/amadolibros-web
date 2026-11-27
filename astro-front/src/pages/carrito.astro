@@ -3013,7 +3013,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
         var ph = document.createElement('div');
         ph.className = 'cart-item-img-placeholder';
         ph.setAttribute('aria-hidden', 'true');
-        ph.textContent = '📚';
+        ph.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2"/><path d="M8 7h7"/></svg>';
         art.appendChild(ph);
       }
 
@@ -3038,7 +3038,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
         var wa = window.AmadoWhatsApp;
         var waText = wa
           ? wa.build({
-              greeting: 'Hola, me interesa este libro que encontré en Amado Libros 😊',
+              greeting: 'Hola, me interesa este libro que encontré en Amado Libros',
               motive: unsupportedCurrency
                 ? 'Consultar precio y forma de pago'
                 : 'Consultar disponibilidad y precio',
@@ -3205,7 +3205,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
         var ph = document.createElement('div');
         ph.className = 'cart-item-compact-img-placeholder';
         ph.setAttribute('aria-hidden', 'true');
-        ph.textContent = '📚';
+        ph.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2"/><path d="M8 7h7"/></svg>';
         row.appendChild(ph);
       }
 
@@ -3502,7 +3502,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
 
         var waContext = window.AmadoWhatsApp;
         var lines = [
-          'Hola, quiero hacer este pedido en Amado Libros 😊',
+          'Hola, quiero hacer este pedido en Amado Libros',
           '',
           'Motivo: Completar un pedido del carrito',
           'Situación: Productos seleccionados y datos de entrega prontos',
@@ -3666,7 +3666,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       var sellableItems = getSellableItems(cart);
       var waContext = window.AmadoWhatsApp;
       var lines = [
-        'Hola, ya realicé una transferencia para mi pedido de Amado Libros 😊',
+        'Hola, ya realicé una transferencia para mi pedido de Amado Libros',
         '',
         'Motivo: Enviar comprobante de transferencia',
         'Situación: Transferencia realizada',

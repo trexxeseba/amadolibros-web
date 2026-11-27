@@ -725,7 +725,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         <span class="price-transfer-line">12% menos por transferencia: <strong>$${transferPrice} UYU</strong></span>
         <span class="price-saving">Ahorrás $${transferSaving} UYU</span>
       </div>`}
-      ${hasFreeShipping ? '<div class="price-free-shipping"><span aria-hidden="true">🚚</span> Envío gratis</div>' : ''}
+      ${hasFreeShipping ? '<div class="price-free-shipping">Envío gratis</div>' : ''}
     </div>`
         : inStock
           ? `<div class="order-box">
@@ -1061,8 +1061,8 @@ ${siteHeaderHtml()}
     ${!inStock ? moreDetailsHtml : ''}
     ${seoOpportunityHtml}
     <p class="shipping">${inStock
-      ? '🚚 Entrega en el día en Montevideo según zona, horario y confirmación · Envío $250 · Gratis desde $1.500 · Atención personalizada.'
-      : '🌎 Podemos buscarlo por encargo. Te confirmamos disponibilidad, precio y plazo antes de reservar.'
+      ? 'Entrega en el día en Montevideo según zona, horario y confirmación · Envío $250 · Gratis desde $1.500 · Atención personalizada.'
+      : 'Podemos buscarlo por encargo. Te confirmamos disponibilidad, precio y plazo antes de reservar.'
     } <a href="/politicas/#envios">Ver política de envíos</a>.</p>
   </div>
   ${relatedBooksHtml}

@@ -291,7 +291,7 @@ test('el catálogo marca con iconos el 12% y el envío gratis sólo desde el umb
   );
   const paidHtml = await paidResponse.text();
   assert.match(paidHtml, /12% menos por transferencia/);
-  assert.doesNotMatch(paidHtml, /🚚<\/span> Envío gratis/);
+  assert.doesNotMatch(paidHtml, /Envío gratis/);
 
   const originalPrice = CATALOG.items[0].price;
   CATALOG.items[0].price = 1500;
@@ -300,7 +300,7 @@ test('el catálogo marca con iconos el 12% y el envío gratis sólo desde el umb
       context('https://preview.example/catalogo?q=Alpha')
     );
     const freeHtml = await freeResponse.text();
-    assert.match(freeHtml, /🚚<\/span> Envío gratis/);
+    assert.match(freeHtml, /Envío gratis/);
   } finally {
     CATALOG.items[0].price = originalPrice;
   }

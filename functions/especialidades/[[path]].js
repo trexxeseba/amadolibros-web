@@ -93,7 +93,7 @@ export async function onRequest(ctx) {
     .slice(0, 24);
   const requestPath = `/pedir-libro/?tipo=novedades-tecnicas&q=${encodeURIComponent(`Libros de ${specialty.name}`)}`;
   const waMessage = buildWhatsAppMessage({
-    greeting: 'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran 😊',
+    greeting: 'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran',
     motive: 'Buscar un libro por encargo',
     book: `Libro de ${specialty.name}`,
     situation: 'Todavía no identifiqué la edición exacta',

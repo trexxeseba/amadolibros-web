@@ -25,7 +25,7 @@ export function absoluteSitePage(pathOrUrl = '/') {
  * explicar de nuevo qué estaba viendo.
  */
 export function buildWhatsAppMessage({
-  greeting = 'Hola, encontré Amado Libros y quería hacerles una consulta 😊',
+  greeting = 'Hola, encontré Amado Libros y quería hacerles una consulta',
   motive,
   book,
   author,
@@ -81,7 +81,7 @@ export function buildBookWhatsAppMessage({
       : 'Quisiera saber si pueden conseguirlo y cuánto demoraría. Gracias.';
 
   return buildWhatsAppMessage({
-    greeting: 'Hola, me interesa este libro que encontré en Amado Libros 😊',
+    greeting: 'Hola, me interesa este libro que encontré en Amado Libros',
     motive,
     book: title,
     author,
