@@ -164,6 +164,26 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Check deployed cart, gallery and waitlist in a browser
+        if: github.head_ref == 'codex/cierre-regalos-galeria-avisos'
+        env:
+          COMMERCE_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
+          COMMERCE_UI_OUTPUT_DIR: artifacts/purchase-ui
+          AMADO_PLAYWRIGHT_MODULE: ${{ runner.temp }}/amado-browser/node_modules/playwright/index.mjs
+          AMADO_CHROMIUM_PATH: /usr/bin/google-chrome
+        run: |
+          npm install --prefix "$RUNNER_TEMP/amado-browser" --no-audit --no-fund --ignore-scripts playwright@1.65.1
+          node scripts/commerce/check-preview-purchase-ui.mjs
+
+      - name: Upload purchase UI browser evidence
+        if: always() && github.head_ref == 'codex/cierre-regalos-galeria-avisos'
+        uses: actions/upload-artifact@v4
+        with:
+          name: purchase-ui-pr-${{ github.event.pull_request.number }}
+          path: artifacts/purchase-ui/
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Audit protected Preview
         env:
           COMMERCE_BASE_URL: ${{ steps.deploy.outputs.preview_url }}

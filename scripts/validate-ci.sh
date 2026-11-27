@@ -123,6 +123,9 @@ step "Instalar dependencias de astro-front"
 step "Observador QA — empaquetado real con esbuild keepNames"
 COVER_SCROLL_TEST_BUNDLE=true node --test worker-sync/__tests__/cover-scroll-observer.test.js
 
+step "Galería y aviso de stock — cliente generado por esbuild keepNames"
+PRODUCT_CLIENT_TEST_BUNDLE=true node --test functions/__tests__/gallery-visual-client.test.js functions/__tests__/waitlist-contact-client.test.js
+
 # ── 4. Build con checkout OFF ─────────────────────────────────────────────
 step "Build — checkout OFF"
 (
