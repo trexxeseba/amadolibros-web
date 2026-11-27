@@ -119,7 +119,7 @@ function cardHtml(book, idx, env, group) {
     const transfer = transferValue === null ? '' : transferValue.toLocaleString('es-UY');
     const responsive = image.srcset ? ` srcset="${escapeHtml(image.srcset)}" sizes="${escapeHtml(image.sizes)}"` : '';
     const img = image.src
-        ? `<img src="${escapeHtml(image.src)}"${responsive} alt="${title}" loading="${idx < 8 ? 'eager' : 'lazy'}" decoding="async" width="280" height="373">`
+        ? `<img src="${escapeHtml(image.src)}"${responsive} alt="${title}" loading="${idx < 4 ? 'eager' : 'lazy'}" decoding="async" width="280" height="373">`
         : '<div class="rc-no-img" aria-hidden="true"></div>';
     const wa = whatsappHref(regaloWhatsAppMessage(book, href));
     const qty = Number(book.available_quantity) || 0;

@@ -884,7 +884,7 @@ export async function onRequest(ctx) {
         const priceStr  = price.toLocaleString('es-UY');
         const installment = Math.round(price / 12).toLocaleString('es-UY');
         const hasFreeShipping = price >= FREE_SHIPPING_THRESHOLD_UYU;
-        const loading  = idx < 8 ? 'eager' : 'lazy';
+        const loading  = idx < 4 ? 'eager' : 'lazy';
         const orderWaHref = whatsappHref(buildOrderWaMessage(b, rawHref));
         const responsiveAttrs = image.srcset
             ? ` srcset="${escapeHtml(image.srcset)}" sizes="${escapeHtml(image.sizes)}"`

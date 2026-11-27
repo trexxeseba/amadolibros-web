@@ -54,9 +54,14 @@ test('srcset ofrece anchos únicos y deja que el navegador elija uno', () => {
   assert.equal(image.sizes, '(max-width: 600px) 50vw, 280px');
 });
 
-test('fichas, zoom y tarjetas sin cobertura conservan la entrega anterior por defecto', () => {
-  for (const [width, quality] of [[96,82],[120,85],[180,85],[240,85],[320,85],[480,85],[720,85],[768,85],[960,85],[1024,88]]) {
+test('fichas, zoom y tarjetas piden la variante WebP de R2, nunca /cdn-cgi/image', () => {
+  for (const [width, quality] of [[96,82],[120,85],[180,85],[240,85],[320,85],[480,85],[720,85],[768,85],[960,85],[1024,85],[1024,88]]) {
     assert.equal(cloudflareImageUrl(SOURCE,{width,quality}),
-      `https://www.amadolibros.com/cdn-cgi/image/format=auto,fit=scale-down,width=${width},quality=${quality},onerror=redirect/book-cover/MLU123456/cover.jpg`);
+      `https://www.amadolibros.com/book-cover/MLU123456/cover.jpg?variant=v1-${width}-q${quality}`);
   }
+});
+
+test('un ancho sin receta usa el original, sin transformaciones pagas', () => {
+  assert.equal(cloudflareImageUrl(SOURCE, { width: 500 }), SOURCE);
+  assert.equal(cloudflareImageUrl(SOURCE, { width: 480, quality: 70 }), SOURCE);
 });

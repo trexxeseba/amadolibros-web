@@ -1,4 +1,5 @@
 import { cardCoverImageOptions } from '../../../shared/card-cover-framing.js';
+import { permanentImageUrl } from '../../../shared/image-variants.js';
 
 const BASE = 'https://www.amadolibros.com';
 const PRODUCT_ID_RE = /^MLU\d+$/;
@@ -21,8 +22,8 @@ export function cloudflareImageUrl(source, width, quality = 85) {
   if (sourceUrl.origin !== BASE || sourceUrl.pathname.startsWith('/cdn-cgi/image/')) {
     return String(source);
   }
-  const options = `format=auto,fit=scale-down,width=${targetWidth},quality=${quality},onerror=redirect`;
-  return `${BASE}/cdn-cgi/image/${options}${sourceUrl.pathname}${sourceUrl.search}`;
+  // Variante WebP permanente de R2; si falta, /book-cover sirve el original.
+  return permanentImageUrl(source, { width: targetWidth, quality: Number(quality) || 85 });
 }
 
 export function responsiveBookCover(productId, { optimize = true } = {}) {

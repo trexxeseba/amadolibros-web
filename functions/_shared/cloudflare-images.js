@@ -49,16 +49,11 @@ export function cloudflareImageUrl(source, {
   if (!source || !sameProductionZone(source)) return String(source || '');
   const targetWidth = positiveInteger(width);
   if (!targetWidth) return String(source);
-  const targetQuality = Math.min(100, Math.max(1, positiveInteger(quality) || 85));
-  const sourceUrl = new URL(source, BASE);
-  const options = [
-    'format=auto',
-    `fit=${fit}`,
-    `width=${targetWidth}`,
-    `quality=${targetQuality}`,
-    'onerror=redirect',
-  ].join(',');
-  return `${BASE}/cdn-cgi/image/${options}${sourceUrl.pathname}${sourceUrl.search}`;
+  // Variante WebP permanente guardada en R2 (?variant=v1-<ancho>-q<calidad>).
+  // Si todavía no existe, /book-cover sirve el original: lo mismo que hacía
+  // /cdn-cgi/image/ con las transformaciones apagadas, sin la redirección
+  // extra y sin transformaciones pagas. Anchos sin receta usan el original.
+  return permanentImageUrl(source, { width: targetWidth, quality: positiveInteger(quality) || 85, fit });
 }
 
 /**

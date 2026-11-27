@@ -121,7 +121,7 @@ export function cardHtml(book, idx, env, topic = '') {
     const transfer = transferValue === null ? '' : transferValue.toLocaleString('es-UY');
     const responsive = image.srcset ? ` srcset="${escapeHtml(image.srcset)}" sizes="${escapeHtml(image.sizes)}"` : '';
     const img = image.src
-        ? `<img src="${escapeHtml(image.src)}"${responsive} alt="${title}" loading="${idx < 8 ? 'eager' : 'lazy'}" decoding="async" width="280" height="373">`
+        ? `<img src="${escapeHtml(image.src)}"${responsive} alt="${title}" loading="${idx < 4 ? 'eager' : 'lazy'}" decoding="async" width="280" height="373">`
         : '<div class="rc-no-img" aria-hidden="true"></div>';
     const wa = whatsappHref(liquidationWhatsAppMessage(book, href));
     const habitual = Number(book.original_price) > price ? Math.round(Number(book.original_price)) : price;
