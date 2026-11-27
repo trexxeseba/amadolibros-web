@@ -23,7 +23,6 @@ export const CAMPOS = Object.freeze({
   BOOK_GENRE: 'genre',
   AUTHOR: 'author',
   BOOK_COLLECTION: 'collection',
-  BOOK_SERIE: 'collection',
   BOOK_SUBTITLE: 'subtitle',
 });
 
