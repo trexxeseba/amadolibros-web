@@ -1,0 +1,95 @@
+name: Ficha técnica de Amado Libros (objetivos de calidad)
+
+# Pedido de Seba del 27/11/2026: completar los atributos de ficha técnica que le faltan a los libros
+# de Amado Libros (seller 440298103) para bajar "Con objetivos de calidad por lograr".
+# Sólo Amado Libros, sólo atributos de ficha técnica: nunca título, precio, descripción, fotos, stock,
+# promociones ni ISBN/GTIN. El detalle (qué atributo, antes, después, fuente) va al repo privado; el log
+# es público y lleva sólo conteos. Código y reglas: ficha-tecnica/.
+#
+# Para apagar la corrida diaria: Actions > este workflow > "Disable workflow".
+
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: 'medir = sólo lee y clasifica · cargar = completa atributos (con prueba=true sólo lista lo que haría)'
+        type: choice
+        options: [medir, cargar]
+        default: medir
+      tope:
+        description: 'Cantidad de publicaciones a cargar en esta corrida'
+        default: '20'
+      prueba:
+        description: 'Prueba: no escribe en Mercado Libre'
+        type: boolean
+        default: true
+
+concurrency:
+  group: ficha-tecnica
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ficha:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ESTADO_REPO: trexxeseba/amadolibros-privado
+      ESTADO_RAMA: estado/diagnostico
+      ESTADO_TOKEN: ${{ secrets.ESTADO_TOKEN }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      FICHA_EMAIL_TO: undiaes@gmail.com
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests
+        run: node --test ficha-tecnica/test/*.test.mjs
+      - name: Traer el estado anterior del repo privado
+        shell: bash
+        run: |
+          [ -n "$ESTADO_TOKEN" ] || { echo "Falta ESTADO_TOKEN"; exit 1; }
+          git clone -q --single-branch -b "$ESTADO_RAMA" "https://x-access-token:${ESTADO_TOKEN}@github.com/${ESTADO_REPO}.git" privado
+          mkdir -p privado/ficha-tecnica salida
+      - name: Ficha técnica
+        shell: bash
+        env:
+          ACCION: ${{ github.event_name == 'schedule' && 'cargar' || inputs.accion }}
+          TOPE: ${{ github.event_name == 'schedule' && vars.FICHA_TOPE_DIARIO || inputs.tope }}
+          PRUEBA: ${{ github.event_name == 'schedule' && 'false' || inputs.prueba }}
+          PROGRAMADA: ${{ github.event_name == 'schedule' && 'si' || 'no' }}
+        run: |
+          if [ "$ACCION" = "medir" ]; then
+            node ficha-tecnica/src/medir.mjs --salida salida
+          else
+            ARGS=(--salida salida --estado privado/ficha-tecnica --tope "${TOPE:-300}")
+            if [ "$PRUEBA" != "true" ]; then ARGS+=(--real); fi
+            if [ "$PROGRAMADA" = "si" ]; then ARGS+=(--mail); fi
+            node ficha-tecnica/src/cargar.mjs "${ARGS[@]}"
+          fi
+      - name: Guardar en el repo privado
+        if: always()
+        shell: bash
+        run: |
+          [ -d privado ] || exit 0
+          ls salida/* >/dev/null 2>&1 || exit 0
+          cd privado
+          git config user.name "ficha-tecnica[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p "ficha-tecnica/corridas/$GITHUB_RUN_ID"
+          cp ../salida/* "ficha-tecnica/corridas/$GITHUB_RUN_ID/"
+          [ -f ../salida/medicion.json ] && cp ../salida/medicion.json ficha-tecnica/ultima-medicion.json
+          [ -f ../salida/registro.jsonl ] && cat ../salida/registro.jsonl >> ficha-tecnica/registro.jsonl
+          [ -f ../salida/hechas.json ] && cp ../salida/hechas.json ficha-tecnica/hechas.json
+          git add -A
+          git commit -q -m "Ficha técnica $GITHUB_RUN_ID [skip ci]" || exit 0
+          for i in 1 2 3; do git pull -q --rebase origin "$ESTADO_RAMA" && git push -q origin "HEAD:$ESTADO_RAMA" && break; sleep 5; done
+          echo "Guardado"
