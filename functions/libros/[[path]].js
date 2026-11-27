@@ -319,7 +319,7 @@ function cardHtml(item, index, navigationBase) {
     const responsiveAttrs = image.srcset
         ? ` srcset="${escapeHtml(image.srcset)}" sizes="${escapeHtml(image.sizes)}"`
         : '';
-    const eager = index < 6;
+    const eager = index < 4;
     const imageHtml = image.src
         ? `<img src="${escapeHtml(image.src)}"${responsiveAttrs} alt="Portada de ${title}" loading="${eager ? 'eager' : 'lazy'}" decoding="async" width="280" height="420">`
         : '<span class="book-placeholder" aria-hidden="true">📚</span>';

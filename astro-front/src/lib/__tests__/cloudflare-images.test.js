@@ -7,18 +7,18 @@ import {
   responsiveBookCover,
 } from '../cloudflare-images.js';
 
-test('la home conserva exactamente las transformaciones previas mientras queda fuera del canario', () => {
+test('la home pide las variantes WebP de R2 en vez de /cdn-cgi/image', () => {
   const source = bookCoverUrl('MLU987654');
   const cover = responsiveBookCover('MLU987654');
   assert.equal(source, 'https://www.amadolibros.com/book-cover/MLU987654/cover.jpg');
   assert.equal(bookCoverUrl('MLU987654', 2), 'https://www.amadolibros.com/book-cover/MLU987654/cover-3.jpg');
   assert.equal(bookCoverUrl('MLU987654', 15), 'https://www.amadolibros.com/book-cover/MLU987654/cover-16.jpg');
-  assert.equal(cover.src, 'https://www.amadolibros.com/cdn-cgi/image/format=auto,fit=scale-down,width=360,quality=85,onerror=redirect/book-cover/MLU987654/cover.jpg');
+  assert.equal(cover.src, 'https://www.amadolibros.com/book-cover/MLU987654/cover.jpg?variant=v1-360-q85');
   assert.deepEqual(
-    [...cover.srcset.matchAll(/width=(\d+),/g)].map(match => Number(match[1])),
+    [...cover.srcset.matchAll(/variant=v1-(\d+)-q85/g)].map(match => Number(match[1])),
     [240, 360, 480],
   );
-  assert.doesNotMatch(cover.srcset, /variant=/);
+  assert.doesNotMatch(cover.srcset, /cdn-cgi/);
 });
 
 test('no anida transformaciones ni admite un ID que no sea MLU', () => {
