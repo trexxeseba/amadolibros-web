@@ -3,7 +3,7 @@ name: Guardián de las publicaciones de Vintage
 # Cada 15 minutos mira si algo puede salir mal (tandas que no corren, corridas caídas, publicaciones pausadas por
 # Mercado Libre, fotos trabadas, freno puesto), arregla solo lo que es seguro (pedir de nuevo una tanda, reintentar una
 # corrida caída UNA vez) y avisa por mail en lenguaje simple. Nunca suelta el freno, reactiva, cambia precios ni toca
-# Amado Libros. Código: scripts/guardian/guardian.mjs. El Worker de Cloudflare lo lanza (el cron de GitHub se atrasa y queda de respaldo).
+# Amado Libros. Código: scripts/guardian/guardian.mjs. Lo lanza su propio cron de GitHub (desde el 27/11/2026 el Worker de Amado Libros ya no dispara trabajos de Vintage).
 on:
   schedule:
     - cron: '*/15 * * * *'

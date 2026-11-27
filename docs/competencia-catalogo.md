@@ -9,6 +9,11 @@ la cuenta de HERMESPROMOS): +50 mil publicaciones y poco más de 100 ventas.
 Sondeo del 16/11/2026 con el token de Amado Vintage (`scripts/mercadolibre/sondeo-competidor.mjs`,
 se repite con la acción `sondeo` del workflow):
 
+**Desde el 27/11/2026 (desenganche de cuentas) el workflow lee con el token de Amado Libros**, la
+cuenta dueña de esos productos de catálogo, y nunca con el de Vintage. Con el token de Libros
+`/products/{id}/items` responde 403 (PolicyAgent) desde el 23/11/2026: el script lo anota como
+`no_disponible` en el log y sigue con lo demás. Para saber qué abre hoy, correr la acción `sondeo`.
+
 | Ruta | Respuesta |
 | --- | --- |
 | `/sites/MLU/search` (por vendedor, apodo, categoría o texto) | 403 en todas las variantes |

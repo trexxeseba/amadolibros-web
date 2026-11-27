@@ -10,13 +10,27 @@
 import { loadCredentials, ML_ORIGIN } from './config.mjs';
 
 export const WORKER_APP_ID = '4741021817925208';
+// La fila de ml_oauth es la de Amado Libros. Antes de usar el token se comprueba con /users/me que
+// sea de esa cuenta (desenganche de cuentas, 27/11/2026): si no, se corta.
+export const LIBROS_SELLER_ID = '440298103';
 const D1_DATABASE_ID = '6dc8dc3a-2d4f-4045-b428-14323c7b0bcd'; // amadolibros-orders-production (worker-sync/wrangler.toml)
 const MARGIN_MS = 5 * 60 * 1000;
 const tokenError = code => Object.assign(new Error(code), { code, fatal: true });
 
 export function workerTokenSource({ accountId = process.env.CLOUDFLARE_ACCOUNT_ID, apiTokens = [process.env.CLOUDFLARE_D1_API_TOKEN, process.env.CLOUDFLARE_ADMIN_API_TOKEN, process.env.CLOUDFLARE_API_TOKEN].filter(Boolean), fetcher = (...a) => globalThis.fetch(...a), sleep = ms => new Promise(r => setTimeout(r, ms)), maxWaitMs = 7 * 60 * 1000, pollMs = 30_000 } = {}) {
   if (!accountId || !apiTokens.length) return null;
-  let cached = null, rejected = null, fatal = null, pending = null;
+  let cached = null, rejected = null, fatal = null, pending = null, verified = null;
+  async function ownerCheck(token) {
+    if (token === verified) return 'ok';
+    const res = await fetcher(`${ML_ORIGIN}/users/me`, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }, signal: AbortSignal.timeout(20000) }).catch(() => null);
+    if (!res) throw tokenError('no_se_pudo_verificar_la_cuenta');
+    if (res.status === 401) return 'rechazado';
+    const me = res.ok ? await res.json().catch(() => null) : null;
+    if (!me) throw tokenError(`no_se_pudo_verificar_la_cuenta_http_${res.status}`);
+    if (String(me.id) !== LIBROS_SELLER_ID) throw tokenError('token_de_otra_cuenta_se_esperaba_libros');
+    verified = token;
+    return 'ok';
+  }
   async function readRow() {
     let last = 'sin_token_cloudflare';
     for (const apiToken of apiTokens) {
@@ -41,7 +55,10 @@ export function workerTokenSource({ accountId = process.env.CLOUDFLARE_ACCOUNT_I
       const row = await readRow();
       if (row.error) throw tokenError(row.error);
       const vigente = row.token && row.expiresAt - Date.now() > MARGIN_MS;
-      if (vigente && row.token !== rejected) { cached = row; return row.token; }
+      if (vigente && row.token !== rejected) {
+        if (await ownerCheck(row.token) === 'ok') { cached = row; return row.token; }
+        rejected = row.token;
+      }
       // Vencido, por vencer o ya rechazado por ML: lo renueva el Worker (cron cada 5 min). Esperar, no refrescar.
       if (Date.now() >= deadline) throw tokenError(row.token === rejected ? 'token_worker_rechazado' : 'token_worker_vencido');
       await sleep(pollMs);

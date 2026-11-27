@@ -1,8 +1,9 @@
 // Diagnóstico de SÓLO LECTURA de las infracciones de Amado Vintage en Mercado Libre (suspensión por
 // propiedad intelectual del 08/11/2026). Sólo GET a Mercado Libre y SELECT a D1: no cambia nada.
 //
-// 1. Estado de venta de las cuentas (sell/list allow y si el mail de la cuenta coincide con el de la
-//    suspensión, sin mostrar el mail).
+// 1. Estado de venta de la cuenta Vintage (sell/list allow y si el mail de la cuenta coincide con el de
+//    la suspensión, sin mostrar el mail). Desde el desenganche de cuentas (27/11/2026) sólo usa el token
+//    de Vintage: el estado de Amado Libros ya no se mira desde acá.
 // 2. Todas las infracciones de Vintage (/moderations/infractions/{seller}), agrupadas por motivo y día.
 // 3. Las publicaciones infractoras: catálogo o no, día de creación y si las creó la campaña (D1).
 //
@@ -48,7 +49,7 @@ async function accountStatus(cuenta,mailLocal){
 async function main(){
  const args=process.argv.slice(2),get=n=>args.includes(n)?args[args.indexOf(n)+1]:undefined;
  const out=get('--salida')??'.',mailLocal=get('--mail-local')??'newisalo25';
- const cuentas=[await accountStatus(CUENTAS.vintage,mailLocal),await accountStatus(CUENTAS.libros,mailLocal)];
+ const cuentas=[await accountStatus(CUENTAS.vintage,mailLocal)];
  // Cupo de publicaciones de Vintage (sólo lectura).
  try{const cap=await crearCliente(fuenteTokenD1(CUENTAS.vintage),{concurrencia:1}).get('/marketplace/users/cap');console.log(JSON.stringify({cupo:cap}));}catch(e){console.log(JSON.stringify({cupo:'error',error:e.code??String(e),status:e.status??null}));}
  console.log(JSON.stringify({cuentas}));

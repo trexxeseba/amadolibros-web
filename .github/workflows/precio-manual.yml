@@ -1,16 +1,12 @@
 # Cambio de precio a mano sobre publicaciones concretas, con la misma conexión que
 # Precio Ganador. Lo corre una sesión de Claude cuando Seba pide un precio puntual
 # ("subí Mafalda a 1500"). Con prueba=true sólo lista lo que haría.
+# Sólo Amado Libros (desenganche de cuentas, 27/11/2026). Vintage: precio-manual-vintage.yml.
 name: Precio manual
 
 on:
   workflow_dispatch:
     inputs:
-      cuenta:
-        description: 'Cuenta'
-        type: choice
-        options: [libros, vintage]
-        default: libros
       cambios:
         description: 'Cambios: MLU123=1500,MLU456=1100 (hasta 50)'
         required: true
@@ -19,7 +15,7 @@ on:
         type: boolean
         default: true
 
-# Misma cola que Precio Ganador: no pisarse con una corrida programada.
+# Misma cola que Precio Ganador de Libros: no pisarse con una corrida programada.
 concurrency:
   group: precio-ganador
   cancel-in-progress: false
@@ -47,7 +43,7 @@ jobs:
       - name: Cambiar precios
         shell: bash
         env:
-          IN_CUENTA: ${{ inputs.cuenta }}
+          IN_CUENTA: libros
           IN_CAMBIOS: ${{ inputs.cambios }}
           IN_PRUEBA: ${{ inputs.prueba }}
           DRY_VAR: ${{ vars.PRECIO_GANADOR_DRY_RUN }}

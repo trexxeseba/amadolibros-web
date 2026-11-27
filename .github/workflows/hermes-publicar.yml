@@ -9,8 +9,11 @@ name: Hermes y Arnoia publicar (Amado Vintage)
 on:
   schedule:
     # Un solo carril (21/11/2026): cada corrida hace GLIC y después Arnoia. Antes había tres disparos distintos compitiendo por la misma
-    # fila y GitHub descartaba las corridas que esperaban. El Worker pide una al :17 (y al :07 de 09 a 15); esta es el respaldo.
+    # fila y GitHub descartaba las corridas que esperaban. Hasta el 27/11/2026 el Worker de Cloudflare (Amado Libros) pedía una al :17
+    # (y al :07 de 09 a 15); con el desenganche de cuentas esos horarios quedan acá, en el cron propio de este workflow.
     - cron: '47 * * * *'
+    - cron: '17 * * * *'
+    - cron: '7 12-18 * * *'
   workflow_dispatch:
     inputs:
       fuente:

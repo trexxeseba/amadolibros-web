@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dispararPrecioGanador, CRONS_PRECIO_GANADOR, CRON_RESUMEN, cuentaDelHorario } from '../precio-ganador-trigger.js';
+import { dispararPrecioGanador, CRONS_PRECIO_GANADOR, CRON_RESUMEN } from '../precio-ganador-trigger.js';
 
 const J = (b, status = 200) => new Response(JSON.stringify(b), { status, headers: { 'content-type': 'application/json' } });
 const env = { GITHUB_TOKEN: 'x', RESEND_API_KEY: 'r', PRECIO_GANADOR_EMAIL_TO: 'a@b.c' };
@@ -16,12 +16,12 @@ test('no dispara si ya hay una corrida de esta franja (creada en los últimos 10
   assert.ok(!llamadas.some(([, m]) => m === 'POST'));
 });
 
-test('dispara con cuenta=ambas cuando no hay corrida reciente', async () => {
+test('dispara sólo Libros (sin input de cuenta) cuando no hay corrida reciente', async () => {
   let body = null;
   const fetcher = async (url, o) => { if (o?.method === 'POST') { body = JSON.parse(o.body); return new Response(null, { status: 204 }); } return J({ workflow_runs: [{ event: 'schedule', created_at: '2026-11-05T05:00:00Z', status: 'completed', conclusion: 'success' }] }); };
   const r = await dispararPrecioGanador(env, { cron: '0 12 * * *', fetcher, now: () => ahora });
   assert.equal(r.state, 'disparado');
-  assert.deepEqual(body, { ref: 'main', inputs: { accion: 'correr', cuenta: 'ambas' } });
+  assert.deepEqual(body, { ref: 'main', inputs: { accion: 'correr' } });
 });
 
 test('una corrida atrasada de la franja anterior no tapa a la de las 21:00 y la de las 21:00 pide el mail', async () => {
@@ -31,7 +31,7 @@ test('una corrida atrasada de la franja anterior no tapa a la de las 21:00 y la 
   const fetcher = async (url, o) => { if (o?.method === 'POST') { body = JSON.parse(o.body); return new Response(null, { status: 204 }); } return J({ workflow_runs: [{ event: 'schedule', created_at: '2026-11-05T23:13:52Z', status: 'completed', conclusion: 'success' }] }); };
   const r = await dispararPrecioGanador(env, { cron: CRON_RESUMEN, fetcher, now: () => medianoche });
   assert.equal(r.state, 'disparado');
-  assert.deepEqual(body, { ref: 'main', inputs: { accion: 'correr', cuenta: 'ambas', correo: 'true' } });
+  assert.deepEqual(body, { ref: 'main', inputs: { accion: 'correr', correo: 'true' } });
 });
 
 test('sólo el horario de las 21:00 pide el mail de resumen', async () => {
@@ -68,13 +68,13 @@ test('M2a (26/11): sin ALARMAS_POR_MAIL=si la falla queda en el log y no manda m
   assert.deepEqual([r.state, r.alerta, resend], ['fallo_disparo', 'sin_mail_por_regla', 0]);
 });
 
-test('Libros corre en todos los horarios y Vintage sólo a las 09:00 y 21:00 (Seba, 11/11/2026)', async () => {
-  assert.deepEqual(CRONS_PRECIO_GANADOR.filter(c => cuentaDelHorario(c) === 'ambas'), ['0 12 * * *', '0 0 * * *']);
-  for (const c of CRONS_PRECIO_GANADOR.filter(c => c !== '0 12 * * *' && c !== '0 0 * * *')) assert.equal(cuentaDelHorario(c), 'libros');
+test('desenganche de cuentas (27/11/2026): en todos los horarios dispara sólo Libros, sin input de cuenta', async () => {
   let body = null;
   const fetcher = async (url, o) => { if (o?.method === 'POST') { body = JSON.parse(o.body); return new Response(null, { status: 204 }); } return J({ workflow_runs: [] }); };
-  await dispararPrecioGanador(env, { cron: '0 16 * * *', fetcher, now: () => ahora });
-  assert.deepEqual(body.inputs, { accion: 'correr', cuenta: 'libros' });
-  await dispararPrecioGanador(env, { cron: '0 12 * * *', fetcher, now: () => ahora });
-  assert.deepEqual(body.inputs, { accion: 'correr', cuenta: 'ambas' });
+  for (const cron of CRONS_PRECIO_GANADOR) {
+    body = null;
+    await dispararPrecioGanador(env, { cron, fetcher, now: () => ahora });
+    assert.equal(body.inputs.cuenta, undefined, cron);
+    assert.equal(body.inputs.accion, 'correr');
+  }
 });

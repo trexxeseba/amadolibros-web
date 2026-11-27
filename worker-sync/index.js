@@ -1,6 +1,5 @@
 import { dispararPrecioGanador, CRONS_PRECIO_GANADOR } from './precio-ganador-trigger.js';
 import { dispararPoda, CRONS_PODA } from './poda-trigger.js';
-import { dispararVintageNube, dispararVintageVigia, dispararArnoia, dispararHermes, dispararGuardian, CRON_VINTAGE_NUBE, CRON_VINTAGE_VIGIA, CRON_ARNOIA, CRON_HERMES, CRON_GUARDIAN } from './vintage-nube-trigger.js';
 import { IMAGE_SOURCE_POLICY_VERSION } from '../functions/_shared/image-source-policy.js';
 /**
  * worker-sync/index.js
@@ -61,7 +60,6 @@ import { publishToR2    } from './r2-publish.js';
 import { notifyHealthcheck } from './healthcheck.js';
 import { processStockWaitlist } from './stock-waitlist-notifier.js';
 import { sendDailyPanelDigest } from './daily-panel-digest.js';
-import { checkVintageHeartbeat } from './vintage-watch.js';
 import { readPreviousPublicCatalog, submitIndexNow } from './indexnow.js';
 import { syncCoverMirror } from './cover-mirror.js';
 import { handleImageVariants } from './image-variants-api.js';
@@ -165,52 +163,12 @@ export default {
           console.error('[fx] Error', error?.name || 'Error');
           return { state: 'error' };
         }),
-        // Vigía de la campaña Vintage: sólo lee D1 y avisa por ntfy si la PC
-        // dejó de publicar. Inerte sin VINTAGE_WATCH_ENABLED="true".
-        checkVintageHeartbeat(env).then(result => {
-          if (result?.state !== 'disabled' && result?.state !== 'ok') console.log('[vintage watch]', JSON.stringify(result));
-          return result;
-        }).catch(error => {
-          console.error('[vintage watch] Error', error?.name || 'Error');
-          return { state: 'error' };
-        }),
       ]));
       return;
     }
-    // Precio Ganador: a las 09:00, 15:00 y 21:00 de Montevideo le pide a GitHub (Vintage a las 09:00 y 21:00)
-    // que corra el workflow (el cron de GitHub se atrasa horas; queda de respaldo).
-    // Publicador de Amado Vintage en la nube: cada hora le pide a GitHub que corra
-    // vintage-nube.yml (el cron de GitHub no lo estaba lanzando).
-    if (event?.cron === CRON_VINTAGE_NUBE) {
-      ctx.waitUntil(dispararVintageNube(env).then(result => {
-        console.log('[vintage nube]', JSON.stringify(result));
-      }));
-      return;
-    }
-    if (event?.cron === CRON_ARNOIA) {
-      ctx.waitUntil(dispararArnoia(env).then(result => {
-        console.log('[arnoia vintage]', JSON.stringify(result));
-      }));
-      return;
-    }
-    if (event?.cron === CRON_HERMES) {
-      ctx.waitUntil(dispararHermes(env).then(result => {
-        console.log('[hermes vintage]', JSON.stringify(result));
-      }));
-      return;
-    }
-    if (event?.cron === CRON_GUARDIAN) {
-      ctx.waitUntil(dispararGuardian(env).then(result => {
-        console.log('[guardian vintage]', JSON.stringify(result));
-      }));
-      return;
-    }
-    if (event?.cron === CRON_VINTAGE_VIGIA) {
-      ctx.waitUntil(dispararVintageVigia(env).then(result => {
-        console.log('[vintage vigia]', JSON.stringify(result));
-      }));
-      return;
-    }
+    // Desenganche de cuentas (Seba, 27/11/2026): este Worker es de Amado Libros y no dispara
+    // trabajos de Amado Vintage (publicador en la nube, Arnoia/Hermes, guardián, vigía de propiedad
+    // intelectual, latido de la campaña). Esos workflows corren con su propio cron de GitHub.
     // Poda de anuncios de Mercado Ads: 11:30 (correr) y 21:30 (auditar) de Montevideo.
     if (CRONS_PODA.includes(event?.cron)) {
       ctx.waitUntil(dispararPoda(env, { cron: event.cron }).then(result => {
@@ -218,6 +176,8 @@ export default {
       }));
       return;
     }
+    // Precio Ganador de Libros: cada 2 horas de 09:00 a 21:00 de Montevideo le pide a GitHub que corra
+    // precio-ganador.yml (el cron de GitHub se atrasa horas; queda de respaldo).
     if (CRONS_PRECIO_GANADOR.includes(event?.cron)) {
       ctx.waitUntil(dispararPrecioGanador(env, { cron: event.cron }).then(result => {
         console.log('[precio ganador]', JSON.stringify(result));

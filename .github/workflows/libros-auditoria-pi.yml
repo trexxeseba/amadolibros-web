@@ -2,7 +2,7 @@ name: Libros auditoría PI (solo lectura)
 
 # Recorre las publicaciones de Amado Libros (440298103) con el filtro de propiedad intelectual de
 # Vintage y lista las riesgosas. Sólo GET: no cambia ninguna publicación. Ver
-# scripts/vintage-cloud/auditoria-libros.mjs.
+# scripts/mercadolibre/auditoria-pi-libros.mjs.
 on:
   workflow_dispatch:
 
@@ -30,4 +30,4 @@ jobs:
         with:
           node-version: '22'
       - name: Auditar Amado Libros con el filtro de propiedad intelectual
-        run: node scripts/vintage-cloud/auditoria-libros.mjs
+        run: node scripts/mercadolibre/auditoria-pi-libros.mjs

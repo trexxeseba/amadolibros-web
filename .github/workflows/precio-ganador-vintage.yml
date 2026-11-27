@@ -1,0 +1,282 @@
+name: Precio Ganador (Vintage)
+
+# Precio ganador automático en Mercado Libre para Amado Vintage (2341378249), SOLO esa cuenta.
+# Reglas en precio-ganador/src/config.mjs (CUENTAS.vintage). Se separó de precio-ganador.yml en el
+# desenganche de cuentas (Seba, 27/11/2026): cron, cola, estado y alarmas propios; ningún paso usa
+# el token de la otra cuenta. Lo dispara sólo el cron de GitHub (el Worker de Cloudflare ya no
+# lanza trabajos de Vintage).
+#
+# Dos corridas por día: 09:00 y 21:00 de Montevideo (12:00 y 00:00 UTC), los mismos horarios que
+# tenía Vintage dentro de Precio Ganador mientras Mercado Libre lo tenga restringido para ganar en
+# catálogo (Seba, 11/11/2026). El mail diario sale con la de las 21:00.
+# Modo real si precio-ganador/modo.json dice "real" para vintage. Para pausar sin tocar código:
+# variable del repo PRECIO_GANADOR_DRY_RUN = true, o desactivar este workflow.
+#
+# Estado (precio original de cada publicación bajada) y reportes en la rama
+# estado/precio-ganador-vintage del repo PRIVADO trexxeseba/amadolibros-privado. La primera vez
+# que corre, si esa rama no existe, la arma a partir de la rama de antes (estado/precio-ganador,
+# compartida con Libros) quedándose sólo con los archivos de Vintage, para no perder el precio
+# original de lo que ya está bajado.
+on:
+  schedule:
+    - cron: '0 12 * * *'
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: 'correr = corrida normal (con auditoría) · auditar = sólo la auditoría, no cambia nada · restaurar = volver al precio original (todo, o sólo los IDs de abajo) · ventas = cruce de ventas, sólo lee · baratos = publicaciones que ganamos muy por debajo del competidor, sólo lee · subir = aplica la lista de subidas aprobada por Seba (con prueba=true sólo lista) · inmediatos = más caras que un vendedor con entrega inmediata, sólo lee · cotizar = cotiza una muestra con el cotizador (costo y margen), sólo lee · cotizar_todas = cotiza todas las que pierden la ficha, con el perfil de los rivales, sólo lee · sombra = modo sombra sobre la última corrida (regla 18 % vs $400 con frenos), sólo lee'
+        type: choice
+        options: [correr, auditar, restaurar, diagnosticar, ventas, baratos, subir, inmediatos, cotizar, cotizar_todas, sombra]
+        default: correr
+      max_marcadas:
+        description: 'Cortar al encontrar N marcadas (vacío = todas)'
+        required: false
+      ids:
+        description: 'Sólo para diagnosticar o restaurar: IDs separados por coma'
+        required: false
+      prueba:
+        description: 'Prueba: consulta y reporta, no cambia ningún precio'
+        type: boolean
+        default: false
+      correo:
+        description: 'Mandar el mail de resumen'
+        type: boolean
+        default: false
+
+concurrency:
+  group: precio-ganador-vintage
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  # Si una programada llega tarde y ya hubo una corrida en la última hora, se saltea para no
+  # duplicar. Una programada atrasada que cae fuera de horario (antes de las 09:00 o desde las
+  # 23:00 de Montevideo) no corre.
+  franja:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      saltar: ${{ steps.chequeo.outputs.saltar }}
+    steps:
+      - id: chequeo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          saltar=no
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            hora=$(TZ=America/Montevideo date +%-H)
+            if [ "$hora" -lt 9 ] || [ "$hora" -ge 23 ]; then saltar=si; echo "Programada fuera de horario ($hora h de Montevideo): se saltea"; fi
+          fi
+          if [ "$saltar" = "no" ] && [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            n=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/precio-ganador-vintage.yml/runs?branch=main&per_page=15" \
+              --jq "[.workflow_runs[] | select(.id != $GITHUB_RUN_ID) | select(.event == \"schedule\" or .event == \"workflow_dispatch\") | select((now - (.created_at | fromdateiso8601)) < 3600) | select(.status != \"completed\" or .conclusion == \"success\")] | length" 2>/dev/null || echo 0)
+            if [ "${n:-0}" -gt 0 ]; then saltar=si; echo "Ya hubo una corrida en la última hora: se saltea"; fi
+          fi
+          echo "saltar=$saltar" >> "$GITHUB_OUTPUT"
+
+  run:
+    needs: franja
+    if: needs.franja.outputs.saltar != 'si'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      # Una sola cuenta por workflow (desenganche, 27/11/2026).
+      CUENTA: vintage
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
+      ESTADO_RAMA: estado/precio-ganador-vintage
+      # Rama compartida de antes: sólo se lee una vez, para armar la de Vintage si no existe.
+      ESTADO_RAMA_ANTERIOR: estado/precio-ganador
+      ESTADO_REPO: trexxeseba/amadolibros-privado
+      ESTADO_TOKEN: ${{ secrets.ESTADO_TOKEN }}
+      # Costos de proveedores fuera de SBS (Arnoia y Celesa), bajados del portal: rama del repo privado.
+      COSTOS_RAMA: claude/project-thread-70ptmn
+      # Alarmas propias de Vintage (mismo canal que las de Precio Ganador, asunto y proyecto aparte).
+      MAIL_PREFIJO: ALARMA Precio Ganador Vintage
+      MAIL_PROYECTO: Precio Ganador Vintage
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Sin la credencial del repo público: el estado va al repo privado con ESTADO_TOKEN.
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Tests
+        run: node --test precio-ganador/test/*.test.mjs
+
+      - name: Traer el estado
+        shell: bash
+        run: |
+          git config user.name "precio-ganador[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Nunca volver a escribir en la rama pública: sin ESTADO_TOKEN se corta.
+          [ -n "$ESTADO_TOKEN" ] || { echo "Falta el secreto ESTADO_TOKEN (repo privado del estado)"; exit 1; }
+          git remote add privado "https://x-access-token:${ESTADO_TOKEN}@github.com/${ESTADO_REPO}.git"
+          # Distinguir "la rama no existe" (2) de cualquier otra falla: en ese caso se corta acá,
+          # nunca se arranca con un estado vacío por un error de red.
+          set +e; git ls-remote --exit-code --heads privado "$ESTADO_RAMA" >/dev/null; rc=$?; set -e
+          if [ $rc -eq 0 ]; then
+            git fetch privado "$ESTADO_RAMA"
+            git worktree add estado "privado/$ESTADO_RAMA" -B "$ESTADO_RAMA"
+          elif [ $rc -eq 2 ]; then
+            # Primera corrida separada: se arma desde la rama compartida, sin los archivos de Libros.
+            set +e; git ls-remote --exit-code --heads privado "$ESTADO_RAMA_ANTERIOR" >/dev/null; rc2=$?; set -e
+            if [ $rc2 -eq 0 ]; then
+              git fetch privado "$ESTADO_RAMA_ANTERIOR"
+              git worktree add estado "privado/$ESTADO_RAMA_ANTERIOR" -B "$ESTADO_RAMA"
+              { git -C estado ls-files | grep -i 'libros' || true; } | while IFS= read -r f; do git -C estado rm -q -- "$f"; done
+              git -C estado commit -q -m "Precio Ganador vintage: estado separado de Libros [skip ci]" || true
+              echo "Rama de estado de Vintage armada desde la compartida (sin archivos de Libros)"
+            elif [ $rc2 -eq 2 ]; then
+              git worktree add --orphan -b "$ESTADO_RAMA" estado
+              echo "Rama de estado nueva"
+            else
+              echo "No se pudo consultar la rama de estado anterior"; exit 1
+            fi
+          else
+            echo "No se pudo consultar la rama de estado"; exit 1
+          fi
+          if [ ! -f estado/state/vintage.json ] && git -C estado log --oneline -- state/vintage.json | grep -q .; then
+            echo "La rama tuvo state/vintage.json y ya no está: se corta"; exit 1
+          fi
+          mkdir -p estado/state
+          # Costos de Arnoia y Celesa para el cotizador (sólo lectura), fuera de estado/ para no copiarlos a la
+          # rama de estado. Si no se pueden traer, se cotiza sin ellos.
+          mkdir -p costos-proveedores
+          if git fetch -q privado "$COSTOS_RAMA" 2>/dev/null; then
+            for p in arnoia celesa; do
+              git show FETCH_HEAD:costos/$p.json > costos-proveedores/$p.json 2>/dev/null && echo "Costos de $p: $(wc -c < costos-proveedores/$p.json) bytes" || rm -f costos-proveedores/$p.json
+            done
+          else echo "Sin rama de costos: se cotiza sin Arnoia"; fi
+          # Qué publicación de catálogo es de Arnoia (EAN por item_id): rama hermes-datos de este repo.
+          git fetch -q --depth=1 origin hermes-datos 2>/dev/null && git show FETCH_HEAD:publicadas-vintage.json > costos-proveedores/publicadas-vintage.json 2>/dev/null || rm -f costos-proveedores/publicadas-vintage.json
+
+      - name: Correr
+        id: correr
+        shell: bash
+        env:
+          DRY_VAR: ${{ vars.PRECIO_GANADOR_DRY_RUN }}
+          EVENTO: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          IN_ACCION: ${{ inputs.accion }}
+          IN_MAX: ${{ inputs.max_marcadas }}
+          IN_CORREO: ${{ inputs.correo }}
+          IN_PRUEBA: ${{ inputs.prueba }}
+          IN_IDS: ${{ inputs.ids }}
+        run: |
+          ARGS=(--cuenta "$CUENTA" --estado estado/state)
+          REAL=no
+          MODO=$(node -e "console.log(require('./precio-ganador/modo.json')[process.argv[1]] ?? 'dry_run')" "$CUENTA")
+          if [ "$MODO" = "real" ] && [ "$DRY_VAR" != "true" ] && [ "$EVENTO" != "push" ] && [ "$IN_PRUEBA" != "true" ]; then REAL=si; ARGS+=(--real); fi
+          echo "real=$REAL" >> "$GITHUB_OUTPUT"
+          echo "Modo: $([ $REAL = si ] && echo REAL || echo DRY_RUN)"
+          if [ "$IN_ACCION" = "restaurar" ]; then
+            if [ -n "$IN_IDS" ]; then ARGS+=(--ids "$IN_IDS"); fi
+            node precio-ganador/src/restaurar.mjs "${ARGS[@]}"
+            exit $?
+          fi
+          if [ "$IN_ACCION" = "ventas" ]; then
+            node precio-ganador/src/ventas.mjs --cuenta "$CUENTA" --estado estado/state --salida estado/ultima
+            exit $?
+          fi
+          if [ "$IN_ACCION" = "subir" ]; then
+            node precio-ganador/src/subir.mjs "${ARGS[@]}"
+            exit $?
+          fi
+          if [ "$IN_ACCION" = "baratos" ]; then
+            node precio-ganador/src/baratos.mjs --cuenta "$CUENTA" --salida estado/ultima
+            exit $?
+          fi
+          if [ "$IN_ACCION" = "cotizar_todas" ]; then
+            node precio-ganador/src/cotizar.mjs --cuenta "$CUENTA" --estado estado/state --salida "estado/pruebas/$GITHUB_RUN_ID" --todas --filas estado/ultima/vintage-filas.json --costos costos-proveedores
+            exit $?
+          fi
+          if [ "$IN_ACCION" = "cotizar" ]; then
+            node precio-ganador/src/cotizar.mjs --cuenta "$CUENTA" --estado estado/state --salida "estado/pruebas/$GITHUB_RUN_ID" --muestra 10 --costos costos-proveedores
+            exit $?
+          fi
+          if [ "$IN_ACCION" = "sombra" ]; then
+            node precio-ganador/src/sombra.mjs --filas estado/ultima/vintage-filas.json --estado estado/state --salida estado/sombra
+            exit $?
+          fi
+          if [ "$IN_ACCION" = "inmediatos" ]; then
+            node precio-ganador/src/inmediatos.mjs --cuenta "$CUENTA" --salida "estado/pruebas/$GITHUB_RUN_ID"
+            exit $?
+          fi
+          if [ "$EVENTO" = "push" ] || [ "$REAL" = "no" ]; then SALIDA="estado/pruebas/$GITHUB_RUN_ID"; else SALIDA="estado/ultima"; fi
+          echo "salida=$SALIDA" >> "$GITHUB_OUTPUT"
+          if [ "$IN_ACCION" = "auditar" ]; then echo "Sólo auditoría"; exit 0; fi
+          if [ "$IN_ACCION" = "diagnosticar" ]; then node precio-ganador/src/diagnostico.mjs --cuenta "$CUENTA" --ids "$IN_IDS" --salida "estado/pruebas/$GITHUB_RUN_ID"; exit $?; fi
+          if [[ "$IN_MAX" =~ ^[0-9]+$ ]]; then ARGS+=(--max-marcadas "$IN_MAX"); fi
+          if [ "$SCHEDULE" = "0 0 * * *" ] || [ "$IN_CORREO" = "true" ]; then ARGS+=(--correo-diario); fi
+          node precio-ganador/src/run.mjs "${ARGS[@]}" --salida "$SALIDA"
+
+      # Auditoría independiente (sólo lee): 10 publicaciones de catálogo al azar,
+      # todas las que el sistema bajó y la regla recalculada sobre las marcadas.
+      - name: Auditoría
+        if: success() && inputs.accion != 'restaurar' && inputs.accion != 'diagnosticar' && inputs.accion != 'ventas' && inputs.accion != 'baratos' && inputs.accion != 'subir' && inputs.accion != 'inmediatos' && inputs.accion != 'cotizar' && inputs.accion != 'cotizar_todas' && inputs.accion != 'sombra'
+        shell: bash
+        env:
+          SALIDA: ${{ steps.correr.outputs.salida }}
+        run: node precio-ganador/src/auditoria.mjs --cuenta "$CUENTA" --estado estado/state --salida "$SALIDA" --muestra 10
+
+      # Modo sombra (Seba, 21/11/2026): después de cada corrida real, calcula sin escribir precios
+      # qué haría la regla "queda >= 18 % sobre costo" frente a la actual, con los frenos de edición,
+      # 2 corridas seguidas y una bajada por día. Sólo lee; si falla, la corrida sigue siendo válida
+      # (no frena el guardado del estado ni dispara la alarma).
+      - name: Modo sombra (sólo lee)
+        if: success() && steps.correr.outputs.salida == 'estado/ultima'
+        continue-on-error: true
+        timeout-minutes: 30
+        run: node precio-ganador/src/sombra.mjs --filas estado/ultima/vintage-filas.json --estado estado/state --salida estado/sombra
+
+      # Siempre, aunque la corrida haya fallado a mitad: lo que se alcanzó a bajar
+      # ya está en state/ y tiene que quedar guardado para poder revertirlo.
+      - name: Guardar estado (repo privado, rama estado/precio-ganador-vintage)
+        if: always()
+        shell: bash
+        run: |
+          [ -d estado ] || { echo "Sin carpeta de estado"; exit 1; }
+          cd estado
+          git add -A
+          if git diff --cached --quiet && git rev-parse -q --verify "privado/$ESTADO_RAMA" >/dev/null && [ "$(git rev-parse HEAD)" = "$(git rev-parse "privado/$ESTADO_RAMA")" ]; then echo "Sin cambios de estado"; exit 0; fi
+          git diff --cached --quiet || git commit -q -m "Precio Ganador vintage: corrida $GITHUB_RUN_ID [skip ci]"
+          for i in 1 2 3 4 5; do
+            if git push -q privado "HEAD:$ESTADO_RAMA"; then
+              # Confirmar que lo que quedó en el remoto es este commit.
+              git fetch -q privado "$ESTADO_RAMA"
+              if [ "$(git rev-parse HEAD)" = "$(git rev-parse "privado/$ESTADO_RAMA")" ]; then echo "Estado guardado"; exit 0; fi
+              echo "El remoto no quedó con este commit"; exit 1
+            fi
+            sleep $((i * 5))
+            git pull -q --rebase privado "$ESTADO_RAMA" || { git rebase --abort || true; echo "Conflicto al integrar el estado: queda en el artefacto"; exit 1; }
+          done
+          echo "No se pudo subir el estado"; exit 1
+
+      # Cualquier paso que falle (corrida, auditoría, guardado): alarma propia de Vintage.
+      - name: Alarma
+        if: failure()
+        env:
+          DETALLE: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          node precio-ganador/src/alarma.mjs "falló la corrida (vintage)" "Falló un paso de Precio Ganador (Vintage). Detalle en $DETALLE"
+
+      # Respaldo del estado SÓLO si falló el guardado en el repo privado (los artefactos de
+      # un repo público los puede bajar cualquiera: se guardan 3 días y sólo en ese caso).
+      - name: Respaldo del estado
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: estado-vintage-${{ github.run_id }}
+          path: estado/state/
+          retention-days: 3
+          if-no-files-found: ignore

@@ -52,12 +52,19 @@ Piso opcional por publicación: `pisos/libros.json`, con el formato `{ "MLU123":
 
 ## Horarios
 
-Libros cada 2 horas, de 09:00 a 21:00 de Montevideo: 09, 11, 13, 15, 17, 19 y 21 (Seba, 06/11/2026).
-Vintage sólo a las 09:00 y a las 21:00 (Seba, 11/11/2026): Mercado Libre lo tiene restringido para ganar
-en catálogo ("vendedor no confiable"), no hay precios para bajar y una pasada por las 28.000 publicaciones
-cada 2 horas es consulta de más. Cuando se levante la restricción se vuelve a las dos cuentas en todas las
-franjas (`CRONS_VINTAGE` en el Worker y la matriz de `precio-ganador.yml`). Las dispara el Worker (`worker-sync/precio-ganador-trigger.js`); el cron
-de GitHub queda de respaldo y se saltea si ya hubo una corrida en la última hora. El mail de
+Un workflow por cuenta desde el desenganche de cuentas (Seba, 27/11/2026): ningún job usa las dos.
+
+- **Libros** (`.github/workflows/precio-ganador.yml`, cola `precio-ganador`, estado en la rama
+  `estado/precio-ganador`): cada 2 horas, de 09:00 a 21:00 de Montevideo: 09, 11, 13, 15, 17, 19 y 21
+  (Seba, 06/11/2026). Las dispara el Worker de Libros (`worker-sync/precio-ganador-trigger.js`); el cron
+  de GitHub queda de respaldo y se saltea si ya hubo una corrida en la última hora.
+- **Vintage** (`.github/workflows/precio-ganador-vintage.yml`, cola `precio-ganador-vintage`, estado en la
+  rama `estado/precio-ganador-vintage`, alarmas, vigía y control propios): a las 09:00 y a las 21:00
+  (Seba, 11/11/2026), sólo con el cron de GitHub. Mercado Libre lo tiene restringido para ganar en
+  catálogo ("vendedor no confiable"); cuando se levante la restricción se agregan horarios en ese
+  workflow. La primera corrida arma su rama de estado desde la compartida, sin los archivos de Libros.
+- El lector de tokens (`src/token.mjs`) exige una cuenta de `CUENTAS` y verifica con `/users/me` que el
+  token sea de ese seller antes de usarlo; si no coincide, la corrida se corta. El mail de
 resumen del día sale a undiaes@gmail.com con la corrida de las 21:00. Si un día no llega,
 algo se rompió. Si una corrida falla entera, GitHub manda su mail de falla.
 

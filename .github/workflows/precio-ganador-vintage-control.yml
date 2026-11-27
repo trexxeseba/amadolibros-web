@@ -1,0 +1,48 @@
+name: Precio Ganador Vintage (control)
+
+# Control de Precio Ganador sin IA. Reemplaza a la tarea programada de Claude "Estado horario de
+# Precio Ganador" (Seba, 18/11/2026). Sólo mira y cuenta: las últimas corridas, el vigía y los
+# contadores del resumen de cada cuenta en la rama de estado del repo privado. No cambia precios
+# ni estado. Manda mail únicamente si hay algo para mirar. Código: scripts/partes/precio-ganador-control.mjs.
+# Esta copia es la de Amado Vintage (desenganche de cuentas, 27/11/2026): mira precio-ganador-vintage.yml,
+# su vigía y la rama estado/precio-ganador-vintage. Libros: precio-ganador-control.yml.
+#
+# 09:50 y 21:50 de Montevideo (UTC-3), después de las corridas de Vintage de las 09:00 y las 21:00.
+on:
+  schedule:
+    - cron: '50 12 * * *'
+    - cron: '50 0 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: precio-ganador-vintage-control
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  control:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Mirar corridas y resumen
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ESTADO_TOKEN: ${{ secrets.ESTADO_TOKEN }}
+          ESTADO_REPO: trexxeseba/amadolibros-privado
+          ESTADO_RAMA: estado/precio-ganador-vintage
+          CONTROL_CUENTA: vintage
+          MAIL_PREFIJO: AVISO Precio Ganador Vintage
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/partes/precio-ganador-control.mjs

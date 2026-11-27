@@ -24,7 +24,7 @@
  */
 
 import { COUNTED_STATUSES, SALES_SELLER_ID } from '../../worker-sync/ml-sales.js';
-import { assess } from '../../worker-sync/vintage-watch.js';
+import { assess } from './vintage-watch.js';
 import { normalizePhone } from './meta-capi.js';
 
 const DAY_MS = 86_400_000;

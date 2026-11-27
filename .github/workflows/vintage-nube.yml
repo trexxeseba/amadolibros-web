@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       accion:
-        description: 'liberar_freno = vuelve a permitir publicar después de una alarma de propiedad intelectual · clasificar = revisa candidatos en paralelo sin publicar · auto = lo mismo que la programada (la lanza el Worker cada hora) · prueba = números + qué pausaría + 5 altas preparadas sin enviar · numeros = sólo lista y conteo · publicar = real (exige las dos llaves) · keepalive = sólo el token'
+        description: 'liberar_freno = vuelve a permitir publicar después de una alarma de propiedad intelectual · clasificar = revisa candidatos en paralelo sin publicar · auto = lo mismo que la programada · prueba = números + qué pausaría + 5 altas preparadas sin enviar · numeros = sólo lista y conteo · publicar = real (exige las dos llaves) · keepalive = sólo el token'
         type: choice
         options: [prueba, numeros, clasificar, publicar, keepalive, auto, liberar_freno]
         default: prueba
@@ -67,7 +67,7 @@ jobs:
         shell: bash
         run: |
           REAL=$(node -e "const c=require('./scripts/vintage-local/campaign.json');console.log(c.ejecutor==='nube'&&c.nube?.modo==='real'?'si':'no')")
-          # "auto" lo manda el Worker de Cloudflare cada hora: se comporta como la programada.
+          # "auto" se comporta como la programada (lo mandaba el Worker de Cloudflare hasta el desenganche del 27/11/2026).
           if [ "$EVENTO" = "schedule" ] || [ "$IN_ACCION" = "auto" ]; then EVENTO=schedule; fi
           if [ "$EVENTO" = "schedule" ]; then
             if [ "$REAL" = "si" ]; then ACCION=publicar; else ACCION=keepalive; fi
@@ -80,9 +80,9 @@ jobs:
             if [ "$EVENTO" != "schedule" ]; then exit 1; fi
             ACCION=keepalive
           fi
-          # Precio Ganador y el publicador no se cruzan: si está corriendo, esta vuelta sólo cuida el token.
+          # Precio Ganador de Vintage y el publicador no se cruzan: si está corriendo, esta vuelta sólo cuida el token.
           if [ "$ACCION" = "publicar" ]; then
-            n=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/precio-ganador.yml/runs?status=in_progress&per_page=5" --jq '.total_count' 2>/dev/null || echo 0)
+            n=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/precio-ganador-vintage.yml/runs?status=in_progress&per_page=5" --jq '.total_count' 2>/dev/null || echo 0)
             if [ "${n:-0}" -gt 0 ]; then echo "Precio Ganador está corriendo: esta vuelta no publica"; ACCION=keepalive; fi
           fi
           echo "Acción: $ACCION (publicación real habilitada: $REAL)"
