@@ -29,7 +29,7 @@ on:
       accion:
         description: 'correr = corrida normal (con auditoría) · auditar = sólo la auditoría, no cambia nada · restaurar = volver al precio original (todo, o sólo los IDs de abajo) · ventas = cruce de ventas, sólo lee · baratos = libros que ganamos muy por debajo del competidor, sólo lee · subir = aplica la lista de subidas aprobada por Seba (con prueba=true sólo lista) · inmediatos = libros más caros que un vendedor con entrega inmediata, sólo lee. Cotizar y sombra están en el workflow de la otra cuenta.'
         type: choice
-        options: [correr, auditar, restaurar, diagnosticar, ventas, baratos, subir, inmediatos, regla_inmediata, referencias, dormidas, top_visitas, calidad, automatizacion_leer, automatizacion_comparar, automatizacion_aplicar, automatizacion_quitar]
+        options: [correr, auditar, restaurar, diagnosticar, ventas, baratos, subir, inmediatos, regla_inmediata, referencias, dormidas, top_visitas, calidad, automatizacion_leer, automatizacion_comparar, automatizacion_aplicar, automatizacion_quitar, automatizacion_revisar, automatizacion_corregir_minimos]
         default: correr
       max_marcadas:
         description: 'Cortar al encontrar N marcadas (vacío = todas)'
@@ -172,11 +172,11 @@ jobs:
             node precio-ganador/src/baratos.mjs --cuenta "$CUENTA" --salida estado/ultima
             exit $?
           fi
-          case "$IN_ACCION" in automatizacion_leer|automatizacion_comparar|automatizacion_aplicar|automatizacion_quitar)
+          case "$IN_ACCION" in automatizacion_leer|automatizacion_comparar|automatizacion_aplicar|automatizacion_quitar|automatizacion_revisar|automatizacion_corregir_minimos)
             # Automatización de precios de Mercado Libre (Seba, 25/11/2026). leer no escribe; aplicar y quitar sólo en real.
             AARGS=(--cuenta libros --accion "${IN_ACCION#automatizacion_}" --salida "estado/pruebas/$GITHUB_RUN_ID")
             if [ -n "$IN_IDS" ]; then AARGS+=(--ids "$IN_IDS"); fi
-            if [ "$REAL" = "si" ] && [ "$IN_ACCION" != "automatizacion_leer" ] && [ "$IN_ACCION" != "automatizacion_comparar" ]; then AARGS+=(--real); fi
+            if [ "$REAL" = "si" ] && [ "$IN_ACCION" != "automatizacion_leer" ] && [ "$IN_ACCION" != "automatizacion_comparar" ] && [ "$IN_ACCION" != "automatizacion_revisar" ]; then AARGS+=(--real); fi
             node precio-ganador/src/automatizacion.mjs "${AARGS[@]}"
             exit $?
             ;;

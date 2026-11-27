@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { limites, elegirRegla, esAutomatizable, compararRegla } from '../src/automatizacion.mjs';
+import { limites, elegirRegla, esAutomatizable, compararRegla, minimoOk } from '../src/automatizacion.mjs';
 
 test('límites: mínimo 60 % y máximo 145 % del precio de lista, en pesos enteros', () => {
   // Seba 26/11: mínimo 60 % nunca debajo de $500; máximo = precio base.
@@ -32,4 +32,11 @@ test('comparar (26/11): ML compite dentro de mínimo y máximo; Precio Ganador s
   assert.equal(lejos.ml, 1200); assert.equal(lejos.pg, 2000);
   assert.deepEqual(compararRegla({ precio: 1500, lista: 2000, estado: 'winning', ganador: null }), { compite: false, ml: 2000, pg: 2000, diferencia: 0 });
   assert.equal(compararRegla({ precio: 600, lista: 600, estado: 'competing', ganador: 450 }).pg, 500);
+});
+
+test('minimoOk: el mínimo de ML coincide con la regla de Seba (mayor entre $500 y 60 % del precio de lista)', () => {
+  assert.equal(minimoOk({ precio_lista: 2290, automatizacion_antes: { min_price: 1374 } }), true);
+  assert.equal(minimoOk({ precio_lista: 600, automatizacion_antes: { min_price: 500 } }), true);
+  assert.equal(minimoOk({ precio_lista: 2600, automatizacion_antes: { min_price: 2350 } }), false);
+  assert.equal(minimoOk({ precio_lista: 2600, automatizacion_antes: null }), false);
 });

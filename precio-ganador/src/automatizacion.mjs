@@ -10,6 +10,10 @@
 //   Mínimo provisorio = 60 % del precio de lista (Seba no tiene los costos cargados: no se inventan);
 //   máximo = precio de lista + 45 % (para subir cuando no hay competencia). Sin --real sólo lista lo que haría.
 // quitar: saca la automatización de las publicaciones indicadas (deshacer).
+// revisar: para las que tienen automatización, por qué está pausada: respuesta completa de la automatización,
+//   promociones en las que está (/seller-promotions/items) y precio para ganar. Sólo GET (Seba 27/11/2026).
+// corregir_minimos: a las que tienen un mínimo distinto de la regla de Seba (mayor entre $500 y 60 % del precio
+//   de lista), les pone mínimo y máximo de la regla, sin cambiar la regla de ML que ya tienen. Sin --real sólo lista.
 // Cada cambio queda en el registro (archivo de salida, repo privado) con el estado anterior. El log sólo
 // lleva conteos y códigos (el repo es público).
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -49,6 +53,12 @@ export function compararRegla({ precio, lista, estado, ganador, piso = PISO, umb
   return { compite, ml, pg, diferencia: ml === null ? null : ml - pg };
 }
 
+// El mínimo puesto en ML coincide con la regla de Seba. Función pura.
+export function minimoOk(fila) {
+  const lim = limites(fila?.precio_lista);
+  return !!lim && Number(fila?.automatizacion_antes?.min_price) === lim.min_price;
+}
+
 // Regla a usar entre las que admite la publicación. Función pura.
 export function elegirRegla(reglas) {
   const ids = (Array.isArray(reglas) ? reglas : []).map(r => String(r?.rule_id ?? r?.id ?? r ?? '')).filter(Boolean);
@@ -72,8 +82,8 @@ async function main() {
   if (!cuenta || cuenta.clave !== 'libros') { console.error('Sólo --cuenta libros'); process.exit(2); }
   const accion = opt('accion', 'leer'), grupo = opt('grupo', 'todos'), tope = Number(opt('tope', 40)), real = args.includes('--real'), salida = opt('salida', '.');
   const idsPedidos = String(opt('ids', '')).split(/[,\s]+/).filter(id => /^MLU\d+$/.test(id));
-  if (!['leer', 'aplicar', 'quitar', 'comparar'].includes(accion)) { console.error('accion: leer | aplicar | quitar | comparar'); process.exit(2); }
-  const escribe = real && !['leer', 'comparar'].includes(accion);
+  if (!['leer', 'aplicar', 'quitar', 'comparar', 'revisar', 'corregir_minimos'].includes(accion)) { console.error('accion: leer | aplicar | quitar | comparar | revisar | corregir_minimos'); process.exit(2); }
+  const escribe = real && !['leer', 'comparar', 'revisar'].includes(accion);
   const ml = crearCliente(fuenteTokenD1(cuenta), { intentos: 4, concurrencia: 4, soloLectura: !escribe });
   const yo = await ml.get('/users/me');
   if (String(yo?.id) !== cuenta.sellerId) throw Object.assign(new Error('token_de_otra_cuenta'), { fatal: true });
@@ -90,6 +100,7 @@ async function main() {
     const lista = Number(it.original_price) > 0 ? Number(it.original_price) : Number(it.price);
     filas.push({ id: it.id, titulo: String(it.title ?? '').slice(0, 80), precio: Number(it.price), precio_lista: lista, stock: Number(it.available_quantity), catalogo: !!it.catalog_listing,
       estado: it.status, moneda: it.currency_id, variaciones: !!it.variaciones, reglas, regla_elegida: elegirRegla(reglas), automatizada: a.ok,
+      deal_ids: it.deal_ids ?? [], automatizacion_cruda: accion === 'revisar' && a.ok ? a.json : undefined,
       automatizacion_antes: a.ok ? { status: a.json?.status ?? null, rule_id: a.json?.item_rule?.rule_id ?? a.json?.rule_id ?? null, min_price: a.json?.min_price ?? null, max_price: a.json?.max_price ?? null } : null });
   });
 
@@ -115,6 +126,38 @@ async function main() {
     resultado.ganador_a_pedido = compiten.filter(x => x.entrega_ganador === 'demanda').length;
   }
   const anotar = k => { resultado[k] = (resultado[k] ?? 0) + 1; };
+  let revision = null;
+  if (accion === 'revisar') {
+    revision = [];
+    await enParalelo(filas.filter(f => f.automatizada), 3, async f => {
+      const pr = await ml.sonda(`/seller-promotions/items/${f.id}?app_version=v2`);
+      const pw = await ml.sonda(`/items/${f.id}/price_to_win?version=v2`);
+      const promos = pr.ok && Array.isArray(pr.json) ? pr.json.map(x => ({ id: x?.id ?? null, tipo: x?.type ?? null, estado: x?.status ?? null, inicio: x?.start_date ?? null, fin: x?.finish_date ?? null, precio: x?.price ?? null })) : null;
+      const r = { id: f.id, estado_auto: f.automatizacion_antes?.status ?? null, minimo_ok: minimoOk(f), promos_http: pr.status, promos, en_promo_activa: !!promos?.some(x => x.estado === 'started'),
+        en_promo_futura: !!promos?.some(x => ['pending', 'candidate'].includes(String(x.estado))), ptw_http: pw.status, ptw_estado: pw.ok ? pw.json?.status ?? null : null, ptw_precio: pw.ok ? pw.json?.price_to_win ?? null : null,
+        precio: f.precio, precio_lista: f.precio_lista, cruda: f.automatizacion_cruda };
+      revision.push(r);
+      anotar(`${r.estado_auto}|promo_activa:${r.en_promo_activa}|ptw:${r.ptw_estado ?? 'http_' + r.ptw_http}`);
+    });
+    // Campos de la respuesta de automatización que podrían explicar la pausa (nombres, no valores).
+    const campos = {}; for (const r of revision) for (const k of Object.keys(r.cruda ?? {})) campos[k] = (campos[k] ?? 0) + 1;
+    resultado.campos_automatizacion = campos;
+  }
+  if (accion === 'corregir_minimos') {
+    for (const f of filas.filter(x => x.automatizada && !minimoOk(x))) {
+      const lim = limites(f.precio_lista);
+      if (!lim || lim.min_price >= f.precio) { anotar('salteada_minimo_sobre_el_precio'); continue; }
+      const body = { rule_id: f.automatizacion_antes.rule_id ?? f.regla_elegida, ...lim };
+      const cambio = { id: f.id, titulo: f.titulo, precio_antes: f.precio, precio_lista: f.precio_lista, antes: f.automatizacion_antes, pedido: body, fecha: new Date().toISOString() };
+      if (!escribe) { anotar('haria'); cambios.push({ ...cambio, estado: 'haria' }); continue; }
+      try { await ml.put(`/pricing-automation/items/${f.id}/automation`, body); }
+      catch (e) { anotar('error_http_' + (e?.status ?? 0)); cambios.push({ ...cambio, estado: 'error', error: { http: e?.status ?? 0, detalle: e?.detalle ?? null } }); if (e?.status === 429) throw e; continue; }
+      const despues = await ml.sonda(`/pricing-automation/items/${f.id}/automation`);
+      const ok = despues.ok && Number(despues.json?.min_price) === lim.min_price;
+      anotar(ok ? 'corregida' : 'sin_verificar');
+      cambios.push({ ...cambio, estado: ok ? 'corregida' : 'sin_verificar', despues: despues.ok ? { status: despues.json?.status ?? null, min_price: despues.json?.min_price ?? null, max_price: despues.json?.max_price ?? null } : { http: despues.status } });
+    }
+  }
   if (accion === 'aplicar') {
     const candidatas = filas.filter(esAutomatizable).sort((a, b) => b.stock - a.stock).slice(0, tope);
     for (const f of candidatas) {
@@ -141,10 +184,10 @@ async function main() {
   }
   const porRegla = {}; for (const f of filas) { const k = f.regla_elegida ?? 'sin_regla'; porRegla[k] = (porRegla[k] ?? 0) + 1; }
   const resumen = { fecha: new Date().toISOString().slice(0, 10), cuenta: cuenta.clave, accion, grupo: accion === 'quitar' ? null : grupo, modo: escribe ? 'real' : 'prueba', publicaciones: filas.length, http,
-    por_regla: porRegla, ya_automatizadas: filas.filter(f => f.automatizada).length, automatizables: filas.filter(esAutomatizable).length, resultado,
+    por_regla: porRegla, ya_automatizadas: filas.filter(f => f.automatizada).length, minimo_distinto: filas.filter(f => f.automatizada && !minimoOk(f)).length, automatizables: filas.filter(esAutomatizable).length, resultado,
     ejemplo_error: cambios.find(c => c.estado === 'error')?.error ?? null };
   mkdirSync(salida, { recursive: true });
-  writeFileSync(join(salida, `${cuenta.clave}-automatizacion-${accion}.json`), JSON.stringify({ resumen, filas: accion === 'comparar' ? undefined : filas, cambios, comparacion }, null, 1));
+  writeFileSync(join(salida, `${cuenta.clave}-automatizacion-${accion}.json`), JSON.stringify({ resumen, filas: accion === 'comparar' ? undefined : filas, cambios, comparacion, revision }, null, 1));
   console.log(JSON.stringify(resumen)); // sólo conteos y códigos: el log es público
   if (Object.keys(resultado).some(k => k.startsWith('error') || k === 'sin_verificar')) process.exitCode = 1;
 }
