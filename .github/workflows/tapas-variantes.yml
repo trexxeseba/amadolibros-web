@@ -1,0 +1,43 @@
+name: Tapas - completar variantes WebP en R2
+# Genera sólo las variantes que faltan para las tapas vigentes (idempotente:
+# nunca sobrescribe ni borra). Corre a diario para cubrir libros nuevos.
+on:
+  schedule:
+    - cron: '40 6 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Solo contar (1) o generar (0)'
+        default: '0'
+  push:
+    branches: [agent/tapas-variantes]
+    paths: ['.github/workflows/tapas-variantes.yml']
+permissions:
+  contents: read
+concurrency:
+  group: permanent-image-variants-production
+  cancel-in-progress: false
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: scripts/images/package-lock.json
+      - name: Instalar el codificador fijado (Sharp)
+        working-directory: scripts/images
+        run: npm ci --no-audit --no-fund
+      - name: Tests del generador
+        run: node --test 'scripts/images/__tests__/*.test.mjs'
+      - name: Completar variantes faltantes
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # push (prueba en la rama): sólo cuenta; diario y manual: genera.
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run || (github.event_name == 'push' && '1' || '0') }}
+          CONCURRENCY: '8'
+        run: node scripts/images/r2-variants-backfill.mjs
