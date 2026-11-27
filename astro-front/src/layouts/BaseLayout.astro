@@ -1,6 +1,7 @@
 ---
 import { DELIVERY_BADGE_STYLES } from '../../../shared/delivery-badge.js';
 import { CARD_COVER_FRAMING_STYLES } from '../../../shared/card-cover-framing.js';
+import { ANALYTICS_BOOTSTRAP_JS } from '../../../shared/analytics-bootstrap.js';
 
 interface Props {
   title?: string;
@@ -73,7 +74,10 @@ import { pruebaSocialHtml } from '../../../shared/prueba-social.js';
   {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>}
   {enableGA4 && (
     <>
-      <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
+      <!-- gtag.js y /analytics-events.js ya no frenan el primer pintado: el
+           arranque inline deja dataLayer, gtag() y las colas listos, y
+           gtag.js se descarga después (en /carrito y /pedido, enseguida). -->
+      <script is:inline data-analytics-bootstrap set:html={ANALYTICS_BOOTSTRAP_JS}></script>
       <script is:inline define:vars={{ gaId }}>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
@@ -88,8 +92,10 @@ import { pruebaSocialHtml } from '../../../shared/prueba-social.js';
         measuredUrl.hash = '';
         gtag('js', new Date());
         gtag('config', gaId, { page_location: measuredUrl.toString() });
+        window.AmadoGtag.configured[gaId] = true;
+        window.AmadoGtag.load(gaId);
       </script>
-      <script is:inline src="/analytics-events.js"></script>
+      <script is:inline src="/analytics-events.js" defer></script>
     </>
   )}
   <!-- Astro build OK — lote 2-A -->
