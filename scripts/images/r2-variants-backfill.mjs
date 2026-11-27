@@ -45,17 +45,22 @@ export function signS3({ account, accessKey, secretKey, key = '', query = {}, me
 }
 
 // Qué variantes necesita cada master según las posiciones en que aparece.
-export function plannedVariants(manifest) {
+// Sólo publicaciones activas (activeIds); sin lista, todas las del manifiesto.
+// Las tapas principales van primero: son las que pesan en tarjetas y fichas.
+export function plannedVariants(manifest, activeIds = null) {
   const masters = new Map();
   for (const [slot, entry] of Object.entries(manifest?.entries || {})) {
-    const position = Number(String(slot).split(':')[1]);
+    const [productId, rawPosition] = String(slot).split(':');
+    if (activeIds && !activeIds.has(productId)) continue;
+    const position = Number(rawPosition);
     const match = OBJECT_KEY_RE.exec(String(entry?.current?.object_key || ''));
     if (!match || entry.current.sha256 !== match[1] || !Number.isInteger(position)) continue;
-    const m = masters.get(match[1]) || { hash: match[1], objectKey: entry.current.object_key, recipes: new Set() };
+    const m = masters.get(match[1]) || { hash: match[1], objectKey: entry.current.object_key, recipes: new Set(), position };
+    m.position = Math.min(m.position, position);
     for (const id of position === 0 ? COVER_RECIPES : GALLERY_RECIPES) m.recipes.add(id);
     masters.set(match[1], m);
   }
-  return [...masters.values()];
+  return [...masters.values()].sort((a, b) => (a.position === 0 ? 0 : 1) - (b.position === 0 ? 0 : 1));
 }
 
 export function missingWork(masters, existingKeys) {
@@ -107,7 +112,13 @@ async function main() {
   const manifestRes = await s3('GET', MANIFEST_KEY);
   if (manifestRes.status !== 200) throw new Error('manifest-http-' + manifestRes.status);
   const manifest = JSON.parse((await readAll(manifestRes, MAX_MANIFEST_BYTES)).toString('utf8'));
-  const masters = plannedVariants(manifest);
+  // Catálogo público vigente: las mismas publicaciones que muestra la web.
+  const catalogRes = await fetch('https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json');
+  if (catalogRes.status !== 200) throw new Error('catalog-http-' + catalogRes.status);
+  const catalog = await catalogRes.json();
+  const activeIds = new Set((catalog.items || catalog).filter(i => i.status === 'active').map(i => i.id));
+  if (activeIds.size < 1000) throw new Error('catalog-too-small');
+  const masters = plannedVariants(manifest, activeIds);
 
   const existing = new Set();
   let token2;
@@ -123,7 +134,8 @@ async function main() {
   let work = missingWork(masters, existing);
   const plannedTotal = masters.reduce((n, m) => n + m.recipes.size, 0);
   const missingTotal = work.reduce((n, w) => n + w.missing.length, 0);
-  console.log(JSON.stringify({ masters: masters.length, variantes_previstas: plannedTotal,
+  console.log(JSON.stringify({ publicaciones_activas: activeIds.size, masters: masters.length,
+    tapas_principales: masters.filter(m => m.position === 0).length, variantes_previstas: plannedTotal,
     variantes_existentes: existing.size, variantes_faltantes: missingTotal, masters_con_faltantes: work.length }));
   if (dryRun) return;
   if (maxMasters > 0) work = work.slice(0, maxMasters);

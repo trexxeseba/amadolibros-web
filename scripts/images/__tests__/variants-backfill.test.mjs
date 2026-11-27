@@ -22,6 +22,13 @@ test('la tapa principal lleva todas las recetas y la galería sólo las de la fi
   assert.deepEqual([...gallery.recipes].sort(), [...GALLERY_RECIPES].sort());
 });
 
+test('sólo publicaciones activas, con las tapas principales primero', () => {
+  const masters = plannedVariants({ entries: {
+    'MLU1:1': entry(H2), 'MLU1:0': entry(H1), 'MLU9:0': entry(H3),
+  } }, new Set(['MLU1']));
+  assert.deepEqual(masters.map(m => m.hash), [H1, H2]);
+});
+
 test('sólo quedan como trabajo las variantes ausentes', () => {
   const masters = plannedVariants({ entries: { 'MLU1:0': entry(H1), 'MLU2:0': entry(H2) } });
   const existing = new Set(COVER_RECIPES.map(id => variantObjectKey(H1, id)));
