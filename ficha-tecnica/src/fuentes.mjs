@@ -7,7 +7,8 @@
 // El catálogo de la web no cuenta como fuente: es una copia de lo que ya está en Mercado Libre.
 import { readFileSync, existsSync } from 'node:fs';
 import { listBookEnrichments } from '../../functions/_shared/book-enrichment-registry.js';
-import { comparisonKey, coverFromFormat, extractYear, lookupIsbns, normalizeGtinIsbn } from '../../scripts/mercadolibre/isbn-public-sources.mjs';
+import { join } from 'node:path';
+import { comparisonKey, coverFromFormat, defaultCacheDir, extractYear, lookupIsbns, normalizeGtinIsbn } from '../../scripts/mercadolibre/isbn-public-sources.mjs';
 
 export const ORDEN = Object.freeze(['registro', 'arnoia', 'celesa', 'openlibrary', 'googlebooks']);
 
@@ -22,6 +23,7 @@ export const CAMPOS = Object.freeze({
   BOOK_GENRE: 'genre',
   AUTHOR: 'author',
   BOOK_COLLECTION: 'collection',
+  BOOK_SERIE: 'collection',
   BOOK_SUBTITLE: 'subtitle',
 });
 
@@ -48,6 +50,19 @@ export function desdeCelesa(x) {
   return { cover: coverFromFormat(x.encuadernacion), pages: pag(x.paginas), publisher: limpio(x.editorial) || null, year: extractYear(x.fecha_edicion) ?? null };
 }
 
+// Subtítulo, serie y autor desde la respuesta cruda de Open Library (edición) y Google Books. Función pura.
+export function extrasOpenLibrary(body) {
+  if (!body || typeof body !== 'object') return {};
+  const series = (Array.isArray(body.series) ? body.series : []).map(limpio).filter(Boolean);
+  return { subtitle: limpio(body.subtitle) || null, collection: series.length === 1 ? series[0] : null };
+}
+export function extrasGoogle(body, isbn) {
+  const items = (Array.isArray(body?.items) ? body.items : []).filter(it => (it?.volumeInfo?.industryIdentifiers ?? []).some(x => normalizeGtinIsbn(x?.identifier) === isbn));
+  if (items.length !== 1) return {};
+  const v = items[0].volumeInfo ?? {};
+  return { subtitle: limpio(v.subtitle) || null, author: Array.isArray(v.authors) && v.authors.length === 1 ? limpio(v.authors[0]) : null };
+}
+
 // Decide un campo: vale la fuente de mayor prioridad; si otra dice algo distinto, se anota. Función pura.
 export function decidir(campo, porFuente) {
   const hay = ORDEN.map(fuente => ({ fuente, valor: limpio(porFuente?.[fuente]?.[campo]) })).filter(x => x.valor && comparisonKey(campo, x.valor));
@@ -62,7 +77,7 @@ function leerDistribuidor(ruta) {
   try { const j = JSON.parse(readFileSync(ruta, 'utf8')); return j?.items ?? j?.libros ?? Object.fromEntries(Object.entries(j).filter(([k]) => /^\d{10,13}$/.test(k))); } catch { return {}; }
 }
 
-export function crearFuentes({ arnoia = process.env.FICHA_ARNOIA, celesa = process.env.FICHA_CELESA, cacheDir = process.env.ISBN_SOURCES_CACHE } = {}) {
+export function crearFuentes({ arnoia = process.env.FICHA_ARNOIA, celesa = process.env.FICHA_CELESA, cacheDir = process.env.ISBN_SOURCES_CACHE || defaultCacheDir() } = {}) {
   const registro = new Map();
   for (const r of listBookEnrichments()) { const i = normalizeGtinIsbn(r.isbn); if (i) registro.set(i, r); }
   const ar = leerDistribuidor(arnoia), ce = leerDistribuidor(celesa);
@@ -74,9 +89,16 @@ export function crearFuentes({ arnoia = process.env.FICHA_ARNOIA, celesa = proce
       const out = new Map();
       for (const isbn of isbns) out.set(isbn, { registro: registro.has(isbn) ? desdeRegistro(registro.get(isbn)) : null, arnoia: desdeArnoia(ar[isbn]), celesa: desdeCelesa(ce[isbn]), openlibrary: null, googlebooks: null });
       if (publicas && isbns.length) {
-        const r = await lookupIsbns(isbns, { limit: isbns.length, ...(cacheDir ? { cacheDir } : {}) });
+        const r = await lookupIsbns(isbns, { limit: isbns.length, cacheDir });
         estadisticas.publicas = r.stats;
         for (const [isbn, e] of r.byIsbn) { const o = out.get(isbn); if (o) { o.openlibrary = e.openlibrary ?? null; o.googlebooks = e.googlebooks ?? null; } }
+        const crudo = (fuente, isbn) => { try { const c = JSON.parse(readFileSync(join(cacheDir, fuente, `${isbn}.json`), 'utf8')); return c?.status === 200 ? c.body : null; } catch { return null; } };
+        for (const isbn of isbns) {
+          const o = out.get(isbn);
+          const ol = extrasOpenLibrary(crudo('openlibrary', isbn)), gb = extrasGoogle(crudo('googlebooks', isbn), isbn);
+          if (Object.values(ol).some(Boolean)) o.openlibrary = { ...(o.openlibrary ?? {}), ...ol };
+          if (Object.values(gb).some(Boolean)) o.googlebooks = { ...(o.googlebooks ?? {}), ...gb };
+        }
       }
       return out;
     },

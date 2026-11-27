@@ -65,11 +65,11 @@ async function main() {
 
   // Visitas de 30 días, para priorizar (si la ruta no responde, se prioriza por ventas).
   const visitas = new Map(); let visitasHttp = 'ok';
-  const hasta = new Date(), desde = new Date(hasta.getTime() - 30 * 864e5);
+  // /visits/items?ids= devuelve el total de visitas de cada publicación ({ id: total }).
   await enParalelo(trozos(ids, 50), 2, async grupo => {
     try {
-      const d = await ml.get(`/items/visits?ids=${grupo.join(',')}&date_from=${desde.toISOString().slice(0, 10)}&date_to=${hasta.toISOString().slice(0, 10)}`);
-      for (const x of Array.isArray(d) ? d : Object.entries(d ?? {}).map(([item_id, total_visits]) => ({ item_id, total_visits }))) if (x?.item_id) visitas.set(x.item_id, Number(x.total_visits) || 0);
+      const d = await ml.get(`/visits/items?ids=${grupo.join(',')}`);
+      for (const [k, v] of Object.entries(d ?? {})) if (/^MLU\d+$/.test(k)) visitas.set(k, Number(v) || 0);
     } catch (e) { visitasHttp = `http_${e?.status ?? 0}`; }
   });
 
