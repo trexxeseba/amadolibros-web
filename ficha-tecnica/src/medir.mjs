@@ -9,6 +9,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pendientes } from '../../precio-ganador/src/calidad.mjs';
+import { bulkItemsPath, bulkEntryItem } from '../../worker-sync/meli-bulk.js';
 import { clienteLibros, idsPorEstado, enParalelo, trozos, isbnDe, principales, faltantes, fechaUy } from './comun.mjs';
 
 const CAMPOS = 'id,category_id,domain_id,catalog_listing,user_product_id,attributes,variations,sold_quantity,available_quantity,status';
@@ -58,17 +59,17 @@ async function main() {
 
   const items = new Map();
   await enParalelo(trozos(ids, 20), 3, async grupo => {
-    const d = await ml.get(`/items?ids=${grupo.join(',')}&attributes=${CAMPOS}`);
-    for (const x of Array.isArray(d) ? d : []) if (x?.code === 200 && x.body?.id) items.set(x.body.id, x.body);
+    const d = await ml.get(bulkItemsPath(grupo, CAMPOS)); // /items?ids= quedó dado de baja (403)
+    for (const e of Array.isArray(d) ? d : []) { const b = bulkEntryItem(e); if (b?.id) items.set(b.id, b); }
   });
 
   // Visitas de 30 días, para priorizar (si la ruta no responde, se prioriza por ventas).
   const visitas = new Map(); let visitasHttp = 'ok';
-  const hasta = new Date(), desde = new Date(hasta.getTime() - 30 * 864e5);
+  // /visits/items?ids= devuelve el total de visitas de cada publicación ({ id: total }).
   await enParalelo(trozos(ids, 50), 2, async grupo => {
     try {
-      const d = await ml.get(`/items/visits?ids=${grupo.join(',')}&date_from=${desde.toISOString().slice(0, 10)}&date_to=${hasta.toISOString().slice(0, 10)}`);
-      for (const x of Array.isArray(d) ? d : Object.entries(d ?? {}).map(([item_id, total_visits]) => ({ item_id, total_visits }))) if (x?.item_id) visitas.set(x.item_id, Number(x.total_visits) || 0);
+      const d = await ml.get(`/visits/items?ids=${grupo.join(',')}`);
+      for (const [k, v] of Object.entries(d ?? {})) if (/^MLU\d+$/.test(k)) visitas.set(k, Number(v) || 0);
     } catch (e) { visitasHttp = `http_${e?.status ?? 0}`; }
   });
 
@@ -106,4 +107,4 @@ async function main() {
   console.log(JSON.stringify({ ...corto, combinaciones_top: Object.entries(combinaciones).sort((a, b) => b[1] - a[1]).slice(0, 12) })); // sólo conteos y nombres de atributos
 }
 
-if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file://').href) main().catch(e => { console.error('medir:', e?.code ?? e?.message); process.exit(1); });
+if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file://').href) main().catch(e => { console.error('medir:', e?.code ?? e?.message, String(e?.path ?? '').replace(/MLU\w+/g, 'MLU…').split('?')[0], JSON.stringify(e?.detalle ?? null)); process.exit(1); });
