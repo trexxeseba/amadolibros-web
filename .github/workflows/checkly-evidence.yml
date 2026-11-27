@@ -1,0 +1,80 @@
+name: Checkly y navegador - diagnostico y prueba de firma
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/checkly-evidence-20261126]
+    paths:
+      - '.github/workflows/checkly-evidence.yml'
+      - 'scripts/monitoring/checkly-evidence.mjs'
+      - 'scripts/monitoring/checkly-detail.mjs'
+      - 'scripts/monitoring/browser-evidence.cjs'
+      - 'scripts/monitoring/checkly-browser.spec.cjs'
+      - 'scripts/monitoring/checkly-browser-regression.cjs'
+      - 'scripts/monitoring/checkly-browser-apply.mjs'
+permissions:
+  contents: read
+jobs:
+  checkly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Consultar resultados existentes (GET)
+        env:
+          CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
+        run: node scripts/monitoring/checkly-evidence.mjs
+      - name: Leer configuracion y cupo sin cambiar controles
+        env:
+          CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
+          RETEST_SIGNATURE: '0'
+          DOWNLOAD_TRACES: '0'
+        run: node scripts/monitoring/checkly-detail.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: checkly-evidence
+          path: checkly-evidence/
+          retention-days: 7
+  browser:
+    if: ${{ !contains(github.event.head_commit.message, '[skip-chrome]') && !contains(github.event.head_commit.message, '[checkly-read-only]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar navegador de diagnostico
+        run: |
+          mkdir -p /tmp/amado-browser
+          cd /tmp/amado-browser
+          npm install --no-save playwright@1.62.1 @playwright/test@1.62.1
+          npx playwright install --with-deps chromium
+      - name: Probar correccion del control de imagenes en Chrome (dos veces por tamano)
+        env:
+          NODE_PATH: /tmp/amado-browser/node_modules
+        run: node scripts/monitoring/checkly-browser-regression.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-regression
+          path: checkly-browser-test/
+          retention-days: 7
+      - name: Capturar portada, catalogo y ficha sin escrituras
+        if: always()
+        env:
+          NODE_PATH: /tmp/amado-browser/node_modules
+        run: node scripts/monitoring/browser-evidence.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-evidence
+          path: browser-evidence/
+          retention-days: 7

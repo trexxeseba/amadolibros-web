@@ -1,0 +1,41 @@
+name: Google read-only audit with encrypted results
+on:
+  push:
+    branches: [codex/checkly-evidence-20261126]
+    paths:
+      - 'scripts/monitoring/google-readonly-audit.mjs'
+      - '.github/workflows/google-readonly-evidence.yml'
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  google-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: google-github-actions/auth@v3
+        id: google_auth
+        with:
+          project_id: amado-libros-analytics
+          workload_identity_provider: projects/667747565315/locations/global/workloadIdentityPools/github-actions/providers/amadolibros-web
+          service_account: ga4-reporter@amado-libros-analytics.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/content,https://www.googleapis.com/auth/analytics.readonly
+          create_credentials_file: false
+      - name: Read Analytics and Merchant without changing configuration
+        env:
+          READONLY_GOOGLE_TOKEN: ${{ steps.google_auth.outputs.access_token }}
+          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+        run: node scripts/monitoring/google-readonly-audit.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: google-readonly-encrypted
+          path: private-evidence/
+          retention-days: 7
