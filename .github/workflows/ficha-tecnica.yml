@@ -15,9 +15,9 @@ on:
   workflow_dispatch:
     inputs:
       accion:
-        description: 'medir = sólo lee y clasifica · cargar = completa atributos (con prueba=true sólo lista lo que haría)'
+        description: 'medir = sólo lee y clasifica · envio = costo del envío gratis (sólo lee) · cargar = completa atributos (con prueba=true sólo lista lo que haría)'
         type: choice
-        options: [medir, cargar, medir_y_cargar]
+        options: [medir, cargar, medir_y_cargar, envio]
         default: medir
       tope:
         description: 'Cantidad de publicaciones a cargar en esta corrida'
@@ -84,6 +84,10 @@ jobs:
         run: |
           if [ "$ACCION" = "medir" ] || [ "$ACCION" = "medir_y_cargar" ]; then
             node ficha-tecnica/src/medir.mjs --salida salida
+          fi
+          if [ "$ACCION" = "envio" ]; then
+            node ficha-tecnica/src/envio.mjs --medicion privado/ficha-tecnica/ultima-medicion.json --salida salida
+            exit $?
           fi
           if [ "$ACCION" != "medir" ]; then
             ARGS=(--salida salida --estado privado/ficha-tecnica --tope "${TOPE:-300}")
