@@ -65,7 +65,7 @@ test('3. Precio web/tarjeta usa la jerarquía visual principal y transferencia l
     assert.match(html, /\.price-main strong\{font-size:1\.55rem;font-weight:850/);
     assert.match(html, /\.price-transfer-line\{font-size:\.88rem;font-weight:700/);
     assert.match(html, /\.price-transfer-line strong\{font-size:1rem;font-weight:850/);
-    assert.match(html, /🏷️/);
+    assert.match(html, /12% menos por transferencia/);
 });
 
 test('3b. La ficha muestra envío gratis sólo cuando el precio llega al umbral', () => {

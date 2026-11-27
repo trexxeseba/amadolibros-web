@@ -80,3 +80,14 @@ test('joinInitials junta solo letras sueltas seguidas', () => {
   assert.deepEqual(joinInitials(['t', 's', 'eliot']), ['ts', 'eliot']);
   assert.deepEqual(joinInitials(['el', 'perro', '2']), ['el', 'perro', '2']);
 });
+
+test('un prefijo corto de otra palabra no sostiene el resultado: «harri poter» no trae a Harrigan', () => {
+  const libros = [
+    { id: 'MLU10', title: 'El poder de orar de madrugada', author: 'Juan Carlos Harrigan', isbn: '' },
+    { id: 'MLU11', title: 'Harry Potter y la piedra filosofal', author: 'J. K. Rowling', isbn: '' },
+  ];
+  assert.equal(tolerantMatches(libros[0], tokenize('harri poter')), false);
+  assert.deepEqual(matchCatalogQuery([libros[0]], 'harri poter').matches, []);
+  // Con el libro correcto en el catálogo, el error de tipeo sigue encontrándolo.
+  assert.deepEqual(matchCatalogQuery(libros, 'harry poter').matches.map(b => b.id), ['MLU11']);
+});
