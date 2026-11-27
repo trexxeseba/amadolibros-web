@@ -1,10 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { limites, elegirRegla, esAutomatizable } from '../src/automatizacion.mjs';
+import { limites, elegirRegla, esAutomatizable, compararRegla } from '../src/automatizacion.mjs';
 
 test('límites: mínimo 60 % y máximo 145 % del precio de lista, en pesos enteros', () => {
-  assert.deepEqual(limites(2000), { min_price: 1200, max_price: 2900 });
-  assert.deepEqual(limites(1046), { min_price: 628, max_price: 1516 });
+  // Seba 26/11: mínimo 60 % nunca debajo de $500; máximo = precio base.
+  assert.deepEqual(limites(2000), { min_price: 1200, max_price: 2000 });
+  assert.deepEqual(limites(700), { min_price: 500, max_price: 700 });
+  assert.equal(limites(500), null);
   assert.equal(limites(0), null); assert.equal(limites('x'), null);
 });
 
@@ -22,4 +24,12 @@ test('automatizable: activa, en pesos, con stock, con regla y sin automatizació
   assert.equal(esAutomatizable({ ...f, regla_elegida: null }), false);
   assert.equal(esAutomatizable({ ...f, stock: 0 }), false);
   assert.equal(esAutomatizable({ ...f, estado: 'paused' }), false);
+});
+
+test('comparar (26/11): ML compite dentro de mínimo y máximo; Precio Ganador sólo si la diferencia es menor a $400', () => {
+  assert.deepEqual(compararRegla({ precio: 2000, lista: 2000, estado: 'competing', ganador: 1800 }), { compite: true, ml: 1800, pg: 1782, diferencia: 18 });
+  const lejos = compararRegla({ precio: 2000, lista: 2000, estado: 'competing', ganador: 1000 });
+  assert.equal(lejos.ml, 1200); assert.equal(lejos.pg, 2000);
+  assert.deepEqual(compararRegla({ precio: 1500, lista: 2000, estado: 'winning', ganador: null }), { compite: false, ml: 2000, pg: 2000, diferencia: 0 });
+  assert.equal(compararRegla({ precio: 600, lista: 600, estado: 'competing', ganador: 450 }).pg, 500);
 });
