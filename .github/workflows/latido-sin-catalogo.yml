@@ -30,6 +30,14 @@ jobs:
           GH_TOKEN: ${{ secrets.ESTADO_TOKEN }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
+          # Este aviso sí va por mail (no es de Precio Ganador). Uno por día como máximo (M3a).
+          ALARMAS_POR_MAIL: si
+          ESTADO_TOKEN: ${{ secrets.ESTADO_TOKEN }}
+          MAIL_PREFIJO: ALARMA tarea de Claude
+          MAIL_APP: Tarea programada de Claude en la PC
+          MAIL_PROYECTO: Precios sin catálogo por Chrome
+          MAIL_COMETIDO: Avisar si la tarea dejó de correr (sin latido en 3 horas)
+          MAIL_DESACTIVAR: 'Apagar este aviso, desactivar el workflow "Latido de precios sin catálogo (vigía)" en Actions.|Cambiar las horas en el cron de .github/workflows/latido-sin-catalogo.yml.'
         shell: bash
         run: |
           ultimo=$(gh api "repos/trexxeseba/amadolibros-privado/commits?path=latidos/sin-catalogo.json&sha=estado/diagnostico&per_page=1" --jq '.[0].commit.committer.date' 2>/dev/null || true)

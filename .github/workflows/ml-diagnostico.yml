@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: ml-diagnostico
@@ -39,6 +40,20 @@ jobs:
         run: node --test agentes-ml/test/diagnostico-dia.test.mjs
       - name: Leer
         run: node agentes-ml/src/diagnostico-dia.mjs --salida "salida"
+      # M2a (Seba 26/11): las fallas de Precio Ganador y del resto de Mercado Libre no van por mail; quedan
+      # acá para que el operador las lea y las resuma con 2 soluciones.
+      - name: Fallos de Mercado Libre en 24 horas
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          desde=$(date -u -d '24 hours ago' +%FT%TZ)
+          echo '[]' > salida/fallos-ml.json
+          for w in precio-ganador precio-ganador-control precio-ganador-vigia poda-anuncios poda-anuncios-vigia ml-promo-masiva ml-diagnostico agentes-ml-promos precios-amado latido-sin-catalogo; do
+            gh run list -R "$GITHUB_REPOSITORY" -w "$w.yml" -L 50 --json databaseId,conclusion,createdAt,event,url --jq "[.[] | select(.createdAt >= \"$desde\") | select(.conclusion == \"failure\" or .conclusion == \"cancelled\") | {workflow: \"$w\", run: .databaseId, conclusion, createdAt, url}]" > /tmp/f.json || echo '[]' > /tmp/f.json
+            jq -s 'add' salida/fallos-ml.json /tmp/f.json > /tmp/t.json && mv /tmp/t.json salida/fallos-ml.json
+          done
+          echo "Fallos de Mercado Libre en 24 horas: $(jq length salida/fallos-ml.json)"
       - name: Guardar en el repo privado
         shell: bash
         run: |
@@ -51,6 +66,7 @@ jobs:
           mkdir -p "corridas"
           cp ../salida/diagnostico-libros.json "corridas/$GITHUB_RUN_ID.json"
           cp ../salida/diagnostico-libros.json "ultimo.json"
+          cp ../salida/fallos-ml.json "fallos-ml.json" 2>/dev/null || true
           git add -A
           git commit -q -m "Diagnóstico $GITHUB_RUN_ID [skip ci]"
           git push -q origin "HEAD:$ESTADO_RAMA"

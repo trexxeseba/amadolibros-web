@@ -2,6 +2,10 @@ import { nextInternalEmailAt } from '../../functions/_shared/internal-email-sche
 // Resumen, tabla de detalle y correo diario (Resend, el que ya usa el proyecto).
 import { CAMBIA } from './decision.mjs';
 import { fechaMontevideo } from './config.mjs';
+import { formatoML, avisoUnico } from '../../scripts/lib/mail-ml.mjs';
+
+// Pie común de los mails de Precio Ganador (Seba 26/11/2026, M5a).
+const DESACTIVAR_PG = ['Resumen diario: sacar --correo-diario en .github/workflows/precio-ganador.yml (cron 0 0 * * *).', 'Lista de ocultas: LISTA_DEMANDA_EMAIL_TO o HORAS_LISTA_DEMANDA en precio-ganador/src/run.mjs.', 'Todo Precio Ganador: desactivar el workflow Precio Ganador en Actions.'];
 
 export function resumir(filas, { cuenta, real, inicio, ids, stats, umbral }) {
   const c = a => filas.filter(f => f.d.accion === a).length;
@@ -176,7 +180,12 @@ export async function enviarResumen({ cuenta, acum, resumen, ayer = null, fetche
   if (!apiKey) return { status: 'sin_credenciales' };
   const to = (process.env.PRECIO_GANADOR_EMAIL_TO || 'undiaes@gmail.com').split(',').map(x => x.trim()).filter(Boolean);
   const from = process.env.REPORT_EMAIL_FROM || 'Amado Libros <web@notificaciones.amadolibros.com>';
-  const { asunto, texto, html } = armarReporteDiario({ cuenta, acum, resumen, ayer });
+  const r = armarReporteDiario({ cuenta, acum, resumen, ayer });
+  // M3a (26/11): un resumen por cuenta por día con registro propio. El 25/11 salieron dos porque la
+  // corrida del Worker falló y la del cron no se salteó.
+  if (!(await avisoUnico(`precio-ganador-resumen-${cuenta.clave}`, { fetcher }))) return { status: 'ya_enviado' };
+  const { asunto } = r;
+  const { texto, html } = formatoML({ app: 'GitHub Actions de amadolibros-web', proyecto: `Precio Ganador (${cuenta.nombre})`, cometido: 'Resumen diario de precios y competencia en Mercado Libre', texto: r.texto, html: r.html, desactivar: DESACTIVAR_PG });
   try {
     const res = await fetcher('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `precio-ganador-${cuenta.clave}-${fechaMontevideo()}` },
@@ -239,11 +248,14 @@ export async function enviarListaDemanda({ cuenta, lista, franja = '', fetcher =
     : `"${x.titulo}" queda oculta detrás de otra publicación de catálogo que demora ${x.dias} días (la nuestra $ ${x.precio}).`;
   const intro = 'Seba, estas publicaciones las tenemos para entrega inmediata, pero en la ficha de catálogo gana otro vendedor más barato que tarda días en entregar. Conviene armar una publicación fuera de catálogo que destaque la entrega inmediata.';
   const html = `<p>${escH(intro)}</p><ul style="font-family:sans-serif;font-size:14px">${lista.map(x => `<li style="margin-bottom:8px">${escH(frase(x))} <a href="${escH(x.permalink)}">Ver publicación</a></li>`).join('')}</ul>`;
-  const texto = intro + '\n\n' + lista.map(x => `- ${frase(x)} ${x.permalink}`).join('\n');
+  const texto0 = intro + '\n\n' + lista.map(x => `- ${frase(x)} ${x.permalink}`).join('\n');
+  // M3a (26/11): una lista por día (antes hasta 4, una por franja).
+  if (!(await avisoUnico(`lista-demanda-${cuenta.clave}`, { fetcher }))) return { status: 'ya_enviado' };
+  const { texto, html: htmlF } = formatoML({ app: 'GitHub Actions de amadolibros-web', proyecto: 'Precio Ganador (Amado Libros)', cometido: 'Avisar qué libros con entrega inmediata quedan ocultos detrás de vendedores que demoran', texto: texto0, html, desactivar: DESACTIVAR_PG });
   try {
     const res = await fetcher('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': `lista-demanda-${cuenta.clave}-${fechaMontevideo()}-${franja}` },
-      body: JSON.stringify({ scheduled_at: nextInternalEmailAt(), from, to, subject: `Seba, ${lista.length} ${lista.length === 1 ? 'libro queda oculto' : 'libros quedan ocultos'} detrás de vendedores que demoran días`, html, text: texto }),
+      body: JSON.stringify({ scheduled_at: nextInternalEmailAt(), from, to, subject: `Seba, ${lista.length} ${lista.length === 1 ? 'libro queda oculto' : 'libros quedan ocultos'} detrás de vendedores que demoran días`, html: htmlF, text: texto }),
       signal: AbortSignal.timeout(30000),
     });
     return res.ok ? { status: 'enviado', casos: lista.length } : { status: 'error', http: res.status };

@@ -66,6 +66,8 @@ async function main() {
   else if (salida.atencion.length) mail = (await enviarAlarma({ aviso: true, asunto: `control: ${salida.atencion[0].slice(0, 90)}`, texto: salida.texto + (process.env.RUN_URL ? `\n\nDetalle: ${process.env.RUN_URL}` : '') })).status;
   console.log(JSON.stringify({ atencion: salida.atencion.length, mail }));
   // La alerta va por mail; el workflow queda en rojo sólo si el mail no salió (Seba 26/11: antes cada aviso lo marcaba fallido).
-  if (salida.atencion.length && !['enviado', 'sale_con_el_control_de_las_21'].includes(mail)) process.exitCode = 1;
+  // M1b/M2a (Seba 26/11): el control no manda mail ni queda en rojo por lo que encuentra; el operador lee
+  // su resumen (paso del workflow y GITHUB_STEP_SUMMARY) y lo resume con 2 soluciones.
+  if (salida.atencion.length) console.log('ATENCION:', salida.atencion.join(' | '));
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) await main();
