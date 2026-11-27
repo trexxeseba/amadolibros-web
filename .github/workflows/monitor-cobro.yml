@@ -1,22 +1,14 @@
-name: Alarmas del cobro (Checkly)
+name: Checkly - baja de controles
 
-# Estado, alta y simulacro de las alarmas del cobro en Checkly.
-#   estado     solo lee: plan, controles y canales de aviso.
-#   aplicar    crea o actualiza los controles del cobro y los canales de correo.
-#   simulacro  control temporal que falla y se recupera; manda los dos avisos y se borra.
-# Al fusionar cambios de estas alarmas a main se aplica solo, después de
-# esperar a que /api/checkout-health esté publicado y responda bien.
+# Baja autorizada por Seba el 26/11/2026, después de confirmar UptimeRobot.
+# Este workflow ya no crea, activa ni prueba controles en Checkly.
+# Puede repetirse: únicamente apaga y silencia los seis controles conocidos.
 on:
   workflow_dispatch:
-    inputs:
-      accion:
-        description: 'estado, aplicar o simulacro'
-        type: choice
-        options: [estado, aplicar, simulacro]
-        default: estado
   push:
-    branches: [main]
+    branches: [main, codex/checkly-retire-20261126]
     paths:
+      - scripts/monitoring/checkly-retire.mjs
       - scripts/monitoring/checkly-cobro.mjs
       - .github/workflows/monitor-cobro.yml
 
@@ -28,11 +20,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  checkly:
+  retire:
+    if: github.repository == 'trexxeseba/amadolibros-web'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    env:
-      CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,11 +31,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Elegir acción
-        id: accion
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then accion="${{ inputs.accion }}"; else accion="aplicar"; fi
-          case "$accion" in estado|aplicar|simulacro) ;; *) accion="estado" ;; esac
-          echo "accion=$accion" >> "$GITHUB_OUTPUT"
-      - name: Ejecutar
-        run: node scripts/monitoring/checkly-cobro.mjs "${{ steps.accion.outputs.accion }}"
+      - name: Verificar alcance y protección contra reactivación
+        run: node --test functions/__tests__/checkly-retire.test.js
+      - name: Desactivar y verificar Checkly
+        env:
+          CHECKLY_API_KEY: ${{ secrets.CHECKLY_API_KEY }}
+          OWNER_CHECKLY_RETIRE: '2026-11-26'
+        run: node scripts/monitoring/checkly-retire.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: checkly-retired
+          path: artifacts/checkly-retired/
+          retention-days: 30
