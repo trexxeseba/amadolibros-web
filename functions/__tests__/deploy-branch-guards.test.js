@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const pagesWorkflow = readFileSync('.github/workflows/deploy.yml', 'utf8');
+const pagesWorkflow = readFileSync('.github/workflows/deploy.yml', 'utf8').replace(/\r\n/g, '\n');
 const workerWorkflow = readFileSync(
   '.github/workflows/deploy-worker-sync.yml',
   'utf8',
-);
+).replace(/\r\n/g, '\n');
 
 const manualMainGuard =
   "github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'";

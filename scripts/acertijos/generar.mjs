@@ -18,7 +18,9 @@ export function render() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const out = render();
     if (process.argv.includes('--check')) {
-        const actual = readFileSync(MODULE_PATH, 'utf8');
+        // Con core.autocrlf en Windows el módulo queda en disco con CRLF: el contenido
+        // es el mismo, así que se comparan los saltos normalizados.
+        const actual = readFileSync(MODULE_PATH, 'utf8').replace(/\r\n/g, '\n');
         if (actual !== out) { console.error('acertijos-data.js no está al día con data/acertijos.json'); process.exit(1); }
         console.log('ok');
     } else {

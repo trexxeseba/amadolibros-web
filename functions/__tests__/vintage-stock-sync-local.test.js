@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, {after} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -8,13 +8,21 @@ import {BULK_RUN} from '../_shared/meli-vintage-bulk.js';
 import {policyHash} from '../../worker-sync/publication-policy.js';
 import {openDatabase} from '../../scripts/vintage-local/db.mjs';
 
+
+// Windows no deja borrar un SQLite abierto, y los t.after corren en el orden en que
+// se registran: el borrado de la carpeta corría antes del db.close() del test. Los
+// temporales se borran al terminar el archivo, cuando ya se cerraron todas las bases.
+const temporales=[];
+const limpiarAlFinal=d=>{temporales.push(d);};
+after(()=>Promise.all(temporales.map(d=>fs.rm(d,{recursive:true,force:true}))));
+
 const SELLER='2341378249';
 const policy={supplierDiscount:.25,arsPerUyu:40,usdPerUyu:42,freightUsdKg:15,laborUyu:0,margin:.23,mlFee:.17,deliveryUyu:270,minimumContributionUyu:200,minimumSaleUyu:1600,roundUyu:10,availabilityDays:18,additionalPricePct:0,listingTypeId:'gold_special',catalogListing:'required_only'};
 function isbn13(n){const stem='978'+String(n).padStart(9,'0');const sum=[...stem].reduce((t,c,i)=>t+Number(c)*(i%2?3:1),0);return stem+((10-sum%10)%10);}
 const ISBNS=Array.from({length:10},(_,i)=>isbn13(500+i));
 
 async function fixture(t){
- const temp=await fs.mkdtemp(path.join(os.tmpdir(),'vintage-stock-'));t.after(()=>fs.rm(temp,{recursive:true,force:true}));
+ const temp=await fs.mkdtemp(path.join(os.tmpdir(),'vintage-stock-'));limpiarAlFinal(temp);
  const clock={value:Date.parse('2026-10-21T12:00:00Z')},sha='a'.repeat(64),source_date=new Date(clock.value-3600000).toISOString();
  const receipts=ISBNS.map((isbn,i)=>({seller_id:SELLER,isbn,state:'published',item_id:'MLU'+(900+i),run_id:BULK_RUN,created_at:1,updated_at:1}));
  const c={version:1,endpoint:'https://www.amadolibros.com/operations/vintage-local',key:'b'.repeat(64),expires_at:clock.value+86400000,seller_id:SELLER,app_id:'4741021817925208',run_id:BULK_RUN,policy,policy_hash:await policyHash(policy),feed_id:'feed-1',source_date,source_sha256:sha,receipts};

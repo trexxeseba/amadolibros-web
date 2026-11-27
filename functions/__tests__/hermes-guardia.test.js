@@ -38,7 +38,7 @@ test('crear publicaciones (POST /items) solo en el publicador de Hermes, y con e
   const recorrer = d => { for (const e of fs.readdirSync(d, {withFileTypes: true})) {
     if (e.name === 'node_modules' || e.name === '__tests__' || e.name.startsWith('.')) continue;
     const p = path.join(d, e.name);
-    if (e.isDirectory()) recorrer(p); else if (/\.(mjs|js)$/.test(e.name) && /\.post\(\s*['"`]\/items['"`]/.test(leer(p))) lugares.push(p);
+    if (e.isDirectory()) recorrer(p); else if (/\.(mjs|js)$/.test(e.name) && /\.post\(\s*['"`]\/items['"`]/.test(leer(p))) lugares.push(p.split(path.sep).join('/'));
   } };
   ['hermes-monitor', 'scripts', 'precio-ganador'].forEach(recorrer);
   assert.deepEqual(lugares, ['hermes-monitor/publicar.mjs']);

@@ -294,7 +294,7 @@ test('la home tiene Liquidación en el menú (escritorio y celular), en el pie y
 test('data/liquidacion.json y el módulo generado están sincronizados', () => {
     const json = JSON.parse(readFileSync('data/liquidacion.json', 'utf8'));
     assert.deepEqual(LIQUIDACION_DATA, json);
-    assert.equal(readFileSync('functions/_shared/liquidacion-data.js', 'utf8'), renderModule(json));
+    assert.equal(readFileSync('functions/_shared/liquidacion-data.js', 'utf8').replace(/\r\n/g, '\n'), renderModule(json));
     assert.ok(Array.isArray(json.lista.ids));
     // sin_competencia queda vacía a propósito: las publicaciones fuera del catálogo entran (Seba, 5/11/2026).
     for (const key of ['medicos', 'gana_precio']) {
