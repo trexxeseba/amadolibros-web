@@ -17,7 +17,7 @@ import { CUENTAS, D1_DATABASE_ID } from './config.mjs';
 const DIA_MS = 86400_000;
 export const VENTANA_DIAS = 14;
 
-async function d1(sql, params = []) {
+export async function d1(sql, params = []) {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   const tokens = [process.env.CLOUDFLARE_ADMIN_API_TOKEN, process.env.CLOUDFLARE_API_TOKEN].filter(Boolean);
   let ultimo = 'sin_token_cloudflare';

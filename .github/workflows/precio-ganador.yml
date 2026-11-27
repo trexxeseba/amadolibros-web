@@ -29,7 +29,7 @@ on:
       accion:
         description: 'correr = corrida normal (con auditoría) · auditar = sólo la auditoría, no cambia nada · restaurar = volver al precio original (todo, o sólo los IDs de abajo) · ventas = cruce de ventas, sólo lee · baratos = libros que ganamos muy por debajo del competidor, sólo lee · subir = aplica la lista de subidas aprobada por Seba (con prueba=true sólo lista) · inmediatos = libros más caros que un vendedor con entrega inmediata, sólo lee. Cotizar y sombra están en el workflow de la otra cuenta.'
         type: choice
-        options: [correr, auditar, restaurar, diagnosticar, ventas, baratos, subir, inmediatos, regla_inmediata, referencias, dormidas, top_visitas, calidad, automatizacion_leer, automatizacion_comparar, automatizacion_aplicar, automatizacion_quitar, automatizacion_revisar, automatizacion_corregir_minimos]
+        options: [correr, auditar, restaurar, diagnosticar, ventas, baratos, subir, inmediatos, regla_inmediata, referencias, dormidas, top_visitas, calidad, automatizacion_leer, automatizacion_comparar, automatizacion_aplicar, automatizacion_quitar, automatizacion_revisar, automatizacion_corregir_minimos, tickets]
         default: correr
       max_marcadas:
         description: 'Cortar al encontrar N marcadas (vacío = todas)'
@@ -160,6 +160,11 @@ jobs:
             node precio-ganador/src/restaurar.mjs "${ARGS[@]}"
             exit $?
           fi
+          if [ "$IN_ACCION" = "tickets" ]; then
+            # Montos por compra y simulación de cupones por monto (Seba, 27/11/2026). Sólo lee.
+            node precio-ganador/src/tickets.mjs --cuenta libros --salida "estado/pruebas/$GITHUB_RUN_ID"
+            exit $?
+          fi
           if [ "$IN_ACCION" = "ventas" ]; then
             node precio-ganador/src/ventas.mjs --cuenta "$CUENTA" --estado estado/state --salida estado/ultima
             exit $?
@@ -222,7 +227,7 @@ jobs:
       # todas las que el sistema bajó y la regla recalculada sobre las marcadas.
       # Si encuentra una discrepancia, el workflow falla y GitHub manda el mail.
       - name: Auditoría
-        if: success() && inputs.accion != 'restaurar' && inputs.accion != 'diagnosticar' && inputs.accion != 'ventas' && inputs.accion != 'baratos' && inputs.accion != 'subir' && inputs.accion != 'inmediatos' && inputs.accion != 'regla_inmediata' && inputs.accion != 'referencias' && inputs.accion != 'dormidas' && inputs.accion != 'top_visitas' && inputs.accion != 'calidad' && !startsWith(inputs.accion, 'automatizacion_')
+        if: success() && inputs.accion != 'restaurar' && inputs.accion != 'diagnosticar' && inputs.accion != 'ventas' && inputs.accion != 'baratos' && inputs.accion != 'subir' && inputs.accion != 'inmediatos' && inputs.accion != 'regla_inmediata' && inputs.accion != 'referencias' && inputs.accion != 'dormidas' && inputs.accion != 'top_visitas' && inputs.accion != 'calidad' && !startsWith(inputs.accion, 'automatizacion_') && inputs.accion != 'tickets'
         shell: bash
         env:
           SALIDA: ${{ steps.correr.outputs.salida }}
