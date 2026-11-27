@@ -2938,7 +2938,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
 
         if (transferPreviewEl) {
           transferPreviewEl.hidden = false;
-          transferPreviewEl.textContent = 'Precio normal ' + fmt.format(subtotal) + ' · Pagás ' + fmt.format(transferPayable);
+          transferPreviewEl.textContent = 'Con Mercado Pago ' + fmt.format(total) + ' · Pagás ' + fmt.format(transferPayable);
         }
         if (mpPreviewEl) {
           mpPreviewEl.hidden = false;
@@ -2987,7 +2987,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
 
         if (transferPreviewEl) {
           transferPreviewEl.hidden = false;
-          transferPreviewEl.textContent = 'Precio normal ' + fmt.format(subtotal) + ' · Pagás ' + fmt.format(transferPayableShip);
+          transferPreviewEl.textContent = 'Con Mercado Pago ' + fmt.format(totalWithShipping) + ' · Pagás ' + fmt.format(transferPayableShip);
         }
         if (mpPreviewEl) {
           mpPreviewEl.hidden = false;
