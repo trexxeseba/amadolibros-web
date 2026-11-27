@@ -51,7 +51,7 @@ async function main() {
     for (const e of Array.isArray(d) ? d : []) { const b = bulkEntryItem(e); if (b?.id) items.set(b.id, b); }
   });
 
-  const comisiones = new Map(), http = { comision: {}, envio: {} }, filas = [];
+  const comisiones = new Map(), http = { comision: {}, envio: {}, opciones: {} }, filas = [], muestras = [];
   await enParalelo(ids, 3, async id => {
     const it = items.get(id); if (!it) return;
     const precio = num(it.price);
@@ -64,9 +64,16 @@ async function main() {
     }
     const s = await sondear(ml, `/users/${LIBROS.sellerId}/shipping_options/free?item_id=${id}`);
     http.envio[s.status] = (http.envio[s.status] ?? 0) + 1;
-    const envio = s.ok ? num(s.json?.coverage?.all_country?.list_cost ?? s.json?.coverage?.all_country?.cost) : null;
+    const gratis = s.ok ? num(s.json?.coverage?.all_country?.list_cost ?? s.json?.coverage?.all_country?.cost) : null;
+    // Segunda fuente: lo que sale el envío a Montevideo (código 11000) según las opciones de la publicación.
+    const o = await sondear(ml, `/items/${id}/shipping_options?zip_code=11000`);
+    http.opciones[o.status] = (http.opciones[o.status] ?? 0) + 1;
+    const opciones = o.ok && Array.isArray(o.json?.options) ? o.json.options.map(x => ({ nombre: x?.name ?? null, list_cost: num(x?.list_cost), cost: num(x?.cost) })) : [];
+    const deOpciones = opciones.map(x => x.list_cost).filter(v => v > 0);
+    const envio = gratis > 0 ? gratis : deOpciones.length ? Math.min(...deOpciones) : gratis;
+    if (muestras.length < 5) muestras.push({ id, gratis: s.json, opciones: o.json });
     const comision = comisiones.get(k);
-    filas.push({ id, precio, comision, envio, ventas: ventasDe.get(id) ?? 0, modo_envio: it.shipping?.mode ?? null, logistica: it.shipping?.logistic_type ?? null, ...cuenta({ precio, comision, envio }) });
+    filas.push({ id, precio, comision, envio, envio_gratis_ml: gratis, opciones, ventas: ventasDe.get(id) ?? 0, modo_envio: it.shipping?.mode ?? null, logistica: it.shipping?.logistic_type ?? null, ...cuenta({ precio, comision, envio }) });
   });
 
   const porTramo = {}; for (const f of filas) { const t = tramo(f.envio_pct); porTramo[t] = (porTramo[t] ?? 0) + 1; }
@@ -78,7 +85,7 @@ async function main() {
     con_ventas: conVentas.length, con_ventas_por_tramo: conVentas.reduce((a, f) => { const t = tramo(f.envio_pct); a[t] = (a[t] ?? 0) + 1; return a; }, {}),
   };
   mkdirSync(salida, { recursive: true });
-  writeFileSync(join(salida, 'envio-gratis.json'), JSON.stringify({ resumen, filas: filas.sort((a, b) => b.ventas - a.ventas) }, null, 1));
+  writeFileSync(join(salida, 'envio-gratis.json'), JSON.stringify({ resumen, muestras, filas: filas.sort((a, b) => b.ventas - a.ventas) }, null, 1));
   const { mediana_precio, mediana_envio, ...publico } = resumen;
   console.log(JSON.stringify(publico)); // sólo conteos y porcentajes: el log es público
 }
