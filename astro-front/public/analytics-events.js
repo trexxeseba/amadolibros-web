@@ -27,19 +27,45 @@
     return url.toString();
   }
 
+  // gtag.js se descarga después del primer pintado: lo agrega
+  // window.AmadoGtag (shared/analytics-bootstrap.js, inline en el <head>).
+  // Mientras tanto gtag() sólo encola en dataLayer, así que js/config y cada
+  // evento quedan en orden y gtag.js los procesa al llegar. Si una página no
+  // trae ese arranque, se agrega gtag.js en el momento, como antes.
+  function gtagLoader() {
+    var loader = window.AmadoGtag;
+    return loader && typeof loader.load === 'function' ? loader : null;
+  }
+
+  // Eventos que pueden ir seguidos de un cambio de página (carrito, Mercado
+  // Pago): piden gtag.js ya, sin esperar al momento libre.
+  function loadGoogleTagNow() {
+    var loader = gtagLoader();
+    if (loader && typeof loader.loadNow === 'function') loader.loadNow();
+  }
+
   function ensureGoogleTag() {
     window.dataLayer = window.dataLayer || [];
     window.gtag = window.gtag || function () {
       window.dataLayer.push(arguments);
     };
 
+    var loader = gtagLoader();
     var selector = 'script[src*="googletagmanager.com/gtag/js?id=' + MEASUREMENT_ID + '"]';
-    if (document.querySelector(selector)) return;
+    var configured = !!(loader && loader.configured && loader.configured[MEASUREMENT_ID]);
+    if (!configured && !document.querySelector(selector)) {
+      window.gtag('js', new Date());
+      window.gtag('config', MEASUREMENT_ID, {
+        page_location: measuredPageLocation(),
+      });
+      if (loader && loader.configured) loader.configured[MEASUREMENT_ID] = true;
+    }
 
-    window.gtag('js', new Date());
-    window.gtag('config', MEASUREMENT_ID, {
-      page_location: measuredPageLocation(),
-    });
+    if (loader) {
+      loader.load(MEASUREMENT_ID);
+      return;
+    }
+    if (document.querySelector(selector)) return;
 
     var tag = document.createElement('script');
     tag.async = true;
@@ -138,6 +164,7 @@
     }
 
     window.gtag('event', eventName, params);
+    if (eventName !== 'view_item') loadGoogleTagNow();
     if (dedupeKey) {
       var storage = eventName === 'purchase' ? window.localStorage : window.sessionStorage;
       storageSet(storage, 'amado_ga4_' + dedupeKey);
@@ -147,6 +174,7 @@
 
   function getMeasurementContext(timeoutMs) {
     timeoutMs = Math.max(100, Math.min(2000, Number(timeoutMs) || 1200));
+    loadGoogleTagNow();
     return new Promise(function (resolve) {
       if (typeof window.gtag !== 'function') {
         resolve(null);
@@ -355,12 +383,38 @@
 
   ensureGoogleTag();
 
-  window.AmadoAnalytics = Object.assign({}, window.AmadoAnalytics, {
+  // Llamadas hechas antes de que este archivo cargara (cola del arranque
+  // inline). Se guardan antes de reemplazar las funciones por las reales.
+  var pending = window.AmadoAnalytics && Array.isArray(window.AmadoAnalytics.__queue)
+    ? window.AmadoAnalytics.__queue
+    : [];
+  var takeEarlyClicks = window.AmadoAnalytics && typeof window.AmadoAnalytics.__takeClicks === 'function'
+    ? window.AmadoAnalytics.__takeClicks
+    : null;
+
+  var api = {
     trackWhatsApp: trackWhatsApp,
     trackCommerce: trackCommerce,
     trackCheckoutError: trackCheckoutError,
     trackStockWaitlistCreated: trackStockWaitlistCreated,
     getMeasurementContext: getMeasurementContext,
+  };
+  window.AmadoAnalytics = Object.assign({}, window.AmadoAnalytics, api);
+  delete window.AmadoAnalytics.__queue;
+  delete window.AmadoAnalytics.__takeClicks;
+
+  pending.forEach(function (call) {
+    if (!call || typeof api[call.name] !== 'function') return;
+    if (call.name === 'getMeasurementContext') {
+      if (call.done) return;
+      api.getMeasurementContext.apply(null, call.args).then(function (context) {
+        if (call.done) return;
+        call.done = true;
+        call.resolve(context);
+      });
+      return;
+    }
+    try { api[call.name].apply(null, call.args); } catch (_error) {}
   });
 
   if (document.readyState === 'loading') {
@@ -369,11 +423,18 @@
     attachWaitlistSuccessTracking();
   }
 
-  document.addEventListener('click', function (event) {
+  function onClick(event) {
     var anchor = event.target && event.target.closest
       ? event.target.closest('a[href]')
       : null;
     if (!anchor || !isWhatsAppUrl(anchor.href)) return;
     trackWhatsApp({ ctaLocation: ctaLocation(anchor), element: anchor });
-  }, true);
+  }
+
+  document.addEventListener('click', onClick, true);
+  if (takeEarlyClicks) {
+    takeEarlyClicks().forEach(function (target) {
+      try { onClick({ target: target }); } catch (_error) {}
+    });
+  }
 })();

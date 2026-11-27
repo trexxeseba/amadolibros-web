@@ -2,6 +2,7 @@ import {
     buildWhatsAppMessage,
     whatsappHref as buildWhatsAppHref,
 } from '../../shared/whatsapp-messages.js';
+import { ANALYTICS_BOOTSTRAP_WITH_CONFIG_JS } from '../../shared/analytics-bootstrap.js';
 
 /**
  * functions/_shared/brand.js — GLOBAL-SHELL-1
@@ -118,7 +119,11 @@ export function faviconHeadHtml() {
         `<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?${v}">`,
         `<link rel="manifest" href="/site.webmanifest?${v}">`,
         '<script src="/whatsapp-messages.js" defer></script>',
-        '<script src="/analytics-events.js"></script>',
+        // Analítica diferida: el arranque inline encola eventos y clics hasta
+        // que llegan /analytics-events.js (defer) y gtag.js (después del
+        // primer pintado). Ver shared/analytics-bootstrap.js.
+        `<script data-analytics-bootstrap>${ANALYTICS_BOOTSTRAP_WITH_CONFIG_JS}</script>`,
+        '<script src="/analytics-events.js" defer></script>',
         '<script src="/wa-ref.js" defer></script>',
         '<script src="/meta-tracking.js" defer></script>',
     ].join('\n  ');
