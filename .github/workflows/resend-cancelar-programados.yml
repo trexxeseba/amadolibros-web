@@ -1,0 +1,39 @@
+name: Cancelar mails programados (poda en prueba y Precio Ganador)
+
+# Decisión de Seba del 26/11/2026 (M4a): las corridas de prueba no mandan mail y los fallos de Precio
+# Ganador tampoco. Este workflow cancela en Resend los que ya habían quedado programados para las 20:00.
+# Sólo a mano. El log lleva conteos. Ver scripts/ops/resend-cancelar-programados.mjs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'prueba = sólo cuenta · real = cancela'
+        type: choice
+        options: [prueba, real]
+        default: prueba
+      poda_fecha:
+        description: 'Opcional: también cancela los mails de la poda de este día (AAAA-MM-DD)'
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  cancelar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Cancelar
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          MODO: ${{ inputs.modo }}
+          PODA_FECHA: ${{ inputs.poda_fecha }}
+        run: node scripts/ops/resend-cancelar-programados.mjs

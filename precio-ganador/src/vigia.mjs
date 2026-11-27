@@ -38,6 +38,7 @@ if (horas > MAX_HORAS) {
   const r = await enviarAlarma({ asunto: `no corre bien desde hace ${h}`,
     texto: `${caso}\nÚltima corrida que terminó el paso Correr: ${ultima ? `${ultima.updated_at} (${ultima.html_url})${ultima === ultimaConAvisos ? ', con avisos de auditoría' : ''}` : 'ninguna'}.\nDebería correr cada 2 horas de 09:00 a 21:00. Revisá Actions > Precio Ganador.` });
   console.log('Alarma:', JSON.stringify(r));
-  process.exit(1);
+  // M1b/M2a (Seba 26/11): sin mail y sin rojo; el operador lee este resultado y lo resume.
+  console.log('ATENCION: Precio Ganador no corre bien desde hace', h);
 }
 if (ultima === ultimaConAvisos) console.log('La última corrida terminó con avisos de auditoría; el paso Correr estuvo bien.');

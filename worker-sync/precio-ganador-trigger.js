@@ -68,6 +68,9 @@ export async function dispararPrecioGanador(env, { cron = '0 0 * * *', fetcher =
 }
 
 async function alertar(env, fetcher, resultado) {
+  // M2a (Seba 26/11/2026): las fallas de Precio Ganador no van por mail; quedan en el log del Worker y
+  // en el vigía, que lee el operador.
+  if (String(env.ALARMAS_POR_MAIL ?? '').toLowerCase() !== 'si') { console.log('[precio-ganador-trigger] sin mail (regla 26/11):', resultado.state); return { ...resultado, alerta: 'sin_mail_por_regla' }; }
   const apiKey = typeof env?.RESEND_API_KEY === 'string' ? env.RESEND_API_KEY.trim() : '';
   const to = String(env?.PRECIO_GANADOR_EMAIL_TO ?? '').split(',').map(s => s.trim()).filter(Boolean);
   if (!apiKey || !to.length) return { ...resultado, alerta: 'sin_credenciales' };

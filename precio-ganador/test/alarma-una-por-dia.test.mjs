@@ -13,14 +13,25 @@ test('la misma alarma el mismo día da la misma clave, aunque cambien los númer
   assert.notEqual(claveAlarma('falló la corrida (libros)', dia), claveAlarma('falló la corrida (libros)', '2026-11-26T23:00:00.000Z'));
 });
 
-test('manda la clave de idempotencia y toma el 409 como "ya avisado"', async () => {
-  process.env.RESEND_API_KEY = 'x'; process.env.PRECIO_GANADOR_EMAIL_TO = 'a@b.c';
-  const vistas = [];
-  const fetcher = async (_u, o) => { vistas.push(o.headers['Idempotency-Key']); return { ok: vistas.length === 1, status: vistas.length === 1 ? 200 : 409 }; };
-  assert.equal((await enviarAlarma({ asunto: 'falló la corrida (libros)', texto: 'run 1', fetcher })).status, 'enviado');
-  assert.equal((await enviarAlarma({ asunto: 'falló la corrida (libros)', texto: 'run 2', fetcher })).status, 'ya_avisado');
-  assert.equal(vistas[0], vistas[1]);
-  assert.match(vistas[0], /^precio-ganador-alarma\/\d{4}-\d{2}-\d{2}\/fallo-la-corrida-libros$/);
+test('M2a (26/11): sin ALARMAS_POR_MAIL=si no manda nada ni llama a la red', async () => {
+  let llamadas = 0;
+  const r = await enviarAlarma({ asunto: 'falló la corrida (libros)', texto: 'x', env: { RESEND_API_KEY: 'x', PRECIO_GANADOR_EMAIL_TO: 'a@b.c' }, fetcher: async () => { llamadas++; return { ok: true, status: 200 }; } });
+  assert.equal(r.status, 'sin_mail_por_regla'); assert.equal(llamadas, 0);
+});
+
+test('M3a: con el registro del repo privado, el segundo aviso del mismo problema no sale; lleva APP/PROYECTO/COMETIDO', async () => {
+  const env = { ALARMAS_POR_MAIL: 'si', RESEND_API_KEY: 'x', PRECIO_GANADOR_EMAIL_TO: 'a@b.c', ESTADO_TOKEN: 't' };
+  const creados = new Set(); const mails = [];
+  const fetcher = async (u, o) => {
+    if (u.startsWith('https://api.github.com/')) { const k = u.split('/contents/')[1]; if (creados.has(k)) return { status: 422 }; creados.add(k); return { status: 201 }; }
+    mails.push(JSON.parse(o.body)); return { ok: true, status: 200 };
+  };
+  assert.equal((await enviarAlarma({ asunto: 'no corre bien desde hace 9 horas', texto: 'a', env, fetcher })).status, 'enviado');
+  assert.equal((await enviarAlarma({ asunto: 'no corre bien desde hace 12 horas', texto: 'b', env, fetcher })).status, 'ya_avisado');
+  assert.equal(mails.length, 1);
+  assert.match(mails[0].text, /^APP: .+\nPROYECTO: .+\nCOMETIDO: /);
+  assert.match(mails[0].text, /Cómo desactivarlo o modificarlo/);
+  assert.match(mails[0].html, /<b>APP: /);
 });
 
 test('18 cambiadas sobre 9.808 en el estado es aviso; 18 sobre 500 sigue tumbando', () => {

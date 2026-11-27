@@ -271,7 +271,11 @@ async function main() {
   console.log(JSON.stringify({ modo: real ? 'real' : 'dry_run', ...resumen.contadores, llamadas: ml.stats.llamadas, reintentos: ml.stats.reintentos }));
   // La corrida falla (y GitHub avisa) si no pudo aplicar ninguno de los cambios
   // planeados o si fallaron más del 10 % de las consultas.
-  const erroresConsulta = filas.filter(f => f.d.accion === 'error_consulta').length;
+  // M1b (Seba 26/11): el 403 de Mercado Libre (PolicyAgent, desde el 23/11) es un estado conocido, no una
+  // falla de la corrida: se cuenta aparte y no la pone en rojo (cada rojo era un mail de GitHub).
+  const errores403 = filas.filter(f => f.d.accion === 'error_consulta' && /http_403/.test(String(f.d.motivo ?? ''))).length;
+  const erroresConsulta = filas.filter(f => f.d.accion === 'error_consulta').length - errores403;
+  if (errores403) console.log(`Consultas con 403 de Mercado Libre (no tumban la corrida): ${errores403}`);
   if (real && cambios.length > 0 && !cambios.some(f => f.aplicado) && cambios.some(f => f.d.accion === 'error_aplicar')) throw new Error('ningun_cambio_aplicado');
   if (erroresConsulta > Math.max(20, ids.length * 0.10)) throw new Error(`demasiados_errores_de_consulta_${erroresConsulta}`);
 }

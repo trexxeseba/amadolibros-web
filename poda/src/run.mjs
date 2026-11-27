@@ -21,6 +21,7 @@ import { crearD1, lit, ESQUEMA, grabarCambios } from './d1.mjs';
 import { calcularDia } from './estado.mjs';
 import { REGLAS } from './reglas.mjs';
 import { armarFilaDiaria, armarMail, listaParaChrome, enviarMail } from './mesa.mjs';
+import { avisoUnico } from '../../scripts/lib/mail-ml.mjs';
 
 const json = nombre => JSON.parse(readFileSync(new URL(`../${nombre}`, import.meta.url), 'utf8'));
 const ADVERTISER_ID = 51659;            // anunciante de Amado Libros en Mercado Ads (consola de Ads)
@@ -213,12 +214,15 @@ async function main() {
       !ordenesLegibles && accion === 'correr' ? 'Las órdenes de la tienda no están frescas en la base: no se propuso ninguna pausa.' : null,
     ].filter(Boolean);
     const mailArmado = armarMail({ fecha: hoy, real, cuerpo: fila.fldwtSvMycZShRfJD, avisos });
-    const mail = await enviarMail({ asunto: mailArmado.asunto, texto: mailArmado.texto, html: mailArmado.html, env });
-    if (!mail.ok) process.exitCode = 1;
+    // M4a: las corridas de prueba no mandan mail. M3a: un solo mail de la poda por día (registro propio).
+    let mail = { ok: true, motivo: 'no_hacia_falta' };
+    if (!real) mail = { ok: true, motivo: 'prueba_sin_mail' };
+    else if (!(await avisoUnico('poda-anuncios', { env }))) mail = { ok: true, motivo: 'ya_enviado_hoy' };
+    else { mail = await enviarMail({ asunto: mailArmado.asunto, texto: mailArmado.texto, html: mailArmado.html, env }); if (!mail.ok) process.exitCode = 1; }
     if (env.PODA_SALIDA) { mkdirSync(env.PODA_SALIDA, { recursive: true }); writeFileSync(`${env.PODA_SALIDA}/poda-lista.json`, JSON.stringify(listaParaChrome({ fecha: hoy, accion, real, resultado }), null, 1)); }
 
     const c = resultado.contadores;
-    console.log(`Poda ${accion} ${modo}${real ? '' : ' (no registra)'}: evaluados ${c.evaluados}, a pausar ${c.pausar + c.pausaria}, pendientes ${c.pendientes_pausa}, a reactivar ${c.reactivar}, observación ${c.observacion}, clic caro ${c.clic_caro}, falta precio ${c.falta_precio}, excedentes ${c.excedentes}, errores ${c.errores}. Registro: ${registroGrabado} cambios. Mail: ${mail.ok ? 'ok' : mail.motivo}. ${Math.round((Date.now() - t0) / 1000)} s.`);
+    console.log(`Poda ${accion} ${modo}${real ? '' : ' (no registra)'}: evaluados ${c.evaluados}, a pausar ${c.pausar + c.pausaria}, pendientes ${c.pendientes_pausa}, a reactivar ${c.reactivar}, observación ${c.observacion}, clic caro ${c.clic_caro}, falta precio ${c.falta_precio}, excedentes ${c.excedentes}, errores ${c.errores}. Registro: ${registroGrabado} cambios. Mail: ${mail.motivo ?? (mail.ok ? 'ok' : 'error')}. ${Math.round((Date.now() - t0) / 1000)} s.`);
   } catch (e) {
     // Nada se escribió en el registro. Se deja la fila de Error y se falla el job.
     const motivo = String(e?.code ?? e?.message ?? 'error').replace(/[^\w.:-]/g, '').slice(0, 80);
