@@ -33,7 +33,7 @@ jobs:
     name: Publish production paused catalog
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -66,20 +66,71 @@ jobs:
           PREVIEW_URL: ${{ steps.upload.outputs.preview_url }}
           SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
         run: |
-          CATALOG_URL="https://pub-b2b408811ae24e3da04cda79c6ff084d.r2.dev/catalog.json"
+          # Publicación por partes: en una sola llamada el Worker superaba sus
+          # límites (Cloudflare "error code: 1102") con ~17.000 publicaciones.
+          # step=start arma la lista de IDs; cada step=continue hace una sola
+          # fase (un tramo de detalles, el índice, un rango de bloques o la
+          # verificación + manifest). El manifest se escribe recién en la última
+          # parte, después de verificar con head cada artefacto: si algo falla
+          # antes, el sitio sigue en la versión anterior.
           sleep 10
-          RESPONSE=$(curl -sS --max-time 900 -w "\nHTTP_STATUS:%{http_code}" \
-            -X POST "$PREVIEW_URL/publish-production-catalog" \
-            -H "Authorization: Bearer $SYNC_SECRET")
 
-          HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
-          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+          call_step() {
+            local query="$1"
+            local response
+            response=$(curl -sS --max-time 600 -w "
+HTTP_STATUS:%{http_code}"               -X POST "$PREVIEW_URL/publish-production-catalog?$query"               -H "Authorization: Bearer $SYNC_SECRET" || true)
+            HTTP_STATUS=$(echo "$response" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+            BODY=$(echo "$response" | sed '/HTTP_STATUS:/d')
+          }
+
+          json_field() {
+            echo "$BODY" | node -e '
+              let input="";
+              process.stdin.on("data", chunk => input += chunk);
+              process.stdin.on("end", () => {
+                try { const value = JSON.parse(input)[process.argv[1]]; process.stdout.write(value == null ? "" : String(value)); }
+                catch { process.stdout.write(""); }
+              });
+            ' "$1"
+          }
+
+          call_step "step=start"
+          echo "start: HTTP $HTTP_STATUS $BODY"
+          RUN_ID=$(json_field run_id)
+          if [ "$HTTP_STATUS" != "200" ] || [ -z "$RUN_ID" ]; then
+            echo "ERROR: /publish-production-catalog?step=start respondió HTTP $HTTP_STATUS."
+            exit 1
+          fi
+
+          PUBLISHED=""
+          FAILURES=0
+          for STEP in $(seq 1 80); do
+            call_step "step=continue&run=$RUN_ID"
+            if [ "$HTTP_STATUS" != "200" ]; then
+              FAILURES=$((FAILURES + 1))
+              echo "parte $STEP: HTTP $HTTP_STATUS (intento fallido $FAILURES de 4) $BODY"
+              if [ "$FAILURES" -ge 4 ]; then
+                echo "ERROR: /publish-production-catalog?step=continue respondió HTTP $HTTP_STATUS."
+                exit 1
+              fi
+              # La misma parte se rehace: sus claves son deterministas.
+              sleep 20
+              continue
+            fi
+            FAILURES=0
+            if [ "$(json_field published)" = "true" ]; then
+              PUBLISHED="yes"
+              break
+            fi
+            echo "parte $STEP: fase=$(json_field phase) tramos=$(json_field chunks_done)/$(json_field chunks_total) bloques=$(json_field blocks_done)/$(json_field block_count)"
+          done
 
           echo "HTTP status: $HTTP_STATUS"
           echo "PRODUCTION_CATALOG_RESULT=$BODY"
 
-          if [ "$HTTP_STATUS" != "200" ]; then
-            echo "ERROR: /publish-production-catalog respondió HTTP $HTTP_STATUS."
+          if [ -z "$PUBLISHED" ]; then
+            echo "ERROR: la publicación por partes no terminó."
             exit 1
           fi
           if ! echo "$BODY" | grep -q '"published":true'; then

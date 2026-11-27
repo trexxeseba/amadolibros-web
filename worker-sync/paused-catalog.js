@@ -19,11 +19,11 @@ function slugify(text) {
     .substring(0, 60);
 }
 
-function byteLength(value) {
+export function byteLength(value) {
   return new TextEncoder().encode(value).length;
 }
 
-async function gzipText(value) {
+export async function gzipText(value) {
   const input = new TextEncoder().encode(value);
   const stream = new Blob([input]).stream().pipeThrough(new CompressionStream('gzip'));
   return new Uint8Array(await new Response(stream).arrayBuffer());
@@ -41,6 +41,91 @@ export function blockFilename(blockNumber) {
   return `block-${String(blockNumber).padStart(3, '0')}.json`;
 }
 
+export function compareCatalogIds(a, b) {
+  return String(a).localeCompare(String(b));
+}
+
+export function isPausedCatalogItem(item) {
+  return item?.status === 'paused';
+}
+
+export function isActiveIndexItem(item) {
+  const currency = String(item?.currency || item?.currency_id || '').trim().toUpperCase();
+  return item?.status === 'active' &&
+    Number(item.available_quantity) > 0 &&
+    // Catálogos anteriores no incluían currency_id y eran UYU. Cuando la
+    // fuente sí declara moneda, solo UYU puede entrar en las grillas que
+    // ofrecen cuotas, transferencia y checkout en pesos.
+    (!currency || currency === 'UYU');
+}
+
+export function pausedIndexRow(item) {
+  return [
+    item.id,
+    item.title || '',
+    item.author || '',
+    item.isbn || '',
+    item.thumbnail || item.pictures?.[0] || '',
+  ];
+}
+
+export function activeIndexRow(item) {
+  return [
+    item.id,
+    item.title || '',
+    item.author || '',
+    item.isbn || '',
+    item.thumbnail || item.pictures?.[0] || '',
+    Number(item.price) || 0,
+    Number(item.available_quantity) || 0,
+  ];
+}
+
+export function buildActiveIndexBody(rows) {
+  return JSON.stringify({
+    schema_version: 1,
+    fields: ACTIVE_INDEX_FIELDS,
+    derived_fields: {
+      slug: 'slugify-v1',
+      status: 'active',
+    },
+    total: rows.length,
+    items: rows,
+  });
+}
+
+export function buildPausedIndexBody(rows, blockCount) {
+  return JSON.stringify({
+    schema_version: 1,
+    fields: INDEX_FIELDS,
+    derived_fields: {
+      slug: 'slugify-v1',
+      status: 'paused',
+      block: 'numeric-id-mod-block-count',
+    },
+    block_count: blockCount,
+    total: rows.length,
+    items: rows,
+  });
+}
+
+export function buildBlockBody(version, block, items) {
+  return JSON.stringify({
+    schema_version: 1,
+    version,
+    block,
+    total: items.length,
+    items,
+  });
+}
+
+export function assertValidVersion(version, blockCount) {
+  if (!/^\d{14,17}$/.test(version)) throw new Error('Versión de catálogo pausado inválida.');
+  if (!Number.isInteger(blockCount) || blockCount < 64 || blockCount > 256) {
+    throw new Error('blockCount debe estar entre 64 y 256.');
+  }
+}
+
 export function buildPausedCatalogArtifacts(catalog, {
   blockCount = DEFAULT_BLOCK_COUNT,
   version = String(catalog?.updated_at || new Date().toISOString())
@@ -50,88 +135,36 @@ export function buildPausedCatalogArtifacts(catalog, {
   // completamente distintos — nunca deben poder pisarse ni confundirse.
   prefixRoot = 'stock1-preview/versions',
 } = {}) {
-  const paused = (Array.isArray(catalog?.items) ? catalog.items : [])
-    .filter(item => item?.status === 'paused')
-    .sort((a, b) => String(a.id).localeCompare(String(b.id)));
-  const active = (Array.isArray(catalog?.items) ? catalog.items : [])
-    .filter(item => {
-      const currency = String(item?.currency || item?.currency_id || '').trim().toUpperCase();
-      return item?.status === 'active' &&
-        Number(item.available_quantity) > 0 &&
-        // Catálogos anteriores no incluían currency_id y eran UYU. Cuando la
-        // fuente sí declara moneda, solo UYU puede entrar en las grillas que
-        // ofrecen cuotas, transferencia y checkout en pesos.
-        (!currency || currency === 'UYU');
-    })
-    .sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  const items = Array.isArray(catalog?.items) ? catalog.items : [];
+  const paused = items
+    .filter(isPausedCatalogItem)
+    .sort((a, b) => compareCatalogIds(a.id, b.id));
+  const active = items
+    .filter(isActiveIndexItem)
+    .sort((a, b) => compareCatalogIds(a.id, b.id));
 
   if (paused.length === 0) throw new Error('No hay publicaciones pausadas para versionar.');
   if (active.length === 0) throw new Error('No hay publicaciones activas para indexar.');
-  if (!/^\d{14,17}$/.test(version)) throw new Error('Versión de catálogo pausado inválida.');
-  if (!Number.isInteger(blockCount) || blockCount < 64 || blockCount > 256) {
-    throw new Error('blockCount debe estar entre 64 y 256.');
-  }
+  assertValidVersion(version, blockCount);
 
   const blocks = Array.from({ length: blockCount }, () => []);
   const indexRows = [];
   for (const item of paused) {
-    const block = blockNumberForId(item.id, blockCount);
-    blocks[block].push(item);
-    indexRows.push([
-      item.id,
-      item.title || '',
-      item.author || '',
-      item.isbn || '',
-      item.thumbnail || item.pictures?.[0] || '',
-    ]);
+    blocks[blockNumberForId(item.id, blockCount)].push(item);
+    indexRows.push(pausedIndexRow(item));
   }
 
   const prefix = `${prefixRoot}/${version}`;
-  const activeIndexRows = active.map(item => [
-    item.id,
-    item.title || '',
-    item.author || '',
-    item.isbn || '',
-    item.thumbnail || item.pictures?.[0] || '',
-    Number(item.price) || 0,
-    Number(item.available_quantity) || 0,
-  ]);
-  const activeIndexBody = JSON.stringify({
-    schema_version: 1,
-    fields: ACTIVE_INDEX_FIELDS,
-    derived_fields: {
-      slug: 'slugify-v1',
-      status: 'active',
-    },
-    total: activeIndexRows.length,
-    items: activeIndexRows,
-  });
-  const indexBody = JSON.stringify({
-    schema_version: 1,
-    fields: INDEX_FIELDS,
-    derived_fields: {
-      slug: 'slugify-v1',
-      status: 'paused',
-      block: 'numeric-id-mod-block-count',
-    },
-    block_count: blockCount,
-    total: indexRows.length,
-    items: indexRows,
-  });
-  const blockArtifacts = blocks.map((items, block) => {
-    const body = JSON.stringify({
-      schema_version: 1,
-      version,
-      block,
-      total: items.length,
-      items,
-    });
+  const activeIndexBody = buildActiveIndexBody(active.map(activeIndexRow));
+  const indexBody = buildPausedIndexBody(indexRows, blockCount);
+  const blockArtifacts = blocks.map((blockItems, block) => {
+    const body = buildBlockBody(version, block, blockItems);
     return {
       block,
       key: `${prefix}/${blockFilename(block)}`,
       body,
       bytes: byteLength(body),
-      total: items.length,
+      total: blockItems.length,
     };
   });
 

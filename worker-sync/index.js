@@ -56,6 +56,7 @@ import { createPublicationQueueHandler } from './publication-queue.js';
 import { publicationStockSync } from './publication-stock-sync.js';
 import { PUBLICATION_PATH } from './publication-policy.js';
 import { buildCatalog   } from './meli-catalog.js';
+import { runStagedProductionCatalogStep } from './catalog-staged-publish.js';
 import { publishToR2    } from './r2-publish.js';
 import { notifyHealthcheck } from './healthcheck.js';
 import { processStockWaitlist } from './stock-waitlist-notifier.js';
@@ -313,6 +314,18 @@ export default {
     if (request.method === 'POST' && url.pathname === '/publish-production-catalog') {
       if (String(env.PRODUCTION_PAUSED_CATALOG_PUBLISH_ENABLED) !== 'true') {
         return json({ error: 'Not found.' }, 404);
+      }
+      // Por partes (?step=start, después ?step=continue&run=...): cada llamada
+      // hace una sola fase y queda bajo los límites del Worker. Sin step se
+      // conserva la publicación en una sola llamada (sirve para catálogos
+      // chicos; con ~17.000 publicaciones Cloudflare la corta con 1102).
+      const step = url.searchParams.get('step');
+      if (step) {
+        const result = await runStagedProductionCatalogStep(env, {
+          step,
+          runId: url.searchParams.get('run'),
+        });
+        return json(result, result.status === 'error' ? 500 : 200);
       }
       const result = await runProductionCatalogPublish(env);
       return json(result, result.status === 'published-production' ? 200 : 500);
