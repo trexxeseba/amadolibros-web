@@ -57,7 +57,7 @@ function cardHtml(book, position) {
     ? ` srcset="${escapeHtml(image.srcset)}" sizes="${escapeHtml(image.sizes)}"`
     : '';
   return `<article class="book-card">
-    <a class="book-cover-link" href="${href}" aria-label="Ver ficha de ${escapeHtml(book.title)}"><img src="${escapeHtml(image.src)}"${responsive} alt="Portada de ${escapeHtml(book.title)}" loading="${position < 8 ? 'eager' : 'lazy'}" decoding="async" width="280" height="420"></a>
+    <a class="book-cover-link" href="${href}" aria-label="Ver ficha de ${escapeHtml(book.title)}"><img src="${escapeHtml(image.src)}"${responsive} alt="Portada de ${escapeHtml(book.title)}" loading="${position < 4 ? 'eager' : 'lazy'}" decoding="async" width="280" height="420"></a>
     <div class="book-body"><span class="order-badge">Por encargo</span><h2><a href="${href}">${escapeHtml(book.title)}</a></h2>
       ${book.author ? `<p class="book-author">${escapeHtml(book.author)}</p>` : ''}
       ${book.isbn ? `<p class="book-isbn">ISBN ${escapeHtml(book.isbn)}</p>` : ''}
