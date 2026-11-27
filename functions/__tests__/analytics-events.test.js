@@ -12,8 +12,10 @@ const orderStatus = readFileSync('astro-front/src/pages/pedido.astro', 'utf8');
 const searchOverlay = readFileSync('astro-front/src/components/SearchOverlay.astro', 'utf8');
 
 test('carga la medición compartida en páginas Astro y SSR', () => {
-  assert.match(baseLayout, /<script is:inline src="\/analytics-events\.js"><\/script>/);
-  assert.match(brand, /<script src="\/analytics-events\.js"><\/script>/);
+  assert.match(baseLayout, /<script is:inline src="\/analytics-events\.js" defer><\/script>/);
+  assert.match(baseLayout, /set:html=\{ANALYTICS_BOOTSTRAP_JS\}/);
+  assert.match(brand, /<script src="\/analytics-events\.js" defer><\/script>/);
+  assert.match(brand, /\$\{ANALYTICS_BOOTSTRAP_WITH_CONFIG_JS\}/);
 });
 
 test('el evento cubre enlaces y aperturas programáticas de WhatsApp', () => {
@@ -414,4 +416,191 @@ test('los CTA de agotados y "Lo quiero" de liquidación declaran sus parámetros
   assert.match(agotadosPage, /data-cta-location="agotados_hero" data-topic="libros_agotados_importados"/);
   assert.match(agotadosPage, /data-cta-location="agotados_cierre" data-topic="libros_agotados_importados"/);
   assert.doesNotMatch(agotadosPage, /[úu]nicamente|No podemos asegurar/);
+});
+
+// ─── Analítica diferida (performance móvil) ─────────────────────────────────
+// /analytics-events.js va con defer y gtag.js se descarga después del primer
+// pintado. Lo que se prueba acá: (a) ningún script de medición frena el
+// render y (b) lo que se dispara antes de que lleguen queda en dataLayer, en
+// el mismo orden y con los mismos parámetros.
+
+test('los scripts de medición no bloquean el render en Astro ni en Functions', async () => {
+  const { faviconHeadHtml } = await import('../_shared/brand.js');
+  const sources = { baseLayout, functionsHead: faviconHeadHtml() };
+  for (const [name, html] of Object.entries(sources)) {
+    const tags = html.match(/<script\b[^>]*\bsrc=[^>]*>/g) || [];
+    const analyticsTags = tags.filter(tag => /analytics-events|googletagmanager/.test(tag));
+    assert.ok(analyticsTags.length > 0, `${name}: no encontró la medición`);
+    for (const tag of analyticsTags) {
+      assert.match(tag, /\s(defer|async)\b/, `${name}: ${tag} bloquea el render`);
+    }
+    // gtag.js no va en el HTML: lo agrega el arranque después del pintado.
+    assert.doesNotMatch(html, /<script[^>]*src=[^>]*googletagmanager/, `${name}: gtag.js sigue en el HTML`);
+  }
+  // Mismo ID de GA4 que antes.
+  assert.match(analytics, /var MEASUREMENT_ID = 'G-SDX45VEPP3';/);
+});
+
+function deferredPage(pathname, { readyState = 'loading', hostname = 'www.amadolibros.com' } = {}) {
+  const timers = [];
+  const listeners = {};
+  const docListeners = {};
+  const appended = [];
+  const on = bag => (name, handler) => { (bag[name] = bag[name] || []).push(handler); };
+  const off = bag => (name, handler) => { bag[name] = (bag[name] || []).filter(h => h !== handler); };
+  const window = {
+    location: { hostname, pathname, href: `https://${hostname}${pathname}?utm_source=x&q=privado` },
+    addEventListener: on(listeners),
+    removeEventListener: off(listeners),
+    setTimeout: (fn, ms) => { timers.push({ fn, ms }); return timers.length; },
+    clearTimeout: (id) => { if (timers[id - 1]) timers[id - 1].fn = null; },
+  };
+  const document = {
+    readyState,
+    visibilityState: 'visible',
+    querySelector: () => null,
+    createElement: () => ({}),
+    head: { appendChild: node => appended.push(node) },
+    addEventListener: on(docListeners),
+    removeEventListener: off(docListeners),
+  };
+  const context = {
+    window, document, URL, Set, Date, Object, String, Number, Math, Array, Promise, isFinite,
+    encodeURIComponent, setTimeout: window.setTimeout, clearTimeout: window.clearTimeout,
+  };
+  return {
+    window, timers, listeners, docListeners,
+    run: code => runInNewContext(code, context),
+    fire: (bag, name, event = {}) => (bag[name] || []).slice().forEach(h => h(event)),
+    gtagScripts: () => appended.filter(n => /googletagmanager\.com\/gtag\/js\?id=G-SDX45VEPP3/.test(n.src)),
+  };
+}
+
+// JSON: los objetos vienen de otro contexto de vm y deepStrictEqual compara prototipos.
+const commands = dataLayer => JSON.parse(JSON.stringify(dataLayer.map(entry => Array.from(entry))));
+// El arranque de las páginas de Functions (con js + config incluidos).
+const bootstrap = async () => (await import('../../shared/analytics-bootstrap.js')).ANALYTICS_BOOTSTRAP_WITH_CONFIG_JS;
+const astroBootstrap = async () => (await import('../../shared/analytics-bootstrap.js')).ANALYTICS_BOOTSTRAP_JS;
+
+test('un evento disparado antes de que cargue gtag.js queda en dataLayer, en orden y sin cambios', async () => {
+  const page = deferredPage('/libro/MLU123/un-libro');
+  page.run(await bootstrap());
+
+  // Inline de la ficha y de los juegos, antes de analytics-events.js (defer).
+  page.window.AmadoAnalytics.trackCommerce('view_item', {
+    value: 990, items: [{ item_id: 'MLU123', item_name: 'Un libro', price: 990, quantity: 1 }],
+  });
+  page.window.gtag('event', 'juego_visto', { juego: 'acertijo' });
+  assert.equal(page.gtagScripts().length, 0, 'gtag.js no se pide antes del primer pintado');
+
+  page.run(analytics);
+  const sent = commands(page.window.dataLayer);
+  // js y config primero (como cuando analytics-events.js era sincrónico);
+  // la llamada encolada de view_item se repite al cargar el archivo, así que
+  // puede quedar después de un gtag() directo: cada evento sale igual.
+  assert.deepEqual(sent.map(c => (c[0] === 'event' ? c[1] : c[0])), ['js', 'config', 'juego_visto', 'view_item']);
+  assert.equal(sent[1][1], 'G-SDX45VEPP3');
+  assert.equal(sent[1][2].page_location, 'https://www.amadolibros.com/libro/MLU123/un-libro?utm_source=x');
+  assert.deepEqual({ ...sent[2][2] }, { juego: 'acertijo' });
+  assert.deepEqual(JSON.parse(JSON.stringify(sent[3][2])), {
+    currency: 'UYU',
+    items: [{
+      item_id: 'MLU123', item_name: 'Un libro', item_brand: 'Amado Libros',
+      item_category: 'Libros', quantity: 1, price: 990,
+    }],
+    value: 990,
+    availability_type: 'by_request',
+  });
+  assert.equal(page.window.AmadoAnalytics.__queue, undefined);
+
+  // Todavía sin gtag.js; llega con la primera interacción y una sola vez.
+  assert.equal(page.gtagScripts().length, 0);
+  page.fire(page.listeners, 'pointerdown');
+  page.fire(page.listeners, 'keydown');
+  page.timers.forEach(t => t.fn && t.fn());
+  assert.equal(page.gtagScripts().length, 1);
+  assert.equal(page.gtagScripts()[0].async, true);
+});
+
+test('sin interacción, gtag.js llega después de load (momento libre) o por el tope de tiempo', async () => {
+  const page = deferredPage('/');
+  page.run(await bootstrap());
+  page.run(analytics);
+  assert.equal(page.gtagScripts().length, 0);
+  page.fire(page.listeners, 'load');
+  const idle = page.timers.find(t => t.ms === 1500 && t.fn);
+  assert.ok(idle, 'sin requestIdleCallback usa un plazo corto después de load');
+  idle.fn();
+  assert.equal(page.gtagScripts().length, 1);
+
+  const capped = deferredPage('/catalogo');
+  capped.run(await bootstrap());
+  capped.run(analytics);
+  const cap = capped.timers.find(t => t.ms === 6000 && t.fn);
+  assert.ok(cap);
+  cap.fn();
+  assert.equal(capped.gtagScripts().length, 1);
+});
+
+test('en /carrito y /pedido gtag.js se pide de inmediato, como antes', async () => {
+  for (const path of ['/carrito/', '/carrito', '/pedido/']) {
+    const page = deferredPage(path);
+    page.run(await astroBootstrap());
+    // Lo mismo que hace el inline de BaseLayout con PUBLIC_GA_ID.
+    page.window.gtag('js', new Date());
+    page.window.gtag('config', 'G-SDX45VEPP3', { page_location: 'x' });
+    page.window.AmadoGtag.configured['G-SDX45VEPP3'] = true;
+    page.window.AmadoGtag.load('G-SDX45VEPP3');
+    assert.equal(page.gtagScripts().length, 1, path);
+    page.run(analytics);
+    // analytics-events.js no repite js/config ni el script.
+    assert.equal(commands(page.window.dataLayer).filter(c => c[0] === 'config').length, 1, path);
+    assert.equal(page.gtagScripts().length, 1, path);
+  }
+});
+
+test('add_to_cart pide gtag.js ya, sin esperar el momento libre', async () => {
+  const page = deferredPage('/libro/MLU9/otro');
+  page.window.sessionStorage = { getItem: () => null, setItem: () => {} };
+  page.run(await bootstrap());
+  page.run(analytics);
+  assert.equal(page.gtagScripts().length, 0);
+  page.window.AmadoAnalytics.trackCommerce('add_to_cart', {
+    value: 500, items: [{ item_id: 'MLU9', item_name: 'Otro', price: 500, quantity: 1 }],
+  });
+  assert.equal(page.gtagScripts().length, 1);
+  assert.equal(commands(page.window.dataLayer).at(-1)[1], 'add_to_cart');
+});
+
+test('un clic a WhatsApp antes de que cargue analytics-events.js igual se mide, una vez', async () => {
+  const page = deferredPage('/');
+  page.run(await bootstrap());
+  const anchor = { href: 'https://wa.me/59899841325', closest: () => null };
+  page.fire(page.docListeners, 'click', { target: { closest: s => (s === 'a[href]' ? anchor : null) } });
+  page.run(analytics);
+  const events = commands(page.window.dataLayer).filter(c => c[0] === 'event');
+  assert.equal(events.length, 1);
+  assert.equal(events[0][1], 'whatsapp_click');
+  assert.equal(events[0][2].origen, 'home');
+  assert.equal(events[0][2].transport_type, 'beacon');
+  // El listener temprano se retira: queda sólo el de analytics-events.js.
+  assert.equal(page.docListeners.click.length, 1);
+});
+
+test('getMeasurementContext nunca deja colgado el checkout si la medición no llega', async () => {
+  const page = deferredPage('/carrito/');
+  page.run(await bootstrap());
+  const pending = page.window.AmadoAnalytics.getMeasurementContext(1200);
+  const timer = page.timers.find(t => t.ms === 1200 && t.fn);
+  assert.ok(timer);
+  timer.fn();
+  assert.equal(await pending, null);
+});
+
+test('fuera de los dominios productivos el arranque no crea colas ni gtag()', async () => {
+  const page = deferredPage('/', { hostname: 'pr-1.amadolibros-web.pages.dev' });
+  page.run(await bootstrap());
+  assert.equal(page.window.AmadoAnalytics, undefined);
+  assert.equal(page.window.gtag, undefined);
+  assert.equal(typeof page.window.AmadoGtag.load, 'function');
 });
