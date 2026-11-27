@@ -322,7 +322,7 @@ function cardHtml(item, index, navigationBase) {
     const eager = index < 6;
     const imageHtml = image.src
         ? `<img src="${escapeHtml(image.src)}"${responsiveAttrs} alt="Portada de ${title}" loading="${eager ? 'eager' : 'lazy'}" decoding="async" width="280" height="420">`
-        : '<span class="book-placeholder" aria-hidden="true">📚</span>';
+        : '<span class="book-placeholder" aria-hidden="true"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2"/><path d="M8 7h7"/></svg></span>';
     return `<article class="book-card">
   <a class="book-image" href="${escapeHtml(href)}">${imageHtml}</a>
   <div class="book-body">
@@ -477,7 +477,7 @@ function renderPage({ category, categoryData, items, isPreview, hasUnexpectedPar
     const resultsHeading = availability === 'disponibles' ? 'Disponibles ahora'
         : availability === 'encargo' ? 'Por encargo' : simple ? 'Todos los productos' : 'Todos los libros';
     const waMessage = buildWhatsAppMessage({
-        greeting: 'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran 😊',
+        greeting: 'Hola, estoy buscando un libro en Amado Libros y quisiera que me ayudaran',
         motive: 'Consultar por un libro de esta categoría',
         book: `Libro de ${category.name}`,
         situation: 'Todavía no identifiqué el título exacto',

@@ -22,7 +22,7 @@
   function build(options) {
     options = options || {};
     var lines = [
-      String(options.greeting || 'Hola, encontré Amado Libros y quería hacerles una consulta 😊').trim(),
+      String(options.greeting || 'Hola, encontré Amado Libros y quería hacerles una consulta').trim(),
       '',
     ];
     if (options.motive) lines.push('Motivo: ' + String(options.motive).trim());

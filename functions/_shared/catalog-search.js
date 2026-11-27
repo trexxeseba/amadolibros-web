@@ -131,6 +131,14 @@ function sameTokens(a, b) {
     return a.length === b.length && a.every((t, i) => t === b[i]);
 }
 
+// Ancla de la pasada tolerante: palabra exacta o prefijo que cubre casi toda la
+// palabra del libro. Un prefijo corto («harri» de «harrigan») no alcanza: dejaba
+// entrar libros sin relación cuando la otra palabra tenía un error de tipeo.
+function isAnchor(queryToken, itemTokens) {
+    return itemTokens.some(t => t === queryToken
+        || (t.startsWith(queryToken) && queryToken.length / t.length >= 0.75));
+}
+
 function tolerantTokensMatch(queryTokens, itemTokens) {
     const single = queryTokens.length === 1;
     // Una sola palabra: 4 letras o más, como siempre. En una consulta de varias
@@ -140,7 +148,7 @@ function tolerantTokensMatch(queryTokens, itemTokens) {
     let fuzzy = 0;
     let anchors = 0;
     for (const qt of queryTokens) {
-        if (tokenMatches(qt, itemTokens)) { if (qt.length >= 3) anchors++; continue; }
+        if (tokenMatches(qt, itemTokens)) { if (qt.length >= 3 && isAnchor(qt, itemTokens)) anchors++; continue; }
         const near = qt.length >= minQueryLength
             && itemTokens.some(w => w.length >= 4 && levenshteinAtMost1(qt, w));
         if (!near) return false;

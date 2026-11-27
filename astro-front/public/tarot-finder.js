@@ -110,7 +110,7 @@
   }
 
   function buildNoResultsMessage(answers, page) {
-    var lines = ['Hola, estoy buscando un mazo en Amado Libros 😊', '', 'Motivo: Buscar un mazo con el selector "Encontrá tu mazo"'];
+    var lines = ['Hola, estoy buscando un mazo en Amado Libros', '', 'Motivo: Buscar un mazo con el selector "Encontrá tu mazo"'];
     var situation = [];
     if (hasPreference(answers.system)) situation.push('Tipo: ' + SYSTEM_LABEL[answers.system]);
     if (hasPreference(answers.deckFamily)) situation.push('Tradición: ' + DECK_FAMILY_LABEL[answers.deckFamily]);
