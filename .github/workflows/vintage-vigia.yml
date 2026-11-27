@@ -3,7 +3,7 @@ name: Vintage vigía de propiedad intelectual
 # Mira las infracciones de Amado Vintage (seller 2341378249) cada 10 minutos y, si hay una nueva de
 # propiedad intelectual, pausa la denunciada y las parecidas, pone el freno al publicador y avisa por
 # mail. Sólo lee de Mercado Libre (salvo pausar). Nunca Amado Libros. Código: scripts/vintage-cloud/vigia.mjs.
-# El Worker de Cloudflare lo lanza cada 10 minutos (el cron de GitHub se atrasa y queda de respaldo).
+# Lo lanza su propio cron de GitHub cada 10 minutos (desde el 27/11/2026 el Worker de Amado Libros ya no dispara trabajos de Vintage).
 on:
   schedule:
     - cron: '*/10 * * * *'

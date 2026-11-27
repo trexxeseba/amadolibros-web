@@ -43,6 +43,9 @@ export const SLOW_SELLERS = new Map([
   ['471589392', 12], // HERMES_PROMOSML: figura sin plazo, entrega en unos 12 días (26/10/2026)
 ]);
 // Cuentas de la casa: nunca son competencia.
+// Desenganche de cuentas (Seba, 27/11/2026): el id de Amado Vintage queda acá a propósito. Es una
+// constante para no competir contra la propia cuenta cuando aparece como oferta en una ficha que
+// ya se leyó con el token de Libros; no es una conexión: no se usa su token ni se piden sus datos.
 export const HOUSE_SELLERS = new Set([SALES_SELLER_ID, '2341378249']); // Amado Libros, Amado Vintage
 export function realDays(sellerId, days) {
   const slow = SLOW_SELLERS.get(String(sellerId ?? ''));

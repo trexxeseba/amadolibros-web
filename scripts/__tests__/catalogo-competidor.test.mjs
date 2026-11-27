@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {tomarFoto,movimiento,informe,asunto,correr,podar,serieVentas,leerVendedor,ofertaDelVendedor,preguntasRecientes,pulso,TABLES,DIA_MS} from '../mercadolibre/catalogo-competidor.mjs';
 
-const HERMES='471589392',OTRO='555',NOSOTROS='2341378249';
+const HERMES='471589392',OTRO='555',NOSOTROS='440298103'; // Amado Libros: la foto se lee con su token
 const DIA=d=>new Date(Date.UTC(2026,10,d,12)).toISOString();
 const AHORA=Date.parse(DIA(16));
 
@@ -167,4 +167,26 @@ test('la foto anota el día y el pulso diario arma la serie sin tomar foto',asyn
  assert.deepEqual(serie.dias.map(d=>d.ventas),[3,3,3,3,3,3,4]);
  const out=await correr({query,ml:mlFalso({ofertas:OFERTAS}),seller:HERMES,accion:'pulso',send:async()=>{throw new Error('el pulso no manda mail');},log:()=>{}});
  assert.equal(out.pulso.evento,'pulso');
+});
+
+// Desenganche de cuentas (27/11/2026): con el token de Libros, un 403 de Mercado Libre en una ruta
+// queda como "no disponible" y la corrida sigue; no se reintenta con otra cuenta.
+test('un 403 con el token de Libros queda como no disponible y la foto sigue',async()=>{
+ const query=d1(),eventos=[];
+ const base=mlFalso({ofertas:OFERTAS});
+ const ml={...base,get:async path=>{if(/^\/products\/[^/]+\/items/.test(path)||path.startsWith('/users/'))throw Object.assign(new Error('http_403'),{status:403,code:'http_403'});return base.get(path);}};
+ const out=await tomarFoto({ml,query,seller:HERMES,now:()=>AHORA,intervalMs:0,onStatus:e=>eventos.push(e)});
+ assert.equal(out.completa,true);
+ assert.equal(out.items,0);
+ assert.equal(out.no_disponible,4); // la ficha del vendedor y los 3 productos
+ assert.deepEqual(eventos.filter(e=>e.evento==='no_disponible').map(e=>e.ruta).sort(),['products_items','users']);
+ const p=await pulso({ml,query,seller:HERMES,now:()=>AHORA});
+ assert.equal(p.con_contador,false);
+ assert.equal(p.no_disponible,1);
+});
+
+test('la foto de competencia lee con el token de Amado Libros',async()=>{
+ const {CUENTA_COMPETENCIA}=await import('../mercadolibre/catalogo-competidor.mjs');
+ assert.equal(CUENTA_COMPETENCIA.clave,'libros');
+ assert.equal(CUENTA_COMPETENCIA.sellerId,'440298103');
 });

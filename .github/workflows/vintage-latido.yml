@@ -1,0 +1,39 @@
+name: Vintage latido de la campaña
+
+# Mira los recibos de altas de Amado Vintage (2341378249) en D1 y avisa por ntfy si hace demasiado
+# que no hay altas nuevas y nada lo explica (lista de SBS vencida, lista recién cargada, campaña
+# pausada o terminada). Antes lo hacía el Worker de sync, que es de Amado Libros; salió de ahí en el
+# desenganche de cuentas (Seba, 27/11/2026). No usa tokens de Mercado Libre ni toca publicaciones.
+# Código: scripts/vintage-cloud/latido.mjs y functions/_shared/vintage-watch.js.
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: vintage-latido
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  latido:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # El tema de ntfy es secreto (con el nombre cualquiera lee o falsifica avisos).
+      VINTAGE_NOTIFY_URL: ${{ secrets.VINTAGE_NOTIFY_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Mirar el latido
+        run: node scripts/vintage-cloud/latido.mjs

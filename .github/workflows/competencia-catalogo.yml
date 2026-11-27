@@ -4,9 +4,10 @@ name: Competencia catálogo (foto semanal)
 # seller 471589392): cuánto vende (contador de operaciones de su ficha pública) y qué hace en
 # los libros que vendemos nosotros (sus ofertas en nuestros productos de catálogo: precio,
 # posición, cantidad si ML la informa, preguntas). Guarda la foto en D1 y manda por mail el
-# movimiento desde la anterior. Sólo lee de Mercado Libre, con el token de Amado Vintage.
-# Nunca publica ni toca Amado Libros. Código: scripts/mercadolibre/catalogo-competidor.mjs y
-# docs/competencia-catalogo.md.
+# movimiento desde la anterior. Sólo lee de Mercado Libre (GET), con el token de Amado Libros:
+# son productos de catálogo de Libros (desenganche de cuentas, 27/11/2026: nunca con el de
+# Vintage). Si una ruta responde 403 con ese token, queda como "no disponible" y sigue.
+# Nunca publica. Código: scripts/mercadolibre/catalogo-competidor.mjs y docs/competencia-catalogo.md.
 on:
   schedule:
     # Domingos 06:10 UTC (03:10 en Montevideo): foto completa e informe por mail.

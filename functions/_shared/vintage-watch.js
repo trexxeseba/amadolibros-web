@@ -1,14 +1,19 @@
 /**
- * Vigía en la nube de la campaña de Amado Vintage.
+ * Latido de la campaña de Amado Vintage.
  *
- * La PC publica y escribe un recibo en D1 por cada alta. Este módulo, desde el
- * cron de 5 minutos del Worker, mira sólo esa huella: si hace demasiado que no
+ * Hasta el 27/11/2026 lo corría el Worker de sync (que es de Amado Libros). Con el
+ * desenganche de cuentas salió del Worker: ahora lo corre el workflow
+ * .github/workflows/vintage-latido.yml (scripts/vintage-cloud/latido.mjs). El panel
+ * usa assess() para mostrar el estado.
+ *
+ * Cada alta de la campaña deja un recibo en D1. Este módulo mira sólo esa huella: si hace demasiado que no
  * hay altas nuevas y nada lo explica (lista de SBS vencida, lista recién
  * cargada, campaña pausada o terminada), avisa por ntfy. Cubre lo que un
  * vigía en la PC no puede avisar: la PC apagada, dormida o sin internet.
  *
  * Sólo SELECT sobre D1 y un POST a ntfy.sh. No toca Mercado Libre ni la cola.
- * Un aviso por hora como máximo (reserva en KV), nunca lanza excepciones.
+ * Un aviso por problema y por plazo como máximo (reserva en el KV que se le pase),
+ * nunca lanza excepciones.
  */
 
 const SELLER = '2341378249';

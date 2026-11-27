@@ -1,0 +1,54 @@
+# Cambio de precio a mano sobre publicaciones concretas, con la misma conexión que
+# Precio Ganador. Lo corre una sesión de Claude cuando Seba pide un precio puntual
+# ("subí Mafalda a 1500"). Con prueba=true sólo lista lo que haría.
+# Sólo Amado Vintage (desenganche de cuentas, 27/11/2026). Libros: precio-manual.yml.
+name: Precio manual (Vintage)
+
+on:
+  workflow_dispatch:
+    inputs:
+      cambios:
+        description: 'Cambios: MLU123=1500,MLU456=1100 (hasta 50)'
+        required: true
+      prueba:
+        description: 'Prueba: consulta y reporta, no cambia ningún precio'
+        type: boolean
+        default: true
+
+# Misma cola que Precio Ganador de Vintage: no pisarse con una corrida programada.
+concurrency:
+  group: precio-ganador-vintage
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ADMIN_API_TOKEN: ${{ secrets.CLOUDFLARE_ADMIN_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests
+        run: node --test precio-ganador/test/precio-manual.test.mjs
+      - name: Cambiar precios
+        shell: bash
+        env:
+          IN_CUENTA: vintage
+          IN_CAMBIOS: ${{ inputs.cambios }}
+          IN_PRUEBA: ${{ inputs.prueba }}
+          DRY_VAR: ${{ vars.PRECIO_GANADOR_DRY_RUN }}
+        run: |
+          ARGS=(--cuenta "$IN_CUENTA" --cambios "$IN_CAMBIOS")
+          MODO=$(node -e "console.log(require('./precio-ganador/modo.json')[process.argv[1]] ?? 'dry_run')" "$IN_CUENTA")
+          if [ "$MODO" = "real" ] && [ "$DRY_VAR" != "true" ] && [ "$IN_PRUEBA" != "true" ]; then ARGS+=(--real); echo "Modo: REAL"; else echo "Modo: PRUEBA"; fi
+          node precio-ganador/src/precio-manual.mjs "${ARGS[@]}"

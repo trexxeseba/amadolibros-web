@@ -7,6 +7,10 @@
 //     sólo contadores, nunca precios.
 // Manda mail únicamente si hay algo para mirar; si está todo bien queda en el resumen de la corrida.
 //
+// Una cuenta por corrida (desenganche, 27/11/2026): CONTROL_CUENTA=libros (por defecto) mira
+// precio-ganador.yml, su vigía y la rama de estado de Libros; CONTROL_CUENTA=vintage mira
+// precio-ganador-vintage.yml, su vigía y la rama de Vintage (ESTADO_RAMA la pone cada workflow).
+//
 //   node scripts/partes/precio-ganador-control.mjs
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
@@ -15,12 +19,17 @@ import { cliente, horasDesde, horaUy } from './github.mjs';
 import { enviarAlarma } from '../../precio-ganador/src/alarma.mjs';
 
 export const CUENTAS = ['libros', 'vintage'];
+// Qué workflow y qué vigía mira el control de cada cuenta.
+export const WORKFLOWS = {
+  libros: { corrida: 'precio-ganador.yml', vigia: 'precio-ganador-vigia.yml' },
+  vintage: { corrida: 'precio-ganador-vintage.yml', vigia: 'precio-ganador-vintage-vigia.yml' },
+};
 // De 21:00 a 09:00 no corre (12 h); con el atraso habitual del cron, 15 h sin resumen nuevo ya es raro.
 export const RESUMEN_MAX_HORAS = 15;
 const CLAVES = ['bajadas', 'ajustadas', 'subidas', 'restauradas', 'verificadas', 'errores', 'ganador_inmediato'];
 
 // Pura: sin red. corridas y vigia son corridas de la API; resumenes es {cuenta: resumen|null}.
-export function evaluar({ corridas = [], vigia = null, resumenes = {}, ahora = Date.now() }) {
+export function evaluar({ corridas = [], vigia = null, resumenes = {}, ahora = Date.now(), cuentas = CUENTAS }) {
   const atencion = [], lineas = [];
   const fallidas = corridas.filter(c => c.conclusion !== 'success');
   lineas.push(corridas.length
@@ -31,7 +40,7 @@ export function evaluar({ corridas = [], vigia = null, resumenes = {}, ahora = D
   else if (fallidas.length) atencion.push(`${fallidas.length} de las últimas ${corridas.length} corridas no terminaron bien`);
   if (vigia && vigia.conclusion !== 'success') atencion.push(`el vigía de Precio Ganador terminó en ${vigia.conclusion} (${vigia.html_url})`);
 
-  for (const cuenta of CUENTAS) {
+  for (const cuenta of cuentas) {
     const r = resumenes[cuenta], c = r?.contadores;
     if (!c) { atencion.push(`no se pudo leer el resumen de ${cuenta}`); lineas.push(`${cuenta}: sin resumen.`); continue; }
     lineas.push(`${cuenta} (${horaUy(c.fecha)}, modo ${c.modo}): ${CLAVES.map(k => `${k.replace('_', ' ')} ${c[k] ?? 0}`).join(', ')}; activas ${c.activas ?? 'sin dato'}.`);
@@ -40,30 +49,31 @@ export function evaluar({ corridas = [], vigia = null, resumenes = {}, ahora = D
     if (c.no_verificadas > 0) atencion.push(`${cuenta}: ${c.no_verificadas} cambios sin verificar`);
     if (c.modo !== 'real') atencion.push(`${cuenta}: está en modo ${c.modo}`);
   }
-  lineas.push('Corre cada 2 horas de 09:00 a 21:00 de Montevideo.');
+  lineas.push(cuentas.length === 1 && cuentas[0] === 'vintage' ? 'Corre a las 09:00 y a las 21:00 de Montevideo.' : 'Corre cada 2 horas de 09:00 a 21:00 de Montevideo.');
   return { atencion, lineas, texto: `${atencion.length ? `Atención:\n${atencion.map(a => `- ${a}`).join('\n')}` : 'Todo bien.'}\n\n${lineas.join('\n')}` };
 }
 
 async function main() {
   const repo = process.env.GITHUB_REPOSITORY, gh = cliente();
   const estadoRepo = process.env.ESTADO_REPO, rama = process.env.ESTADO_RAMA, tokenEstado = process.env.ESTADO_TOKEN;
+  const cuenta = process.env.CONTROL_CUENTA || 'libros';
+  if (!WORKFLOWS[cuenta]) throw new Error('CONTROL_CUENTA desconocida');
   let salida;
   try {
-    const corridas = await gh.corridas(repo, 'precio-ganador.yml', 3);
-    const [vigia] = await gh.corridas(repo, 'precio-ganador-vigia.yml', 1);
-    const resumenes = {};
-    for (const cuenta of CUENTAS) resumenes[cuenta] = tokenEstado ? await gh.json(estadoRepo, `ultima/${cuenta}-resumen.json`, rama, tokenEstado).catch(() => null) : null;
-    salida = evaluar({ corridas, vigia: vigia ?? null, resumenes });
+    const corridas = await gh.corridas(repo, WORKFLOWS[cuenta].corrida, 3);
+    const [vigia] = await gh.corridas(repo, WORKFLOWS[cuenta].vigia, 1);
+    const resumenes = { [cuenta]: tokenEstado ? await gh.json(estadoRepo, `ultima/${cuenta}-resumen.json`, rama, tokenEstado).catch(() => null) : null };
+    salida = evaluar({ corridas, vigia: vigia ?? null, resumenes, cuentas: [cuenta] });
   } catch (error) {
     const motivo = /^[a-z0-9_]{1,60}$/.test(error.message) ? error.message : 'error';
     salida = { atencion: [`el control no pudo leer GitHub (${motivo})`], lineas: [], texto: `Atención:\n- el control no pudo leer GitHub (${motivo})` };
   }
-  if (process.env.GITHUB_STEP_SUMMARY) await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, `## Control de Precio Ganador\n\n${salida.texto.replace(/\n/g, '  \n')}\n`);
+  if (process.env.GITHUB_STEP_SUMMARY) await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, `## Control de Precio Ganador (${cuenta})\n\n${salida.texto.replace(/\n/g, '  \n')}\n`);
   let mail = 'no_hacia_falta';
   // Seba 26/11/2026 (menos mails): el control avisa una vez por día, con la corrida de las 21:50.
   const horaUy = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Montevideo', hour: 'numeric', hour12: false }).format(new Date()));
   if (salida.atencion.length && horaUy < 21) mail = 'sale_con_el_control_de_las_21';
-  else if (salida.atencion.length) mail = (await enviarAlarma({ aviso: true, asunto: `control: ${salida.atencion[0].slice(0, 90)}`, texto: salida.texto + (process.env.RUN_URL ? `\n\nDetalle: ${process.env.RUN_URL}` : '') })).status;
+  else if (salida.atencion.length) mail = (await enviarAlarma({ aviso: true, asunto: `control ${cuenta}: ${salida.atencion[0].slice(0, 90)}`, texto: salida.texto + (process.env.RUN_URL ? `\n\nDetalle: ${process.env.RUN_URL}` : '') })).status;
   console.log(JSON.stringify({ atencion: salida.atencion.length, mail }));
   // La alerta va por mail; el workflow queda en rojo sólo si el mail no salió (Seba 26/11: antes cada aviso lo marcaba fallido).
   // M1b/M2a (Seba 26/11): el control no manda mail ni queda en rojo por lo que encuentra; el operador lee

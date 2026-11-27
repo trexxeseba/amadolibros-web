@@ -2,7 +2,7 @@
 // de Vintage. Decisión de Seba (08/11/2026): si Vintage cae, Libros cae con ella (cuentas asociadas).
 // Recorre todas las publicaciones de la cuenta y lista las riesgosas. No cambia nada.
 //
-//   node scripts/vintage-cloud/auditoria-libros.mjs
+//   node scripts/mercadolibre/auditoria-pi-libros.mjs
 import {CUENTAS} from '../../precio-ganador/src/config.mjs';
 import {fuenteTokenD1} from '../../precio-ganador/src/token.mjs';
 import {crearCliente} from '../../precio-ganador/src/ml.mjs';

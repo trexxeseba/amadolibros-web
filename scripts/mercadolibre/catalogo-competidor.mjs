@@ -17,6 +17,10 @@
 //  - Movimiento entre fotos: desapareció (sin stock o pausada), nueva, cambio de precio,
 //    bajó la cantidad.
 // Los datos del vendedor quedan en D1 y en el mail a Seba: en los logs sólo van conteos.
+//
+// Cuenta (desenganche, 27/11/2026): mira los productos de catálogo de Amado Libros, así que lee
+// con el token de Amado Libros y sólo con GET. Si Mercado Libre responde 403 a una ruta con ese
+// token, queda como "no disponible" en el log y la corrida sigue: nunca se vuelve al de Vintage.
 import {pathToFileURL} from 'node:url';
 import path from 'node:path';
 import {CUENTAS,fechaMontevideo} from '../../precio-ganador/src/config.mjs';
@@ -35,6 +39,18 @@ const ROWS_PER_INSERT=6; // 6 filas x 15 columnas = 90 parámetros (D1 admite 10
 const LISTADO=300;
 export const FOTOS_A_CONSERVAR=12;
 export const DIA_MS=86400000;
+export const CUENTA_COMPETENCIA=CUENTAS.libros;
+export const esNoDisponible=e=>e?.status===403;
+// GET que tolera el 403: devuelve null y avisa "no disponible" (una vez por ruta y corrida).
+async function getOpcional(ml,ruta,path,{stats,onStatus,avisadas}){
+ try{return await ml.get(path);}
+ catch(e){
+  if(!esNoDisponible(e))throw e;
+  if(stats)stats.no_disponible=(stats.no_disponible??0)+1;
+  if(!avisadas.has(ruta)){avisadas.add(ruta);onStatus({evento:'no_disponible',ruta,status:403});}
+  return null;
+ }
+}
 
 export async function schema(query){
  for(const t of VIEJAS)await query(`DROP TABLE IF EXISTS ${t}`);
@@ -64,9 +80,10 @@ export async function anotarDia(query,seller,vendedor,now=Date.now()){
 // Pulso diario: una llamada, una fila. Devuelve conteos.
 export async function pulso({ml,query,seller=SELLER_HERMES,now=Date.now,onStatus=()=>{}}){
  await schema(query);
- const vendedor=leerVendedor(await ml.get(`/users/${seller}`));
+ const stats={no_disponible:0},avisadas=new Set();
+ const vendedor=leerVendedor(await getOpcional(ml,'users',`/users/${seller}`,{stats,onStatus,avisadas}));
  await anotarDia(query,seller,vendedor,now());
- const out={evento:'pulso',seller:String(seller),con_contador:vendedor.transacciones!=null};
+ const out={evento:'pulso',seller:String(seller),con_contador:vendedor.transacciones!=null,no_disponible:stats.no_disponible};
  onStatus(out);
  return out;
 }
@@ -88,7 +105,8 @@ export function preguntasRecientes(data,now=Date.now(),dias=7){
 export async function tomarFoto({ml,query,seller=SELLER_HERMES,now=Date.now,intervalMs=200,sleep=ms=>new Promise(r=>setTimeout(r,ms)),onStatus=()=>{}}){
  await schema(query);
  const t0=now();
- const vendedor=leerVendedor(await ml.get(`/users/${seller}`));
+ const avisadas=new Set(),nd={no_disponible:0};
+ const vendedor=leerVendedor(await getOpcional(ml,'users',`/users/${seller}`,{stats:nd,onStatus,avisadas}));
  await anotarDia(query,seller,vendedor,t0);
  const foto=(await query(`INSERT INTO ${TABLES.fotos}(seller_id,nickname,started_at,transacciones,ventas_60d,nivel) VALUES(?,?,?,?,?,?) RETURNING *`,[String(seller),vendedor.nickname,t0,vendedor.transacciones,vendedor.ventas_60d,vendedor.nivel]))[0];
  const vistos=await query(`SELECT s.catalog_product_id producto,MAX(t.isbn) isbn,MAX(t.own_price) nuestro_precio FROM comp_snapshots s LEFT JOIN comp_targets t ON t.catalog_product_id=s.catalog_product_id WHERE s.seller_id=? GROUP BY s.catalog_product_id`,[String(seller)]);
@@ -96,17 +114,22 @@ export async function tomarFoto({ml,query,seller=SELLER_HERMES,now=Date.now,inte
  const productos=new Map();
  for(const p of previos)productos.set(p.producto,{producto:p.producto,isbn:p.isbn,nombre:p.nombre,nuestro_precio:p.nuestro_precio});
  for(const v of vistos){const prev=productos.get(v.producto)??{};productos.set(v.producto,{producto:v.producto,isbn:v.isbn??prev.isbn??null,nombre:prev.nombre??null,nuestro_precio:v.nuestro_precio??prev.nuestro_precio??null});}
- const stats={productos:productos.size,items:0,errores:0,llamadas:0,con_cantidad:0};
+ const stats={productos:productos.size,items:0,errores:0,llamadas:0,con_cantidad:0,no_disponible:nd.no_disponible};
  const filas=[];
  for(const p of productos.values()){
   let ofertas=null;
   try{stats.llamadas++;ofertas=(await ml.get(`/products/${encodeURIComponent(p.producto)}/items?limit=50`))?.results??[];}
-  catch(e){if(e?.status===404)ofertas=[];else{stats.errores++;onStatus({evento:'producto_error',code:e?.code??String(e)});continue;}}
+  catch(e){
+   if(e?.status===404)ofertas=[];
+   else if(esNoDisponible(e)){stats.no_disponible++;if(!avisadas.has('products_items')){avisadas.add('products_items');onStatus({evento:'no_disponible',ruta:'products_items',status:403});}continue;}
+   else{stats.errores++;onStatus({evento:'producto_error',code:e?.code??String(e)});continue;}
+  }
   const o=ofertaDelVendedor(ofertas,seller);
   if(!o)continue;
   if(!p.nombre){try{stats.llamadas++;p.nombre=String((await ml.get(`/products/${encodeURIComponent(p.producto)}`))?.name??'').slice(0,200)||null;}catch{}}
   let preguntas=null;
-  try{stats.llamadas++;preguntas=preguntasRecientes(await ml.get(`/questions/search?item=${encodeURIComponent(o.item_id)}&limit=50&sort_fields=date_created&sort_types=DESC`),now());}catch{}
+  try{stats.llamadas++;preguntas=preguntasRecientes(await ml.get(`/questions/search?item=${encodeURIComponent(o.item_id)}&limit=50&sort_fields=date_created&sort_types=DESC`),now());}
+  catch(e){if(esNoDisponible(e)){stats.no_disponible++;if(!avisadas.has('questions')){avisadas.add('questions');onStatus({evento:'no_disponible',ruta:'questions',status:403});}}}
   if(o.cantidad!=null)stats.con_cantidad++;
   filas.push([foto.id,o.item_id,p.producto,p.isbn,p.nombre,o.precio,o.moneda,o.cantidad,o.posicion,o.ofertas,o.precio_minimo,p.nuestro_precio,o.envio_gratis,o.logistica,preguntas]);
   stats.items++;
@@ -221,7 +244,7 @@ export function asunto(mov,serie=null){
 
 export async function correr({seller=SELLER_HERMES,accion='foto',intervalMs=200,query=null,ml=null,send=sendMail,runUrl=process.env.RUN_URL??null,log=x=>console.log(JSON.stringify(x))}={}){
  query??=d1Client();
- ml??=crearCliente(fuenteTokenD1(CUENTAS.vintage),{concurrencia:1});
+ ml??=crearCliente(fuenteTokenD1(CUENTA_COMPETENCIA),{concurrencia:1}); // sólo GET
  if(accion==='pulso')return {pulso:await pulso({ml,query,seller,onStatus:log})};
  let foto=null;
  if(accion==='foto')foto=await tomarFoto({ml,query,seller,intervalMs,onStatus:log});

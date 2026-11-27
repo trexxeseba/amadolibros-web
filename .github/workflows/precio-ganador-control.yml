@@ -4,6 +4,7 @@ name: Precio Ganador (control)
 # Precio Ganador" (Seba, 18/11/2026). Sólo mira y cuenta: las últimas corridas, el vigía y los
 # contadores del resumen de cada cuenta en la rama de estado del repo privado. No cambia precios
 # ni estado. Manda mail únicamente si hay algo para mirar. Código: scripts/partes/precio-ganador-control.mjs.
+# Sólo Amado Libros (desenganche de cuentas, 27/11/2026). Vintage: precio-ganador-vintage-control.yml.
 #
 # 09:50, 15:50 y 21:50 de Montevideo (UTC-3), después de las corridas de las 09:00, 15:00 y 21:00.
 on:
@@ -39,6 +40,7 @@ jobs:
           ESTADO_TOKEN: ${{ secrets.ESTADO_TOKEN }}
           ESTADO_REPO: trexxeseba/amadolibros-privado
           ESTADO_RAMA: estado/precio-ganador
+          CONTROL_CUENTA: libros
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

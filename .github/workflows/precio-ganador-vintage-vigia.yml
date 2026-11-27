@@ -1,0 +1,35 @@
+name: Precio Ganador Vintage (vigía)
+
+# Comprueba que Precio Ganador de Amado Vintage (precio-ganador-vintage.yml) haya corrido bien.
+# Vintage corre dos veces por día (09:00 y 21:00 de Montevideo), así que el margen es de 15 horas.
+# Separado del vigía de Libros en el desenganche de cuentas (27/11/2026). Sólo lee la API de GitHub.
+# Si no, manda un mail de alarma y falla (GitHub manda también su mail de falla).
+on:
+  schedule:
+    - cron: '35 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  vigia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Comprobar la última corrida
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          PRECIO_GANADOR_EMAIL_TO: undiaes@gmail.com
+          VIGIA_WORKFLOW: precio-ganador-vintage.yml
+          VIGIA_CUENTA: vintage
+          VIGIA_MAX_HORAS: '15'
+          VIGIA_FRECUENCIA: 'a las 09:00 y a las 21:00 de Montevideo'
+          MAIL_PREFIJO: ALARMA Precio Ganador Vintage
+        run: node precio-ganador/src/vigia.mjs

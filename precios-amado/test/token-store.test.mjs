@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { workerTokenSource } from '../src/token.mjs';
 import { createMlClient } from '../src/ml-client.mjs';
 
-const d1 = rows => async () => ({ ok: true, json: async () => ({ success: true, result: [{ results: rows() }] }) });
+// D1 de mentira; /users/me responde con el seller de Amado Libros salvo que se pida otro.
+const d1 = (rows, dueno = 440298103) => async url => String(url).endsWith('/users/me')
+  ? { ok: true, status: 200, json: async () => ({ id: dueno }) }
+  : { ok: true, json: async () => ({ success: true, result: [{ results: rows() }] }) };
 
 test('token del Worker: una sola espera compartida y error fatal sin colgarse', async () => {
   let lecturas = 0;
@@ -37,4 +40,9 @@ test('cliente: 401 refresca una vez aunque antes hubo un 429', async () => {
   const src = { name: 'x', getToken: async () => 'T', invalidate() { inval++; } };
   const ml = createMlClient(src, { fetcher: async () => { const s = seq.shift(); return { ok: s === 200, status: s, headers: { get: () => null }, json: async () => ({ ok: 1 }) }; }, sleep: async () => {} });
   assert.deepEqual(await ml.get('/x'), { ok: 1 }); assert.equal(inval, 1);
+});
+
+test('token del Worker de otra cuenta (no es Amado Libros): se corta', async () => {
+  const src = workerTokenSource({ accountId: 'a', apiTokens: ['t'], fetcher: d1(() => [{ access_token: 'T1', access_expires_at: Date.now() + 3600e3 }], 2341378249), sleep: async () => {}, maxWaitMs: 0 });
+  await assert.rejects(src.getToken(), { code: 'token_de_otra_cuenta_se_esperaba_libros' });
 });
