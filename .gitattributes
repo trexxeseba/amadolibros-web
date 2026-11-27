@@ -1,3 +1,7 @@
+# Todo archivo de texto se guarda y se baja con LF, también en Windows (donde
+# core.autocrlf=true lo convertía a CRLF y rompía las pruebas que leen el texto
+# de los workflows y de los módulos generados). Git detecta solo qué es binario.
+* text=auto eol=lf
 *.astro text eol=lf
 # cmd.exe pierde etiquetas (goto) en archivos con fin de línea LF: siempre CRLF.
 *.cmd text eol=crlf

@@ -55,7 +55,7 @@ test('motivo: cada causa tiene su texto', () => {
 });
 
 test('el workflow es manual, de solo lectura y sin secretos', () => {
-    const wf = readFileSync('.github/workflows/mazos-feed-audit.yml', 'utf8');
+    const wf = readFileSync('.github/workflows/mazos-feed-audit.yml', 'utf8').replace(/\r\n/g, '\n');
     assert.match(wf, /^on:\n  workflow_dispatch:\n/m);
     assert.match(wf, /permissions:\n  contents: read/);
     assert.doesNotMatch(wf, /secrets\.|id-token|contents: write|push:|pull_request/);

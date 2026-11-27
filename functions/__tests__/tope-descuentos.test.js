@@ -288,7 +288,7 @@ test('panel: «Transferencia recibida» marca el mismo monto que pagó el client
     const base = { products_total_uyu: 3500, pickup_discount_uyu: 0, shipping_cost_uyu: 0, payable_total_uyu: 3500 };
     assert.equal(transferAmountFor({ ...base, transfer_products_total_uyu: 3260 }).amount, 3260);
     assert.equal(transferAmountFor(base).amount, 3080);
-    const panelData = readFileSync('functions/_shared/panel-data.js', 'utf8');
+    const panelData = readFileSync('functions/_shared/panel-data.js', 'utf8').replace(/\r\n/g, '\n');
     assert.match(panelData, /transfer_products_total_uyu,\n\s+currency, payment_provider/);
 });
 

@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, {after} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -8,6 +8,14 @@ import {campaignNumbers} from '../../scripts/vintage-cloud/numbers.mjs';
 import {saveStockState,loadStockState,CLOUD_STOCK_TABLE} from '../../scripts/vintage-cloud/d1.mjs';
 import {BULK_RUN} from '../_shared/meli-vintage-bulk.js';
 import {policyHash} from '../../worker-sync/publication-policy.js';
+
+
+// Windows no deja borrar un SQLite abierto, y los t.after corren en el orden en que
+// se registran: el borrado de la carpeta corría antes del db.close() del test. Los
+// temporales se borran al terminar el archivo, cuando ya se cerraron todas las bases.
+const temporales=[];
+const limpiarAlFinal=d=>{temporales.push(d);};
+after(()=>Promise.all(temporales.map(d=>fs.rm(d,{recursive:true,force:true}))));
 
 const policy={supplierDiscount:.25,arsPerUyu:40,usdPerUyu:42,freightUsdKg:15,laborUyu:0,margin:.23,mlFee:.17,deliveryUyu:270,minimumContributionUyu:200,minimumSaleUyu:1600,roundUyu:10,availabilityDays:18,additionalPricePct:0,listingTypeId:'gold_special',catalogListing:'required_only'};
 const campaign=(ejecutor,modo,extra={})=>({target_total:80000,ejecutor,nube:{modo,tanda:50,tope_diario:300,...extra}});
@@ -33,7 +41,7 @@ test('the numbers compare the list with the receipts without calling Mercado Lib
 });
 
 async function harness(t,{campaignValue,daily=[10,12]}={}){
- const dir=await fs.mkdtemp(path.join(os.tmpdir(),'vintage-cloud-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'vintage-cloud-'));limpiarAlFinal(dir);
  const calls=[],connection={version:1,endpoint:'https://www.amadolibros.com/operations/vintage-local',key:'b'.repeat(64),expires_at:Date.now()+86400000,seller_id:'2341378249',app_id:'4741021817925208',run_id:BULK_RUN,policy,policy_hash:await policyHash(policy),receipts:[{isbn:'1',state:'published'}]};
  const statuses=[...daily];
  const deps={
@@ -90,7 +98,7 @@ test('the pause state goes to D1 in chunks under the 100-parameter limit',async(
 
 test('a fresh engine database seeds receipts whose book left today\'s list (cloud runs start empty)',async t=>{
  const {run}=await import('../../scripts/vintage-local/engine.mjs');
- const dir=await fs.mkdtemp(path.join(os.tmpdir(),'vintage-fresh-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'vintage-fresh-'));limpiarAlFinal(dir);
  const now=Date.now(),source_date=new Date(now-3600000).toISOString(),sha='c'.repeat(64);
  const isbn=n=>{const stem='978'+String(n).padStart(9,'0');const sum=[...stem].reduce((t,c,i)=>t+Number(c)*(i%2?3:1),0);return stem+((10-sum%10)%10);};
  const rows=[{isbn:isbn(1),title:'Hoy',listArs:40000,weightKg:.5,stock:'2'}];
@@ -143,7 +151,7 @@ test('a new supplier list keeps a recent complete inventory scan (cloud), and th
  const {openDatabase}=await import('../../scripts/vintage-local/db.mjs');
  const isbn=n=>{const stem='978'+String(n).padStart(9,'0');const sum=[...stem].reduce((t,c,i)=>t+Number(c)*(i%2?3:1),0);return stem+((10-sum%10)%10);};
  for(const [keepIndexDays,expected] of [[3,1],[0,0]]){
-  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'vintage-keep-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'vintage-keep-'));limpiarAlFinal(dir);
   const now=Date.now(),source_date=new Date(now-3600000).toISOString(),rows=[{isbn:isbn(1),title:'Hoy',listArs:40000,weightKg:.5,stock:'2'}];
   const base={version:1,endpoint:'https://www.amadolibros.com/operations/vintage-local',key:'b'.repeat(64),expires_at:now+86400000,seller_id:'2341378249',app_id:'4741021817925208',run_id:BULK_RUN,policy,policy_hash:await policyHash(policy),source_date,receipts:[],inventory:[{item_id:'MLU9',isbn:isbn(9),title_key:'x',status:'active'}],identifiers:[],amendments:[],inventory_checkpoint:{status:'all',scroll:null,pending:[],done:true,seen:1,completedAt:new Date(now-3600000).toISOString()}};
   const stop=Object.assign(new Error('stop_here'),{code:'stop_here'});
@@ -167,7 +175,7 @@ test('the D1 state save runs several writes at once and still saves every row',a
 });
 
 async function freshEngine(t,{rows,receipts=[]}){
- const dir=await fs.mkdtemp(path.join(os.tmpdir(),'vintage-classify-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'vintage-classify-'));limpiarAlFinal(dir);
  const now=Date.now(),source_date=new Date(now-3600000).toISOString(),sha='e'.repeat(64);
  const c={version:1,endpoint:'https://www.amadolibros.com/operations/vintage-local',key:'b'.repeat(64),expires_at:now+86400000,seller_id:'2341378249',app_id:'4741021817925208',run_id:BULK_RUN,policy,policy_hash:await policyHash(policy),feed_id:crypto.randomUUID(),source_date,source_sha256:sha,receipts,inventory:[],identifiers:[],amendments:[],inventory_checkpoint:{status:'all',scroll:null,pending:[],done:true,seen:0,completedAt:new Date(now).toISOString()}};
  const connection=path.join(dir,'c.json');await fs.writeFile(connection,JSON.stringify(c));
@@ -366,7 +374,7 @@ test('the SBS probe reads every list of the Catalog menu, reports rows and error
   return new Response(new Uint8Array([1,2,3,4]),{status:200,headers:{'content-type':'application/octet-stream'}});
  };
  const lines=[];
- const out=await sondear({email:'a@b.c',password:'xxxxxx',fetcher,dir:await (await import('node:fs/promises')).mkdtemp('/tmp/sbs-sondeo-test-'),log:x=>lines.push(x),inspect:async()=>({source_date:'2026-11-10',rows:[{isbn:'1',stock:'2'},{isbn:'2',stock:'0'}]})});
+ const out=await sondear({email:'a@b.c',password:'xxxxxx',fetcher,dir:await (await import('node:fs/promises')).mkdtemp(path.join(os.tmpdir(),'sbs-sondeo-test-')),log:x=>lines.push(x),inspect:async()=>({source_date:'2026-11-10',rows:[{isbn:'1',stock:'2'},{isbn:'2',stock:'0'}]})});
  assert.equal(out.length,RUTAS.length);
  assert.equal(out[0].error,'supplier_download_failed');assert.equal(out[0].http,500);
  assert.equal(out[1].filas,2);assert.equal(out[1].con_stock,1);assert.equal(out[1].fecha,'2026-11-10');

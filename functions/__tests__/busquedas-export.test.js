@@ -75,7 +75,7 @@ test('sin pedidos ni avisos el listado lo dice y no falla', () => {
 });
 
 test('el workflow es manual, de solo lectura y no imprime el listado en el log público', () => {
-    const wf = readFileSync('.github/workflows/busquedas-export.yml', 'utf8');
+    const wf = readFileSync('.github/workflows/busquedas-export.yml', 'utf8').replace(/\r\n/g, '\n');
     assert.match(wf, /^on:\n  workflow_dispatch:\n/m);
     assert.match(wf, /permissions:\n  contents: read/);
     assert.doesNotMatch(wf, /pull_request|push:|contents: write|GITHUB_STEP_SUMMARY|cat artifacts/);
