@@ -661,6 +661,12 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
     const esTarot = /TAROT_CARDS/.test(String(item.domain_id || '').toUpperCase())
         || merchantProductTypes(item.id, categoryData).some(type => /tarot y or[aá]culos/i.test(type));
     const customLabel1Tag = esTarot ? '\n        <g:custom_label_1>tarot</g:custom_label_1>' : '';
+    // Plan diciembre (Seba, 26/11/2026): la publicidad paga de Shopping va al
+    // catálogo que deja margen. Lo barato y lo infantil de ticket bajo sigue en
+    // los listados gratuitos de Google, pero sale de los anuncios.
+    const excludedTag = shoppingAdsExcluded(item, categoryData)
+        ? '\n        <g:excluded_destination>Shopping_ads</g:excluded_destination>'
+        : '';
 
     return `
     <item>
@@ -672,8 +678,22 @@ export function renderFeedItem(item, coverManifest = null, categoryData = null, 
         <g:availability>${availability}</g:availability>
         <g:price>${escapeXml(price)}</g:price>
         <g:condition>${escapeXml(cond)}</g:condition>
-        <g:google_product_category>${googleProductCategory(item)}</g:google_product_category>${gtinTag}${brandTag}${identifierExistsTag}${productTypeTags}${customLabelTag}${customLabel1Tag}
+        <g:google_product_category>${googleProductCategory(item)}</g:google_product_category>${gtinTag}${brandTag}${identifierExistsTag}${productTypeTags}${customLabelTag}${customLabel1Tag}${excludedTag}
     </item>`;
+}
+
+// Precios en UYU. Debajo de SHOPPING_ADS_MIN_PRICE no se anuncia nada; en
+// infantil, juegos y otros productos, debajo de SHOPPING_ADS_MIN_PRICE_LOW_TICKET.
+export const SHOPPING_ADS_MIN_PRICE = 1500;
+export const SHOPPING_ADS_MIN_PRICE_LOW_TICKET = 2500;
+export const SHOPPING_ADS_LOW_TICKET_CATEGORIES = Object.freeze(['infantil-juvenil', 'juegos-actividades', 'otros-productos']);
+
+export function shoppingAdsExcluded(item, categoryData) {
+    const price = Number(item?.price) || 0;
+    if (price < SHOPPING_ADS_MIN_PRICE) return true;
+    const paths = normalizeCategoryPaths(categoryData?.items?.[item?.id]);
+    const lowTicket = paths.some(([categoryId]) => SHOPPING_ADS_LOW_TICKET_CATEGORIES.includes(categoryId));
+    return lowTicket && price < SHOPPING_ADS_MIN_PRICE_LOW_TICKET;
 }
 
 export function merchantProductTypes(itemId, categoryData) {
