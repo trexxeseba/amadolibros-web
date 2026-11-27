@@ -4,10 +4,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 // La tienda es una librería cara: la interfaz y los mensajes de WhatsApp que
-// arma el sitio no llevan emojis (Seba, 27/11/2026). Las flechas tipográficas
-// (↗) se permiten. El panel interno y los console.log quedan fuera.
+// arma el sitio no llevan emojis (Seba, 27/11/2026). Se permiten los símbolos
+// tipográficos: flecha (↗), estrellas de la calificación (★), tilde y cruz de
+// estado (✓ ✗ ✕) y el separador (✦). Node 22 y Node 24 no clasifican igual
+// estos símbolos, por eso van explícitos. El panel interno y los console.log
+// quedan fuera.
 const EMOJI = /\p{Extended_Pictographic}/u;
-const PERMITIDOS = new Set(['↗']);
+const PERMITIDOS = new Set(['↗', '★', '✓', '✗', '✕', '✦']);
 const RAICES = ['astro-front/src', 'astro-front/public', 'functions', 'shared'];
 const FUERA = new Set(['node_modules', '__tests__', 'dist', '.astro', 'panel']);
 
