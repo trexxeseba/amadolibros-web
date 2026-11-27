@@ -55,7 +55,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
 
       <!-- Estado: vacío -->
       <div id="cart-empty" class="cart-state-msg" hidden>
-        <div class="empty-icon" aria-hidden="true">🛒</div>
+        <div class="empty-icon" aria-hidden="true"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3.5h2.7l2.4 11.2h10.4l2-8.4H6.2"/></svg></div>
         <p class="empty-text">Tu carrito está vacío.</p>
         <a href="/catalogo" id="btn-empty-back" class="btn-empty-back">← Ver el catálogo</a>
       </div>
@@ -74,7 +74,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
             <details id="cart-summary-panel" class="cart-summary-panel">
               <summary class="cart-summary-toggle">
                 <span class="cart-summary-toggle-text">
-                  🛒 Tu compra · <span id="cart-summary-count">0 libros</span> · <span id="cart-summary-total">$&nbsp;0</span>
+                  Tu compra · <span id="cart-summary-count">0 libros</span> · <span id="cart-summary-total">$&nbsp;0</span>
                 </span>
                 <span class="cart-summary-chevron" aria-hidden="true">Ver resumen</span>
               </summary>
@@ -3013,7 +3013,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
         var ph = document.createElement('div');
         ph.className = 'cart-item-img-placeholder';
         ph.setAttribute('aria-hidden', 'true');
-        ph.textContent = '📚';
+        ph.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2"/><path d="M8 7h7"/></svg>';
         art.appendChild(ph);
       }
 
@@ -3038,7 +3038,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
         var wa = window.AmadoWhatsApp;
         var waText = wa
           ? wa.build({
-              greeting: 'Hola, me interesa este libro que encontré en Amado Libros 😊',
+              greeting: 'Hola, me interesa este libro que encontré en Amado Libros',
               motive: unsupportedCurrency
                 ? 'Consultar precio y forma de pago'
                 : 'Consultar disponibilidad y precio',
@@ -3205,7 +3205,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
         var ph = document.createElement('div');
         ph.className = 'cart-item-compact-img-placeholder';
         ph.setAttribute('aria-hidden', 'true');
-        ph.textContent = '📚';
+        ph.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2"/><path d="M8 7h7"/></svg>';
         row.appendChild(ph);
       }
 
@@ -3502,7 +3502,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
 
         var waContext = window.AmadoWhatsApp;
         var lines = [
-          'Hola, quiero hacer este pedido en Amado Libros 😊',
+          'Hola, quiero hacer este pedido en Amado Libros',
           '',
           'Motivo: Completar un pedido del carrito',
           'Situación: Productos seleccionados y datos de entrega prontos',
@@ -3666,7 +3666,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '';
       var sellableItems = getSellableItems(cart);
       var waContext = window.AmadoWhatsApp;
       var lines = [
-        'Hola, ya realicé una transferencia para mi pedido de Amado Libros 😊',
+        'Hola, ya realicé una transferencia para mi pedido de Amado Libros',
         '',
         'Motivo: Enviar comprobante de transferencia',
         'Situación: Transferencia realizada',

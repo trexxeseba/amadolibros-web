@@ -889,7 +889,7 @@ export async function onRequest(ctx) {
             : '';
         const imgTag = img
             ? `<img src="${img}"${responsiveAttrs} alt="${title}" loading="${loading}" decoding="async" width="280" height="373">`
-            : `<div class="rc-no-img">📚</div>`;
+            : `<div class="rc-no-img" aria-hidden="true"></div>`;
 
         const badge = available
             ? deliveryBadgeHtml(true)
@@ -902,8 +902,8 @@ export async function onRequest(ctx) {
       <span class="rc-base"><span class="rc-lbl">Precio web/tarjeta:</span> $${escapeHtml(priceStr)} UYU</span>
       ${promoWasHtml(b)}
       <span class="rc-installment">Hasta 12 cuotas de aprox. $${escapeHtml(installment)} UYU</span>
-      ${transfer ? `<span class="rc-transfer"><span aria-hidden="true">🏷️</span> 12% menos por transferencia: $${escapeHtml(transfer)} UYU</span>` : ''}
-      ${hasFreeShipping ? '<span class="rc-free-shipping"><span aria-hidden="true">🚚</span> Envío gratis</span>' : ''}
+      ${transfer ? `<span class="rc-transfer">12% menos por transferencia: $${escapeHtml(transfer)} UYU</span>` : ''}
+      ${hasFreeShipping ? '<span class="rc-free-shipping">Envío gratis</span>' : ''}
     </div>
     <a href="${href}" class="rc-cta">Ver ficha →</a>`
             : isPaused
@@ -971,7 +971,7 @@ export async function onRequest(ctx) {
       <div class="manual-request-actions">
         <a class="manual-request-primary" href="/pedir-libro/?tipo=sin-resultados&amp;q=${encodeURIComponent(rawQ)}">Pedir que lo busquemos</a>
         <a class="wa-link" href="${escapeHtml(whatsappHref(buildWhatsAppMessage({
-            greeting: 'Hola, busqué un libro en Amado Libros y quisiera que me ayudaran 😊',
+            greeting: 'Hola, busqué un libro en Amado Libros y quisiera que me ayudaran',
             motive: 'Búsqueda sin resultados',
             book: rawQ,
             situation: 'No apareció en el catálogo',
@@ -1097,6 +1097,7 @@ export async function onRequest(ctx) {
     .rc-img img{width:100%;height:100%;object-fit:contain;display:block;
                 transition:transform .25s}
     .rc-card:hover .rc-img img{transform:scale(1.04)}
+    .rc-no-img::before{content:"";width:40px;height:40px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238f493b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2'/%3E%3Cpath d='M8 7h7'/%3E%3C/svg%3E") center/contain no-repeat;opacity:.55}
     .rc-no-img{width:100%;height:100%;display:flex;align-items:center;
                justify-content:center;font-size:2.5rem;color:#c4b9ad}
     .rc-body{padding:.875rem 1rem;display:flex;flex-direction:column;gap:.45rem;flex:1}

@@ -722,10 +722,10 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
       </div>
       <div class="price-installment">Hasta 12 cuotas de aprox. $${installment} UYU</div>
       ${transferAmount === null ? '' : `<div class="price-transfer">
-        <span class="price-transfer-line"><span aria-hidden="true">🏷️</span> 12% menos por transferencia: <strong>$${transferPrice} UYU</strong></span>
+        <span class="price-transfer-line">12% menos por transferencia: <strong>$${transferPrice} UYU</strong></span>
         <span class="price-saving">Ahorrás $${transferSaving} UYU</span>
       </div>`}
-      ${hasFreeShipping ? '<div class="price-free-shipping"><span aria-hidden="true">🚚</span> Envío gratis</div>' : ''}
+      ${hasFreeShipping ? '<div class="price-free-shipping">Envío gratis</div>' : ''}
     </div>`
         : inStock
           ? `<div class="order-box">
@@ -750,7 +750,7 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
         data-thumbnail="${escapeHtml(cartThumbnail)}"
         data-max-qty="${stockQty}"
       >
-        <span data-cart-label>🛒 Agregar al carrito</span>
+        <span data-cart-label>Agregar al carrito</span>
       </button>
       <div class="purchase-alternatives" aria-label="Ayuda y otras formas de comprar">
       <a class="btn btn-wa" href="${escapeHtml(waLink)}" target="_blank" rel="noopener noreferrer">
@@ -1061,8 +1061,8 @@ ${siteHeaderHtml()}
     ${!inStock ? moreDetailsHtml : ''}
     ${seoOpportunityHtml}
     <p class="shipping">${inStock
-      ? '🚚 Entrega en el día en Montevideo según zona, horario y confirmación · Envío $250 · Gratis desde $1.500 · Atención personalizada.'
-      : '🌎 Podemos buscarlo por encargo. Te confirmamos disponibilidad, precio y plazo antes de reservar.'
+      ? 'Entrega en el día en Montevideo según zona, horario y confirmación · Envío $250 · Gratis desde $1.500 · Atención personalizada.'
+      : 'Podemos buscarlo por encargo. Te confirmamos disponibilidad, precio y plazo antes de reservar.'
     } <a href="/politicas/#envios">Ver política de envíos</a>.</p>
   </div>
   ${relatedBooksHtml}
