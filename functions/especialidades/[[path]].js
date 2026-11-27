@@ -22,6 +22,7 @@ import {
   responsiveImage,
 } from '../_shared/cloudflare-images.js';
 import { buildWhatsAppMessage } from '../../shared/whatsapp-messages.js';
+import { presentBookTitle } from '../../shared/book-title-presentation.js';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -69,7 +70,7 @@ function bookCard(item, useCloudflareImages) {
     <a class="cover" href="${href}">${image.src
       ? `<img src="${escapeHtml(image.src)}"${responsiveAttrs} alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" width="240" height="360">`
       : '<span aria-hidden="true">Libro sin imagen</span>'}</a>
-    <div class="book-info"><p class="stock">Disponible</p><h3><a href="${href}">${escapeHtml(item.title)}</a></h3>
+    <div class="book-info"><p class="stock">Disponible</p><h3><a href="${href}">${escapeHtml(presentBookTitle(item.title))}</a></h3>
     ${item.author ? `<p class="author">${escapeHtml(item.author)}</p>` : ''}
     ${formattedPrice ? `<p class="price">$${formattedPrice} UYU</p>${promoWasHtml(item)}` : ''}
     <a class="book-link" href="${href}">Ver libro</a></div>
