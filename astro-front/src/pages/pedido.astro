@@ -63,9 +63,13 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
       var codeEl  = document.getElementById('pedido-code');
       var backEl  = document.getElementById('btn-pedido-back');
       var waEl    = document.getElementById('btn-pedido-wa');
-      var wa      = window.AmadoWhatsApp;
 
-      if (waEl && wa) {
+      // /whatsapp-messages.js se carga con defer: este script en línea corre
+      // antes. Si todavía no está, el enlace se arma en DOMContentLoaded,
+      // que el navegador dispara después de ejecutar los scripts diferidos.
+      function setPedidoWhatsAppHref() {
+        var wa = window.AmadoWhatsApp;
+        if (!waEl || !wa) return;
         var situation = result === 'success'
           ? 'Pago aprobado'
           : result === 'failure'
@@ -82,6 +86,8 @@ const WA_HREF = whatsappHref(buildWhatsAppMessage({
           closing: '¿Podrían ayudarme a verificarlo? Gracias.',
         }));
       }
+      if (window.AmadoWhatsApp) setPedidoWhatsAppHref();
+      else document.addEventListener('DOMContentLoaded', setPedidoWhatsAppHref);
 
       // ── Estado inicial según result de MP ──────────────────────────────────
       if (result === 'success' || result === 'pending') {

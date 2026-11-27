@@ -30,9 +30,8 @@ function escapeAttr(value = '') {
         .replace(/>/g, '&gt;');
 }
 
-/** Tipografías de la portada (mismo proveedor y familias que BaseLayout.astro). */
-export const SITE_FONTS_HEAD = `<link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
-  <link rel="stylesheet" href="https://fonts.bunny.net/css?family=playfair-display:700|inter:400,600,800&display=swap">`;
+/** Tipografías de la portada, alojadas en el propio sitio (mismo bloque que BaseLayout.astro). */
+export { SITE_FONTS_HEAD } from '../../shared/site-fonts.js';
 
 export function siteHeaderHtml({ current = '', query = '', showSearch = true } = {}) {
     const nav = SITE_HEADER_NAV.map(item => {
