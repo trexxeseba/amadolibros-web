@@ -1,4 +1,5 @@
-// Alarmas del cobro en Checkly: estado, alta de controles y simulacro de aviso.
+// Definiciones históricas de Checkly, retirado por Seba el 26/11/2026.
+// La CLI permite consultar estado, pero ya no activar controles ni simulacros.
 //
 //   node scripts/monitoring/checkly-cobro.mjs estado     solo lee: plan, controles, canales
 //   node scripts/monitoring/checkly-cobro.mjs aplicar    crea o actualiza canales de correo y controles del cobro
@@ -248,6 +249,7 @@ export async function simulacro({ api = checklyApi(), recipient } = {}) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const action = process.argv[2];
   try {
+    if (action !== 'estado') throw new Error('CHECKLY_RETIRADO_USAR_UPTIMEROBOT');
     const recipients = parseRecipients(await readFile('wrangler.toml', 'utf8'));
     if (action === 'estado') await estado();
     else if (action === 'aplicar') { await aplicar({ recipients }); await estado(); }
