@@ -44,15 +44,30 @@ export function valorPara(def, valor) {
   return s.length <= max ? { value_name: s } : null;
 }
 
+// "No aplica" en Serie y Volumen (Seba, 27/11/2026, opción a): sólo si Open Library tiene la ficha de ese
+// ISBN y no declara serie, y el título de la publicación no menciona tomo, volumen, número ni saga.
+// Subtítulo y Edición nunca van con "No aplica". Función pura.
+export const NO_APLICA = Object.freeze(['BOOK_SERIE', 'BOOK_VOLUME']);
+export const REGLA = 'na1';
+const MARCA_VOLUMEN = /\b(tomo|tomos|vol|vols|volumen|volúmenes|volumenes|libro\s+\d|parte\s+\d|n[ºo°]\.?\s*\d|saga|serie|series|trilog\w*|tetralog\w*|bilog\w*|colecci[oó]n|pack|set|box|estuche|edici[oó]n\s+completa|obras?\s+completas?)\b|#\s*\d|\b\d{1,3}\b|\b[IVX]{1,4}\b/i;
+export function puedeNoAplica(titulo, porFuente) {
+  const f = porFuente?.ficha_openlibrary;
+  return !!f?.existe && !f.con_serie && !!String(titulo ?? '').trim() && !MARCA_VOLUMEN.test(String(titulo));
+}
+
 // Propuesta para una publicación: qué atributos faltan y con qué dato. Función pura.
 export function proponer(item, defs, principalesCat, porFuente) {
   const faltan = faltantes(item, principalesCat).filter(id => !NUNCA.has(id));
   const cambios = [], sinDato = [], sinFormato = [];
   for (const id of faltan) {
     const campo = CAMPOS[id];
-    if (!campo) { sinDato.push(id); continue; }
-    const d = decidir(campo, porFuente);
-    if (!d) { sinDato.push(id); continue; }
+    if (!campo && !NO_APLICA.includes(id)) { sinDato.push(id); continue; }
+    const d = campo ? decidir(campo, porFuente) : null;
+    if (!d) {
+      if (NO_APLICA.includes(id) && puedeNoAplica(item?.title, porFuente)) cambios.push({ id, value_id: '-1', value_name: null, fuente: 'no_aplica_openlibrary', coinciden: ['openlibrary'], contradicciones: [] });
+      else sinDato.push(id);
+      continue;
+    }
     const v = valorPara(defs.get(id), d.valor);
     if (!v) { sinFormato.push({ id, valor: d.valor, fuente: d.fuente }); continue; }
     cambios.push({ id, ...v, fuente: d.fuente, coinciden: d.coinciden, contradicciones: d.contradicciones });
@@ -83,7 +98,8 @@ async function main() {
   const medicion = leerJson(join(salida, 'medicion.json'), null) ?? leerJson(join(estado, 'ultima-medicion.json'), null);
   if (!medicion?.filas) { console.error('cargar: falta la medición'); process.exit(1); }
   const hechas = leerJson(join(estado, 'hechas.json'), {});
-  const vencido = f => !f || (f.estado === 'sin_dato' && (Date.now() - Date.parse(f.fecha)) / 864e5 >= REINTENTO_SIN_DATO_DIAS);
+  // Las revisadas antes de la regla de "No aplica" (sin regla na1) se vuelven a mirar.
+  const vencido = f => !f || f.regla !== REGLA || (f.estado === 'sin_dato' && (Date.now() - Date.parse(f.fecha)) / 864e5 >= REINTENTO_SIN_DATO_DIAS);
 
   const conFicha = medicion.filas.filter(f => (f.pendientes ?? []).some(p => p.objetivo === 'UP_TECHNICAL_SPECIFICATIONS_MAIN'));
   let candidatas = conFicha.filter(f => !f.catalogo && f.isbn && vencido(hechas[f.id]));
@@ -118,7 +134,7 @@ async function main() {
       const isbn = isbnDe(item) ?? f.isbn;
       const p = proponer(item, defsCat.get(item.category_id), princCat.get(item.category_id), porIsbn.get(isbn) ?? {});
       r.sin_formato += p.sinFormato.length;
-      if (!p.cambios.length) { r.sin_dato_de_fuente++; hechasHoy[f.id] = { fecha: hoy, estado: 'sin_dato', faltan: p.faltan }; registro.push({ fecha: hoy, id: f.id, isbn, estado: 'sin_dato', faltan: p.faltan, sin_formato: p.sinFormato }); continue; }
+      if (!p.cambios.length) { r.sin_dato_de_fuente++; hechasHoy[f.id] = { fecha: hoy, estado: 'sin_dato', faltan: p.faltan, regla: REGLA }; registro.push({ fecha: hoy, id: f.id, isbn, estado: 'sin_dato', faltan: p.faltan, sin_formato: p.sinFormato }); continue; }
       const antes = Object.fromEntries(p.cambios.map(c => [c.id, (item.attributes ?? []).find(a => a.id === c.id) ?? null]));
       if (!real) { r.parciales++; registro.push({ fecha: hoy, id: f.id, isbn, estado: 'haria', cambios: p.cambios, antes, sin_dato: p.sinDato, sin_formato: p.sinFormato }); continue; }
       try {
@@ -141,7 +157,7 @@ async function main() {
       if (okIds.length === p.cambios.length && intactos) r.cargadas_verificadas++; else r.no_verificadas++;
       r.atributos_cargados += okIds.length;
       for (const c of p.cambios.filter(c => okIds.includes(c.id))) { r.por_atributo[c.id] = (r.por_atributo[c.id] ?? 0) + 1; r.por_fuente[c.fuente] = (r.por_fuente[c.fuente] ?? 0) + 1; if (c.contradicciones.length) r.contradicciones++; }
-      hechasHoy[f.id] = { fecha: hoy, estado: okIds.length === p.cambios.length ? 'cargada' : 'parcial', objetivo };
+      hechasHoy[f.id] = { fecha: hoy, estado: okIds.length === p.cambios.length ? 'cargada' : 'parcial', objetivo, regla: REGLA };
       registro.push({ fecha: hoy, id: f.id, isbn, estado: okIds.length === p.cambios.length && intactos ? 'verificada' : 'no_verificada', intactos, objetivo, cambios: p.cambios, antes, verificacion: ver, sin_dato: p.sinDato, sin_formato: p.sinFormato });
     }
     if (r.cortado) break;

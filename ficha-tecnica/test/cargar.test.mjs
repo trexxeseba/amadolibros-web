@@ -37,3 +37,19 @@ test('proponer nunca toca GTIN y verificar compara lo releído', () => {
   assert.deepEqual(verificar({ attributes: [{ id: 'PAGES_NUMBER', value_name: '200' }] }, p.cambios), [{ id: 'PAGES_NUMBER', ok: true, quedo: '200' }]);
   assert.equal(verificar({ attributes: [] }, p.cambios)[0].ok, false);
 });
+
+import { puedeNoAplica } from '../src/cargar.mjs';
+test('No aplica sólo en Serie y Volumen, con ficha de Open Library sin serie y título sin tomo', () => {
+  const ol = { ficha_openlibrary: { existe: true, con_serie: false } };
+  assert.equal(puedeNoAplica('El arte de la guerra', ol), true);
+  assert.equal(puedeNoAplica('Jujutsu Kaisen 26', ol), false);
+  assert.equal(puedeNoAplica('Harry Potter Tomo II', ol), false);
+  assert.equal(puedeNoAplica('Saga Crepúsculo', ol), false);
+  assert.equal(puedeNoAplica('El arte de la guerra', { ficha_openlibrary: { existe: true, con_serie: true } }), false);
+  assert.equal(puedeNoAplica('El arte de la guerra', {}), false);
+  const defs = new Map([['BOOK_SUBTITLE', { value_type: 'string' }]]);
+  const p = proponer({ title: 'El arte de la guerra', attributes: [] }, defs, [{ id: 'BOOK_SERIE' }, { id: 'BOOK_VOLUME' }, { id: 'BOOK_SUBTITLE' }, { id: 'BOOK_EDITION' }], ol);
+  assert.deepEqual(p.cambios.map(c => c.id + ':' + c.value_id), ['BOOK_SERIE:-1', 'BOOK_VOLUME:-1']);
+  assert.deepEqual(p.sinDato, ['BOOK_SUBTITLE', 'BOOK_EDITION']);
+  assert.equal(verificar({ attributes: [{ id: 'BOOK_SERIE', value_id: '-1', value_name: null }] }, p.cambios)[0].ok, true);
+});

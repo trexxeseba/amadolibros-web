@@ -96,6 +96,9 @@ export function crearFuentes({ arnoia = process.env.FICHA_ARNOIA, celesa = proce
           const o = out.get(isbn);
           const ol = extrasOpenLibrary(crudo('openlibrary', isbn)), gb = extrasGoogle(crudo('googlebooks', isbn), isbn);
           if (Object.values(ol).some(Boolean)) o.openlibrary = { ...(o.openlibrary ?? {}), ...ol };
+          const bol = crudo('openlibrary', isbn);
+          // Ficha de Open Library de ese ISBN: si existe con título y no declara serie, sirve de base para "No aplica".
+          o.ficha_openlibrary = bol && limpio(bol.title) ? { existe: true, con_serie: Array.isArray(bol.series) && bol.series.some(x => limpio(x)) } : null;
           if (Object.values(gb).some(Boolean)) o.googlebooks = { ...(o.googlebooks ?? {}), ...gb };
         }
       }
