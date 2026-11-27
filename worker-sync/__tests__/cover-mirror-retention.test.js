@@ -7,12 +7,24 @@ test('CAS retry releases each failed manifest graph before reading the next vers
     import assert from 'node:assert/strict';
     import { syncCoverMirror, COVER_MANIFEST_KEY } from './worker-sync/cover-mirror.js';
     const originalParse = JSON.parse;
-    const weakEntries = new Map();
+    // FinalizationRegistry, no WeakRef: crear un WeakRef mantiene vivo el
+    // objeto hasta que termina el trabajo en curso (lista keep-during-job), y
+    // Node 24 vacía esa lista más tarde que Node 22, lo que daba un falso
+    // "retenido". El registro no retiene el objeto que observa.
+    const released = new Set();
+    const registry = new FinalizationRegistry(marker => released.add(marker));
     JSON.parse = function (...args) {
       const value = originalParse(...args);
-      if (value?.retention_marker) weakEntries.set(value.retention_marker, new WeakRef(value));
+      if (value?.retention_marker) registry.register(value, value.retention_marker);
       return value;
     };
+    async function collected(marker) {
+      for (let i = 0; i < 20 && !released.has(marker); i++) {
+        global.gc();
+        await new Promise(setImmediate);
+      }
+      return released.has(marker);
+    }
     globalThis.FixedLengthStream = class extends TransformStream {
       constructor(length) {
         let count = 0;
@@ -31,13 +43,8 @@ test('CAS retry releases each failed manifest graph before reading the next vers
         async get(key) {
           if (key !== COVER_MANIFEST_KEY) return null;
           if (reads) {
-            // A new event-loop turn ends WeakRef's keep-alive job. GC is only
-            // in this isolated test process, never in production code.
-            await new Promise(setImmediate);
-            global.gc();
-            await new Promise(setImmediate);
-            global.gc();
-            assert.equal(weakEntries.get(prefix + reads).deref(), undefined,
+            // GC is only in this isolated test process, never in production code.
+            assert.ok(await collected(prefix + reads),
               'failed manifest entry is still retained before the next read');
           }
           reads++;
