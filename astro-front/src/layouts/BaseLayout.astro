@@ -1,6 +1,7 @@
 ---
 import { DELIVERY_BADGE_STYLES } from '../../../shared/delivery-badge.js';
 import { CARD_COVER_FRAMING_STYLES } from '../../../shared/card-cover-framing.js';
+import { SITE_FONTS_HEAD } from '../../../shared/site-fonts.js';
 
 interface Props {
   title?: string;
@@ -48,7 +49,7 @@ import { pruebaSocialHtml } from '../../../shared/prueba-social.js';
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v2">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v2">
   <link rel="manifest" href="/site.webmanifest?v2">
-  <script is:inline src="/whatsapp-messages.js"></script>
+  <script is:inline src="/whatsapp-messages.js" defer></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content={indexable ? 'index, follow' : 'noindex, nofollow'}>
@@ -93,11 +94,8 @@ import { pruebaSocialHtml } from '../../../shared/prueba-social.js';
     </>
   )}
   <!-- Astro build OK — lote 2-A -->
-  <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
-  <link
-    rel="stylesheet"
-    href="https://fonts.bunny.net/css?family=playfair-display:700|inter:400,600,800&display=swap"
-  >
+  <!-- Fuentes propias (shared/site-fonts.js): sin hoja externa que bloquee el render. -->
+  <Fragment set:html={SITE_FONTS_HEAD} />
   <!-- Pixel de Meta + banner de cookies. No hace nada si /api/tracking/config
        dice que está apagado (META_TRACKING_ENABLED). -->
   <script src="/meta-tracking.js" defer></script>

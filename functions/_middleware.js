@@ -255,7 +255,11 @@ export async function onRequest(context) {
     const isPreview = isPreviewUrl(url);
     // OAuth codes must never reach analytics, legacy routing or third parties.
     const isMeliOAuth = ['/meli-vintage-callback', '/panel/meli-vintage', '/panel/meli-vintage-piloto', '/panel/meli-vintage-stock', '/panel/meli-vintage-lote', '/operations/vintage', '/panel/meli-vintage-local', '/operations/vintage-local', '/operations/vintage-renew'].includes(url.pathname);
-    const isHashedAstroAsset = /^\/_astro\/[^/]+\.[A-Za-z0-9_-]{6,}\.(?:css|js)$/.test(url.pathname);
+    // Assets con hash en el nombre: CSS/JS de Astro y las fuentes propias
+    // (/fonts/<nombre>.<hash>.woff2, ver shared/site-fonts.js). Si cambia el
+    // contenido cambia el nombre, así que la caché puede ser larga e inmutable.
+    const isHashedAstroAsset = /^\/_astro\/[^/]+\.[A-Za-z0-9_-]{6,}\.(?:css|js)$/.test(url.pathname)
+        || /^\/fonts\/[^/]+\.[a-f0-9]{8}\.woff2$/.test(url.pathname);
 
     const finish = response => {
         const securedResponse = withSecurityHeaders(response);
