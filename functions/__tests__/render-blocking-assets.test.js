@@ -77,6 +77,18 @@ test('el bloque de fuentes precarga a lo sumo dos y declara font-display swap', 
   assert.equal(HEADER_FONTS_HEAD, SITE_FONTS_HEAD, 'las Functions usan el mismo bloque que Astro');
 });
 
+test('cada familia y peso tiene latin (precargable) y latin-ext (nunca precargado)', () => {
+  const key = font => `${font.family} ${font.weight}`;
+  const latin = SITE_FONT_FILES.filter(font => font.subset === 'latin').map(key).sort();
+  const ext = SITE_FONT_FILES.filter(font => font.subset === 'latin-ext');
+  assert.deepEqual(ext.map(key).sort(), latin);
+  for (const font of ext) {
+    assert.equal(font.preload, false, font.file);
+    assert.ok(!SITE_FONTS_HEAD.includes(`<link rel="preload" href="${font.file}"`), font.file);
+  }
+  assert.match(SITE_FONTS_HEAD, /unicode-range:U\+0100-02BA/);
+});
+
 test('las fuentes con hash se sirven con caché larga en Preview y Producción', async () => {
   const font = SITE_FONT_FILES[0].file;
   for (const origin of ['https://pr-1.amadolibros-web.pages.dev', 'https://www.amadolibros.com']) {
