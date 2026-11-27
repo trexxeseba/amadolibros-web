@@ -55,3 +55,11 @@ test('presentBookTitle es idempotente y tolera valores vacíos', () => {
   assert.equal(presentBookTitle(null), '');
   assert.equal(presentBookTitle(undefined), '');
 });
+
+test('presentBookTitle conserva el nombre propio después de Editorial, Ediciones y Colección', () => {
+  assert.equal(presentBookTitle('Martín Fierro Editorial El Ateneo'), 'Martín Fierro Editorial El Ateneo');
+  assert.equal(presentBookTitle('Rayuela Ediciones De La Flor'), 'Rayuela Ediciones De La Flor');
+  assert.equal(presentBookTitle('Poemas Colección Los Clásicos De Siempre'), 'Poemas Colección Los Clásicos de Siempre');
+  assert.equal(presentBookTitle('Biblia De America Editorial Verbo Divino'), 'Biblia de America Editorial Verbo Divino');
+  assert.equal(presentBookTitle('El Principito Editorial Salamandra Y La Ilustración'), 'El Principito Editorial Salamandra y la Ilustración');
+});

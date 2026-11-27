@@ -18,6 +18,13 @@ const TRAILING_PUNCT = /[,;:.!?"'”’»)\]…]+$/u;
 // Un guion suelto (o pegado al final de la palabra anterior) abre subtítulo.
 const DASH_ONLY = /^[-–—]+$/u;
 const OPENS_SEGMENT_AFTER = /[:\-–—.!?(|/]$/u;
+// Después de estas palabras viene un nombre propio ("Editorial El Ateneo",
+// "Ediciones De La Flor"): sus conectores conservan la mayúscula.
+const PROPER_NAME_MARKERS = new Set(['editorial', 'ediciones', 'coleccion']);
+
+function plainKey(word) {
+  return word.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
+}
 
 function isTitleCaseWord(word) {
   // "De", "Y": primera letra mayúscula y el resto en minúscula. Las siglas
@@ -44,26 +51,34 @@ export function presentBookTitle(title) {
 
   const parts = text.split(/(\s+)/u);
   let segmentStart = true;
+  let properName = false;
   return parts.map(part => {
     if (!part || /^\s+$/u.test(part)) return part;
     if (DASH_ONLY.test(part)) {
       segmentStart = true;
+      properName = false;
       return part;
     }
     const lead = (part.match(LEADING_PUNCT) || [''])[0];
     const trail = (part.slice(lead.length).match(TRAILING_PUNCT) || [''])[0];
     const core = part.slice(lead.length, part.length - trail.length);
     let output = part;
+    const isConnector = Boolean(core) && CONNECTORS.has(core.toLocaleLowerCase('es'));
     if (
       !segmentStart
+      && !properName
       && !lead.includes('(')
-      && core
-      && CONNECTORS.has(core.toLocaleLowerCase('es'))
+      && isConnector
       && isTitleCaseWord(core)
     ) {
       output = lead + core.toLocaleLowerCase('es') + trail;
     }
     segmentStart = OPENS_SEGMENT_AFTER.test(part) || (!core && Boolean(lead));
+    // La protección cubre los conectores que siguen al marcador hasta la
+    // primera palabra del nombre ("Editorial El Ateneo", "De La Flor").
+    if (PROPER_NAME_MARKERS.has(plainKey(core)) && !trail) properName = true;
+    else if (properName && !isConnector) properName = false;
+    if (segmentStart) properName = false;
     return output;
   }).join('');
 }
