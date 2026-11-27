@@ -79,6 +79,7 @@ import {
     onlyDigits,
     relevanceRank,
 } from './_shared/catalog-search.js';
+import { presentBookTitle } from '../shared/book-title-presentation.js';
 
 const MAX_RESULTS = 48;
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
@@ -869,6 +870,7 @@ export async function onRequest(ctx) {
         // el título fuente, el slug y la búsqueda no cambian.
         const display = deriveBookDisplayTitle(b);
         const title = escapeHtml(display.removedParts.length ? display.title : b.title);
+        const visibleTitle = escapeHtml(presentBookTitle(display.removedParts.length ? display.title : b.title));
         const author = b.author
             ? `<p class="rc-author">${escapeHtml(b.author)}</p>`
             : '';
@@ -923,7 +925,7 @@ export async function onRequest(ctx) {
   <a href="${href}" class="rc-img">${imgTag}</a>
   <div class="rc-body">
     ${badge}
-    <a href="${href}" class="rc-title-link"><p class="rc-title">${title}</p></a>
+    <a href="${href}" class="rc-title-link"><p class="rc-title">${visibleTitle}</p></a>
     ${author}
     ${bodyCta}
   </div>

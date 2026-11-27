@@ -75,7 +75,10 @@ const YEAR = new Date().getFullYear();
   .footer-inner {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 3rem 1.5rem 2.5rem;
+    /* El padding inferior reserva el lugar de la burbuja flotante de
+       WhatsApp (WAFloat: 44-48px a 0.75-1.25rem del borde) más un margen,
+       para que no tape la última línea del pie en ninguna medida. */
+    padding: 3rem 1.5rem calc(5rem + env(safe-area-inset-bottom, 0px));
     display: grid;
     grid-template-columns: 1fr;
     gap: 2rem;
@@ -123,13 +126,16 @@ const YEAR = new Date().getFullYear();
     gap: 0.4rem;
   }
 
-  .footer-list li {
+  /* :global() para que el enlace «Cookies» que agrega meta-tracking.js al
+     final de la lista (sin el atributo de alcance de Astro) tome el mismo
+     tamaño y estilo que los demás enlaces del pie. */
+  .footer-list :global(li) {
     font-size: 0.8125rem;
     line-height: 1.45;
   }
 
-  .footer-list a { display: inline-flex; align-items: center; min-height: 44px; }
-  .footer-list a:hover, .footer-text-link:hover { color: rgba(248, 245, 239, 0.9); }
+  .footer-list :global(a) { display: inline-flex; align-items: center; min-height: 44px; }
+  .footer-list :global(a:hover), .footer-text-link:hover { color: rgba(248, 245, 239, 0.9); }
 
   /* Contacto */
   .footer-contact { display: flex; flex-direction: column; gap: 0; }

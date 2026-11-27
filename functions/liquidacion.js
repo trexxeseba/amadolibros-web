@@ -25,6 +25,7 @@ import { buildWhatsAppMessage, whatsappHref } from '../shared/whatsapp-messages.
 import { RUEDA_SCRIPT, RUEDA_STYLES, ruedaHtml } from './_shared/rueda-ui.js';
 import { ACERTIJO_SCRIPT, ACERTIJO_STYLES, acertijoHtml } from './_shared/acertijo-ui.js';
 import { PREMIO_LIB_SCRIPT, PREMIO_LIQ_SCRIPT, PREMIO_STYLES, premioBannerHtml } from './_shared/premio-ui.js';
+import { presentBookTitle } from '../shared/book-title-presentation.js';
 
 export const PAGE_SIZE = 48;
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
@@ -110,6 +111,7 @@ export function cardHtml(book, idx, env, topic = '') {
     const image = responsiveImage(source, { widths: [240, 360, 480], defaultWidth: 360, sizes: CARD_IMAGE_SIZES });
     const display = deriveBookDisplayTitle(book);
     const title = escapeHtml(display.removedParts.length ? display.title : book.title);
+    const visibleTitle = escapeHtml(presentBookTitle(display.removedParts.length ? display.title : book.title));
     const price = Number(book.price) || 0;
     const currency = String(book.currency || 'UYU').toUpperCase();
     const canAddToCart = book.status === 'active' && Number(book.available_quantity) > 0
@@ -127,7 +129,7 @@ export function cardHtml(book, idx, env, topic = '') {
   <a href="${escapeHtml(href)}" class="rc-img">${img}</a>
   <div class="rc-body">
     <span class="liq-badge">Liquidación</span>
-    <a href="${escapeHtml(href)}" class="rc-title-link"><p class="rc-title">${title}</p></a>
+    <a href="${escapeHtml(href)}" class="rc-title-link"><p class="rc-title">${visibleTitle}</p></a>
     ${book.author ? `<p class="rc-author">${escapeHtml(book.author)}</p>` : ''}
     <div class="rc-prices">
       <span class="rc-base">$${escapeHtml(priceStr)} UYU</span>

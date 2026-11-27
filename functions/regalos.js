@@ -20,6 +20,7 @@ import { transferDisplayPrice } from './_shared/descuentos.js';
 import { buildWhatsAppMessage, whatsappHref } from '../shared/whatsapp-messages.js';
 import { googleReviewsHtml } from '../shared/google-reviews.js';
 import { REGALOS, selectRegalos, groupRegalos, navidadEstado, diasHasta, fechaLarga } from './_shared/regalos.js';
+import { presentBookTitle } from '../shared/book-title-presentation.js';
 
 const FREE_SHIPPING_THRESHOLD_UYU = 1500;
 
@@ -111,6 +112,7 @@ function cardHtml(book, idx, env, group) {
     const image = responsiveImage(source, { widths: [240, 360, 480], defaultWidth: 360, sizes: CARD_IMAGE_SIZES });
     const display = deriveBookDisplayTitle(book);
     const title = escapeHtml(display.removedParts.length ? display.title : book.title);
+    const visibleTitle = escapeHtml(presentBookTitle(display.removedParts.length ? display.title : book.title));
     const price = Number(book.price) || 0;
     const priceStr = price.toLocaleString('es-UY');
     const transferValue = transferDisplayPrice(book);
@@ -125,7 +127,7 @@ function cardHtml(book, idx, env, group) {
   <a href="${escapeHtml(href)}" class="rc-img">${img}</a>
   <div class="rc-body">
     ${qty === 1 ? '<span class="rg-badge">Último ejemplar</span>' : ''}
-    <a href="${escapeHtml(href)}" class="rc-title-link"><p class="rc-title">${title}</p></a>
+    <a href="${escapeHtml(href)}" class="rc-title-link"><p class="rc-title">${visibleTitle}</p></a>
     ${book.author ? `<p class="rc-author">${escapeHtml(book.author)}</p>` : ''}
     <div class="rc-prices">
       <span class="rc-base">$${escapeHtml(priceStr)} UYU</span>

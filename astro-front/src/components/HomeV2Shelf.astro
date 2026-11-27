@@ -4,6 +4,7 @@ import { selectDistinctHomeBooks } from '../../../shared/home-selection.js';
 import path from 'node:path';
 import { responsiveBookCover } from '../lib/cloudflare-images.js';
 import { deliveryBadgeHtml } from '../../../shared/delivery-badge.js';
+import { presentBookTitle } from '../../../shared/book-title-presentation.js';
 
 interface Book {
   id: string;
@@ -86,7 +87,7 @@ const shelfBooks = books.map(book => ({
           <div class="v2-book-meta">
             <span>{String(index + 1).padStart(2, '0')}</span>
             <div>
-              <h3><a href={book.href}>{book.title}</a></h3>
+              <h3><a href={book.href}>{presentBookTitle(book.title)}</a></h3>
               {book.author && <p>{book.author}</p>}
               {Number(book.price || 0) > 0 && <strong data-habitual-price={Number(book.price)}>{price.format(Number(book.price))}</strong>}
             </div>

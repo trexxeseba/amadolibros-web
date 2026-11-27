@@ -18,6 +18,7 @@ import {
   buildWhatsAppMessage,
   whatsappHref,
 } from '../../shared/whatsapp-messages.js';
+import { presentBookTitle } from '../../shared/book-title-presentation.js';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -130,7 +131,7 @@ export function renderAuthorPage(author, items, useCloudflareImages = true) {
         ${image.src ? `<img src="${escapeHtml(image.src)}"${responsiveAttrs} alt="Portada de ${escapeHtml(item.title)}" loading="lazy" decoding="async" width="180" height="270">` : '<span class="cover-fallback" aria-hidden="true"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2"/><path d="M8 7h7"/></svg></span>'}
       </a>
       <div class="book-info">
-        <h2><a href="${escapeHtml(href)}">${escapeHtml(item.title)}</a></h2>
+        <h2><a href="${escapeHtml(href)}">${escapeHtml(presentBookTitle(item.title))}</a></h2>
         <p class="book-author">${escapeHtml(item.author)}</p>
         ${price > 0 ? `<p class="book-price">$${escapeHtml(price.toLocaleString('es-UY'))} UYU</p>${promoWasHtml(item)}` : ''}
         <a class="book-cta" href="${escapeHtml(href)}">Ver ficha</a>

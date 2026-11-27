@@ -142,9 +142,9 @@ import { pruebaSocialHtml } from '../../../shared/prueba-social.js';
       display:          flex;
       flex-direction:   column;
       -webkit-tap-highlight-color: transparent;
-      padding-bottom:   5rem; /* clearance para el botón WA flotante en mobile */
+      /* Sin padding-bottom: el lugar del botón WA flotante lo reserva el pie
+         (Footer.astro), con su mismo fondo oscuro. */
     }
-    @media (min-width: 768px) { body { padding-bottom: 0; } }
     main { flex: 1; }
     img  { max-width: 100%; height: auto; display: block; }
     a    { color: inherit; text-decoration: none; }
