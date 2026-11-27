@@ -1077,7 +1077,7 @@ export async function onRequest(ctx) {
     .topic-chip-back{color:#a94e3d}
     @media(min-width:900px){.topic-chips{flex-wrap:wrap;overflow:visible}}
     h1{font-size:1.35rem;font-weight:800;margin-bottom:.3rem}
-    .sub{color:#64748b;font-size:.875rem;margin-bottom:.75rem}
+    .sub{color:#5f6b7d;font-size:.875rem;margin-bottom:.75rem}
     .results-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.25rem 1rem;margin-bottom:.5rem}
     .results-bar .sub{margin-bottom:0}
     .sort-form{display:flex;align-items:center;gap:.45rem;font-size:.84rem;color:#4a3d30}

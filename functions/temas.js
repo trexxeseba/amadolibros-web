@@ -348,7 +348,7 @@ export function renderTemasPage({ groups, catchAll, hasSplit }) {
     a{color:inherit}
     ${SITE_HEADER_STYLES}
     .crumbs{max-width:1200px;margin:0 auto;padding:1rem 1rem 0;color:#6b6157;font-size:.85rem}
-    .crumbs a{color:#a94e3d;text-decoration:none}
+    .crumbs a{color:#a94e3d;text-decoration:underline;text-underline-offset:.18em}
     main{max-width:1200px;margin:0 auto;padding:1rem 1rem 3rem}
     .intro{padding:1.5rem 0 1rem}
     .eyebrow{color:#b4442a;font-size:.72rem;font-weight:850;letter-spacing:.1em;text-transform:uppercase}

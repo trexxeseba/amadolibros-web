@@ -216,7 +216,7 @@ test('14. La descripción real de ML aparece en Ver más, preserva párrafos y s
 
 test('10. En celular hay una barra de compra fija que dispara el mismo botón del carrito', () => {
     const html = renderPage(book(), 'un-libro-de-prueba', false, '');
-    assert.match(html, /<div class="buy-bar" id="buy-bar" hidden>/);
+    assert.match(html, /<div class="buy-bar" id="buy-bar" role="region" aria-label="Compra rápida" hidden>/);
     assert.match(html, /<button type="button" class="buy-bar-btn" data-buy-bar>Agregar al carrito<\/button>/);
     assert.match(html, /body\.has-buy-bar \.wa-float\{bottom:/);
     const paused = renderPage(book({ status: 'paused', available_quantity: 0 }), 'un-libro', false, '');

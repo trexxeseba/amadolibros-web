@@ -152,13 +152,12 @@ const number = new Intl.NumberFormat('es-UY');
         <a class="ca-all ca-all-desktop" href="/catalogo">Ver catálogo completo →</a>
       </div>
 
-      <div class="ca-grid" role="list">
+      <div class="ca-grid">
         {priorityAccesses.map(entry => (
           <a
             class={`ca-card ca-card-${entry.tone}`}
             href={entry.href}
             data-home-access={entry.id}
-            role="listitem"
           >
             <span class="ca-icon" aria-hidden="true">{entry.icon}</span>
             <span class="ca-card-copy">

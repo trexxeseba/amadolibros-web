@@ -138,10 +138,11 @@ export function waFloatHtml(message, page = '/') {
         closing: 'Quisiera hacerles una consulta. ¿Podrían ayudarme? Gracias.',
     });
     const href = waHref(copy);
-    return `<a href="${escapeAttr(href)}" target="_blank" rel="noopener noreferrer" class="wa-float" aria-label="Consultar por WhatsApp">
+    // El botón flotante queda dentro de un landmark propio (axe: region).
+    return `<aside class="wa-float-dock" aria-label="Consulta por WhatsApp"><a href="${escapeAttr(href)}" target="_blank" rel="noopener noreferrer" class="wa-float" aria-label="Consultar por WhatsApp">
   <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${WA_ICON_PATH}"/></svg>
   <span class="wa-float-label">WhatsApp</span>
-</a>`;
+</a></aside>`;
 }
 
 export const WA_FLOAT_STYLES = `

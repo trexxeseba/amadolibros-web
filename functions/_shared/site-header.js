@@ -43,7 +43,7 @@ export function siteHeaderHtml({ current = '', query = '', showSearch = true } =
     return `<header class="site-header">
   <div class="header-inner">
     <a href="/" class="brand-link" aria-label="Amado Libros — inicio">
-      <img src="${BRAND.logo}" alt="${BRAND.logoAlt}" class="brand-logo" width="48" height="47" fetchpriority="high">
+      <img src="${BRAND.logo}" alt="" class="brand-logo" width="48" height="47" fetchpriority="high">
       <span class="brand-copy">
         <span class="brand-name">Amado Libros</span>
         <span class="brand-tagline">Librería en línea · Uruguay</span>

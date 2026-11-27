@@ -836,6 +836,8 @@ export function renderPage(item, slug, isPreview, waitlistSiteKey, previewCoverS
     nav{background:white;padding:.5rem 1.25rem;font-size:.85rem;
         border-bottom:1px solid #e2e8f0;color:#64748b}
     nav a{color:#a94e3d;text-decoration:none}
+    /* Migas de pan: subrayadas para distinguirse del texto gris (link-in-text-block). */
+    body>nav a{text-decoration:underline;text-underline-offset:.18em}
     main{max-width:940px;margin:1.5rem auto;padding:0 1rem;
          display:grid;grid-template-columns:minmax(0,1fr);gap:1.75rem}
     .cover,.info{min-width:0}
@@ -1076,7 +1078,7 @@ ${siteHeaderHtml()}
 }());<\/script>
 
 ${footerHtml(undefined, canonicalUrl)}
-${sellableInCheckout ? `<div class="buy-bar" id="buy-bar" hidden>
+${sellableInCheckout ? `<div class="buy-bar" id="buy-bar" role="region" aria-label="Compra rápida" hidden>
   <div class="buy-bar-price"><strong>$${priceUY}</strong><small>o $${transferPrice} por transferencia</small></div>
   <button type="button" class="buy-bar-btn" data-buy-bar>Agregar al carrito</button>
 </div>` : ''}
