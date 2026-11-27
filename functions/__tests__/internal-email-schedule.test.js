@@ -32,12 +32,15 @@ test('alarma programa la entrega sin cambiar destinatario ni contenido', async t
     }
   });
   let payload;
+  // Desde el 26/11 la alarma sólo sale con ALARMAS_POR_MAIL=si y lleva encabezado APP/PROYECTO/COMETIDO.
   const result = await enviarAlarma({ asunto: 'Prueba', texto: 'Detalle',
+    env: { RESEND_API_KEY: 'test-key', PRECIO_GANADOR_EMAIL_TO: 'equipo@example.test', ALARMAS_POR_MAIL: 'si' },
     fetcher: async (_url, opts) => { payload = JSON.parse(opts.body); return { ok: true }; } });
   assert.equal(result.status, 'enviado');
   assert.deepEqual(payload.to, ['equipo@example.test']);
   assert.equal(payload.subject, 'ALARMA Precio Ganador: Prueba');
-  assert.equal(payload.text, 'Detalle');
+  assert.match(payload.text, /^APP: /);
+  assert.match(payload.text, /\nDetalle\n/);
   assert.match(payload.scheduled_at, /T23:00:00\.000Z$/);
   assert.ok(new Date(payload.scheduled_at).getTime() > Date.now());
 });
